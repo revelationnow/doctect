@@ -216,8 +216,10 @@ export const JsonModal: React.FC<JsonModalProps> = ({ isOpen, onClose, currentSt
             }
 
             // Accept either old templates or new variants format
-            const hasTemplates = finalState.templates && typeof finalState.templates === 'object';
-            const hasVariants = finalState.variants && typeof finalState.variants === 'object';
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const hasTemplates = (finalState as any).templates && typeof (finalState as any).templates === 'object';
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const hasVariants = (finalState as any).variants && typeof (finalState as any).variants === 'object';
             if (!finalState.nodes || !finalState.rootId || (!hasTemplates && !hasVariants)) {
                 throw new Error("Missing required properties (nodes, rootId, and templates or variants)");
             }

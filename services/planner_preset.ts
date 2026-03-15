@@ -38996,20 +38996,6 @@ export const plannerPresetData = {
           "flip": false
         },
         {
-          "id": "gen_q_bg",
-          "type": "rect",
-          "x": 15,
-          "y": 188,
-          "w": 480,
-          "h": 472,
-          "fill": "#e2e8f0",
-          "fillType": "pattern",
-          "patternType": "lines-h",
-          "patternSpacing": 14,
-          "strokeWidth": 0,
-          "zIndex": 2
-        },
-        {
           "id": "gen_q_m1_d1",
           "type": "text",
           "x": 51,

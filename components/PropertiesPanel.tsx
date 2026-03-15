@@ -23,7 +23,8 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, onUpdat
     const node = nodes[selectedNodeId];
     const isHierarchyMode = viewMode === 'hierarchy';
 
-    const template = variants[activeVariantId]?.templates[selectedTemplateId];
+    const effectiveTemplateId = isHierarchyMode ? node?.type : selectedTemplateId;
+    const template = effectiveTemplateId ? variants[activeVariantId]?.templates[effectiveTemplateId] : undefined;
 
     // Derived selected elements
     const selectedElements = React.useMemo(() => {

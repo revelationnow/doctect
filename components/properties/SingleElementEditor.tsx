@@ -64,7 +64,7 @@ const getFontFamily = (fontValue: string): string => {
 
 interface SingleElementEditorProps {
     element: TemplateElement;
-    onUpdate: (updates: Partial<TemplateElement>) => void;
+    onUpdate: (updates: Partial<TemplateElement> | ((prev: TemplateElement) => Partial<TemplateElement>)) => void;
     onOpenNodeSelector: (mode: 'grid_source' | 'link_element') => void;
     state: AppState;
     activeNode?: AppNode;
@@ -434,7 +434,7 @@ export const SingleElementEditor: React.FC<SingleElementEditorProps> = ({ elemen
                     <div>
                         <label className="text-[10px] text-slate-500">Source</label>
                         <div className="flex items-center gap-1">
-                            <select className="flex-1 text-xs border rounded py-1 px-1 bg-white" value={element.gridConfig.sourceType === 'Mixed' ? '' : element.gridConfig.sourceType} onChange={e => onUpdate({ gridConfig: { ...element.gridConfig!, sourceType: e.target.value as any } })}>
+                            <select className="flex-1 text-xs border rounded py-1 px-1 bg-white" value={(element.gridConfig.sourceType as string) === 'Mixed' ? '' : element.gridConfig.sourceType} onChange={e => onUpdate({ gridConfig: { ...element.gridConfig!, sourceType: e.target.value as any } })}>
                                 <option value="current">Children of Current Page</option>
                                 <option value="specific">Children of Specific Page...</option>
                             </select>
@@ -664,7 +664,7 @@ export const SingleElementEditor: React.FC<SingleElementEditorProps> = ({ elemen
                         </button>
                         <select
                             className="flex-1 text-xs border rounded bg-white"
-                            value={element.fillType === 'Mixed' ? '' : (element.fillType || 'solid')}
+                            value={(element.fillType as string) === 'Mixed' ? '' : (element.fillType || 'solid')}
                             onChange={e => {
                                 const newType = e.target.value as any;
                                 const updates: Partial<TemplateElement> = { fillType: newType };
@@ -676,7 +676,7 @@ export const SingleElementEditor: React.FC<SingleElementEditorProps> = ({ elemen
                         >
                             <option value="solid">Solid Color</option>
                             <option value="pattern">Pattern</option>
-                            {element.fillType === 'Mixed' && <option value="" disabled>Mixed</option>}
+                            {(element.fillType as string) === 'Mixed' && <option value="" disabled>Mixed</option>}
                         </select>
                     </div>
                 </div>
@@ -753,7 +753,7 @@ export const SingleElementEditor: React.FC<SingleElementEditorProps> = ({ elemen
                 <div className="flex gap-2">
                     <div className="flex-1">
                         <label className="text-[10px] text-slate-400">Opacity</label>
-                        <input type="range" min="0" max="1" step="0.1" className="w-full" value={element.opacity === 'Mixed' ? 1 : (element.opacity ?? 1)} onChange={e => onUpdate({ opacity: parseFloat(e.target.value) })} />
+                        <input type="range" min="0" max="1" step="0.1" className="w-full" value={(element.opacity as unknown as string) === 'Mixed' ? 1 : (element.opacity ?? 1)} onChange={e => onUpdate({ opacity: parseFloat(e.target.value) })} />
                     </div>
                     <div className="w-16">
                         <label className="text-[10px] text-slate-400">Radius</label>

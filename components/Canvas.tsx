@@ -1420,7 +1420,9 @@ export const Canvas: React.FC<CanvasProps> = ({
                             // 2. Persistent Rotation (Static): Calculate Tight Bounds
                             else if (selectedElementIds.length > 1 && persistentGroupRotation !== 0) {
                                 const vb = getRotatedGroupBounds(elements.filter(e => selectedElementIds.includes(e.id)), persistentGroupRotation);
-                                if (vb) visualBounds = vb;
+                                if (vb) {
+                                    visualBounds = { x: vb.x, y: vb.y, w: vb.w, h: vb.h, rotation: vb.rotation } as any;
+                                }
                             }
                             /*
                             else if (selectedElementIds.length > 1 && persistentGroupRotation !== 0) {

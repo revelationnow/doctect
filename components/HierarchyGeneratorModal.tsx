@@ -9,7 +9,7 @@ import { FONTS } from '../constants/editor';
 interface HierarchyGeneratorModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onImport: (newState: Partial<AppState>) => void;
+  onImport: (newState: Partial<AppState> & { templates?: Record<string, any> }) => void;
 }
 
 interface SimpleEditorProps {
@@ -1989,7 +1989,7 @@ export const HierarchyGeneratorModal: React.FC<HierarchyGeneratorModalProps> = (
       onImport({
         nodes: result.nodes,
         rootId: result.rootId,
-        templates: normalizedTemplates
+        templates: normalizedTemplates as any
       });
       setSuccess(true);
       setTimeout(() => {

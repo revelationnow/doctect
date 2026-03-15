@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { MousePointer2, Hand, Type, Square, Circle, Triangle, Minus, Grid3X3, Magnet, GripVertical, ZoomOut, ZoomIn, Wand2, Save, Eye, AlignLeft, AlignCenter, AlignRight, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, AlignHorizontalSpaceAround, AlignVerticalSpaceAround } from 'lucide-react';
 import clsx from 'clsx';
-import { AppState } from '../types';
+import { AppState, AppNode } from '../types';
 
 interface EditorToolbarProps {
     state: AppState;
@@ -21,7 +21,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({ state, setState, o
     const nodesForCurrentTemplate = useMemo(() => {
         if (state.viewMode !== 'templates') return [];
         const templateId = state.selectedTemplateId;
-        return Object.values(state.nodes).filter(node => node.type === templateId);
+        return (Object.values(state.nodes) as AppNode[]).filter(node => node.type === templateId);
     }, [state.viewMode, state.selectedTemplateId, state.nodes]);
 
     // Determine the effective preview node
@@ -40,9 +40,10 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({ state, setState, o
     }, [state.viewMode, state.templatePreviewNodeId, state.selectedTemplateId, state.nodes, state.rootId, nodesForCurrentTemplate]);
 
     const handleAlign = (type: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom' | 'dist-h' | 'dist-v') => {
-        const { selectedElementIds, templates, selectedTemplateId } = state;
+        const { selectedElementIds, selectedTemplateId, activeVariantId, variants } = state;
         if (selectedElementIds.length < 2) return;
 
+        const templates = variants[activeVariantId]?.templates || {};
         const template = templates[selectedTemplateId];
         if (!template) return;
 
@@ -141,11 +142,17 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({ state, setState, o
 
         setState(s => ({
             ...s,
-            templates: {
-                ...s.templates,
-                [selectedTemplateId]: {
-                    ...template,
-                    elements: finalElements
+            variants: {
+                ...s.variants,
+                [s.activeVariantId]: {
+                    ...s.variants[s.activeVariantId],
+                    templates: {
+                        ...s.variants[s.activeVariantId].templates,
+                        [selectedTemplateId]: {
+                            ...template,
+                            elements: finalElements
+                        }
+                    }
                 }
             }
         }));

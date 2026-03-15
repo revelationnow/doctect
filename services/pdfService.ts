@@ -1086,8 +1086,8 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
                 // Fix: If offset is negative, shift it into the grid by adding columns
                 if (offset < 0) offset += safeCols;
 
-                const sGapX = Number(gapX) || 10;
-                const sGapY = Number(gapY) || 10;
+                const sGapX = gapX ?? 10;
+                const sGapY = gapY ?? 10;
 
                 const cellW = w;
                 const cellH = h;
