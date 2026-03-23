@@ -13,6 +13,8 @@ import { Download, Code, Undo2, Redo2, Loader2, Contrast } from 'lucide-react';
 import { EditorToolbar } from './EditorToolbar';
 import { saveCustomPreset } from '../services/presets';
 import { SavePresetModal } from './SavePresetModal';
+import { NewVariantModal, NewVariantConfig } from './NewVariantModal';
+import { reflowTemplates } from '../services/reflow';
 import clsx from 'clsx';
 import { trackEvent } from '../services/analytics';
 
@@ -35,6 +37,7 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
     const [deleteConfirmState, setDeleteConfirmState] = useState<{ isOpen: boolean, nodeId: string | null }>({ isOpen: false, nodeId: null });
     const [showScriptGenModal, setShowScriptGenModal] = useState(false);
     const [showSavePresetModal, setShowSavePresetModal] = useState(false);
+    const [showNewVariantModal, setShowNewVariantModal] = useState(false);
     const [resizingPanel, setResizingPanel] = useState<'sidebar' | 'properties' | null>(null);
 
     const [isExporting, setIsExporting] = useState(false);
@@ -464,15 +467,24 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
     };
 
     const handleAddVariant = () => {
+        setShowNewVariantModal(true);
+    };
+
+    const handleCreateVariant = (config: NewVariantConfig) => {
         saveToHistory();
         const newId = `variant_${Math.random().toString(36).substr(2, 6)}`;
-        // Create a new variant with a copy of the first template from active variant as a starting point
         const activeTemplates = getActiveTemplates();
-        const firstTemplateId = Object.keys(activeTemplates)[0];
+        // Deep-copy all templates, optionally reflowing to new dimensions
+        const newTemplates = reflowTemplates(
+            activeTemplates,
+            config.targetWidth,
+            config.targetHeight,
+            config.reflow
+        );
         const newVariant: Variant = {
             id: newId,
-            name: `New Variant`,
-            templates: firstTemplateId ? { [firstTemplateId]: { ...activeTemplates[firstTemplateId], elements: [] } } : {}
+            name: config.name,
+            templates: newTemplates
         };
         setState(prev => ({
             ...prev,
@@ -480,6 +492,7 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
             activeVariantId: newId,
             selectedTemplateId: Object.keys(newVariant.templates)[0] || prev.selectedTemplateId
         }));
+        setShowNewVariantModal(false);
     };
 
     const handleSelectVariant = (variantId: string) => {
@@ -900,6 +913,15 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
                 onClose={() => setShowSavePresetModal(false)}
                 onSave={handleSavePreset}
                 defaultTitle={state.nodes[state.rootId]?.title}
+            />
+
+            <NewVariantModal
+                isOpen={showNewVariantModal}
+                onClose={() => setShowNewVariantModal(false)}
+                onCreate={handleCreateVariant}
+                currentVariantName={state.variants[state.activeVariantId]?.name || 'Variant'}
+                currentWidth={Object.values(getActiveTemplates())[0]?.width || 509}
+                currentHeight={Object.values(getActiveTemplates())[0]?.height || 679}
             />
 
             <NodeSelectorModal
