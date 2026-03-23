@@ -439,7 +439,7 @@ export const CanvasElement: React.FC<CanvasElementProps> = (props) => {
         }
 
         return (
-            <div key={element.id} data-element-id={element.id} className="absolute group border border-dashed border-slate-300" style={style}>
+            <div key={element.id} data-element-id={element.id} className="absolute group outline outline-1 outline-dashed outline-slate-300" style={style}>
                 {displayItems.map((childId: any, idx: number) => {
                     const pos = idx + offset;
                     const row = Math.floor(pos / colCount);
