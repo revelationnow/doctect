@@ -161,7 +161,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({ state, setState, o
     };
 
     return (
-        <div className="h-10 bg-slate-50 border-b flex items-center justify-center gap-4 shadow-sm z-10 flex-shrink-0 px-4">
+        <div className="min-h-[40px] py-1 bg-slate-50 border-b flex flex-wrap items-center justify-center gap-4 shadow-sm z-10 flex-shrink-0 px-4">
             <div className="flex bg-white border border-slate-200 p-0.5 rounded gap-0.5 shadow-sm">
                 <ToolButton active={state.tool === 'select'} icon={MousePointer2} onClick={() => setState(s => ({ ...s, tool: 'select' }))} title="Select Tool (V)" />
                 <ToolButton active={state.tool === 'hand'} icon={Hand} onClick={() => setState(s => ({ ...s, tool: 'hand' }))} title="Pan Tool (H)" />

@@ -722,7 +722,7 @@ const traverseGridData = (
 
 interface GeneratePDFOptions {
     isGreyscale?: boolean;
-    exportAllVariants?: boolean;
+    variantId?: string;
     projectName?: string;
 }
 
@@ -754,13 +754,12 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
     // 1. Determine dimensions for the first page to initialize the document correctly
     let initialFormat = [RM_PP_WIDTH, RM_PP_HEIGHT];
     let initialOrientation: "portrait" | "landscape" = "portrait";
-
-    const variantsToExport = options.exportAllVariants ? Object.keys(state.variants) : [state.activeVariantId];
+    const targetVariantId = options.variantId || state.activeVariantId;
 
     if (pageNodes.length > 0) {
         const firstNode = state.nodes[pageNodes[0]];
         if (firstNode) {
-            const tpl = state.variants[variantsToExport[0]]?.templates[firstNode.type];
+            const tpl = state.variants[targetVariantId]?.templates[firstNode.type];
             if (tpl) {
                 initialFormat = [tpl.width, tpl.height];
                 initialOrientation = tpl.width > tpl.height ? "landscape" : "portrait";
@@ -776,21 +775,19 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
 
     // --- FONT LOADING START ---
     const usedFamilies = new Set<string>();
-    variantsToExport.forEach(vid => {
-        Object.values(state.variants[vid]?.templates || {}).forEach(tpl => {
-            tpl.elements.forEach(el => {
-                if (el.fontFamily) {
-                    let fam = el.fontFamily;
-                    // Normalize label -> value
-                    const found = FONTS.find(f => f.label === fam);
-                    if (found) fam = found.value;
-                    else {
-                        const lower = fam.toLowerCase().replace(/\s+/g, '-');
-                        if (FONT_URLS[lower]) fam = lower;
-                    }
-                    usedFamilies.add(fam);
+    Object.values(state.variants[targetVariantId]?.templates || {}).forEach(tpl => {
+        tpl.elements.forEach(el => {
+            if (el.fontFamily) {
+                let fam = el.fontFamily;
+                // Normalize label -> value
+                const found = FONTS.find(f => f.label === fam);
+                if (found) fam = found.value;
+                else {
+                    const lower = fam.toLowerCase().replace(/\s+/g, '-');
+                    if (FONT_URLS[lower]) fam = lower;
                 }
-            });
+                usedFamilies.add(fam);
+            }
         });
     });
 
@@ -830,27 +827,23 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
     }
     // --- FONT LOADING END ---
 
-    let globalPageCount = 0;
-    for (const variantId of variantsToExport) {
-        let pageIndex = 0;
-        for (const nodeId of pageNodes) {
-            const index = pageIndex++;
-            const node = state.nodes[nodeId];
-            const template = state.variants[variantId]?.templates[node.type];
+    let pageIndex = 0;
+    for (const nodeId of pageNodes) {
+        const index = pageIndex++;
+        const node = state.nodes[nodeId];
+        const template = state.variants[targetVariantId]?.templates[node.type];
 
-            if (!template) {
-                if (globalPageCount > 0) doc.addPage();
-                globalPageCount++;
-                continue;
-            }
+        if (!template) {
+            if (index > 0) doc.addPage();
+            continue;
+        }
 
-            if (globalPageCount > 0) {
-                doc.addPage(
-                    [template.width, template.height],
-                    template.width > template.height ? "landscape" : "portrait"
-                );
-            }
-            globalPageCount++;
+        if (index > 0) {
+            doc.addPage(
+                [template.width, template.height],
+                template.width > template.height ? "landscape" : "portrait"
+            );
+        }
 
         // Determine current page height for coordinate flipping
         const pageHeight = template.height;
@@ -1428,13 +1421,8 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
                 }
             }
         }
-        }
     }
 
-    if (options.exportAllVariants) {
-        doc.save(`${options.projectName || 'project'}_all_variants.pdf`);
-    } else {
-        const vName = state.variants[state.activeVariantId]?.name || 'export';
-        doc.save(`${options.projectName || 'project'}_${vName}.pdf`);
-    }
+    const vName = state.variants[targetVariantId]?.name || 'export';
+    doc.save(`${options.projectName || 'project'}_${vName}.pdf`);
 };

@@ -828,14 +828,16 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
 
     const handleExportPDF = async (options: { exportAllVariants?: boolean } = {}) => {
         setIsExporting(true);
-        // Allow UI update before freezing
         setTimeout(async () => {
             try {
-                await generatePDF(state, {
-                    isGreyscale: exportGreyscale,
-                    exportAllVariants: options.exportAllVariants,
-                    projectName: projectId.split('-')[0]
-                });
+                const variantsToExport = options.exportAllVariants ? Object.keys(state.variants) : [state.activeVariantId];
+                for (const vid of variantsToExport) {
+                    await generatePDF(state, {
+                        isGreyscale: exportGreyscale,
+                        variantId: vid,
+                        projectName: projectId.split('-')[0]
+                    });
+                }
                 trackEvent('pdf_exported', { 
                     projectId: projectId, 
                     pageCount: Object.keys(getActiveTemplates()).length, 
