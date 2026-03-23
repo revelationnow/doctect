@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { AppState, AppNode, TemplateElement, PageTemplate } from '../types';
-import { Trash, Settings2, RectangleVertical, RectangleHorizontal } from 'lucide-react';
+import { Trash, Settings2, RectangleVertical, RectangleHorizontal, ToggleRight, ToggleLeft } from 'lucide-react';
 
 import { UNIT_CONVERSION, PAGE_PRESETS, RM_PP_WIDTH, RM_PP_HEIGHT } from '../constants/editor';
 import { SingleElementEditor } from './properties/SingleElementEditor';
@@ -15,7 +15,7 @@ interface PropertiesPanelProps {
     onUpdateNode: (id: string, updates: Partial<AppNode>) => void;
     onDeleteElements: (ids: string[]) => void;
     onOpenNodeSelector: (mode: 'grid_source' | 'link_element', elementId: string) => void; // Pass elementId context
-    onUpdateTemplate: (id: string, updates: Partial<PageTemplate>) => void;
+    onUpdateTemplate: (id: string, updates: Partial<PageTemplate>, autoReflow?: boolean) => void;
 }
 
 export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, onUpdateElements, onUpdateNode, onDeleteElements, onOpenNodeSelector, onUpdateTemplate }) => {
@@ -58,7 +58,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, onUpdat
 
     const updateDim = (dim: 'width' | 'height', val: number) => {
         if (template && !isNaN(val)) {
-            onUpdateTemplate(template.id, { [dim]: val });
+            onUpdateTemplate(template.id, { [dim]: val }, autoReflow);
         }
     };
 
@@ -68,11 +68,12 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, onUpdat
     };
 
     const [dimUnit, setDimUnit] = React.useState<'px' | 'pt' | 'in' | 'mm'>('px');
+    const [autoReflow, setAutoReflow] = React.useState(true);
 
     const applyPreset = (key: string) => {
         const p = PAGE_PRESETS[key];
         if (p && template) {
-            onUpdateTemplate(template.id, { width: p.w, height: p.h });
+            onUpdateTemplate(template.id, { width: p.w, height: p.h }, autoReflow);
         }
     };
 
@@ -82,9 +83,9 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, onUpdat
         const isPortrait = height >= width;
 
         if (mode === 'portrait' && !isPortrait) {
-            onUpdateTemplate(template.id, { width: height, height: width });
+            onUpdateTemplate(template.id, { width: height, height: width }, autoReflow);
         } else if (mode === 'landscape' && isPortrait) {
-            onUpdateTemplate(template.id, { width: height, height: width });
+            onUpdateTemplate(template.id, { width: height, height: width }, autoReflow);
         }
     };
 
@@ -174,6 +175,21 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, onUpdat
                             <div className="flex gap-2">
                                 <button onClick={() => toggleOrientation('portrait')} className="flex-1 text-[10px] bg-white border rounded py-1 hover:bg-slate-50 flex items-center justify-center gap-1"><RectangleVertical size={12} /> Portrait</button>
                                 <button onClick={() => toggleOrientation('landscape')} className="flex-1 text-[10px] bg-white border rounded py-1 hover:bg-slate-50 flex items-center justify-center gap-1"><RectangleHorizontal size={12} /> Landscape</button>
+                            </div>
+
+                            <div className="mt-3 flex items-center justify-between p-2 bg-slate-50 rounded border border-slate-100">
+                                <div>
+                                    <div className="text-[10px] font-medium text-slate-700">Auto-Reflow Elements</div>
+                                    <div className="text-[9px] text-slate-500 leading-tight mt-0.5 max-w-[140px]">
+                                        {autoReflow ? 'Scale to fit new dimensions' : 'Keep original size/position'}
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setAutoReflow(!autoReflow)}
+                                    className="flex-shrink-0 text-indigo-600 focus:outline-none"
+                                >
+                                    {autoReflow ? <ToggleRight size={22} /> : <ToggleLeft size={22} className="text-slate-400" />}
+                                </button>
                             </div>
 
                             <div className="mt-2 flex justify-end">

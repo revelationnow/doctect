@@ -573,11 +573,32 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
             return { ...prev, variants: { ...prev.variants, [prev.activeVariantId]: updatedVariant } };
         });
     };
-    const handleUpdateTemplate = (id: string, updates: Partial<PageTemplate>) => {
+    const handleUpdateTemplate = (id: string, updates: Partial<PageTemplate>, autoReflow: boolean = false) => {
         saveToHistory();
         setState(prev => {
             const activeVariant = prev.variants[prev.activeVariantId];
-            const updatedVariant = { ...activeVariant, templates: { ...activeVariant.templates, [id]: { ...activeVariant.templates[id], ...updates } } };
+            const currentTemplate = activeVariant.templates[id];
+            
+            let newTemplateData = { ...currentTemplate, ...updates };
+
+            // If autoReflow is enabled and dimensions are actually changing
+            if (autoReflow && (updates.width !== undefined || updates.height !== undefined)) {
+                const targetWidth = updates.width ?? currentTemplate.width;
+                const targetHeight = updates.height ?? currentTemplate.height;
+                
+                // Reflow just this one template by passing a mock single-item record
+                const reflowedMap = reflowTemplates(
+                    { [id]: currentTemplate },
+                    targetWidth,
+                    targetHeight,
+                    true
+                );
+                
+                // Merge everything cleanly: start with reflowed result, apply any additional incoming updates (e.g. name change)
+                newTemplateData = { ...reflowedMap[id], ...updates };
+            }
+
+            const updatedVariant = { ...activeVariant, templates: { ...activeVariant.templates, [id]: newTemplateData } };
             return { ...prev, variants: { ...prev.variants, [prev.activeVariantId]: updatedVariant } };
         });
     };
