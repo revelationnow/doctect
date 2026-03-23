@@ -221,7 +221,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({ state, setState, o
             <div className="flex items-center gap-1">
                 <button className="p-1 hover:bg-white rounded text-slate-600" onClick={() => setState(s => ({ ...s, scale: Math.max(0.2, s.scale - 0.1) }))}><ZoomOut size={16} /></button>
                 <span className="text-xs font-mono text-slate-500 w-10 text-center">{Math.round(state.scale * 100)}%</span>
-                <button className="p-1 hover:bg-white rounded text-slate-600" onClick={() => setState(s => ({ ...s, scale: Math.min(3, s.scale + 0.1) }))}><ZoomIn size={16} /></button>
+                <button className="p-1 hover:bg-white rounded text-slate-600" onClick={() => setState(s => ({ ...s, scale: Math.min(10, s.scale + 0.1) }))}><ZoomIn size={16} /></button>
             </div>
 
             {/* Template Preview Node Selector - only visible in template mode */}

@@ -99,7 +99,8 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                                 <select
                                     value={props.state.activeVariantId}
                                     onChange={(e) => props.onSelectVariant?.(e.target.value)}
-                                    className="flex-1 text-xs border border-indigo-200 rounded px-2 py-1.5 bg-white text-indigo-700 font-medium focus:ring-1 focus:ring-indigo-400 focus:outline-none"
+                                    title={activeVariant?.name || ''}
+                                    className="flex-1 text-xs border border-indigo-200 rounded px-2 py-1.5 bg-white text-indigo-700 font-medium focus:ring-1 focus:ring-indigo-400 focus:outline-none max-w-[140px] text-ellipsis overflow-hidden"
                                 >
                                     {variantList.map((v: Variant) => (
                                         <option key={v.id} value={v.id}>{v.name}</option>

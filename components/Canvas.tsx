@@ -275,7 +275,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                 let newScale = scale * (1 + zoomFactor);
 
                 // Clamp scale
-                newScale = Math.max(0.2, Math.min(3, newScale));
+                newScale = Math.max(0.2, Math.min(10, newScale));
 
                 if (Math.abs(newScale - scale) > 0.001) {
                     zoomTarget.current = { mx, my, cx, cy };

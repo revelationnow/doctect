@@ -9,7 +9,7 @@ import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { HierarchyGeneratorModal } from './HierarchyGeneratorModal';
 import { generatePDF } from '../services/pdfService';
 import { migrateState } from '../services/migration';
-import { Download, Code, Undo2, Redo2, Loader2, Contrast } from 'lucide-react';
+import { Download, Code, Undo2, Redo2, Loader2, Contrast, Layers } from 'lucide-react';
 import { EditorToolbar } from './EditorToolbar';
 import { saveCustomPreset } from '../services/presets';
 import { SavePresetModal } from './SavePresetModal';
@@ -826,13 +826,22 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
 
     const [exportGreyscale, setExportGreyscale] = useState(false);
 
-    const handleExportPDF = async () => {
+    const handleExportPDF = async (options: { exportAllVariants?: boolean } = {}) => {
         setIsExporting(true);
         // Allow UI update before freezing
         setTimeout(async () => {
             try {
-                await generatePDF(state, { isGreyscale: exportGreyscale });
-                trackEvent('pdf_exported', { projectId: projectId, pageCount: Object.keys(getActiveTemplates()).length, isGreyscale: exportGreyscale });
+                await generatePDF(state, {
+                    isGreyscale: exportGreyscale,
+                    exportAllVariants: options.exportAllVariants,
+                    projectName: projectId.split('-')[0]
+                });
+                trackEvent('pdf_exported', { 
+                    projectId: projectId, 
+                    pageCount: Object.keys(getActiveTemplates()).length, 
+                    isGreyscale: exportGreyscale,
+                    exportAllVariants: options.exportAllVariants
+                });
             } catch (e) {
                 console.error(e);
                 alert("Failed to export PDF");
@@ -878,7 +887,7 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
     return (
         <div className="flex h-full w-full flex-col bg-slate-100 text-slate-900 overflow-hidden">
             {/* Editor Toolbar */}
-            <div className="h-10 bg-white border-b flex items-center justify-between px-4 z-20 flex-shrink-0">
+            <div className="min-h-[40px] py-1 bg-white border-b flex flex-wrap items-center justify-between px-4 z-20 flex-shrink-0">
                 <div className="text-xs text-slate-400 font-mono">
                     {projectId.split('-')[0]}
                 </div>
@@ -907,17 +916,30 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
                             <Contrast size={14} />
                         </button>
 
-                        <button
-                            onClick={handleExportPDF}
-                            disabled={isExporting}
-                            className={clsx(
-                                "text-white bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded flex items-center gap-2 text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-wait shadow-sm",
-                                isExporting && "opacity-75"
-                            )}
-                        >
-                            {isExporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-                            {isExporting ? "Generating..." : "Export PDF"}
-                        </button>
+                        <div className="flex items-stretch ml-2 shadow-sm rounded">
+                            <button
+                                onClick={() => handleExportPDF()}
+                                disabled={isExporting}
+                                className={clsx(
+                                    "text-white bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-l flex items-center gap-2 text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-wait",
+                                    isExporting && "opacity-75"
+                                )}
+                            >
+                                {isExporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                                {isExporting ? "Generating..." : "Export PDF"}
+                            </button>
+                            <button
+                                onClick={() => handleExportPDF({ exportAllVariants: true })}
+                                disabled={isExporting || Object.keys(state.variants).length <= 1}
+                                className={clsx(
+                                    "text-white bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded-r border-l border-blue-500/50 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed",
+                                    isExporting && "opacity-75 bg-blue-700"
+                                )}
+                                title="Export All Variants (Merged PDF)"
+                            >
+                                <Layers size={14} /> All
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
