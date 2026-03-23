@@ -323,7 +323,7 @@ export const CanvasElement: React.FC<CanvasElementProps> = (props) => {
         if (el.type === 'line') return {};
         const hasFill = el.fill || (el.fillType === 'pattern');
         // Only show border if both strokeWidth > 0 AND stroke color is set
-        const hasBorder = el.strokeWidth > 0 && !!el.stroke;
+        const hasBorder = el.strokeWidth > 0 && !!el.stroke && el.borderStyle !== 'none';
 
         if (!hasFill && !hasBorder && el.type === 'text') return {};
 
@@ -438,6 +438,10 @@ export const CanvasElement: React.FC<CanvasElementProps> = (props) => {
             templatePattern = `{{${templatePattern}}}`;
         }
 
+        const hasBorder = element.strokeWidth > 0 && !!element.stroke && element.borderStyle !== 'none';
+        const strokeOffset = hasBorder ? element.strokeWidth / 2 : 0;
+        const strokeExpand = hasBorder ? element.strokeWidth : 0;
+
         return (
             <div key={element.id} data-element-id={element.id} className="absolute group outline outline-1 outline-dashed outline-slate-300" style={style}>
                 {displayItems.map((childId: any, idx: number) => {
@@ -456,7 +460,7 @@ export const CanvasElement: React.FC<CanvasElementProps> = (props) => {
 
                     return (
                         <div key={idx} style={{
-                            position: 'absolute', left: cx, top: cy, width: element.w, height: element.h,
+                            position: 'absolute', left: cx - strokeOffset, top: cy - strokeOffset, width: element.w + strokeExpand, height: element.h + strokeExpand,
                             ...getBackgroundStyle(element),
                             borderRadius: element.borderRadius || 0,
                             display: 'flex',
@@ -573,21 +577,26 @@ export const CanvasElement: React.FC<CanvasElementProps> = (props) => {
         );
     }
 
+    const hasBorder = element.strokeWidth > 0 && !!element.stroke && element.borderStyle !== 'none';
+    const strokeOffset = hasBorder ? element.strokeWidth / 2 : 0;
+    const strokeExpand = hasBorder ? element.strokeWidth : 0;
+
     return (
         <div key={element.id} data-element-id={element.id} className="absolute group" style={style} onDoubleClick={props.onDoubleClick}>
             {(element.type === 'rect' || element.type === 'text') && (
                 <div style={{
-                    width: '100%', height: '100%',
+                    width: `calc(100% + ${strokeExpand}px)`, height: `calc(100% + ${strokeExpand}px)`,
                     ...getBackgroundStyle(element),
                     borderRadius: element.borderRadius,
-                    position: 'absolute', top: 0, left: 0,
+                    position: 'absolute', top: -strokeOffset, left: -strokeOffset,
                 }} />
             )}
             {element.type === 'ellipse' && (
                 <div style={{
-                    width: '100%', height: '100%',
+                    width: `calc(100% + ${strokeExpand}px)`, height: `calc(100% + ${strokeExpand}px)`,
                     ...getBackgroundStyle(element),
                     borderRadius: '50%',
+                    position: 'absolute', top: -strokeOffset, left: -strokeOffset,
                 }} />
             )}
 
