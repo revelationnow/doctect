@@ -44,11 +44,30 @@ export function reflowTemplates(
 function reflowElement(el: TemplateElement, scaleX: number, scaleY: number, scaleFontSize: boolean): TemplateElement {
   const scaled: TemplateElement = { ...el };
 
-  // Spatial properties
-  scaled.x = round(el.x * scaleX);
-  scaled.y = round(el.y * scaleY);
-  scaled.w = round(el.w * scaleX);
-  scaled.h = round(el.h * scaleY);
+  // Spatial properties (accounting for rotation)
+  const rad = (el.rotation || 0) * (Math.PI / 180);
+
+  // Projection of the element's local axes onto the page axes
+  const localScaleX = Math.sqrt(
+    Math.pow(Math.cos(rad) * scaleX, 2) + Math.pow(Math.sin(rad) * scaleY, 2)
+  );
+  const localScaleY = Math.sqrt(
+    Math.pow(Math.sin(rad) * scaleX, 2) + Math.pow(Math.cos(rad) * scaleY, 2)
+  );
+
+  scaled.w = round(el.w * localScaleX);
+  scaled.h = round(el.h * localScaleY);
+
+  // Compute original center and scale it
+  const cx = el.x + el.w / 2;
+  const cy = el.y + el.h / 2;
+  
+  const newCx = cx * scaleX;
+  const newCy = cy * scaleY;
+
+  // Derive new top-left from the scaled center and new scaled bounds
+  scaled.x = round(newCx - scaled.w / 2);
+  scaled.y = round(newCy - scaled.h / 2);
 
   // Typography scaling — use the average of X and Y scale for font size
   if (scaleFontSize) {
