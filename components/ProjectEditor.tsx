@@ -479,7 +479,8 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
             activeTemplates,
             config.targetWidth,
             config.targetHeight,
-            config.reflow
+            config.reflow,
+            config.scaleFontSize
         );
         const newVariant: Variant = {
             id: newId,

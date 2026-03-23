@@ -13,7 +13,8 @@ export function reflowTemplates(
   sourceTemplates: Record<string, PageTemplate>,
   targetWidth: number,
   targetHeight: number,
-  reflow: boolean
+  reflow: boolean,
+  scaleFontSize: boolean = true
 ): Record<string, PageTemplate> {
   // Deep copy
   const result: Record<string, PageTemplate> = JSON.parse(JSON.stringify(sourceTemplates));
@@ -34,13 +35,13 @@ export function reflowTemplates(
     const scaleY = targetHeight / oldH;
 
     // Scale every element
-    template.elements = template.elements.map(el => reflowElement(el, scaleX, scaleY));
+    template.elements = template.elements.map(el => reflowElement(el, scaleX, scaleY, scaleFontSize));
   }
 
   return result;
 }
 
-function reflowElement(el: TemplateElement, scaleX: number, scaleY: number): TemplateElement {
+function reflowElement(el: TemplateElement, scaleX: number, scaleY: number, scaleFontSize: boolean): TemplateElement {
   const scaled: TemplateElement = { ...el };
 
   // Spatial properties
@@ -50,27 +51,29 @@ function reflowElement(el: TemplateElement, scaleX: number, scaleY: number): Tem
   scaled.h = round(el.h * scaleY);
 
   // Typography scaling — use the average of X and Y scale for font size
-  const avgScale = (scaleX + scaleY) / 2;
-  if (scaled.fontSize != null) {
-    scaled.fontSize = Math.max(1, round(scaled.fontSize * avgScale));
-  }
+  if (scaleFontSize) {
+    const avgScale = (scaleX + scaleY) / 2;
+    if (scaled.fontSize != null) {
+      scaled.fontSize = Math.max(1, round(scaled.fontSize * avgScale));
+    }
 
-  // Stroke width
-  if (scaled.strokeWidth != null) {
-    scaled.strokeWidth = Math.max(0, round(scaled.strokeWidth * avgScale));
-  }
+    // Stroke width
+    if (scaled.strokeWidth != null) {
+      scaled.strokeWidth = Math.max(0, round(scaled.strokeWidth * avgScale));
+    }
 
-  // Border radius
-  if (scaled.borderRadius != null) {
-    scaled.borderRadius = Math.max(0, round(scaled.borderRadius * avgScale));
-  }
+    // Border radius
+    if (scaled.borderRadius != null) {
+      scaled.borderRadius = Math.max(0, round(scaled.borderRadius * avgScale));
+    }
 
-  // Pattern spacing / weight
-  if (scaled.patternSpacing != null) {
-    scaled.patternSpacing = Math.max(1, round(scaled.patternSpacing * avgScale));
-  }
-  if (scaled.patternWeight != null) {
-    scaled.patternWeight = Math.max(0.5, round(scaled.patternWeight * avgScale));
+    // Pattern spacing / weight
+    if (scaled.patternSpacing != null) {
+      scaled.patternSpacing = Math.max(1, round(scaled.patternSpacing * avgScale));
+    }
+    if (scaled.patternWeight != null) {
+      scaled.patternWeight = Math.max(0.5, round(scaled.patternWeight * avgScale));
+    }
   }
 
   // Grid config gaps

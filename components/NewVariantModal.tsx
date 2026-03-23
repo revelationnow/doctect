@@ -8,6 +8,7 @@ export interface NewVariantConfig {
   targetWidth: number;
   targetHeight: number;
   reflow: boolean;
+  scaleFontSize: boolean;
 }
 
 interface NewVariantModalProps {
@@ -36,6 +37,7 @@ export const NewVariantModal: React.FC<NewVariantModalProps> = ({
   const [customWidth, setCustomWidth] = useState(currentWidth);
   const [customHeight, setCustomHeight] = useState(currentHeight);
   const [reflow, setReflow] = useState(true);
+  const [scaleFontSize, setScaleFontSize] = useState(true);
 
   // Detect current preset from dimensions
   const detectedPreset = useMemo(() => {
@@ -83,6 +85,7 @@ export const NewVariantModal: React.FC<NewVariantModalProps> = ({
       setCustomWidth(currentWidth);
       setCustomHeight(currentHeight);
       setReflow(true);
+      setScaleFontSize(true);
     }
   }, [isOpen, currentVariantName, currentWidth, currentHeight, detectedPreset]);
 
@@ -95,6 +98,7 @@ export const NewVariantModal: React.FC<NewVariantModalProps> = ({
       targetWidth: resolvedWidth,
       targetHeight: resolvedHeight,
       reflow: reflow && dimensionsChanged,
+      scaleFontSize,
     });
   };
 
@@ -127,22 +131,44 @@ export const NewVariantModal: React.FC<NewVariantModalProps> = ({
           </div>
 
           {/* Reflow Toggle */}
-          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border">
-            <div>
-              <div className="text-sm font-medium text-slate-700">Auto-Reflow Elements</div>
-              <div className="text-xs text-slate-500 mt-0.5">
-                {reflow
-                  ? 'Elements will be scaled proportionally to the new page size'
-                  : 'Elements will keep their original positions and sizes'}
+          <div className="flex flex-col gap-2 p-3 bg-slate-50 rounded-lg border">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium text-slate-700">Auto-Reflow Elements</div>
+                <div className="text-xs text-slate-500 mt-0.5">
+                  {reflow
+                    ? 'Elements will be scaled proportionally to the new page size'
+                    : 'Elements will keep their original positions and sizes'}
+                </div>
               </div>
+              <button
+                onClick={() => setReflow(!reflow)}
+                className="flex-shrink-0 ml-3 text-indigo-600"
+                title={reflow ? 'Disable reflow' : 'Enable reflow'}
+              >
+                {reflow ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-400" />}
+              </button>
             </div>
-            <button
-              onClick={() => setReflow(!reflow)}
-              className="flex-shrink-0 ml-3 text-indigo-600"
-              title={reflow ? 'Disable reflow' : 'Enable reflow'}
-            >
-              {reflow ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-400" />}
-            </button>
+
+            {reflow && (
+              <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                <div>
+                  <div className="text-sm font-medium text-slate-700">Scale Typography</div>
+                  <div className="text-xs text-slate-500 mt-0.5">
+                    {scaleFontSize
+                      ? 'Font sizes, borders, and strokes will scale with the page'
+                      : 'Text and line thickness will remain their original size'}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setScaleFontSize(!scaleFontSize)}
+                  className="flex-shrink-0 ml-3 text-indigo-600"
+                  title={scaleFontSize ? 'Disable font scaling' : 'Enable font scaling'}
+                >
+                  {scaleFontSize ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-400" />}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Page Size */}
