@@ -1,6 +1,7 @@
 
 
 import { jsPDF } from "jspdf";
+import { svg2pdf } from "svg2pdf.js";
 import { AppState, AppNode, PageTemplate, TemplateElement, RM_PP_WIDTH, RM_PP_HEIGHT, TraversalStep } from "../types";
 import { FONTS } from "../constants/editor";
 
@@ -823,13 +824,15 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
     }
     // --- FONT LOADING END ---
 
-    pageNodes.forEach((nodeId, index) => {
+    let pageIndex = 0;
+    for (const nodeId of pageNodes) {
+        const index = pageIndex++;
         const node = state.nodes[nodeId];
         const template = state.variants[state.activeVariantId]?.templates[node.type];
 
         if (!template) {
             if (index > 0) doc.addPage();
-            return;
+            continue;
         }
 
         if (index > 0) {
@@ -844,7 +847,7 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
 
         const sortedElements = [...template.elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
 
-        sortedElements.forEach(el => {
+        for (const el of sortedElements) {
             // --- LINK VALIDATION (Pre-check) ---
             // If an element has an internal link target but resolves to nothing, we skip rendering it entirely.
             // This allows buttons like "Next Page" to disappear when there is no next page.
@@ -943,7 +946,7 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
 
                 // If internal link configured but no target resolved, or target page doesn't exist -> SKIP
                 if (!resolvedTargetId || !resolvePage(resolvedTargetId)) {
-                    return;
+                    continue;
                 }
             }
 
@@ -1024,7 +1027,30 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
                     }
                 }
                 if (hasTransform) doc.restoreGraphicsState();
-                return;
+                continue;
+            }
+            // Handle SVG
+            if (el.type === 'svg' && el.svgContent) {
+                const parser = new DOMParser();
+                const svgDoc = parser.parseFromString(el.svgContent, 'image/svg+xml');
+                const svgElement = svgDoc.documentElement;
+
+                if (!svgElement.hasAttribute('width')) svgElement.setAttribute('width', String(w));
+                if (!svgElement.hasAttribute('height')) svgElement.setAttribute('height', String(h));
+
+                try {
+                    await svg2pdf(svgElement, doc, {
+                        x: lx,
+                        y: ly + yOffset,
+                        width: w,
+                        height: h
+                    });
+                } catch (err) {
+                    console.error('[PDFService] Error rendering SVG:', err);
+                }
+
+                if (hasTransform) doc.restoreGraphicsState();
+                continue;
             }
 
             // Handle Grid
@@ -1062,7 +1088,7 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
 
                 if (items.length === 0) {
                     if (hasTransform) doc.restoreGraphicsState();
-                    return;
+                    continue;
                 }
 
                 let offset = Number(el.gridConfig.offsetStart) || 0;
@@ -1204,7 +1230,7 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
 
                 doc.setLineDashPattern([], 0);
                 if (hasTransform) doc.restoreGraphicsState();
-                return;
+                continue;
             }
 
             // Standard Shapes & Text
@@ -1391,8 +1417,8 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
                     doc.link(linkArea.x, linkArea.y, linkArea.w, linkArea.h, { url: el.linkValue });
                 }
             }
-        });
-    });
+        }
+    }
 
     doc.save("planner_export.pdf");
 };

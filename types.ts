@@ -10,7 +10,7 @@ export interface AppNode {
   referenceId?: string; // If set, this node acts as a pointer to another node
 }
 
-export type ElementType = 'rect' | 'ellipse' | 'text' | 'triangle' | 'grid' | 'line';
+export type ElementType = 'rect' | 'ellipse' | 'text' | 'triangle' | 'grid' | 'line' | 'svg';
 export type FillType = 'solid' | 'pattern';
 export type PatternType = 'lines-h' | 'lines-v' | 'lines-d' | 'dots';
 
@@ -80,6 +80,9 @@ export interface TemplateElement {
   linkSecondaryValue?: string; // Secondary value (Secondary Index for fallbacks)
   linkReferrerParentType?: string; // Filter for child_referrer: only link to referrers whose parent has this type
   dataBinding?: string;
+
+  // SVG
+  svgContent?: string; // Raw SVG markup for svg elements
 }
 
 export interface PageTemplate {

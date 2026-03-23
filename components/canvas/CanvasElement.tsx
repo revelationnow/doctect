@@ -493,6 +493,34 @@ export const CanvasElement: React.FC<CanvasElementProps> = (props) => {
         );
     }
 
+    // SVG Image
+    if (element.type === 'svg' && element.svgContent) {
+        // Prepare the SVG content: ensure it scales to fill the bounding box
+        const svgMarkup = element.svgContent
+            .replace(/<svg/, '<svg preserveAspectRatio="xMidYMid meet"')
+            .replace(/width="[^"]*"/, '')
+            .replace(/height="[^"]*"/, '');
+
+        return (
+            <div key={element.id} data-element-id={element.id} className="absolute group" style={style} onDoubleClick={props.onDoubleClick}>
+                <div
+                    style={{
+                        width: '100%',
+                        height: '100%',
+                        overflow: 'hidden',
+                        pointerEvents: 'none',
+                    }}
+                    dangerouslySetInnerHTML={{
+                        __html: svgMarkup.replace(
+                            /<svg/,
+                            '<svg width="100%" height="100%"'
+                        )
+                    }}
+                />
+            </div>
+        );
+    }
+
     if (element.type === 'triangle') {
         const bgStyle = getBackgroundStyle(element);
         const bgStyleNoBorder = { ...bgStyle, border: 'none', borderWidth: 0 };

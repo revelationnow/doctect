@@ -495,6 +495,82 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
         setShowNewVariantModal(false);
     };
 
+    const handleImportSvg = (file: File) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const svgText = e.target?.result as string;
+            if (!svgText) return;
+
+            // Warn on large SVGs
+            if (svgText.length > 100000) {
+                const proceed = window.confirm(
+                    `This SVG is ${(svgText.length / 1024).toFixed(0)}KB. Large SVGs will significantly increase your project file size. Continue?`
+                );
+                if (!proceed) return;
+            }
+
+            // Parse SVG to extract dimensions
+            const parser = new DOMParser();
+            const svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
+            const svgEl = svgDoc.documentElement;
+
+            let svgW = 100, svgH = 100; // defaults
+            const viewBox = svgEl.getAttribute('viewBox');
+            if (viewBox) {
+                const parts = viewBox.split(/[\s,]+/).map(Number);
+                if (parts.length === 4 && !parts.some(isNaN)) {
+                    svgW = parts[2];
+                    svgH = parts[3];
+                }
+            } else {
+                const wAttr = parseFloat(svgEl.getAttribute('width') || '');
+                const hAttr = parseFloat(svgEl.getAttribute('height') || '');
+                if (!isNaN(wAttr) && wAttr > 0) svgW = wAttr;
+                if (!isNaN(hAttr) && hAttr > 0) svgH = hAttr;
+            }
+
+            // Scale down to fit within the template if necessary
+            const template = getActiveTemplates()[state.selectedTemplateId];
+            const maxW = template ? template.width * 0.8 : 400;
+            const maxH = template ? template.height * 0.8 : 400;
+            const scale = Math.min(1, maxW / svgW, maxH / svgH);
+            const finalW = Math.round(svgW * scale);
+            const finalH = Math.round(svgH * scale);
+
+            const newElement: TemplateElement = {
+                id: `el_${Math.random().toString(36).substr(2, 8)}`,
+                type: 'svg',
+                x: 20,
+                y: 20,
+                w: finalW,
+                h: finalH,
+                rotation: 0,
+                fill: '',
+                stroke: '',
+                strokeWidth: 0,
+                opacity: 1,
+                svgContent: svgText,
+            };
+
+            saveToHistory();
+            setState(prev => {
+                const activeVariant = prev.variants[prev.activeVariantId];
+                const tplId = prev.selectedTemplateId;
+                const tpl = activeVariant.templates[tplId];
+                if (!tpl) return prev;
+                const updatedTemplate = { ...tpl, elements: [...tpl.elements, newElement] };
+                const updatedVariant = { ...activeVariant, templates: { ...activeVariant.templates, [tplId]: updatedTemplate } };
+                return {
+                    ...prev,
+                    variants: { ...prev.variants, [prev.activeVariantId]: updatedVariant },
+                    selectedElementIds: [newElement.id],
+                    tool: 'select',
+                };
+            });
+        };
+        reader.readAsText(file);
+    };
+
     const handleSelectVariant = (variantId: string) => {
         if (!state.variants[variantId]) return;
         const firstTemplateId = Object.keys(state.variants[variantId].templates)[0];
@@ -878,6 +954,7 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
                         setState={setState}
                         onOpenScriptGen={() => setShowScriptGenModal(true)}
                         onSavePreset={() => setShowSavePresetModal(true)}
+                        onImportSvg={handleImportSvg}
                     />
 
                     <div className="flex-1 bg-slate-200 overflow-hidden relative flex flex-col">

@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { MousePointer2, Hand, Type, Square, Circle, Triangle, Minus, Grid3X3, Magnet, GripVertical, ZoomOut, ZoomIn, Wand2, Save, Eye, AlignLeft, AlignCenter, AlignRight, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, AlignHorizontalSpaceAround, AlignVerticalSpaceAround } from 'lucide-react';
+import React, { useMemo, useRef } from 'react';
+import { MousePointer2, Hand, Type, Square, Circle, Triangle, Minus, Grid3X3, Magnet, GripVertical, ZoomOut, ZoomIn, Wand2, Save, Eye, AlignLeft, AlignCenter, AlignRight, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, AlignHorizontalSpaceAround, AlignVerticalSpaceAround, FileImage } from 'lucide-react';
 import clsx from 'clsx';
 import { AppState, AppNode } from '../types';
 
@@ -8,6 +8,7 @@ interface EditorToolbarProps {
     setState: React.Dispatch<React.SetStateAction<AppState>>;
     onOpenScriptGen?: () => void;
     onSavePreset?: () => void;
+    onImportSvg?: (file: File) => void;
 }
 
 const ToolButton: React.FC<{ active?: boolean, icon: any, onClick: () => void, title?: string }> = ({ active, icon: Icon, onClick, title }) => (
@@ -16,7 +17,8 @@ const ToolButton: React.FC<{ active?: boolean, icon: any, onClick: () => void, t
     </button>
 );
 
-export const EditorToolbar: React.FC<EditorToolbarProps> = ({ state, setState, onOpenScriptGen, onSavePreset }) => {
+export const EditorToolbar: React.FC<EditorToolbarProps> = ({ state, setState, onOpenScriptGen, onSavePreset, onImportSvg }) => {
+    const svgInputRef = useRef<HTMLInputElement>(null);
     // Compute nodes that use the current template
     const nodesForCurrentTemplate = useMemo(() => {
         if (state.viewMode !== 'templates') return [];
@@ -170,6 +172,25 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({ state, setState, o
                 <ToolButton active={state.tool === 'triangle'} icon={Triangle} onClick={() => setState(s => ({ ...s, tool: 'triangle' }))} title="Triangle (Y)" />
                 <ToolButton active={state.tool === 'line'} icon={Minus} onClick={() => setState(s => ({ ...s, tool: 'line' }))} title="Line (L)" />
                 <ToolButton active={state.tool === 'grid'} icon={Grid3X3} onClick={() => setState(s => ({ ...s, tool: 'grid' }))} title="Data Grid (G)" />
+                {onImportSvg && (
+                    <>
+                        <div className="w-px bg-slate-200 mx-1"></div>
+                        <ToolButton icon={FileImage} onClick={() => svgInputRef.current?.click()} title="Import SVG Image" />
+                        <input
+                            ref={svgInputRef}
+                            type="file"
+                            accept=".svg"
+                            className="hidden"
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                    onImportSvg(file);
+                                    e.target.value = ''; // Reset so same file can be re-imported
+                                }
+                            }}
+                        />
+                    </>
+                )}
             </div>
 
             {/* Alignment Tools - Only visible when multiple items selected */}
