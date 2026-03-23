@@ -38998,7 +38998,7 @@ export const plannerPresetData = {
         {
           "id": "gen_q_m1_d1",
           "type": "text",
-          "x": 51,
+          "x": 50,
           "y": 65,
           "w": 17,
           "h": 17,
@@ -39013,7 +39013,7 @@ export const plannerPresetData = {
         {
           "id": "gen_q_m1_d2",
           "type": "text",
-          "x": 68,
+          "x": 67,
           "y": 65,
           "w": 17,
           "h": 17,
@@ -39028,7 +39028,7 @@ export const plannerPresetData = {
         {
           "id": "gen_q_m1_d3",
           "type": "text",
-          "x": 85,
+          "x": 84,
           "y": 65,
           "w": 17,
           "h": 17,
@@ -39043,7 +39043,7 @@ export const plannerPresetData = {
         {
           "id": "gen_q_m1_d4",
           "type": "text",
-          "x": 102,
+          "x": 101,
           "y": 65,
           "w": 17,
           "h": 17,
@@ -39058,7 +39058,7 @@ export const plannerPresetData = {
         {
           "id": "gen_q_m1_d5",
           "type": "text",
-          "x": 119,
+          "x": 118,
           "y": 65,
           "w": 17,
           "h": 17,
@@ -39121,7 +39121,7 @@ export const plannerPresetData = {
         {
           "id": "gen_q_m1_d6",
           "type": "text",
-          "x": 136,
+          "x": 135,
           "y": 65,
           "w": 17,
           "h": 17,
@@ -39206,7 +39206,7 @@ export const plannerPresetData = {
         {
           "id": "gen_q_m1_d7",
           "type": "text",
-          "x": 153,
+          "x": 152,
           "y": 65,
           "w": 17,
           "h": 17,
@@ -39221,7 +39221,7 @@ export const plannerPresetData = {
         {
           "id": "gen_q_m2_d1",
           "type": "text",
-          "x": 192,
+          "x": 191,
           "y": 65,
           "w": 17,
           "h": 17,
@@ -39236,7 +39236,7 @@ export const plannerPresetData = {
         {
           "id": "gen_q_m2_d2",
           "type": "text",
-          "x": 209,
+          "x": 208,
           "y": 65,
           "w": 17,
           "h": 17,
@@ -39251,7 +39251,7 @@ export const plannerPresetData = {
         {
           "id": "gen_q_m2_d3",
           "type": "text",
-          "x": 226,
+          "x": 225,
           "y": 65,
           "w": 17,
           "h": 17,
@@ -39266,7 +39266,7 @@ export const plannerPresetData = {
         {
           "id": "gen_q_m2_d4",
           "type": "text",
-          "x": 243,
+          "x": 242,
           "y": 65,
           "w": 17,
           "h": 17,
@@ -39281,7 +39281,7 @@ export const plannerPresetData = {
         {
           "id": "gen_q_m2_d5",
           "type": "text",
-          "x": 260,
+          "x": 259,
           "y": 65,
           "w": 17,
           "h": 17,
@@ -39296,7 +39296,7 @@ export const plannerPresetData = {
         {
           "id": "gen_q_m2_d6",
           "type": "text",
-          "x": 277,
+          "x": 276,
           "y": 65,
           "w": 17,
           "h": 17,
@@ -39311,7 +39311,7 @@ export const plannerPresetData = {
         {
           "id": "gen_q_m2_d7",
           "type": "text",
-          "x": 294,
+          "x": 293,
           "y": 65,
           "w": 17,
           "h": 17,
