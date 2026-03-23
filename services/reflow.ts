@@ -44,42 +44,46 @@ function reflowElement(el: TemplateElement, scaleX: number, scaleY: number): Tem
   const scaled: TemplateElement = { ...el };
 
   // Spatial properties
-  scaled.x = Math.round(el.x * scaleX);
-  scaled.y = Math.round(el.y * scaleY);
-  scaled.w = Math.round(el.w * scaleX);
-  scaled.h = Math.round(el.h * scaleY);
+  scaled.x = round(el.x * scaleX);
+  scaled.y = round(el.y * scaleY);
+  scaled.w = round(el.w * scaleX);
+  scaled.h = round(el.h * scaleY);
 
   // Typography scaling — use the average of X and Y scale for font size
   const avgScale = (scaleX + scaleY) / 2;
   if (scaled.fontSize != null) {
-    scaled.fontSize = Math.max(1, Math.round(scaled.fontSize * avgScale));
+    scaled.fontSize = Math.max(1, round(scaled.fontSize * avgScale));
   }
 
   // Stroke width
   if (scaled.strokeWidth != null) {
-    scaled.strokeWidth = Math.max(0, Math.round(scaled.strokeWidth * avgScale));
+    scaled.strokeWidth = Math.max(0, round(scaled.strokeWidth * avgScale));
   }
 
   // Border radius
   if (scaled.borderRadius != null) {
-    scaled.borderRadius = Math.max(0, Math.round(scaled.borderRadius * avgScale));
+    scaled.borderRadius = Math.max(0, round(scaled.borderRadius * avgScale));
   }
 
   // Pattern spacing / weight
   if (scaled.patternSpacing != null) {
-    scaled.patternSpacing = Math.max(1, Math.round(scaled.patternSpacing * avgScale));
+    scaled.patternSpacing = Math.max(1, round(scaled.patternSpacing * avgScale));
   }
   if (scaled.patternWeight != null) {
-    scaled.patternWeight = Math.max(0.5, Math.round(scaled.patternWeight * avgScale));
+    scaled.patternWeight = Math.max(0.5, round(scaled.patternWeight * avgScale));
   }
 
   // Grid config gaps
   if (scaled.gridConfig) {
     scaled.gridConfig = { ...scaled.gridConfig };
-    scaled.gridConfig.gapX = Math.round(scaled.gridConfig.gapX * scaleX);
-    scaled.gridConfig.gapY = Math.round(scaled.gridConfig.gapY * scaleY);
+    scaled.gridConfig.gapX = round(scaled.gridConfig.gapX * scaleX);
+    scaled.gridConfig.gapY = round(scaled.gridConfig.gapY * scaleY);
   }
 
   return scaled;
 }
 
+/** Round to 2 decimal places */
+function round(n: number): number {
+  return Math.round(n * 100) / 100;
+}
