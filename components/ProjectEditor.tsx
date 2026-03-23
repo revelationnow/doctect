@@ -650,7 +650,7 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
             return { ...prev, variants: { ...prev.variants, [prev.activeVariantId]: updatedVariant } };
         });
     };
-    const handleUpdateTemplate = (id: string, updates: Partial<PageTemplate>, autoReflow: boolean = false) => {
+    const handleUpdateTemplate = (id: string, updates: Partial<PageTemplate>, autoReflow: boolean = false, scaleFontSize: boolean = true) => {
         saveToHistory();
         setState(prev => {
             const activeVariant = prev.variants[prev.activeVariantId];
@@ -668,7 +668,8 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
                     { [id]: currentTemplate },
                     targetWidth,
                     targetHeight,
-                    true
+                    true,
+                    scaleFontSize
                 );
                 
                 // Merge everything cleanly: start with reflowed result, apply any additional incoming updates (e.g. name change)

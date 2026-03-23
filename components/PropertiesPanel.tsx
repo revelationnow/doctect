@@ -15,7 +15,7 @@ interface PropertiesPanelProps {
     onUpdateNode: (id: string, updates: Partial<AppNode>) => void;
     onDeleteElements: (ids: string[]) => void;
     onOpenNodeSelector: (mode: 'grid_source' | 'link_element', elementId: string) => void; // Pass elementId context
-    onUpdateTemplate: (id: string, updates: Partial<PageTemplate>, autoReflow?: boolean) => void;
+    onUpdateTemplate: (id: string, updates: Partial<PageTemplate>, autoReflow?: boolean, scaleFontSize?: boolean) => void;
 }
 
 export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, onUpdateElements, onUpdateNode, onDeleteElements, onOpenNodeSelector, onUpdateTemplate }) => {
@@ -58,7 +58,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, onUpdat
 
     const updateDim = (dim: 'width' | 'height', val: number) => {
         if (template && !isNaN(val)) {
-            onUpdateTemplate(template.id, { [dim]: val }, autoReflow);
+            onUpdateTemplate(template.id, { [dim]: val }, autoReflow, scaleFontSize);
         }
     };
 
@@ -69,11 +69,12 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, onUpdat
 
     const [dimUnit, setDimUnit] = React.useState<'px' | 'pt' | 'in' | 'mm'>('px');
     const [autoReflow, setAutoReflow] = React.useState(true);
+    const [scaleFontSize, setScaleFontSize] = React.useState(true);
 
     const applyPreset = (key: string) => {
         const p = PAGE_PRESETS[key];
         if (p && template) {
-            onUpdateTemplate(template.id, { width: p.w, height: p.h }, autoReflow);
+            onUpdateTemplate(template.id, { width: p.w, height: p.h }, autoReflow, scaleFontSize);
         }
     };
 
@@ -83,9 +84,9 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, onUpdat
         const isPortrait = height >= width;
 
         if (mode === 'portrait' && !isPortrait) {
-            onUpdateTemplate(template.id, { width: height, height: width }, autoReflow);
+            onUpdateTemplate(template.id, { width: height, height: width }, autoReflow, scaleFontSize);
         } else if (mode === 'landscape' && isPortrait) {
-            onUpdateTemplate(template.id, { width: height, height: width }, autoReflow);
+            onUpdateTemplate(template.id, { width: height, height: width }, autoReflow, scaleFontSize);
         }
     };
 
@@ -177,19 +178,38 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, onUpdat
                                 <button onClick={() => toggleOrientation('landscape')} className="flex-1 text-[10px] bg-white border rounded py-1 hover:bg-slate-50 flex items-center justify-center gap-1"><RectangleHorizontal size={12} /> Landscape</button>
                             </div>
 
-                            <div className="mt-3 flex items-center justify-between p-2 bg-slate-50 rounded border border-slate-100">
-                                <div>
-                                    <div className="text-[10px] font-medium text-slate-700">Auto-Reflow Elements</div>
-                                    <div className="text-[9px] text-slate-500 leading-tight mt-0.5 max-w-[140px]">
-                                        {autoReflow ? 'Scale to fit new dimensions' : 'Keep original size/position'}
+                            <div className="mt-3 flex flex-col gap-1 p-2 bg-slate-50 rounded border border-slate-100">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <div className="text-[10px] font-medium text-slate-700">Auto-Reflow Elements</div>
+                                        <div className="text-[9px] text-slate-500 leading-tight mt-0.5 max-w-[140px]">
+                                            {autoReflow ? 'Scale to fit new dimensions' : 'Keep original size/position'}
+                                        </div>
                                     </div>
+                                    <button
+                                        onClick={() => setAutoReflow(!autoReflow)}
+                                        className="flex-shrink-0 text-indigo-600 focus:outline-none"
+                                    >
+                                        {autoReflow ? <ToggleRight size={22} /> : <ToggleLeft size={22} className="text-slate-400" />}
+                                    </button>
                                 </div>
-                                <button
-                                    onClick={() => setAutoReflow(!autoReflow)}
-                                    className="flex-shrink-0 text-indigo-600 focus:outline-none"
-                                >
-                                    {autoReflow ? <ToggleRight size={22} /> : <ToggleLeft size={22} className="text-slate-400" />}
-                                </button>
+                                
+                                {autoReflow && (
+                                    <div className="flex items-center justify-between pt-1 mt-1 border-t border-slate-200">
+                                        <div>
+                                            <div className="text-[10px] font-medium text-slate-700">Scale Typography</div>
+                                            <div className="text-[9px] text-slate-500 leading-tight mt-0.5 max-w-[140px]">
+                                                {scaleFontSize ? 'Fonts/strokes scale with page' : 'Keep original styling'}
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => setScaleFontSize(!scaleFontSize)}
+                                            className="flex-shrink-0 text-indigo-600 focus:outline-none"
+                                        >
+                                            {scaleFontSize ? <ToggleRight size={22} /> : <ToggleLeft size={22} className="text-slate-400" />}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="mt-2 flex justify-end">
