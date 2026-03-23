@@ -69,11 +69,25 @@ function reflowElement(el: TemplateElement, scaleX: number, scaleY: number, scal
   scaled.x = round(newCx - scaled.w / 2);
   scaled.y = round(newCy - scaled.h / 2);
 
-  // Typography scaling — use the average of X and Y scale for font size
+  // Typography scaling
   if (scaleFontSize) {
-    const avgScale = (scaleX + scaleY) / 2;
+    const avgScale = (localScaleX + localScaleY) / 2;
+
     if (scaled.fontSize != null) {
-      scaled.fontSize = Math.max(1, round(scaled.fontSize * avgScale));
+      if (el.text || el.dataBinding) {
+        const textToMeasure = el.text || (el.dataBinding ? `{{${el.dataBinding}}}` : "Sample");
+        scaled.fontSize = calculateProportionalFontSize(
+          textToMeasure,
+          el.fontFamily || 'Inter',
+          el.w,
+          el.h,
+          scaled.w,
+          scaled.h,
+          Number(el.fontSize) || 12
+        );
+      } else {
+        scaled.fontSize = Math.max(1, round(scaled.fontSize * avgScale));
+      }
     }
 
     // Stroke width
@@ -108,4 +122,75 @@ function reflowElement(el: TemplateElement, scaleX: number, scaleY: number, scal
 /** Round to 2 decimal places */
 function round(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+/** 
+ * Uses an HTML5 Canvas to strictly calculate exact wrapped pixel boundaries.
+ * Isolates the precise fontSize required to maintain equivalent visual spacing limits inside the newly scaled container.
+ */
+function calculateProportionalFontSize(
+  text: string,
+  fontFamily: string,
+  oldW: number,
+  oldH: number,
+  newW: number,
+  newH: number,
+  oldFontSize: number
+): number {
+  if (typeof document === 'undefined') return oldFontSize * ((newW / oldW + newH / oldH) / 2);
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx || !text || oldW === 0 || oldH === 0) return oldFontSize * ((newW / oldW + newH / oldH) / 2);
+
+  const measure = (size: number, boxW: number) => {
+    ctx.font = `${size}px "${fontFamily}", sans-serif`;
+    const lines = text.split('\n');
+    let totalLines = 0;
+    let maxLineWidth = 0;
+    for (const paragraph of lines) {
+      if (!paragraph) { totalLines++; continue; }
+      const words = paragraph.split(' ');
+      let currentLine = words[0] || '';
+      totalLines++;
+      for (let j = 1; j < words.length; j++) {
+        const word = words[j];
+        if (ctx.measureText(currentLine + " " + word).width <= boxW) {
+          currentLine += " " + word;
+        } else {
+          maxLineWidth = Math.max(maxLineWidth, ctx.measureText(currentLine).width);
+          currentLine = word;
+          totalLines++;
+        }
+      }
+      maxLineWidth = Math.max(maxLineWidth, ctx.measureText(currentLine).width);
+    }
+    return { w: maxLineWidth, h: totalLines * (size * 1.2) };
+  };
+
+  const oldMetrics = measure(oldFontSize, oldW);
+  if (oldMetrics.w === 0 || oldMetrics.h === 0) {
+    return oldFontSize * ((newW / oldW + newH / oldH) / 2);
+  }
+
+  const targetTextW = oldMetrics.w * (newW / oldW);
+  const targetTextH = oldMetrics.h * (newH / oldH);
+
+  let low = 1;
+  let high = 500;
+  let bestSize = oldFontSize * ((newW / oldW + newH / oldH) / 2);
+
+  for (let i = 0; i < 15; i++) {
+    const mid = (low + high) / 2;
+    const m = measure(mid, newW);
+    // Find highest threshold that completely bounds strictly within original geometric space allocations
+    if (m.w <= targetTextW && m.h <= targetTextH) {
+      bestSize = mid;
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+
+  return Math.max(1, Math.round(bestSize * 10) / 10);
 }
