@@ -99,22 +99,22 @@ function reflowElement(el: TemplateElement, scaleX: number, scaleY: number, scal
     if (scaled.borderRadius != null) {
       scaled.borderRadius = Math.max(0, round(scaled.borderRadius * avgScale));
     }
+  }
 
-    // Pattern spacing / weight
-    if (scaled.patternSpacing != null || scaled.patternWeight != null) {
-      let patternScale = avgScale;
-      if (scaled.patternType === 'lines-h' || scaled.patternType === 'dots') {
-        patternScale = localScaleY;
-      } else if (scaled.patternType === 'lines-v') {
-        patternScale = localScaleX;
-      }
+  // Pattern spacing / weight
+  if (scaled.patternSpacing != null || scaled.patternWeight != null) {
+    let patternScale = (localScaleX + localScaleY) / 2;
+    if (scaled.patternType === 'lines-h' || scaled.patternType === 'dots') {
+      patternScale = localScaleY;
+    } else if (scaled.patternType === 'lines-v') {
+      patternScale = localScaleX;
+    }
 
-      if (scaled.patternSpacing != null) {
-        scaled.patternSpacing = Math.max(1, round(scaled.patternSpacing * patternScale));
-      }
-      if (scaled.patternWeight != null) {
-        scaled.patternWeight = Math.max(0.5, round(scaled.patternWeight * patternScale));
-      }
+    if (scaled.patternSpacing != null) {
+      scaled.patternSpacing = Math.max(1, round(scaled.patternSpacing * patternScale));
+    }
+    if (scaled.patternWeight != null) {
+      scaled.patternWeight = Math.max(0.5, round(scaled.patternWeight * patternScale));
     }
   }
 
@@ -184,6 +184,7 @@ function calculateProportionalFontSize(
 
   const targetTextW = oldMetrics.w * (newW / oldW);
   const targetTextH = oldMetrics.h * (newH / oldH);
+  const targetArea = targetTextW * targetTextH;
 
   let low = 1;
   let high = 500;
@@ -192,8 +193,10 @@ function calculateProportionalFontSize(
   for (let i = 0; i < 15; i++) {
     const mid = (low + high) / 2;
     const m = measure(mid, newW);
-    // Find highest threshold that completely bounds strictly within original geometric space allocations
-    if (m.w <= targetTextW && m.h <= targetTextH) {
+    const currentArea = m.w * m.h;
+    
+    // Find highest threshold that bounds strictly within the expected area density
+    if (currentArea <= targetArea && m.w <= newW && m.h <= newH) {
       bestSize = mid;
       low = mid;
     } else {
