@@ -101,11 +101,20 @@ function reflowElement(el: TemplateElement, scaleX: number, scaleY: number, scal
     }
 
     // Pattern spacing / weight
-    if (scaled.patternSpacing != null) {
-      scaled.patternSpacing = Math.max(1, round(scaled.patternSpacing * avgScale));
-    }
-    if (scaled.patternWeight != null) {
-      scaled.patternWeight = Math.max(0.5, round(scaled.patternWeight * avgScale));
+    if (scaled.patternSpacing != null || scaled.patternWeight != null) {
+      let patternScale = avgScale;
+      if (scaled.patternType === 'lines-h' || scaled.patternType === 'dots') {
+        patternScale = localScaleY;
+      } else if (scaled.patternType === 'lines-v') {
+        patternScale = localScaleX;
+      }
+
+      if (scaled.patternSpacing != null) {
+        scaled.patternSpacing = Math.max(1, round(scaled.patternSpacing * patternScale));
+      }
+      if (scaled.patternWeight != null) {
+        scaled.patternWeight = Math.max(0.5, round(scaled.patternWeight * patternScale));
+      }
     }
   }
 
