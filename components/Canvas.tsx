@@ -129,6 +129,45 @@ const getRotatedGroupBounds = (elements: TemplateElement[], rotation: number) =>
     return result;
 };
 
+const getConstrainedCreationBounds = (start: { x: number, y: number }, current: { x: number, y: number }, tool: string, isConstrained: boolean) => {
+    let x = Math.min(start.x, current.x);
+    let y = Math.min(start.y, current.y);
+    let w = Math.abs(current.x - start.x);
+    let h = Math.abs(current.y - start.y);
+    let finalCurrent = { ...current };
+
+    if (isConstrained) {
+        if (tool === 'line') {
+            const dx = current.x - start.x;
+            const dy = current.y - start.y;
+            const angle = Math.atan2(dy, dx);
+            let degrees = angle * (180 / Math.PI);
+            degrees = Math.round(degrees / 45) * 45;
+            const rad = degrees * (Math.PI / 180);
+            const length = Math.sqrt(dx * dx + dy * dy);
+            
+            finalCurrent.x = start.x + length * Math.cos(rad);
+            finalCurrent.y = start.y + length * Math.sin(rad);
+
+            x = Math.min(start.x, finalCurrent.x);
+            y = Math.min(start.y, finalCurrent.y);
+            w = Math.abs(finalCurrent.x - start.x);
+            h = Math.abs(finalCurrent.y - start.y);
+        } else {
+            const size = Math.max(w, h);
+            w = size;
+            h = size;
+            x = start.x < current.x ? start.x : start.x - size;
+            y = start.y < current.y ? start.y : start.y - size;
+            
+            finalCurrent.x = start.x < current.x ? start.x + size : start.x - size;
+            finalCurrent.y = start.y < current.y ? start.y + size : start.y - size;
+        }
+    }
+
+    return { x, y, w, h, start, current: finalCurrent };
+};
+
 
 export const Canvas: React.FC<CanvasProps> = ({
     template,
@@ -173,6 +212,7 @@ export const Canvas: React.FC<CanvasProps> = ({
     // Ghost element for creation
     const [newShapeStart, setNewShapeStart] = useState<{ x: number, y: number } | null>(null);
     const [newShapeCurrent, setNewShapeCurrent] = useState<{ x: number, y: number } | null>(null);
+    const [isConstrained, setIsConstrained] = useState(false);
 
     // Marquee Selection State
     const [isSelecting, setIsSelecting] = useState(false);
@@ -611,18 +651,39 @@ export const Canvas: React.FC<CanvasProps> = ({
                     newSelection = selectedElementIds.includes(clickedId)
                         ? selectedElementIds.filter(id => id !== clickedId)
                         : [...selectedElementIds, clickedId];
-                    onSelectElements(newSelection);
                 } else if (!selectedElementIds.includes(clickedId)) {
                     newSelection = [clickedId];
-                    onSelectElements(newSelection);
                 }
 
                 const initialPos: Record<string, { x: number, y: number }> = {};
-                elements.forEach(el => {
-                    if (newSelection.includes(el.id)) {
-                        initialPos[el.id] = { x: el.x, y: el.y };
-                    }
-                });
+
+                if (e.ctrlKey || e.metaKey) {
+                    const clonedElements: TemplateElement[] = [];
+                    const clonedIds: string[] = [];
+                    elements.forEach(el => {
+                        if (newSelection.includes(el.id)) {
+                            const newId = Math.random().toString(36).substring(2, 11);
+                            
+                            // Deep copy specific fields like gridConfig if needed
+                            const clone = JSON.parse(JSON.stringify(el)) as TemplateElement;
+                            clone.id = newId;
+
+                            clonedElements.push(clone);
+                            clonedIds.push(newId);
+                            initialPos[newId] = { x: el.x, y: el.y };
+                        }
+                    });
+                    onUpdateElements([...elements, ...clonedElements], true);
+                    onSelectElements(clonedIds);
+                } else {
+                    onSelectElements(newSelection);
+                    elements.forEach(el => {
+                        if (newSelection.includes(el.id)) {
+                            initialPos[el.id] = { x: el.x, y: el.y };
+                        }
+                    });
+                }
+
                 setInitialPositions(initialPos);
 
                 // Fix: Snapshot pivot loop
@@ -653,6 +714,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         const coords = getMouseCoords(e);
 
         if (newShapeStart) {
+            setIsConstrained(e.ctrlKey || e.metaKey || e.shiftKey);
             setNewShapeCurrent({ x: snapVal(coords.x), y: snapVal(coords.y) });
             return;
         }
@@ -1137,11 +1199,9 @@ export const Canvas: React.FC<CanvasProps> = ({
         setIsRotating(false);
         // setTemporaryGroupPivot(null); // Fix: Don't clear pivot on release, keep it for next rotation
         if (newShapeStart && newShapeCurrent) {
-            let x = Math.min(newShapeStart.x, newShapeCurrent.x);
-            let y = Math.min(newShapeStart.y, newShapeCurrent.y);
-            let w = Math.abs(newShapeCurrent.x - newShapeStart.x);
-            let h = Math.abs(newShapeCurrent.y - newShapeStart.y);
-
+            const constrained = isConstrained || e.ctrlKey || e.metaKey || e.shiftKey;
+            const bounds = getConstrainedCreationBounds(newShapeStart, newShapeCurrent, tool, constrained);
+            let { x, y, w, h, start, current } = bounds;
 
             if (w < MIN_DRAG_THRESHOLD && h < MIN_DRAG_THRESHOLD) {
                 if (tool === 'text') {
@@ -1209,8 +1269,8 @@ export const Canvas: React.FC<CanvasProps> = ({
                     offsetStart: 0
                 };
             } else if (tool === 'line') {
-                const dx = newShapeCurrent.x - newShapeStart.x;
-                const dy = newShapeCurrent.y - newShapeStart.y;
+                const dx = current.x - start.x;
+                const dy = current.y - start.y;
                 if ((dx > 0 && dy < 0) || (dx < 0 && dy > 0)) {
                     flip = true;
                 }
@@ -1281,20 +1341,17 @@ export const Canvas: React.FC<CanvasProps> = ({
     const renderCreationPreview = () => {
         if (!newShapeStart || !newShapeCurrent) return null;
 
-        // Calculate dimensions consistently
-        const x = Math.min(newShapeStart.x, newShapeCurrent.x);
-        const y = Math.min(newShapeStart.y, newShapeCurrent.y);
-        const w = Math.abs(newShapeCurrent.x - newShapeStart.x);
-        const h = Math.abs(newShapeCurrent.y - newShapeStart.y);
+        const bounds = getConstrainedCreationBounds(newShapeStart, newShapeCurrent, tool, isConstrained);
+        const { x, y, w, h, start, current } = bounds;
 
         if (tool === 'line') {
             return (
                 <svg className="absolute top-0 left-0 w-full h-full pointer-events-none" style={{ zIndex: 999 }}>
                     <line
-                        x1={newShapeStart.x}
-                        y1={newShapeStart.y}
-                        x2={newShapeCurrent.x}
-                        y2={newShapeCurrent.y}
+                        x1={start.x}
+                        y1={start.y}
+                        x2={current.x}
+                        y2={current.y}
                         stroke="#3b82f6"
                         strokeWidth={2}
                     />
