@@ -108,7 +108,9 @@ export interface AppState {
   // UI State
   viewMode: 'hierarchy' | 'templates';
   selectedNodeId: string;
+  selectedNodeIds: string[];
   selectedTemplateId: string;
+  selectedTemplateIds: string[];
   selectedElementIds: string[];
   scale: number;
   tool: 'select' | 'hand' | ElementType;

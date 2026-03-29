@@ -128,8 +128,34 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, onUpdat
                     {isHierarchyMode ? 'Node Properties' : 'Template Settings'}
                 </h3>
 
-                {isHierarchyMode && node ? (
-                    <NodeProperties node={node} state={state} onUpdateNode={onUpdateNode} />
+                {isHierarchyMode ? (
+                    state.selectedNodeIds?.length > 1 ? (
+                        <div className="mt-3 space-y-3 px-4">
+                            <div className="bg-indigo-50 p-3 rounded border border-indigo-100 text-sm">
+                                <div className="text-indigo-700 font-bold mb-1">
+                                    {state.selectedNodeIds.length} Nodes Selected
+                                </div>
+                                <p className="text-slate-600 mb-2">
+                                    Change template for all selected nodes.
+                                </p>
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-slate-500 uppercase">Assigned Template</label>
+                                <select className="w-full border rounded px-2 py-1 text-sm mt-1 bg-white"
+                                    defaultValue=""
+                                    onChange={(e) => {
+                                        state.selectedNodeIds.forEach(id => onUpdateNode(id, { type: e.target.value }));
+                                    }}>
+                                    <option value="" disabled>Select Template...</option>
+                                    {Object.values(state.variants[state.activeVariantId]?.templates || {}).map((t: any) => (
+                                        <option key={t.id} value={t.id}>{t.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    ) : node ? (
+                        <NodeProperties node={node} state={state} onUpdateNode={onUpdateNode} />
+                    ) : null
                 ) : (
                     <div className="mt-3 space-y-3">
                         <div className="border-b pb-3 mb-2 border-slate-200">
@@ -234,6 +260,18 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, onUpdat
                                 </button>
                             </div>
                         )}
+                    </div>
+                )}
+                {!isHierarchyMode && state.selectedTemplateIds?.length > 1 && (
+                    <div className="mt-3 px-4 space-y-3">
+                        <div className="bg-slate-50 p-3 rounded border border-slate-200 text-sm">
+                            <div className="text-slate-700 font-bold mb-1">
+                                {state.selectedTemplateIds.length} Templates Selected
+                            </div>
+                            <p className="text-slate-500 mb-2 text-xs">
+                                Individual template settings are unavailable during bulk selection.
+                            </p>
+                        </div>
                     </div>
                 )}
             </div>

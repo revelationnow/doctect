@@ -40885,7 +40885,7 @@ export const plannerPresetData = {
         {
           "id": "gen_tp_bg",
           "type": "rect",
-          "x": 11.2,
+          "x": 11,
           "y": 56.3,
           "w": 238.7,
           "h": 603.6,
@@ -40939,7 +40939,7 @@ export const plannerPresetData = {
         {
           "id": "gen_tp_bg2",
           "type": "rect",
-          "x": 261.2,
+          "x": 261,
           "y": 56.3,
           "w": 238.7,
           "h": 603.6,
@@ -40966,7 +40966,7 @@ export const plannerPresetData = {
         {
           "id": "q2qrumtzm",
           "type": "rect",
-          "x": 260.5277981195761,
+          "x": 261,
           "y": 59.00892233361111,
           "w": 15,
           "h": 15,
@@ -40978,7 +40978,7 @@ export const plannerPresetData = {
         {
           "id": "fvqkj2eu4",
           "type": "rect",
-          "x": 11.061084316052625,
+          "x": 11,
           "y": 79,
           "w": 15,
           "h": 15,
@@ -40990,7 +40990,7 @@ export const plannerPresetData = {
         {
           "id": "j0x5hh5f4",
           "type": "rect",
-          "x": 260.58888243562876,
+          "x": 261,
           "y": 79.00892233361111,
           "w": 15,
           "h": 15,
@@ -41002,7 +41002,7 @@ export const plannerPresetData = {
         {
           "id": "2xp3sdfj2",
           "type": "rect",
-          "x": 11.174330614546772,
+          "x": 11,
           "y": 118.99107766638889,
           "w": 15,
           "h": 15,
@@ -41014,7 +41014,7 @@ export const plannerPresetData = {
         {
           "id": "vu75ae4iu",
           "type": "rect",
-          "x": 260.7021287341229,
+          "x": 261,
           "y": 119,
           "w": 15,
           "h": 15,
@@ -41026,7 +41026,7 @@ export const plannerPresetData = {
         {
           "id": "d87j87si7",
           "type": "rect",
-          "x": 11.113246298494147,
+          "x": 11,
           "y": 98.99107766638889,
           "w": 15,
           "h": 15,
@@ -41038,7 +41038,7 @@ export const plannerPresetData = {
         {
           "id": "wnzf0rbv6",
           "type": "rect",
-          "x": 260.64104441807024,
+          "x": 261,
           "y": 99,
           "w": 15,
           "h": 15,
@@ -41050,7 +41050,7 @@ export const plannerPresetData = {
         {
           "id": "a1a8rn3r4",
           "type": "rect",
-          "x": 10.535003324831866,
+          "x": 11,
           "y": 138.97323299916667,
           "w": 15,
           "h": 15,
@@ -41062,7 +41062,7 @@ export const plannerPresetData = {
         {
           "id": "o0dkniamt",
           "type": "rect",
-          "x": 261.06280144440797,
+          "x": 261,
           "y": 138.98215533277778,
           "w": 15,
           "h": 15,
@@ -41074,7 +41074,7 @@ export const plannerPresetData = {
         {
           "id": "q7u72ugug",
           "type": "rect",
-          "x": 10.596087640884491,
+          "x": 11,
           "y": 158.97323299916667,
           "w": 15,
           "h": 15,
@@ -41086,7 +41086,7 @@ export const plannerPresetData = {
         {
           "id": "nu47sx65r",
           "type": "rect",
-          "x": 261.1238857604606,
+          "x": 261,
           "y": 158.98215533277778,
           "w": 15,
           "h": 15,
@@ -41098,7 +41098,7 @@ export const plannerPresetData = {
         {
           "id": "5cmk7ln79",
           "type": "rect",
-          "x": 10.709333939378638,
+          "x": 11,
           "y": 198.96431066555556,
           "w": 15,
           "h": 15,
@@ -41110,7 +41110,7 @@ export const plannerPresetData = {
         {
           "id": "349357dtv",
           "type": "rect",
-          "x": 261.2371320589547,
+          "x": 261,
           "y": 198.97323299916667,
           "w": 15,
           "h": 15,
@@ -41122,7 +41122,7 @@ export const plannerPresetData = {
         {
           "id": "nk8ka66v3",
           "type": "rect",
-          "x": 10.648249623326013,
+          "x": 11,
           "y": 178.96431066555556,
           "w": 15,
           "h": 15,
@@ -41134,7 +41134,7 @@ export const plannerPresetData = {
         {
           "id": "dw2cs40bq",
           "type": "rect",
-          "x": 261.1760477429021,
+          "x": 261,
           "y": 178.97323299916667,
           "w": 15,
           "h": 15,
@@ -41146,7 +41146,7 @@ export const plannerPresetData = {
         {
           "id": "soqujdioe",
           "type": "rect",
-          "x": 10.535003324831862,
+          "x": 11,
           "y": 218.93754366472226,
           "w": 15,
           "h": 15,
@@ -41158,7 +41158,7 @@ export const plannerPresetData = {
         {
           "id": "rghomnip6",
           "type": "rect",
-          "x": 261.06280144440797,
+          "x": 261,
           "y": 218.94646599833337,
           "w": 15,
           "h": 15,
@@ -41170,7 +41170,7 @@ export const plannerPresetData = {
         {
           "id": "redsguuex",
           "type": "rect",
-          "x": 10.596087640884488,
+          "x": 11,
           "y": 238.93754366472226,
           "w": 15,
           "h": 15,
@@ -41182,7 +41182,7 @@ export const plannerPresetData = {
         {
           "id": "dcfkz70ty",
           "type": "rect",
-          "x": 261.1238857604606,
+          "x": 261,
           "y": 238.94646599833337,
           "w": 15,
           "h": 15,
@@ -41194,7 +41194,7 @@ export const plannerPresetData = {
         {
           "id": "n7nx0fp7s",
           "type": "rect",
-          "x": 10.709333939378634,
+          "x": 11,
           "y": 278.9286213311111,
           "w": 15,
           "h": 15,
@@ -41206,7 +41206,7 @@ export const plannerPresetData = {
         {
           "id": "ulot22nv1",
           "type": "rect",
-          "x": 261.2371320589547,
+          "x": 261,
           "y": 278.9375436647223,
           "w": 15,
           "h": 15,
@@ -41218,7 +41218,7 @@ export const plannerPresetData = {
         {
           "id": "pkmdtnrwn",
           "type": "rect",
-          "x": 10.64824962332601,
+          "x": 11,
           "y": 258.9286213311111,
           "w": 15,
           "h": 15,
@@ -41230,7 +41230,7 @@ export const plannerPresetData = {
         {
           "id": "b2ey1u1fu",
           "type": "rect",
-          "x": 261.1760477429021,
+          "x": 261,
           "y": 258.9375436647223,
           "w": 15,
           "h": 15,
@@ -41242,7 +41242,7 @@ export const plannerPresetData = {
         {
           "id": "h3p8y5blc",
           "type": "rect",
-          "x": 11.070006649663728,
+          "x": 11,
           "y": 298.9107766638889,
           "w": 15,
           "h": 15,
@@ -41254,7 +41254,7 @@ export const plannerPresetData = {
         {
           "id": "uavzjk5og",
           "type": "rect",
-          "x": 260.5978047692398,
+          "x": 261,
           "y": 298.91969899750006,
           "w": 15,
           "h": 15,
@@ -41266,7 +41266,7 @@ export const plannerPresetData = {
         {
           "id": "6swqh9f7s",
           "type": "rect",
-          "x": 11.131090965716353,
+          "x": 11,
           "y": 318.9107766638889,
           "w": 15,
           "h": 15,
@@ -41278,7 +41278,7 @@ export const plannerPresetData = {
         {
           "id": "eo50p4jwf",
           "type": "rect",
-          "x": 260.65888908529246,
+          "x": 261,
           "y": 318.91969899750006,
           "w": 15,
           "h": 15,
@@ -41290,7 +41290,7 @@ export const plannerPresetData = {
         {
           "id": "ox9m4kykr",
           "type": "rect",
-          "x": 11.2443372642105,
+          "x": 11,
           "y": 358.90185433027784,
           "w": 15,
           "h": 15,
@@ -41302,7 +41302,7 @@ export const plannerPresetData = {
         {
           "id": "qis4r9df5",
           "type": "rect",
-          "x": 260.7721353837866,
+          "x": 261,
           "y": 358.9107766638889,
           "w": 15,
           "h": 15,
@@ -41314,7 +41314,7 @@ export const plannerPresetData = {
         {
           "id": "pvquhfalp",
           "type": "rect",
-          "x": 11.183252948157875,
+          "x": 11,
           "y": 338.90185433027784,
           "w": 15,
           "h": 15,
@@ -41326,7 +41326,7 @@ export const plannerPresetData = {
         {
           "id": "cevk005eu",
           "type": "rect",
-          "x": 260.71105106773393,
+          "x": 261,
           "y": 338.9107766638889,
           "w": 15,
           "h": 15,
@@ -41338,7 +41338,7 @@ export const plannerPresetData = {
         {
           "id": "9223iaw5w",
           "type": "rect",
-          "x": 10.787040031822116,
+          "x": 11,
           "y": 378.4895395346013,
           "w": 15,
           "h": 15,
@@ -41350,7 +41350,7 @@ export const plannerPresetData = {
         {
           "id": "gx0fdch0z",
           "type": "rect",
-          "x": 261.31483815139825,
+          "x": 261,
           "y": 378.4984618682124,
           "w": 15,
           "h": 15,
@@ -41362,7 +41362,7 @@ export const plannerPresetData = {
         {
           "id": "pp0gxuspr",
           "type": "rect",
-          "x": 10.848124347874741,
+          "x": 11,
           "y": 398.4895395346013,
           "w": 15,
           "h": 15,
@@ -41374,7 +41374,7 @@ export const plannerPresetData = {
         {
           "id": "ba5tqjgu8",
           "type": "rect",
-          "x": 261.3759224674509,
+          "x": 261,
           "y": 398.4984618682124,
           "w": 15,
           "h": 15,
@@ -41386,7 +41386,7 @@ export const plannerPresetData = {
         {
           "id": "qo6zz8pa2",
           "type": "rect",
-          "x": 10.961370646368888,
+          "x": 11,
           "y": 438.4806172009902,
           "w": 15,
           "h": 15,
@@ -41398,7 +41398,7 @@ export const plannerPresetData = {
         {
           "id": "qkjz4z104",
           "type": "rect",
-          "x": 261.489168765945,
+          "x": 261,
           "y": 438.4895395346013,
           "w": 15,
           "h": 15,
@@ -41410,7 +41410,7 @@ export const plannerPresetData = {
         {
           "id": "akrhdkk6p",
           "type": "rect",
-          "x": 10.900286330316263,
+          "x": 11,
           "y": 418.4806172009902,
           "w": 15,
           "h": 15,
@@ -41422,7 +41422,7 @@ export const plannerPresetData = {
         {
           "id": "4f00xmtko",
           "type": "rect",
-          "x": 261.42808444989237,
+          "x": 261,
           "y": 418.4895395346013,
           "w": 15,
           "h": 15,
@@ -41434,7 +41434,7 @@ export const plannerPresetData = {
         {
           "id": "t7w4y3lq2",
           "type": "rect",
-          "x": 11.322043356653982,
+          "x": 11,
           "y": 458.462772533768,
           "w": 15,
           "h": 15,
@@ -41446,7 +41446,7 @@ export const plannerPresetData = {
         {
           "id": "l9dtz3m09",
           "type": "rect",
-          "x": 260.8498414762301,
+          "x": 261,
           "y": 458.4716948673791,
           "w": 15,
           "h": 15,
@@ -41458,7 +41458,7 @@ export const plannerPresetData = {
         {
           "id": "w58ri3o3n",
           "type": "rect",
-          "x": 11.383127672706607,
+          "x": 11,
           "y": 478.462772533768,
           "w": 15,
           "h": 15,
@@ -41470,7 +41470,7 @@ export const plannerPresetData = {
         {
           "id": "bc61859kw",
           "type": "rect",
-          "x": 260.91092579228274,
+          "x": 261,
           "y": 478.4716948673791,
           "w": 15,
           "h": 15,
@@ -41482,7 +41482,7 @@ export const plannerPresetData = {
         {
           "id": "5pquvak6d",
           "type": "rect",
-          "x": 11.496373971200754,
+          "x": 11,
           "y": 518.4538502001569,
           "w": 15,
           "h": 15,
@@ -41494,7 +41494,7 @@ export const plannerPresetData = {
         {
           "id": "uwi2tiv7p",
           "type": "rect",
-          "x": 261.02417209077686,
+          "x": 261,
           "y": 518.462772533768,
           "w": 15,
           "h": 15,
@@ -41506,7 +41506,7 @@ export const plannerPresetData = {
         {
           "id": "ksga3piis",
           "type": "rect",
-          "x": 11.435289655148129,
+          "x": 11,
           "y": 498.45385020015686,
           "w": 15,
           "h": 15,
@@ -41518,7 +41518,7 @@ export const plannerPresetData = {
         {
           "id": "iaukh2lkh",
           "type": "rect",
-          "x": 260.9630877747242,
+          "x": 261,
           "y": 498.462772533768,
           "w": 15,
           "h": 15,
@@ -41530,7 +41530,7 @@ export const plannerPresetData = {
         {
           "id": "kybhdoxgm",
           "type": "rect",
-          "x": 11.322043356653978,
+          "x": 11,
           "y": 538.4270831993235,
           "w": 15,
           "h": 15,
@@ -41542,7 +41542,7 @@ export const plannerPresetData = {
         {
           "id": "5q45i8idu",
           "type": "rect",
-          "x": 260.8498414762301,
+          "x": 261,
           "y": 538.4360055329347,
           "w": 15,
           "h": 15,
@@ -41554,7 +41554,7 @@ export const plannerPresetData = {
         {
           "id": "aspgtpkra",
           "type": "rect",
-          "x": 11.383127672706603,
+          "x": 11,
           "y": 558.4270831993235,
           "w": 15,
           "h": 15,
@@ -41566,7 +41566,7 @@ export const plannerPresetData = {
         {
           "id": "zxu21ohr1",
           "type": "rect",
-          "x": 260.91092579228274,
+          "x": 261,
           "y": 558.4360055329346,
           "w": 15,
           "h": 15,
@@ -41578,7 +41578,7 @@ export const plannerPresetData = {
         {
           "id": "huc5ad1qk",
           "type": "rect",
-          "x": 11.49637397120075,
+          "x": 11,
           "y": 598.4181608657125,
           "w": 15,
           "h": 15,
@@ -41590,7 +41590,7 @@ export const plannerPresetData = {
         {
           "id": "g9f498415",
           "type": "rect",
-          "x": 261.02417209077686,
+          "x": 261,
           "y": 598.4270831993235,
           "w": 15,
           "h": 15,
@@ -41602,7 +41602,7 @@ export const plannerPresetData = {
         {
           "id": "7lzdwhbj4",
           "type": "rect",
-          "x": 11.435289655148125,
+          "x": 11,
           "y": 578.4181608657125,
           "w": 15,
           "h": 15,
@@ -41614,7 +41614,7 @@ export const plannerPresetData = {
         {
           "id": "o1k1zw1ks",
           "type": "rect",
-          "x": 260.9630877747242,
+          "x": 261,
           "y": 578.4270831993235,
           "w": 15,
           "h": 15,
@@ -41626,7 +41626,7 @@ export const plannerPresetData = {
         {
           "id": "0d7ytlpln",
           "type": "rect",
-          "x": 10.857046681485844,
+          "x": 11,
           "y": 618.4003161984901,
           "w": 15,
           "h": 15,
@@ -41638,7 +41638,7 @@ export const plannerPresetData = {
         {
           "id": "e8xd8kde3",
           "type": "rect",
-          "x": 261.38484480106194,
+          "x": 261,
           "y": 618.4092385321014,
           "w": 15,
           "h": 15,
@@ -41650,7 +41650,7 @@ export const plannerPresetData = {
         {
           "id": "ypqd9bq3u",
           "type": "rect",
-          "x": 10.91813099753847,
+          "x": 11,
           "y": 638.4003161984901,
           "w": 15,
           "h": 15,
@@ -41662,7 +41662,7 @@ export const plannerPresetData = {
         {
           "id": "x0a5lv8h6",
           "type": "rect",
-          "x": 261.4459291171146,
+          "x": 261,
           "y": 638.4092385321014,
           "w": 15,
           "h": 15,

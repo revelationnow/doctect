@@ -16,7 +16,7 @@ import { AppState } from '../types';
 /**
  * Current schema version. Increment this when making breaking changes.
  */
-export const CURRENT_SCHEMA_VERSION = 4;
+export const CURRENT_SCHEMA_VERSION = 5;
 
 /**
  * Migration v0 → v1
@@ -117,6 +117,11 @@ export function migrateState(state: any): AppState {
         version = 4;
     }
 
+    if (version < 5) {
+        migratedState = migrateV4ToV5(migratedState);
+        version = 5;
+    }
+
     console.log(`[Migration] Migration complete. Now at v${CURRENT_SCHEMA_VERSION}`);
 
     return migratedState as AppState;
@@ -161,6 +166,23 @@ function migrateV3ToV4(state: any): any {
     delete migrated.templates;  // Remove old field
 
     migrated.schemaVersion = 4;
+    return migrated;
+}
+
+/**
+ * Migration v4 → v5
+ * 
+ * Changes:
+ * - Adds `selectedNodeIds` and `selectedTemplateIds` (Arrays) alongside singular selection
+ */
+function migrateV4ToV5(state: any): any {
+    console.log('[Migration] Applying v4 → v5: Adding multi-select array fields');
+    const migrated = JSON.parse(JSON.stringify(state));
+
+    migrated.selectedNodeIds = migrated.selectedNodeId ? [migrated.selectedNodeId] : [];
+    migrated.selectedTemplateIds = migrated.selectedTemplateId ? [migrated.selectedTemplateId] : [];
+    
+    migrated.schemaVersion = 5;
     return migrated;
 }
 

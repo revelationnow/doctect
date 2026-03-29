@@ -1,21 +1,22 @@
 
 import React, { useState } from 'react';
 import { AppState, AppNode } from '../../types';
-import { ChevronRight, ChevronDown, Plus, Trash2, Edit2, Link } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Trash2, Edit2, Link, Copy } from 'lucide-react';
 import clsx from 'clsx';
 
 interface NodeItemProps {
   nodeId: string;
   state: AppState;
   depth: number;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, ctrlKey: boolean, shiftKey: boolean) => void;
   onAdd: (parentId: string) => void;
   onAddRef: (parentId: string) => void;
   onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
   onUpdate: (id: string, updates: Partial<AppNode>) => void;
 }
 
-export const NodeItem: React.FC<NodeItemProps> = ({ nodeId, state, depth, onSelect, onAdd, onAddRef, onDelete, onUpdate }) => {
+export const NodeItem: React.FC<NodeItemProps> = ({ nodeId, state, depth, onSelect, onAdd, onAddRef, onDelete, onDuplicate, onUpdate }) => {
   const node = state.nodes[nodeId];
   const [expanded, setExpanded] = useState(depth < 1);
   const [isEditing, setIsEditing] = useState(false);
@@ -23,7 +24,8 @@ export const NodeItem: React.FC<NodeItemProps> = ({ nodeId, state, depth, onSele
 
   if (!node) return null;
 
-  const isSelected = state.viewMode === 'hierarchy' && state.selectedNodeId === nodeId;
+  // selectedNodeIds might be undefined in older state versions loaded before migration completes
+  const isSelected = state.viewMode === 'hierarchy' && (state.selectedNodeIds?.includes(nodeId) || state.selectedNodeId === nodeId);
   const hasChildren = node.children.length > 0;
   const isReference = !!node.referenceId;
 
@@ -35,13 +37,14 @@ export const NodeItem: React.FC<NodeItemProps> = ({ nodeId, state, depth, onSele
   return (
     <div>
       <div 
+        data-node-id={nodeId}
         className={clsx(
           "flex items-center group py-1 px-2 cursor-pointer select-none text-sm hover:bg-slate-100",
           isSelected && "bg-blue-50 text-blue-700 font-medium",
           isReference && "italic text-slate-600"
         )}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
-        onClick={() => onSelect(nodeId)}
+        onClick={(e) => onSelect(nodeId, e.ctrlKey || e.metaKey, e.shiftKey)}
       >
         <div 
           className="mr-1 p-0.5 rounded hover:bg-slate-200 text-slate-400"
@@ -86,14 +89,24 @@ export const NodeItem: React.FC<NodeItemProps> = ({ nodeId, state, depth, onSele
               </>
             )}
             {node.parentId && (
-              <button type="button" className="p-1 hover:bg-red-100 hover:text-red-600 rounded text-slate-500" title="Delete"
-                onClick={(e) => { 
-                    e.preventDefault(); 
-                    e.stopPropagation(); 
-                    onDelete(nodeId); 
-                }}>
-                <Trash2 size={12} className="pointer-events-none" />
-              </button>
+              <>
+                <button type="button" className="p-1 hover:bg-slate-200 hover:text-slate-700 rounded text-slate-500" title="Duplicate"
+                  onClick={(e) => { 
+                      e.preventDefault(); 
+                      e.stopPropagation(); 
+                      onDuplicate(nodeId); 
+                  }}>
+                  <Copy size={12} className="pointer-events-none" />
+                </button>
+                <button type="button" className="p-1 hover:bg-red-100 hover:text-red-600 rounded text-slate-500" title="Delete"
+                  onClick={(e) => { 
+                      e.preventDefault(); 
+                      e.stopPropagation(); 
+                      onDelete(nodeId); 
+                  }}>
+                  <Trash2 size={12} className="pointer-events-none" />
+                </button>
+              </>
             )}
         </div>
       </div>
@@ -108,6 +121,7 @@ export const NodeItem: React.FC<NodeItemProps> = ({ nodeId, state, depth, onSele
           onAdd={onAdd}
           onAddRef={onAddRef}
           onDelete={onDelete}
+          onDuplicate={onDuplicate}
           onUpdate={onUpdate}
         />
       ))}

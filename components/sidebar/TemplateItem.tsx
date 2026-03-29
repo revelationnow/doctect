@@ -1,18 +1,19 @@
 
 import React, { useState } from 'react';
 import { PageTemplate } from '../../types';
-import { LayoutTemplate, Edit2, Trash2 } from 'lucide-react';
+import { LayoutTemplate, Edit2, Trash2, Copy } from 'lucide-react';
 import clsx from 'clsx';
 
 interface TemplateItemProps {
     template: PageTemplate;
     isSelected: boolean;
-    onSelect: () => void;
+    onSelect: (ctrlKey: boolean, shiftKey: boolean) => void;
     onDelete: () => void;
+    onDuplicate: () => void;
     onUpdateName: (name: string) => void;
 }
 
-export const TemplateItem: React.FC<TemplateItemProps> = ({ template, isSelected, onSelect, onDelete, onUpdateName }) => {
+export const TemplateItem: React.FC<TemplateItemProps> = ({ template, isSelected, onSelect, onDelete, onDuplicate, onUpdateName }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState(template.name);
 
@@ -24,9 +25,10 @@ export const TemplateItem: React.FC<TemplateItemProps> = ({ template, isSelected
 
     return (
         <div 
-            onClick={onSelect}
+            data-template-id={template.id}
+            onClick={(e) => onSelect(e.ctrlKey || e.metaKey, e.shiftKey)}
             className={clsx(
-                "flex items-center justify-between p-2 cursor-pointer text-sm hover:bg-slate-100 group",
+                "flex items-center justify-between p-2 cursor-pointer select-none text-sm hover:bg-slate-100 group",
                 isSelected && "bg-blue-50 text-blue-700 font-medium"
             )}
         >
@@ -57,7 +59,13 @@ export const TemplateItem: React.FC<TemplateItemProps> = ({ template, isSelected
                     <Edit2 size={12} className="pointer-events-none" />
                 </button>
                 <button type="button"
-                    className="p-1 hover:bg-red-100 text-red-500 rounded" 
+                    className="p-1 hover:bg-slate-200 hover:text-slate-700 rounded text-slate-500" title="Duplicate"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDuplicate(); }}
+                >
+                    <Copy size={12} className="pointer-events-none" />
+                </button>
+                <button type="button"
+                    className="p-1 hover:bg-red-100 hover:text-red-600 rounded text-slate-500" title="Delete"
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(); }}
                 >
                     <Trash2 size={12} className="pointer-events-none" />

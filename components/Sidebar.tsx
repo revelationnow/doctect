@@ -8,14 +8,16 @@ import { TemplateItem } from './sidebar/TemplateItem';
 
 interface SidebarProps {
     state: AppState;
-    onSelectNode: (id: string) => void;
+    onSelectNode: (id: string, ctrlKey: boolean, shiftKey: boolean) => void;
     onAddNode: (parentId: string | null) => void;
     onAddReference: (parentId: string) => void;
     onDeleteNode: (id: string) => void;
+    onDuplicateNode: (id: string) => void;
     onUpdateNode: (id: string, updates: Partial<AppNode>) => void;
-    onSelectTemplate: (id: string) => void;
+    onSelectTemplate: (id: string, ctrlKey: boolean, shiftKey: boolean) => void;
     onAddTemplate: () => void;
     onDeleteTemplate: (id: string) => void;
+    onDuplicateTemplate: (id: string) => void;
     onUpdateTemplateName: (id: string, name: string) => void;
     onChangeViewMode: (mode: 'hierarchy' | 'templates') => void;
     onSelectVariant?: (id: string) => void;
@@ -158,6 +160,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                         onAdd={props.onAddNode}
                         onAddRef={props.onAddReference}
                         onDelete={props.onDeleteNode}
+                        onDuplicate={props.onDuplicateNode}
                         onUpdate={props.onUpdateNode}
                     />
                 ) : (
@@ -172,9 +175,10 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                             <TemplateItem
                                 key={tpl.id}
                                 template={tpl}
-                                isSelected={props.state.selectedTemplateId === tpl.id}
-                                onSelect={() => props.onSelectTemplate(tpl.id)}
+                                isSelected={(props.state.selectedTemplateIds || [props.state.selectedTemplateId]).includes(tpl.id)}
+                                onSelect={(ctrlKey, shiftKey) => props.onSelectTemplate(tpl.id, ctrlKey, shiftKey)}
                                 onDelete={() => props.onDeleteTemplate(tpl.id)}
+                                onDuplicate={() => props.onDuplicateTemplate(tpl.id)}
                                 onUpdateName={(n) => props.onUpdateTemplateName(tpl.id, n)}
                             />
                         ))}

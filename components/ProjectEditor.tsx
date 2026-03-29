@@ -34,7 +34,7 @@ interface ProjectEditorProps {
 export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initialState, isActive, onNameChange, onStateChange }) => {
     const [state, setState] = useState<AppState>(initialState);
 
-    const [deleteConfirmState, setDeleteConfirmState] = useState<{ isOpen: boolean, nodeId: string | null }>({ isOpen: false, nodeId: null });
+    const [deleteConfirmState, setDeleteConfirmState] = useState<{ isOpen: boolean, nodeIds: string[] }>({ isOpen: false, nodeIds: [] });
     const [showScriptGenModal, setShowScriptGenModal] = useState(false);
     const [showSavePresetModal, setShowSavePresetModal] = useState(false);
     const [showNewVariantModal, setShowNewVariantModal] = useState(false);
@@ -166,6 +166,10 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
                 if (state.selectedElementIds.length > 0) {
                     saveToHistory();
                     handleDeleteElements(state.selectedElementIds);
+                } else if (state.viewMode === 'hierarchy' && state.selectedNodeIds?.length > 0) {
+                    requestDeleteNodes(state.selectedNodeIds);
+                } else if (state.viewMode === 'templates' && state.selectedTemplateIds?.length > 0) {
+                    handleDeleteTemplates(state.selectedTemplateIds);
                 }
             }
 
@@ -212,6 +216,10 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
                 if (state.selectedElementIds.length > 0) {
                     saveToHistory();
                     handleDuplicate();
+                } else if (state.viewMode === 'hierarchy' && state.selectedNodeIds?.length > 0) {
+                    handleDuplicateNodes(state.selectedNodeIds);
+                } else if (state.viewMode === 'templates' && state.selectedTemplateIds?.length > 0) {
+                    handleDuplicateTemplates(state.selectedTemplateIds);
                 }
             }
 
@@ -267,6 +275,170 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
         if (state.viewMode === 'hierarchy') targetTemplateId = state.nodes[state.selectedNodeId]?.type;
         if (!targetTemplateId) return null;
         return getActiveTemplates()[targetTemplateId];
+    };
+
+    const handleDuplicateNodes = (ids: string[]) => {
+        saveToHistory();
+        setState(prev => {
+            const nextNodes = { ...prev.nodes };
+            const newSelectedIds: string[] = [];
+
+            // Helper to deep copy node + children
+            const duplicateSubtree = (nodeId: string, parentId: string | null): string => {
+                const node = nextNodes[nodeId];
+                if (!node) return nodeId;
+                
+                const newId = `node_${Math.random().toString(36).substr(2, 6)}`;
+                const newNode: AppNode = { 
+                    ...JSON.parse(JSON.stringify(node)), 
+                    id: newId, 
+                    parentId, 
+                    title: `${node.title} (Copy)`, 
+                    children: [] 
+                };
+                
+                if (parentId) {
+                    const parent = nextNodes[parentId];
+                    if (parent) {
+                        const insertIdx = parent.children.indexOf(nodeId);
+                        if (insertIdx !== -1) {
+                            parent.children.splice(insertIdx + 1, 0, newId);
+                        } else {
+                            parent.children.push(newId);
+                        }
+                    }
+                }
+                
+                nextNodes[newId] = newNode;
+                
+                node.children.forEach(childId => {
+                    const newChildId = duplicateSubtree(childId, newId);
+                    if (newChildId !== childId) {
+                        newNode.children.push(newChildId);
+                    }
+                });
+                return newId;
+            };
+
+            const rootDuplicated = ids.includes(prev.rootId);
+            if (rootDuplicated) {
+                alert("Cannot duplicate the root node.");
+                return prev;
+            }
+
+            ids.forEach(id => {
+                const node = prev.nodes[id];
+                if (node && node.parentId) {
+                    const newId = duplicateSubtree(id, node.parentId);
+                    newSelectedIds.push(newId);
+                }
+            });
+
+            return { 
+                ...prev, 
+                nodes: nextNodes, 
+                selectedNodeIds: newSelectedIds, 
+                selectedNodeId: newSelectedIds[0] || prev.selectedNodeId 
+            };
+        });
+    };
+
+    const handleDuplicateTemplates = (ids: string[]) => {
+        saveToHistory();
+        setState(prev => {
+            const activeVariant = prev.variants[prev.activeVariantId];
+            const nextTemplates = { ...activeVariant.templates };
+            const newSelectedIds: string[] = [];
+
+            ids.forEach(id => {
+                const tpl = nextTemplates[id];
+                if (tpl) {
+                    const newId = `tpl_${Math.random().toString(36).substr(2, 6)}`;
+                    nextTemplates[newId] = {
+                        ...JSON.parse(JSON.stringify(tpl)),
+                        id: newId,
+                        name: `${tpl.name} (Copy)`
+                    };
+                    newSelectedIds.push(newId);
+                }
+            });
+
+            return { 
+                ...prev, 
+                variants: { ...prev.variants, [prev.activeVariantId]: { ...activeVariant, templates: nextTemplates } },
+                selectedTemplateIds: newSelectedIds,
+                selectedTemplateId: newSelectedIds[0] || prev.selectedTemplateId
+            };
+        });
+    };
+
+    const handleSelectNode = (id: string, ctrlKey: boolean, shiftKey: boolean) => {
+        setState(s => {
+            let newIds = s.selectedNodeIds || [];
+            if (shiftKey && newIds.length > 0) {
+                const nodes = Array.from(document.querySelectorAll('[data-node-id]')).map(el => el.getAttribute('data-node-id') as string);
+                const lastId = newIds[newIds.length - 1];
+                const startIdx = nodes.indexOf(lastId);
+                const endIdx = nodes.indexOf(id);
+                if (startIdx !== -1 && endIdx !== -1) {
+                    const min = Math.min(startIdx, endIdx);
+                    const max = Math.max(startIdx, endIdx);
+                    // range includes exactly what's visible
+                    const range = nodes.slice(min, max + 1);
+                    newIds = Array.from(new Set([...newIds, ...range]));
+                }
+            } else if (ctrlKey) {
+                if (newIds.includes(id)) {
+                    newIds = newIds.filter(i => i !== id);
+                } else {
+                    newIds = [...newIds, id];
+                }
+            } else {
+                newIds = [id];
+            }
+            
+            const activeId = newIds.length > 0 ? (ctrlKey && !newIds.includes(id) ? newIds[newIds.length - 1] : id) : s.rootId;
+            return { 
+                ...s, 
+                selectedNodeId: activeId, 
+                selectedNodeIds: newIds, 
+                selectedElementIds: [] 
+            };
+        });
+    };
+
+    const handleSelectTemplate = (id: string, ctrlKey: boolean, shiftKey: boolean) => {
+        setState(s => {
+            let newIds = s.selectedTemplateIds || [];
+            if (shiftKey && newIds.length > 0) {
+                const templates = Array.from(document.querySelectorAll('[data-template-id]')).map(el => el.getAttribute('data-template-id') as string);
+                const lastId = newIds[newIds.length - 1];
+                const startIdx = templates.indexOf(lastId);
+                const endIdx = templates.indexOf(id);
+                if (startIdx !== -1 && endIdx !== -1) {
+                    const min = Math.min(startIdx, endIdx);
+                    const max = Math.max(startIdx, endIdx);
+                    const range = templates.slice(min, max + 1);
+                    newIds = Array.from(new Set([...newIds, ...range]));
+                }
+            } else if (ctrlKey) {
+                if (newIds.includes(id)) {
+                    newIds = newIds.filter(i => i !== id);
+                } else {
+                    newIds = [...newIds, id];
+                }
+            } else {
+                newIds = [id];
+            }
+            
+            const activeId = newIds.length > 0 ? (ctrlKey && !newIds.includes(id) ? newIds[newIds.length - 1] : id) : s.selectedTemplateId;
+            return { 
+                ...s, 
+                selectedTemplateId: activeId, 
+                selectedTemplateIds: newIds, 
+                selectedElementIds: [] 
+            };
+        });
     };
 
     const handleDuplicate = () => {
@@ -351,23 +523,23 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
         setState(prev => ({ ...prev, showNodeSelector: true, nodeSelectorMode: 'create_reference', selectedNodeId: parentId }));
     };
 
-    const requestDeleteNode = (id: string) => {
-        if (id === state.rootId) {
+    const requestDeleteNodes = (ids: string[]) => {
+        if (ids.includes(state.rootId)) {
             alert("Cannot delete root node.");
             return;
         }
-        setDeleteConfirmState({ isOpen: true, nodeId: id });
+        setDeleteConfirmState({ isOpen: true, nodeIds: ids });
     };
 
     const executeDeleteNode = () => {
-        const id = deleteConfirmState.nodeId;
-        if (!id) return;
+        const ids = deleteConfirmState.nodeIds;
+        if (!ids || ids.length === 0) return;
         saveToHistory();
 
         setState(prev => {
             const nextNodes = { ...prev.nodes };
             const idsToDelete = new Set<string>();
-            const queue = [id];
+            const queue = [...ids];
 
             while (queue.length > 0) {
                 const currentId = queue.shift()!;
@@ -381,6 +553,7 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
                 });
             }
 
+            // Remove deleted children from their parents
             idsToDelete.forEach(deletedId => {
                 const node = nextNodes[deletedId];
                 if (node && node.parentId) {
@@ -433,10 +606,17 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
             let newSelectedId = prev.selectedNodeId;
             if (idsToDelete.has(newSelectedId) || !nextNodes[newSelectedId]) newSelectedId = prev.rootId;
 
-            return { ...prev, nodes: nextNodes, variants: nextVariants, selectedNodeId: newSelectedId, selectedElementIds: [] };
+            return { 
+                ...prev, 
+                nodes: nextNodes, 
+                variants: nextVariants, 
+                selectedNodeId: newSelectedId, 
+                selectedNodeIds: [newSelectedId],
+                selectedElementIds: [] 
+            };
         });
 
-        setDeleteConfirmState({ isOpen: false, nodeId: null });
+        setDeleteConfirmState({ isOpen: false, nodeIds: [] });
     };
 
     const handleCreateReference = (targetId: string) => {
@@ -631,15 +811,27 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
             selectedTemplateId: Object.keys(newVariant.templates)[0] || prev.selectedTemplateId
         }));
     };
-    const handleDeleteTemplate = (id: string) => {
+    const handleDeleteTemplates = (ids: string[]) => {
         const activeTemplates = getActiveTemplates();
-        if (Object.keys(activeTemplates).length <= 1) return alert("Cannot delete the last template.");
+        const templatesCount = Object.keys(activeTemplates).length;
+        if (templatesCount - ids.length <= 0) return alert("Cannot delete all templates. Leave at least one.");
+        
         saveToHistory();
         setState(prev => {
             const activeVariant = prev.variants[prev.activeVariantId];
-            const nextTemplates = { ...activeVariant.templates }; delete nextTemplates[id];
+            const nextTemplates = { ...activeVariant.templates }; 
+            ids.forEach(id => delete nextTemplates[id]);
             const updatedVariant = { ...activeVariant, templates: nextTemplates };
-            return { ...prev, variants: { ...prev.variants, [prev.activeVariantId]: updatedVariant }, selectedTemplateId: Object.keys(nextTemplates)[0] };
+            
+            const firstRemaining = Object.keys(nextTemplates)[0];
+            const newSelectedId = nextTemplates[prev.selectedTemplateId] ? prev.selectedTemplateId : firstRemaining;
+
+            return { 
+                ...prev, 
+                variants: { ...prev.variants, [prev.activeVariantId]: updatedVariant }, 
+                selectedTemplateId: newSelectedId,
+                selectedTemplateIds: [newSelectedId]
+            };
         });
     };
     const handleUpdateTemplateName = (id: string, name: string) => {
@@ -952,15 +1144,17 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
                 <div style={{ width: state.sidebarWidth }} className="flex-shrink-0 relative flex flex-col">
                     <Sidebar
                         state={state}
-                        onSelectNode={(id) => setState(s => ({ ...s, selectedNodeId: id, selectedElementIds: [] }))}
+                        onSelectNode={handleSelectNode}
                         onAddNode={handleAddNode}
                         onAddReference={handleAddReference}
-                        onDeleteNode={requestDeleteNode}
+                        onDeleteNode={(id) => requestDeleteNodes(state.selectedNodeIds.includes(id) ? state.selectedNodeIds : [id])}
+                        onDuplicateNode={(id) => handleDuplicateNodes(state.selectedNodeIds.includes(id) ? state.selectedNodeIds : [id])}
                         onUpdateNode={handleUpdateNode}
                         onChangeViewMode={(mode) => setState(s => ({ ...s, viewMode: mode, selectedElementIds: [] }))}
-                        onSelectTemplate={(id) => setState(s => ({ ...s, selectedTemplateId: id, selectedElementIds: [] }))}
+                        onSelectTemplate={handleSelectTemplate}
                         onAddTemplate={handleAddTemplate}
-                        onDeleteTemplate={handleDeleteTemplate}
+                        onDeleteTemplate={(id) => handleDeleteTemplates(state.selectedTemplateIds.includes(id) ? state.selectedTemplateIds : [id])}
+                        onDuplicateTemplate={(id) => handleDuplicateTemplates(state.selectedTemplateIds.includes(id) ? state.selectedTemplateIds : [id])}
                         onUpdateTemplateName={handleUpdateTemplateName}
                         onSelectVariant={handleSelectVariant}
                         onAddVariant={handleAddVariant}
@@ -1079,11 +1273,11 @@ export const ProjectEditor: React.FC<ProjectEditorProps> = ({ projectId, initial
                 }}
             />
 
-            <DeleteConfirmModal
+            <DeleteConfirmModal 
                 isOpen={deleteConfirmState.isOpen}
-                onClose={() => setDeleteConfirmState({ isOpen: false, nodeId: null })}
+                onClose={() => setDeleteConfirmState({ isOpen: false, nodeIds: [] })}
                 onConfirm={executeDeleteNode}
-                nodeTitle={deleteConfirmState.nodeId ? (state.nodes[deleteConfirmState.nodeId]?.title || 'Node') : ''}
+                nodeTitle={deleteConfirmState.nodeIds.length > 1 ? `${deleteConfirmState.nodeIds.length} Nodes` : (state.nodes[deleteConfirmState.nodeIds[0] || '']?.title || 'Node')}
             />
         </div>
     );
