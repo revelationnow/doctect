@@ -16,7 +16,7 @@ import { AppState } from '../types';
 /**
  * Current schema version. Increment this when making breaking changes.
  */
-export const CURRENT_SCHEMA_VERSION = 5;
+export const CURRENT_SCHEMA_VERSION = 7;
 
 /**
  * Migration v0 → v1
@@ -122,6 +122,16 @@ export function migrateState(state: any): AppState {
         version = 5;
     }
 
+    if (version < 6) {
+        migratedState = migrateV5ToV6(migratedState);
+        version = 6;
+    }
+
+    if (version < 7) {
+        migratedState = migrateV6ToV7(migratedState);
+        version = 7;
+    }
+
     console.log(`[Migration] Migration complete. Now at v${CURRENT_SCHEMA_VERSION}`);
 
     return migratedState as AppState;
@@ -183,6 +193,81 @@ function migrateV4ToV5(state: any): any {
     migrated.selectedTemplateIds = migrated.selectedTemplateId ? [migrated.selectedTemplateId] : [];
     
     migrated.schemaVersion = 5;
+    return migrated;
+}
+
+/**
+ * Migration v5 → v6
+ * 
+ * Changes:
+ * - Adds `borderSides` support on TemplateElement (optional, defaults to all sides)
+ * - Adds grid formatting options: gridBorderMode, header/first-column styling,
+ *   alternating row/column colors on GridConfig (all optional)
+ */
+function migrateV5ToV6(state: any): any {
+    console.log('[Migration] Applying v5 → v6: Adding border sides and grid formatting support');
+    const migrated = JSON.parse(JSON.stringify(state));
+    // All new fields are optional with sensible defaults, no data transformation needed
+    migrated.schemaVersion = 6;
+    return migrated;
+}
+
+/**
+ * Migration v6 → v7
+ * 
+ * Changes:
+ * - Grid elements: inherits outer border (stroke/strokeWidth/borderStyle) into
+ *   gridBorderColor/gridBorderWidth/gridBorderStyle if not already set, so old
+ *   grids that relied on element stroke for cell borders keep their appearance.
+ * - Rect/text elements: creates borderSides from element stroke settings if not
+ *   already set, so per-side border UI shows correct defaults.
+ */
+function migrateV6ToV7(state: any): any {
+    console.log('[Migration] Applying v6 → v7: Inheriting border settings into grid cells and per-side borders');
+    const migrated = JSON.parse(JSON.stringify(state));
+
+    const migrateElements = (elements: any[]) => {
+        if (!elements || !Array.isArray(elements)) return;
+        elements.forEach((el: any) => {
+            const stroke = el.stroke;
+            const strokeWidth = Number(el.strokeWidth) || 0;
+            const borderStyle = el.borderStyle || 'solid';
+
+            // Grid elements: inherit outer border into grid cell border config
+            if (el.type === 'grid' && el.gridConfig && strokeWidth > 0 && stroke) {
+                const gc = el.gridConfig;
+                if (gc.gridBorderColor === undefined) gc.gridBorderColor = stroke;
+                if (gc.gridBorderWidth === undefined) gc.gridBorderWidth = strokeWidth;
+                if (gc.gridBorderStyle === undefined) gc.gridBorderStyle = borderStyle;
+            }
+
+            // Rect/text elements: create borderSides from element stroke if not set
+            if ((el.type === 'rect' || el.type === 'text') && !el.borderSides && strokeWidth > 0 && stroke) {
+                const side = { width: strokeWidth, color: stroke, style: borderStyle };
+                el.borderSides = { top: { ...side }, right: { ...side }, bottom: { ...side }, left: { ...side } };
+            }
+        });
+    };
+
+    // Migrate across all variants
+    if (migrated.variants) {
+        Object.keys(migrated.variants).forEach(variantId => {
+            const variant = migrated.variants[variantId];
+            if (variant.templates) {
+                Object.keys(variant.templates).forEach(templateId => {
+                    migrateElements(variant.templates[templateId]?.elements);
+                });
+            }
+        });
+    }
+    // Also handle legacy flat templates structure
+    if (migrated.templates) {
+        Object.keys(migrated.templates).forEach(templateId => {
+            migrateElements(migrated.templates[templateId]?.elements);
+        });
+    }
+
+    migrated.schemaVersion = 7;
     return migrated;
 }
 

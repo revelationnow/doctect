@@ -33,6 +33,32 @@ export interface GridConfig {
   dataSliceStart?: number; // Index of the first child to include (0-based) (Applied AFTER traversal)
   dataSliceCount?: number; // Number of children to include (Applied AFTER traversal)
   traversalPath?: TraversalStep[]; // Steps to drill down into descendants
+
+  // Border mode and styling for grid cells
+  gridBorderMode?: 'all' | 'outside' | 'inside' | 'none'; // Default: 'all'
+  gridBorderColor?: string;   // Override cell border color (defaults to element stroke)
+  gridBorderWidth?: number;   // Override cell border width (defaults to element strokeWidth)
+  gridBorderStyle?: 'solid' | 'dashed' | 'dotted' | 'none' | 'double'; // Override cell border style
+  gridBorderRadius?: number; // Override cell border radius (defaults to 0)
+  showEmptyCellBorders?: boolean; // Show borders on empty/offset cells (default: false)
+
+  // Header row styling
+  headerRow?: boolean;
+  headerRowFill?: string;
+  headerRowTextColor?: string;
+  headerRowFontWeight?: 'normal' | 'bold';
+
+  // First column styling
+  firstColumn?: boolean;
+  firstColumnFill?: string;
+  firstColumnTextColor?: string;
+  firstColumnFontWeight?: 'normal' | 'bold';
+
+  // Alternating row/column colors
+  alternateRows?: boolean;
+  alternateRowFill?: string;
+  alternateColumns?: boolean;
+  alternateColumnFill?: string;
 }
 
 export interface TemplateElement {
@@ -58,6 +84,12 @@ export interface TemplateElement {
   opacity: number;
   borderRadius?: number;
   borderStyle?: 'solid' | 'dashed' | 'dotted' | 'none' | 'double'; // Grid/Shape border style
+  borderSides?: {  // Per-side border overrides. Undefined = use global stroke. null side = no border on that side.
+    top?: { width: number; color: string; style: 'solid' | 'dashed' | 'dotted' | 'none' | 'double' };
+    right?: { width: number; color: string; style: 'solid' | 'dashed' | 'dotted' | 'none' | 'double' };
+    bottom?: { width: number; color: string; style: 'solid' | 'dashed' | 'dotted' | 'none' | 'double' };
+    left?: { width: number; color: string; style: 'solid' | 'dashed' | 'dotted' | 'none' | 'double' };
+  };
 
   // Typography
   text?: string;

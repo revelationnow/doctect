@@ -322,23 +322,31 @@ export const CanvasElement: React.FC<CanvasElementProps> = (props) => {
     const getBackgroundStyle = (el: TemplateElement): React.CSSProperties => {
         if (el.type === 'line') return {};
         const hasFill = el.fill || (el.fillType === 'pattern');
-        // Only show border if both strokeWidth > 0 AND stroke color is set
         const hasBorder = el.strokeWidth > 0 && !!el.stroke && el.borderStyle !== 'none';
 
-        if (!hasFill && !hasBorder && el.type === 'text') return {};
+        if (!hasFill && !hasBorder && el.type === 'text' && !el.borderSides) return {};
 
         const bgStyle: React.CSSProperties = {
             backgroundColor: el.fillType === 'pattern' ? 'transparent' : (el.fill || 'transparent'),
-            border: hasBorder ? `${el.strokeWidth}px ${el.borderStyle || 'solid'} ${el.stroke}` : undefined
+            boxSizing: 'border-box',
         };
 
-        if (hasBorder && el.borderStyle === 'double') {
-            bgStyle.borderStyle = 'double';
-            bgStyle.borderWidth = Math.max(3, el.strokeWidth);
+        if (el.borderSides) {
+            // Per-side border configs
+            const makeBorder = (side: { width: number; color: string; style: string }) =>
+                `${side.width}px ${side.style === 'double' ? 'double' : side.style} ${side.color}`;
+            if (el.borderSides.top) bgStyle.borderTop = makeBorder(el.borderSides.top);
+            if (el.borderSides.right) bgStyle.borderRight = makeBorder(el.borderSides.right);
+            if (el.borderSides.bottom) bgStyle.borderBottom = makeBorder(el.borderSides.bottom);
+            if (el.borderSides.left) bgStyle.borderLeft = makeBorder(el.borderSides.left);
+        } else if (hasBorder) {
+            const borderValue = `${el.strokeWidth}px ${el.borderStyle || 'solid'} ${el.stroke}`;
+            const doubleBorderValue = `${Math.max(3, el.strokeWidth)}px double ${el.stroke}`;
+            const isDouble = el.borderStyle === 'double';
+            bgStyle.border = isDouble ? doubleBorderValue : borderValue;
         }
 
         if (el.fillType === 'pattern' && el.fill) {
-            // Only draw pattern if fill color is set (matches PDF behavior)
             const color = el.fill;
             const spacing = el.patternSpacing || 10;
             const weight = el.patternWeight || 1;
@@ -438,12 +446,111 @@ export const CanvasElement: React.FC<CanvasElementProps> = (props) => {
             templatePattern = `{{${templatePattern}}}`;
         }
 
-        const hasBorder = element.strokeWidth > 0 && !!element.stroke && element.borderStyle !== 'none';
-        const strokeOffset = hasBorder ? element.strokeWidth / 2 : 0;
-        const strokeExpand = hasBorder ? element.strokeWidth : 0;
+        // Outer border for the whole grid element (from Appearance section stroke)
+        const hasOuterBorder = element.strokeWidth > 0 && !!element.stroke && element.borderStyle !== 'none';
+        const outerBorderStyle: React.CSSProperties = hasOuterBorder ? {
+            border: `${element.strokeWidth}px ${element.borderStyle || 'solid'} ${element.stroke}`,
+            boxSizing: 'border-box',
+            borderRadius: element.borderRadius || 0,
+        } : {};
+
+        // Compute total rows for border mode logic
+        const totalItems = displayItems.length + offset;
+        const totalRows = Math.max(1, Math.ceil(totalItems / colCount));
+
+        const gridBorderMode = element.gridConfig.gridBorderMode || 'all';
+        const gc = element.gridConfig;
+
+        // Per-cell border config — uses ONLY grid-specific settings (independent from element stroke)
+        const cellBorderWidth = gc.gridBorderWidth ?? 0;
+        const cellBorderColor = gc.gridBorderColor || '';
+        const cellBorderStyle = gc.gridBorderStyle || 'solid';
+        const hasCellBorderDef = cellBorderWidth > 0 && !!cellBorderColor && cellBorderStyle !== 'none';
+        const defaultBorderSide = hasCellBorderDef ? { width: cellBorderWidth, color: cellBorderColor, style: cellBorderStyle as any } : null;
+
+        // Helper: compute border sides config for a cell based on gridBorderMode
+        type SideConfig = { width: number; color: string; style: 'solid' | 'dashed' | 'dotted' | 'none' | 'double' } | undefined;
+        const getCellBorderSides = (row: number, col: number): { top?: SideConfig; right?: SideConfig; bottom?: SideConfig; left?: SideConfig } | undefined => {
+            if (!defaultBorderSide) return undefined;
+
+            if (gridBorderMode === 'none') return {};
+            if (gridBorderMode === 'all') {
+                return { top: defaultBorderSide, right: defaultBorderSide, bottom: defaultBorderSide, left: defaultBorderSide };
+            }
+            const isTop = row === 0;
+            const isBottom = row === totalRows - 1;
+            const isLeft = col === 0;
+            const isRight = col === colCount - 1;
+
+            if (gridBorderMode === 'outside') {
+                return {
+                    top: isTop ? defaultBorderSide : undefined,
+                    right: isRight ? defaultBorderSide : undefined,
+                    bottom: isBottom ? defaultBorderSide : undefined,
+                    left: isLeft ? defaultBorderSide : undefined,
+                };
+            }
+            if (gridBorderMode === 'inside') {
+                return {
+                    top: !isTop ? defaultBorderSide : undefined,
+                    right: !isRight ? defaultBorderSide : undefined,
+                    bottom: !isBottom ? defaultBorderSide : undefined,
+                    left: !isLeft ? defaultBorderSide : undefined,
+                };
+            }
+            return { top: defaultBorderSide, right: defaultBorderSide, bottom: defaultBorderSide, left: defaultBorderSide };
+        };
+
+        // Helper to build a cell's border CSS style
+        const buildCellBorderStyle = (cellBorderSides: { top?: SideConfig; right?: SideConfig; bottom?: SideConfig; left?: SideConfig } | undefined): React.CSSProperties => {
+            if (!cellBorderSides) return {};
+            const make = (side: SideConfig) => side ? `${side.width}px ${side.style === 'double' ? 'double' : side.style} ${side.color}` : undefined;
+            const style: React.CSSProperties = {};
+            if (cellBorderSides.top) style.borderTop = make(cellBorderSides.top);
+            if (cellBorderSides.right) style.borderRight = make(cellBorderSides.right);
+            if (cellBorderSides.bottom) style.borderBottom = make(cellBorderSides.bottom);
+            if (cellBorderSides.left) style.borderLeft = make(cellBorderSides.left);
+            return style;
+        };
+
+        // Compute empty cell positions (offset cells at start + trailing cells to fill last row)
+        const emptyCells: { row: number; col: number; pos: number }[] = [];
+        if (gc.showEmptyCellBorders && gridBorderMode !== 'none') {
+            // Offset cells at the beginning
+            for (let i = 0; i < offset; i++) {
+                const row = Math.floor(i / colCount);
+                const col = ((i % colCount) + colCount) % colCount;
+                emptyCells.push({ row, col, pos: i });
+            }
+            // Trailing cells to fill the last row
+            const lastItemPos = displayItems.length + offset - 1;
+            const lastRow = Math.floor(lastItemPos / colCount);
+            const lastCol = ((lastItemPos % colCount) + colCount) % colCount;
+            for (let c = lastCol + 1; c < colCount; c++) {
+                emptyCells.push({ row: lastRow, col: c, pos: lastRow * colCount + c });
+            }
+        }
 
         return (
             <div key={element.id} data-element-id={element.id} className="absolute group outline outline-1 outline-dashed outline-slate-300" style={style}>
+
+                {/* Empty cells (offset + trailing) */}
+                {emptyCells.map(({ row, col, pos }) => {
+                    const cx = col * (element.w + safeGapX);
+                    const cy = row * (element.h + safeGapY);
+                    const cellBorderSidesEmpty = getCellBorderSides(row, col);
+                    return (
+                        <div key={`empty-${pos}`} style={{
+                            position: 'absolute', left: cx, top: cy,
+                            width: element.w, height: element.h,
+                            boxSizing: 'border-box',
+                            backgroundColor: 'transparent',
+                            ...buildCellBorderStyle(cellBorderSidesEmpty),
+                            borderRadius: gc.gridBorderRadius ?? 0,
+                        }} />
+                    );
+                })}
+
                 {displayItems.map((childId: any, idx: number) => {
                     const pos = idx + offset;
                     const row = Math.floor(pos / colCount);
@@ -458,25 +565,83 @@ export const CanvasElement: React.FC<CanvasElementProps> = (props) => {
                         label = resolveText(templatePattern, n, nodes);
                     }
 
+                    // Compute cell-specific fill and text overrides
+                    let cellFill = element.fill;
+                    let cellTextColor = element.textColor || '#000';
+                    let cellFontWeight = element.fontWeight;
+
+                    // Alternating row/column colors FIRST (lowest priority)
+                    const dataRow = gc.headerRow ? row - 1 : row;
+                    if (gc.alternateRows && gc.alternateRowFill && dataRow >= 0 && dataRow % 2 === 1) {
+                        cellFill = gc.alternateRowFill;
+                    }
+                    if (gc.alternateColumns && gc.alternateColumnFill && col % 2 === 1) {
+                        cellFill = gc.alternateColumnFill;
+                    }
+
+                    // Header row overrides (higher priority)
+                    if (gc.headerRow && row === 0) {
+                        if (gc.headerRowFill) cellFill = gc.headerRowFill;
+                        if (gc.headerRowTextColor) cellTextColor = gc.headerRowTextColor;
+                        if (gc.headerRowFontWeight) cellFontWeight = gc.headerRowFontWeight;
+                    }
+                    // First column overrides (highest priority)
+                    if (gc.firstColumn && col === 0) {
+                        if (gc.firstColumnFill) cellFill = gc.firstColumnFill;
+                        if (gc.firstColumnTextColor) cellTextColor = gc.firstColumnTextColor;
+                        if (gc.firstColumnFontWeight) cellFontWeight = gc.firstColumnFontWeight;
+                    }
+
+                    // Compute cell border sides
+                    const cellBorderSides = getCellBorderSides(row, col);
+
+                    // Build pattern fill CSS if needed
+                    const patternStyle: React.CSSProperties = {};
+                    if (element.fillType === 'pattern' && cellFill) {
+                        const spacing = element.patternSpacing || 10;
+                        const weight = element.patternWeight || 1;
+                        if (element.patternType === 'lines-h') patternStyle.backgroundImage = `repeating-linear-gradient(180deg, ${cellFill}, ${cellFill} ${weight}px, transparent ${weight}px, transparent ${spacing}px)`;
+                        else if (element.patternType === 'lines-v') patternStyle.backgroundImage = `repeating-linear-gradient(90deg, ${cellFill}, ${cellFill} ${weight}px, transparent ${weight}px, transparent ${spacing}px)`;
+                        else if (element.patternType === 'dots') {
+                            const radius = weight / 2;
+                            patternStyle.backgroundImage = `radial-gradient(circle, ${cellFill} ${radius}px, transparent ${radius}px)`;
+                            patternStyle.backgroundSize = `${spacing}px ${spacing}px`;
+                        }
+                    }
+
                     return (
                         <div key={idx} style={{
-                            position: 'absolute', left: cx - strokeOffset, top: cy - strokeOffset, width: element.w + strokeExpand, height: element.h + strokeExpand,
-                            ...getBackgroundStyle(element),
-                            borderRadius: element.borderRadius || 0,
+                            position: 'absolute', left: cx, top: cy, width: element.w, height: element.h,
+                            boxSizing: 'border-box',
+                            backgroundColor: element.fillType === 'pattern' ? 'transparent' : (cellFill || 'transparent'),
+                            ...patternStyle,
+                            ...buildCellBorderStyle(cellBorderSides),
+                            borderRadius: gc.gridBorderRadius ?? 0,
                             display: 'flex',
                             justifyContent: element.align === 'left' ? 'flex-start' : element.align === 'right' ? 'flex-end' : 'center',
                             alignItems: element.verticalAlign === 'top' ? 'flex-start' : element.verticalAlign === 'bottom' ? 'flex-end' : 'center',
                             fontSize: element.fontSize || 12,
-                            color: element.textColor || '#000',
+                            color: cellTextColor,
                             fontFamily: fontFamily,
-                            fontWeight: element.fontWeight,
+                            fontWeight: cellFontWeight,
                             fontStyle: element.fontStyle,
                             textDecoration: element.textDecoration,
-                            textDecorationColor: element.textColor || '#000',
+                            textDecorationColor: cellTextColor,
                             overflow: 'hidden'
                         }}><span className="truncate" style={{ padding: '0 1px' }}>{label}</span></div>
                     );
                 })}
+
+                {/* Outer grid border — rendered AFTER cells so it appears on top */}
+                {hasOuterBorder && (
+                    <div style={{
+                        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                        border: `${element.strokeWidth}px ${element.borderStyle || 'solid'} ${element.stroke}`,
+                        boxSizing: 'border-box',
+                        borderRadius: element.borderRadius || 0,
+                        pointerEvents: 'none',
+                    }} />
+                )}
 
             </div>
         );
@@ -577,26 +742,22 @@ export const CanvasElement: React.FC<CanvasElementProps> = (props) => {
         );
     }
 
-    const hasBorder = element.strokeWidth > 0 && !!element.stroke && element.borderStyle !== 'none';
-    const strokeOffset = hasBorder ? element.strokeWidth / 2 : 0;
-    const strokeExpand = hasBorder ? element.strokeWidth : 0;
-
     return (
         <div key={element.id} data-element-id={element.id} className="absolute group" style={style} onDoubleClick={props.onDoubleClick}>
             {(element.type === 'rect' || element.type === 'text') && (
                 <div style={{
-                    width: `calc(100% + ${strokeExpand}px)`, height: `calc(100% + ${strokeExpand}px)`,
+                    width: '100%', height: '100%',
                     ...getBackgroundStyle(element),
                     borderRadius: element.borderRadius,
-                    position: 'absolute', top: -strokeOffset, left: -strokeOffset,
+                    position: 'absolute', top: 0, left: 0,
                 }} />
             )}
             {element.type === 'ellipse' && (
                 <div style={{
-                    width: `calc(100% + ${strokeExpand}px)`, height: `calc(100% + ${strokeExpand}px)`,
+                    width: '100%', height: '100%',
                     ...getBackgroundStyle(element),
                     borderRadius: '50%',
-                    position: 'absolute', top: -strokeOffset, left: -strokeOffset,
+                    position: 'absolute', top: 0, left: 0,
                 }} />
             )}
 

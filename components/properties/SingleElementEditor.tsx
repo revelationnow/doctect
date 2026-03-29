@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { AppNode, AppState, TemplateElement, TraversalStep } from '../../types';
-import { Grid3X3, ArrowLeft, Palette, Type, MousePointer2, Bold, Italic, Underline, ArrowUp, ArrowDown, Plus, AlignLeft, AlignCenter, AlignRight, AlignStartVertical, AlignEndVertical, AlignCenterVertical, Trash2, Layers, Network, Trash, Settings2, RectangleHorizontal, RectangleVertical, Share2, Link2, ChevronUp, ChevronDown } from 'lucide-react';
+import { Grid3X3, ArrowLeft, Palette, Type, MousePointer2, Bold, Italic, Underline, ArrowUp, ArrowDown, Plus, AlignLeft, AlignCenter, AlignRight, AlignStartVertical, AlignEndVertical, AlignCenterVertical, Trash2, Layers, Network, Trash, Settings2, RectangleHorizontal, RectangleVertical, Share2, Link2, ChevronUp, ChevronDown, PanelTop, PanelRight, PanelBottom, PanelLeft, ToggleRight, ToggleLeft } from 'lucide-react';
 import { ChildIndexSelector } from './ChildIndexSelector';
 import { BORDER_STYLES, FONTS } from '../../constants/editor';
 import clsx from 'clsx';
@@ -570,6 +570,155 @@ export const SingleElementEditor: React.FC<SingleElementEditorProps> = ({ elemen
                             </div>
                         )}
                     </div>
+
+                    {/* Grid Formatting */}
+                    <div className="border-t border-indigo-100 pt-2 mt-2">
+                        <label className="text-[10px] font-semibold text-slate-500 flex items-center gap-1 mb-2">
+                            <Palette size={10} /> Grid Formatting
+                        </label>
+
+                        {/* Border Mode */}
+                        <div className="mb-2">
+                            <label className="text-[9px] text-slate-400">Cell Border Mode</label>
+                            <select
+                                className="w-full border rounded px-1 text-xs py-1 bg-white"
+                                value={element.gridConfig.gridBorderMode || 'all'}
+                                onChange={e => onUpdate({ gridConfig: { ...element.gridConfig!, gridBorderMode: e.target.value as any } })}
+                            >
+                                <option value="all">All Borders</option>
+                                <option value="outside">Outside Only</option>
+                                <option value="inside">Inside Only</option>
+                                <option value="none">No Borders</option>
+                            </select>
+                        </div>
+
+                        {/* Cell Border Styling */}
+                        {element.gridConfig.gridBorderMode !== 'none' && (
+                            <div className="mb-2 flex items-center gap-1">
+                                <label className="text-[9px] text-slate-400 flex-shrink-0 w-12">Cell Border</label>
+                                <input type="color" className="w-5 h-5 p-0 border-0 rounded cursor-pointer flex-shrink-0"
+                                    value={element.gridConfig.gridBorderColor || element.stroke || '#000000'}
+                                    onInput={e => onUpdate({ gridConfig: { ...element.gridConfig!, gridBorderColor: (e.target as HTMLInputElement).value } })} />
+                                <input type="number" min="0" step="1" className="w-10 border rounded px-0.5 text-[10px] text-center"
+                                    value={element.gridConfig.gridBorderWidth ?? element.strokeWidth ?? 1}
+                                    onChange={e => onUpdate({ gridConfig: { ...element.gridConfig!, gridBorderWidth: Math.max(0, Number(e.target.value)) } })} />
+                                <select className="flex-1 text-[10px] border rounded bg-white px-0.5"
+                                    value={element.gridConfig.gridBorderStyle || element.borderStyle || 'solid'}
+                                    onChange={e => onUpdate({ gridConfig: { ...element.gridConfig!, gridBorderStyle: e.target.value as any } })}>
+                                    {BORDER_STYLES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                                </select>
+                                <input type="number" min="0" step="1" className="w-10 border rounded px-0.5 text-[10px] text-center" title="Cell Border Radius"
+                                    placeholder="R"
+                                    value={element.gridConfig.gridBorderRadius ?? 0}
+                                    onChange={e => onUpdate({ gridConfig: { ...element.gridConfig!, gridBorderRadius: Math.max(0, Number(e.target.value)) } })} />
+                            </div>
+                        )}
+
+                        {/* Empty Cell Borders Toggle */}
+                        {element.gridConfig.gridBorderMode !== 'none' && (
+                            <div className="mb-2 flex items-center justify-between">
+                                <label className="text-[9px] text-slate-400">Empty Cell Borders</label>
+                                <button
+                                    onClick={() => onUpdate({ gridConfig: { ...element.gridConfig!, showEmptyCellBorders: !element.gridConfig!.showEmptyCellBorders } })}
+                                    className="flex-shrink-0 text-indigo-600 focus:outline-none"
+                                >
+                                    {element.gridConfig.showEmptyCellBorders ? <ToggleRight size={18} /> : <ToggleLeft size={18} className="text-slate-400" />}
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Header Row */}
+                        <div className="mb-2 p-1.5 bg-white rounded border border-indigo-50">
+                            <div className="flex items-center justify-between mb-1">
+                                <label className="text-[9px] font-medium text-slate-600">Header Row</label>
+                                <button
+                                    onClick={() => onUpdate({ gridConfig: { ...element.gridConfig!, headerRow: !element.gridConfig!.headerRow } })}
+                                    className="flex-shrink-0 text-indigo-600 focus:outline-none"
+                                >
+                                    {element.gridConfig.headerRow ? <ToggleRight size={18} /> : <ToggleLeft size={18} className="text-slate-400" />}
+                                </button>
+                            </div>
+                            {element.gridConfig.headerRow && (
+                                <div className="flex gap-1 items-center">
+                                    <input type="color" className="w-5 h-5 p-0 border-0 rounded cursor-pointer" value={element.gridConfig.headerRowFill || '#e2e8f0'}
+                                        onInput={e => onUpdate({ gridConfig: { ...element.gridConfig!, headerRowFill: (e.target as HTMLInputElement).value } })} />
+                                    <input type="color" className="w-5 h-5 p-0 border-0 rounded cursor-pointer" value={element.gridConfig.headerRowTextColor || '#000000'}
+                                        onInput={e => onUpdate({ gridConfig: { ...element.gridConfig!, headerRowTextColor: (e.target as HTMLInputElement).value } })} title="Text color" />
+                                    <button
+                                        onClick={() => onUpdate({ gridConfig: { ...element.gridConfig!, headerRowFontWeight: element.gridConfig!.headerRowFontWeight === 'bold' ? 'normal' : 'bold' } })}
+                                        className={clsx('p-0.5 rounded text-[9px]', element.gridConfig.headerRowFontWeight === 'bold' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500')}
+                                    ><Bold size={10} /></button>
+                                    <span className="text-[8px] text-slate-400 ml-1">Fill / Text / Bold</span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* First Column */}
+                        <div className="mb-2 p-1.5 bg-white rounded border border-indigo-50">
+                            <div className="flex items-center justify-between mb-1">
+                                <label className="text-[9px] font-medium text-slate-600">First Column</label>
+                                <button
+                                    onClick={() => onUpdate({ gridConfig: { ...element.gridConfig!, firstColumn: !element.gridConfig!.firstColumn } })}
+                                    className="flex-shrink-0 text-indigo-600 focus:outline-none"
+                                >
+                                    {element.gridConfig.firstColumn ? <ToggleRight size={18} /> : <ToggleLeft size={18} className="text-slate-400" />}
+                                </button>
+                            </div>
+                            {element.gridConfig.firstColumn && (
+                                <div className="flex gap-1 items-center">
+                                    <input type="color" className="w-5 h-5 p-0 border-0 rounded cursor-pointer" value={element.gridConfig.firstColumnFill || '#e2e8f0'}
+                                        onInput={e => onUpdate({ gridConfig: { ...element.gridConfig!, firstColumnFill: (e.target as HTMLInputElement).value } })} />
+                                    <input type="color" className="w-5 h-5 p-0 border-0 rounded cursor-pointer" value={element.gridConfig.firstColumnTextColor || '#000000'}
+                                        onInput={e => onUpdate({ gridConfig: { ...element.gridConfig!, firstColumnTextColor: (e.target as HTMLInputElement).value } })} title="Text color" />
+                                    <button
+                                        onClick={() => onUpdate({ gridConfig: { ...element.gridConfig!, firstColumnFontWeight: element.gridConfig!.firstColumnFontWeight === 'bold' ? 'normal' : 'bold' } })}
+                                        className={clsx('p-0.5 rounded text-[9px]', element.gridConfig.firstColumnFontWeight === 'bold' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500')}
+                                    ><Bold size={10} /></button>
+                                    <span className="text-[8px] text-slate-400 ml-1">Fill / Text / Bold</span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Alternating Rows */}
+                        <div className="mb-2 p-1.5 bg-white rounded border border-indigo-50">
+                            <div className="flex items-center justify-between mb-1">
+                                <label className="text-[9px] font-medium text-slate-600">Alternate Rows</label>
+                                <button
+                                    onClick={() => onUpdate({ gridConfig: { ...element.gridConfig!, alternateRows: !element.gridConfig!.alternateRows } })}
+                                    className="flex-shrink-0 text-indigo-600 focus:outline-none"
+                                >
+                                    {element.gridConfig.alternateRows ? <ToggleRight size={18} /> : <ToggleLeft size={18} className="text-slate-400" />}
+                                </button>
+                            </div>
+                            {element.gridConfig.alternateRows && (
+                                <div className="flex gap-1 items-center">
+                                    <input type="color" className="w-5 h-5 p-0 border-0 rounded cursor-pointer" value={element.gridConfig.alternateRowFill || '#f1f5f9'}
+                                        onInput={e => onUpdate({ gridConfig: { ...element.gridConfig!, alternateRowFill: (e.target as HTMLInputElement).value } })} />
+                                    <span className="text-[8px] text-slate-400 ml-1">Even row fill</span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Alternating Columns */}
+                        <div className="p-1.5 bg-white rounded border border-indigo-50">
+                            <div className="flex items-center justify-between mb-1">
+                                <label className="text-[9px] font-medium text-slate-600">Alternate Columns</label>
+                                <button
+                                    onClick={() => onUpdate({ gridConfig: { ...element.gridConfig!, alternateColumns: !element.gridConfig!.alternateColumns } })}
+                                    className="flex-shrink-0 text-indigo-600 focus:outline-none"
+                                >
+                                    {element.gridConfig.alternateColumns ? <ToggleRight size={18} /> : <ToggleLeft size={18} className="text-slate-400" />}
+                                </button>
+                            </div>
+                            {element.gridConfig.alternateColumns && (
+                                <div className="flex gap-1 items-center">
+                                    <input type="color" className="w-5 h-5 p-0 border-0 rounded cursor-pointer" value={element.gridConfig.alternateColumnFill || '#f1f5f9'}
+                                        onInput={e => onUpdate({ gridConfig: { ...element.gridConfig!, alternateColumnFill: (e.target as HTMLInputElement).value } })} />
+                                    <span className="text-[8px] text-slate-400 ml-1">Even column fill</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -748,6 +897,83 @@ export const SingleElementEditor: React.FC<SingleElementEditorProps> = ({ elemen
                         </select>
                     </div>
                 </div>
+
+                {/* Per-Side Borders (for rect, text, grid) */}
+                {(element.type === 'rect' || element.type === 'text' || element.type === 'grid') && (
+                    <div className="mt-1">
+                        <div className="flex items-center justify-between mb-1">
+                            <div className="text-[10px] text-slate-500 font-medium">Per-Side Borders</div>
+                            {!element.borderSides && (
+                                <button
+                                    onClick={() => {
+                                        const def = { width: element.strokeWidth || 1, color: element.stroke || '#000000', style: (element.borderStyle || 'solid') as any };
+                                        onUpdate({ borderSides: { top: { ...def }, right: { ...def }, bottom: { ...def }, left: { ...def } } });
+                                    }}
+                                    className="text-[9px] text-indigo-600 hover:underline"
+                                >Customize</button>
+                            )}
+                            {element.borderSides && (
+                                <button
+                                    onClick={() => onUpdate({ borderSides: undefined as any })}
+                                    className="text-[9px] text-red-500 hover:underline"
+                                >Reset to uniform</button>
+                            )}
+                        </div>
+                        {element.borderSides && (
+                            <div className="space-y-1">
+                                {(['top', 'right', 'bottom', 'left'] as const).map(side => {
+                                    const sideConfig = element.borderSides?.[side];
+                                    const icons = { top: <PanelTop size={12} />, right: <PanelRight size={12} />, bottom: <PanelBottom size={12} />, left: <PanelLeft size={12} /> };
+                                    const label = side.charAt(0).toUpperCase();
+                                    return (
+                                        <div key={side} className="flex items-center gap-1">
+                                            <button
+                                                onClick={() => {
+                                                    const currentSides = { ...element.borderSides! };
+                                                    if (sideConfig) {
+                                                        delete currentSides[side];
+                                                    } else {
+                                                        currentSides[side] = { width: element.strokeWidth || 1, color: element.stroke || '#000000', style: (element.borderStyle || 'solid') as any };
+                                                    }
+                                                    onUpdate({ borderSides: currentSides });
+                                                }}
+                                                className={clsx(
+                                                    'p-0.5 rounded border flex-shrink-0',
+                                                    sideConfig ? 'bg-blue-100 border-blue-300 text-blue-700' : 'bg-slate-50 border-slate-200 text-slate-400'
+                                                )}
+                                                title={`${side} border`}
+                                            >
+                                                {icons[side]}
+                                            </button>
+                                            {sideConfig && (
+                                                <>
+                                                    <input type="color" className="w-4 h-4 p-0 border-0 rounded cursor-pointer flex-shrink-0" value={sideConfig.color}
+                                                        onInput={e => {
+                                                            const updated = { ...element.borderSides!, [side]: { ...sideConfig, color: (e.target as HTMLInputElement).value } };
+                                                            onUpdate({ borderSides: updated });
+                                                        }} />
+                                                    <input type="number" min="0" step="1" className="w-10 border rounded px-0.5 text-[10px] text-center" value={sideConfig.width}
+                                                        onChange={e => {
+                                                            const updated = { ...element.borderSides!, [side]: { ...sideConfig, width: Math.max(0, Number(e.target.value)) } };
+                                                            onUpdate({ borderSides: updated });
+                                                        }} />
+                                                    <select className="flex-1 text-[10px] border rounded bg-white px-0.5" value={sideConfig.style}
+                                                        onChange={e => {
+                                                            const updated = { ...element.borderSides!, [side]: { ...sideConfig, style: e.target.value as any } };
+                                                            onUpdate({ borderSides: updated });
+                                                        }}>
+                                                        {BORDER_STYLES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                                                    </select>
+                                                </>
+                                            )}
+                                            {!sideConfig && <span className="text-[9px] text-slate-400 italic ml-1">{label} — none</span>}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Opacity & Radius */}
                 <div className="flex gap-2">

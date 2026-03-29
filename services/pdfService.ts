@@ -1126,12 +1126,9 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
                 const strokeWidth = Number(el.strokeWidth) || 0;
                 const radius = Number(el.borderRadius) || 0;
 
-                // --- NEW: Template support for grid display field ---
-                // If displayField contains {{, treat as template. Otherwise, treat as simple key (or default title).
-                // For backwards compatibility, if it's a simple string like "customField", wrap it as "{{customField}}" so resolveText works.
+                // --- Template support for grid display field ---
                 let templatePattern = displayField || '{{title}}';
                 if (!templatePattern.includes('{{')) {
-                    // Assume it's a field name if no brackets found, unless it's empty (handled by default above)
                     templatePattern = `{{${templatePattern}}}`;
                 }
 
@@ -1140,13 +1137,123 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
                 else doc.setLineDashPattern([], 0);
                 doc.setLineCap('butt');
 
+                // Grid formatting config
+                const gc = el.gridConfig;
+                const cellRadius = gc.gridBorderRadius ?? 0;
+                const gridBorderMode = gc.gridBorderMode || 'all';
+                const totalGridItems = items.length + offset;
+                const totalRows = Math.max(1, Math.ceil(totalGridItems / safeCols));
+
+                // Type for per-side config
+                type BSide = { width: number; color: string; style: 'solid' | 'dashed' | 'dotted' | 'none' | 'double' } | undefined;
+                // Per-cell border config — uses ONLY grid-specific settings (independent from element stroke)
+                const cellBorderWidth = gc.gridBorderWidth ?? 0;
+                const cellBorderColor = gc.gridBorderColor || '';
+                const cellBorderStyle = gc.gridBorderStyle || 'solid';
+                const cellBorderRgb = hexToRgb(cellBorderColor);
+                const hasCellBorderDef = cellBorderWidth > 0 && !!cellBorderRgb && cellBorderStyle !== 'none';
+                const defaultBorderSide: BSide = hasCellBorderDef
+                    ? { width: cellBorderWidth, color: cellBorderColor, style: cellBorderStyle as any }
+                    : undefined;
+
+                // Helper: compute border sides config for a cell
+                const getCellBorderSides = (row: number, col: number): { top?: BSide; right?: BSide; bottom?: BSide; left?: BSide } | null => {
+                    if (!defaultBorderSide) return null;
+                    if (gridBorderMode === 'none') return {};
+                    if (gridBorderMode === 'all') {
+                        return { top: defaultBorderSide, right: defaultBorderSide, bottom: defaultBorderSide, left: defaultBorderSide };
+                    }
+                    const isTop = row === 0;
+                    const isBottom = row === totalRows - 1;
+                    const isLeft = col === 0;
+                    const isRight = col === safeCols - 1;
+                    if (gridBorderMode === 'outside') {
+                        return { top: isTop ? defaultBorderSide : undefined, right: isRight ? defaultBorderSide : undefined, bottom: isBottom ? defaultBorderSide : undefined, left: isLeft ? defaultBorderSide : undefined };
+                    }
+                    if (gridBorderMode === 'inside') {
+                        return { top: !isTop ? defaultBorderSide : undefined, right: !isRight ? defaultBorderSide : undefined, bottom: !isBottom ? defaultBorderSide : undefined, left: !isLeft ? defaultBorderSide : undefined };
+                    }
+                    return { top: defaultBorderSide, right: defaultBorderSide, bottom: defaultBorderSide, left: defaultBorderSide };
+                };
+
+                // Helper: draw per-side borders with independent styles (inset by half stroke width to stay inside cell)
+                const drawCellBorders = (cx: number, cy: number, cw: number, ch: number, yo: number, sides: { top?: BSide; right?: BSide; bottom?: BSide; left?: BSide }) => {
+                    // If cellRadius > 0 and all 4 sides are present with same config, use roundedRect
+                    if (cellRadius > 0 && sides.top && sides.right && sides.bottom && sides.left
+                        && sides.top.color === sides.right.color && sides.top.color === sides.bottom.color && sides.top.color === sides.left.color
+                        && sides.top.width === sides.right.width && sides.top.width === sides.bottom.width && sides.top.width === sides.left.width
+                        && sides.top.style === sides.right.style && sides.top.style === sides.bottom.style && sides.top.style === sides.left.style) {
+                        const side = sides.top;
+                        const sw = side.width;
+                        const rgb = hexToRgb(side.color);
+                        if (!rgb) return;
+                        doc.setDrawColor(rgb.r, rgb.g, rgb.b);
+                        doc.setLineWidth(sw);
+                        if (side.style === 'dashed') doc.setLineDashPattern([3, 3], 0);
+                        else if (side.style === 'dotted') doc.setLineDashPattern([1, 1], 0);
+                        else doc.setLineDashPattern([], 0);
+                        // Inset by half stroke width so border stays inside the cell
+                        doc.roundedRect(cx + sw / 2, cy + yo + sw / 2, cw - sw, ch - sw, cellRadius, cellRadius, 'D');
+                        return;
+                    }
+                    // Fallback: draw individual lines (no radius), inset by half each side's width
+                    const topW = sides.top?.width || 0;
+                    const rightW = sides.right?.width || 0;
+                    const bottomW = sides.bottom?.width || 0;
+                    const leftW = sides.left?.width || 0;
+                    const drawSide = (side: BSide, x1: number, y1: number, x2: number, y2: number) => {
+                        if (!side) return;
+                        const rgb = hexToRgb(side.color);
+                        if (!rgb) return;
+                        doc.setDrawColor(rgb.r, rgb.g, rgb.b);
+                        doc.setLineWidth(side.width);
+                        if (side.style === 'dashed') doc.setLineDashPattern([3, 3], 0);
+                        else if (side.style === 'dotted') doc.setLineDashPattern([1, 1], 0);
+                        else doc.setLineDashPattern([], 0);
+                        doc.line(x1, y1, x2, y2);
+                    };
+                    // Top: inset by topW/2 from top edge
+                    drawSide(sides.top, cx, cy + yo + topW / 2, cx + cw, cy + yo + topW / 2);
+                    // Right: inset by rightW/2 from right edge
+                    drawSide(sides.right, cx + cw - rightW / 2, cy + yo, cx + cw - rightW / 2, cy + ch + yo);
+                    // Bottom: inset by bottomW/2 from bottom edge
+                    drawSide(sides.bottom, cx, cy + ch + yo - bottomW / 2, cx + cw, cy + ch + yo - bottomW / 2);
+                    // Left: inset by leftW/2 from left edge
+                    drawSide(sides.left, cx + leftW / 2, cy + yo, cx + leftW / 2, cy + ch + yo);
+                };
+
+                // Draw empty cell borders (offset + trailing) if enabled
+                if (gc.showEmptyCellBorders && gridBorderMode !== 'none') {
+                    // Offset cells at the beginning
+                    for (let i = 0; i < offset; i++) {
+                        const row = Math.floor(i / safeCols);
+                        const col = ((i % safeCols) + safeCols) % safeCols;
+                        const cellX = lx + col * (cellW + sGapX);
+                        const cellY = ly + row * (cellH + sGapY);
+                        const sides = getCellBorderSides(row, col);
+                        if (sides && (sides.top || sides.right || sides.bottom || sides.left)) {
+                            drawCellBorders(cellX, cellY, cellW, cellH, yOffset, sides);
+                        }
+                    }
+                    // Trailing cells to fill the last row
+                    const lastItemPos = items.length + offset - 1;
+                    const lastRow = Math.floor(lastItemPos / safeCols);
+                    const lastCol = ((lastItemPos % safeCols) + safeCols) % safeCols;
+                    for (let c = lastCol + 1; c < safeCols; c++) {
+                        const cellX = lx + c * (cellW + sGapX);
+                        const cellY = ly + lastRow * (cellH + sGapY);
+                        const sides = getCellBorderSides(lastRow, c);
+                        if (sides && (sides.top || sides.right || sides.bottom || sides.left)) {
+                            drawCellBorders(cellX, cellY, cellW, cellH, yOffset, sides);
+                        }
+                    }
+                }
+
                 items.forEach((childId, idx) => {
                     const pos = idx + offset;
                     const row = Math.floor(pos / safeCols);
-                    // Handle negative modulo correctly
                     const col = ((pos % safeCols) + safeCols) % safeCols;
 
-                    // Calculate cell position
                     const cellX = lx + col * (cellW + sGapX);
                     const cellY = ly + row * (cellH + sGapY);
 
@@ -1155,60 +1262,103 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
                         childNode = state.nodes[childNode.referenceId];
                     }
 
+                    // Determine cell fill color (with overrides)
+                    let cellFillHex = el.fill;
+                    let cellTextColorHex = el.textColor || '#000000';
+                    let cellFontWeight = el.fontWeight;
+
+                    // Alternating row/column colors FIRST (lowest priority)
+                    const dataRow = gc.headerRow ? row - 1 : row;
+                    if (gc.alternateRows && gc.alternateRowFill && dataRow >= 0 && dataRow % 2 === 1) {
+                        cellFillHex = gc.alternateRowFill;
+                    }
+                    if (gc.alternateColumns && gc.alternateColumnFill && col % 2 === 1) {
+                        cellFillHex = gc.alternateColumnFill;
+                    }
+
+                    // Header row overrides (higher priority)
+                    if (gc.headerRow && row === 0) {
+                        if (gc.headerRowFill) cellFillHex = gc.headerRowFill;
+                        if (gc.headerRowTextColor) cellTextColorHex = gc.headerRowTextColor;
+                        if (gc.headerRowFontWeight) cellFontWeight = gc.headerRowFontWeight;
+                    }
+                    // First column overrides (highest priority)
+                    if (gc.firstColumn && col === 0) {
+                        if (gc.firstColumnFill) cellFillHex = gc.firstColumnFill;
+                        if (gc.firstColumnTextColor) cellTextColorHex = gc.firstColumnTextColor;
+                        if (gc.firstColumnFontWeight) cellFontWeight = gc.firstColumnFontWeight;
+                    }
+
+                    const cellFillRgb = hexToRgb(cellFillHex);
+                    const cellBorderSides = getCellBorderSides(row, col);
+                    const hasCellBorder = cellBorderSides && (cellBorderSides.top || cellBorderSides.right || cellBorderSides.bottom || cellBorderSides.left);
+
                     // Draw Cell
                     if (el.fillType === 'pattern' && el.patternType) {
-                        if (el.fill) {
+                        if (cellFillHex) {
                             doc.saveGraphicsState();
-                            clipToShape(doc, 'rect', cellX, cellY + yOffset, cellW, cellH, radius, 0);
-                            drawPattern(doc, el.patternType, cellX, cellY + yOffset, cellW, cellH, el.fill, Number(el.patternSpacing), Number(el.patternWeight));
+                            clipToShape(doc, 'rect', cellX, cellY + yOffset, cellW, cellH, cellRadius, 0);
+                            drawPattern(doc, el.patternType, cellX, cellY + yOffset, cellW, cellH, cellFillHex, Number(el.patternSpacing), Number(el.patternWeight));
                             doc.restoreGraphicsState();
                         }
-
-                        if (strokeRgb && strokeWidth > 0 && el.borderStyle !== 'none') {
-                            doc.setDrawColor(strokeRgb.r, strokeRgb.g, strokeRgb.b);
-                            doc.setLineWidth(strokeWidth);
-                            if (el.borderStyle === 'dashed') doc.setLineDashPattern([3, 3], 0);
-                            else if (el.borderStyle === 'dotted') doc.setLineDashPattern([1, 1], 0);
-                            else doc.setLineDashPattern([], 0);
-                            doc.setLineCap('butt');
-                            doc.roundedRect(cellX, cellY + yOffset, cellW, cellH, radius, radius, 'D');
+                        if (hasCellBorder) {
+                            drawCellBorders(cellX, cellY, cellW, cellH, yOffset, cellBorderSides!);
                         }
-
                     } else {
-                        let style = '';
-                        if (fillRgb) { doc.setFillColor(fillRgb.r, fillRgb.g, fillRgb.b); style += 'F'; }
-                        if (strokeRgb && strokeWidth > 0 && el.borderStyle !== 'none') {
-                            doc.setDrawColor(strokeRgb.r, strokeRgb.g, strokeRgb.b);
-                            doc.setLineWidth(strokeWidth);
-                            if (el.borderStyle === 'dashed') doc.setLineDashPattern([3, 3], 0);
-                            else if (el.borderStyle === 'dotted') doc.setLineDashPattern([1, 1], 0);
-                            else doc.setLineDashPattern([], 0);
-                            doc.setLineCap('butt');
-                            style += 'D';
-                        }
-                        if (style) {
-                            doc.roundedRect(cellX, cellY + yOffset, cellW, cellH, radius, radius, style);
+                        // Check if we can combine fill+stroke in one roundedRect('FD') call
+                        // This prevents fill from leaking outside the border at rounded corners
+                        const bs = cellBorderSides;
+                        const uniformBorder = hasCellBorder && bs && bs.top && bs.right && bs.bottom && bs.left
+                            && bs.top.color === bs.right.color && bs.top.color === bs.bottom.color && bs.top.color === bs.left.color
+                            && bs.top.width === bs.right.width && bs.top.width === bs.bottom.width && bs.top.width === bs.left.width
+                            && bs.top.style === bs.right.style && bs.top.style === bs.bottom.style && bs.top.style === bs.left.style;
+
+                        if (cellRadius > 0 && cellFillRgb && uniformBorder && bs!.top) {
+                            const side = bs!.top!;
+                            const sw = side.width;
+                            const borderRgb = hexToRgb(side.color);
+                            if (borderRgb) {
+                                doc.setFillColor(cellFillRgb.r, cellFillRgb.g, cellFillRgb.b);
+                                doc.setDrawColor(borderRgb.r, borderRgb.g, borderRgb.b);
+                                doc.setLineWidth(sw);
+                                if (side.style === 'dashed') doc.setLineDashPattern([3, 3], 0);
+                                else if (side.style === 'dotted') doc.setLineDashPattern([1, 1], 0);
+                                else doc.setLineDashPattern([], 0);
+                                // Single FD call: fill and stroke share the same path — no leaking
+                                doc.roundedRect(cellX + sw / 2, cellY + yOffset + sw / 2, cellW - sw, cellH - sw, cellRadius, cellRadius, 'FD');
+                            }
+                        } else {
+                            // Fill
+                            if (cellFillRgb) {
+                                doc.setFillColor(cellFillRgb.r, cellFillRgb.g, cellFillRgb.b);
+                                doc.roundedRect(cellX, cellY + yOffset, cellW, cellH, cellRadius, cellRadius, 'F');
+                            }
+                            // Stroke
+                            if (hasCellBorder) {
+                                drawCellBorders(cellX, cellY, cellW, cellH, yOffset, cellBorderSides!);
+                            }
                         }
                     }
 
                     // Text
                     let txt = "";
                     if (childNode) {
-                        // Use resolveText with the childNode as the context
                         txt = resolveText(templatePattern, childNode, state);
                     }
 
                     if (txt) {
-                        applyFont(doc, el);
+                        // Apply font with cell-specific overrides
+                        const cellEl = { ...el, textColor: cellTextColorHex, fontWeight: cellFontWeight } as any;
+                        applyFont(doc, cellEl);
                         // Vertical Alignment Logic
                         let textY = cellY + cellH / 2;
                         let baseline: any = 'middle';
 
                         if (el.verticalAlign === 'top') {
-                            textY = cellY + 4; // Padding
+                            textY = cellY + 4;
                             baseline = 'top';
                         } else if (el.verticalAlign === 'bottom') {
-                            textY = cellY + cellH - 4; // Padding
+                            textY = cellY + cellH - 4;
                             baseline = 'bottom';
                         }
 
@@ -1224,12 +1374,28 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
                         }
                     }
 
-                    // Link logic inside grid (Only support links if not rotated for simplicity, or calc new AABB)
+                    // Link logic inside grid
                     const targetPage = resolvePage(childId);
                     if (targetPage && angle === 0) {
                         doc.link(cellX, cellY, cellW, cellH, { pageNumber: targetPage });
                     }
                 });
+
+                // Draw outer grid border (from element's stroke settings — highest priority, drawn last)
+                const outerStrokeRgb = options.isGreyscale ? hexToGreyscale(el.stroke) : strokeRgb;
+                if (outerStrokeRgb && strokeWidth > 0 && el.borderStyle !== 'none') {
+                    doc.setDrawColor(outerStrokeRgb.r, outerStrokeRgb.g, outerStrokeRgb.b);
+                    doc.setLineWidth(strokeWidth);
+                    if (el.borderStyle === 'dashed') doc.setLineDashPattern([3, 3], 0);
+                    else if (el.borderStyle === 'dotted') doc.setLineDashPattern([1, 1], 0);
+                    else doc.setLineDashPattern([], 0);
+                    // Grid bounds = all cols * cellW + gaps, all rows * cellH + gaps
+                    const gridW = safeCols * cellW + (safeCols - 1) * sGapX;
+                    const gridH = totalRows * cellH + (totalRows - 1) * sGapY;
+                    // Inset by half stroke width so border stays inside the grid
+                    const sw2 = strokeWidth / 2;
+                    doc.roundedRect(lx + sw2, ly + yOffset + sw2, gridW - strokeWidth, gridH - strokeWidth, radius, radius, 'D');
+                }
 
                 doc.setLineDashPattern([], 0);
                 if (hasTransform) doc.restoreGraphicsState();
@@ -1279,14 +1445,82 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
                 doc.restoreGraphicsState();
 
                 if (strokeRgb && strokeWidth > 0 && el.borderStyle !== 'none') {
-                    doc.setDrawColor(strokeRgb.r, strokeRgb.g, strokeRgb.b);
-                    doc.setLineWidth(strokeWidth);
-                    if (el.borderStyle === 'dashed') doc.setLineDashPattern([3, 3], 0);
-                    else if (el.borderStyle === 'dotted') doc.setLineDashPattern([1, 1], 0);
-                    else doc.setLineDashPattern([], 0);
-                    doc.setLineCap('butt');
+                    // Per-side borders for rect/text with new config type
+                    if (el.borderSides && (el.type === 'rect' || el.type === 'text')) {
+                        const bs = el.borderSides;
+                        const topW = bs.top?.width || 0;
+                        const rightW = bs.right?.width || 0;
+                        const bottomW = bs.bottom?.width || 0;
+                        const leftW = bs.left?.width || 0;
+                        const bx = lx, by = ly + yOffset;
 
-                    drawShape('D');
+                        // Draw a filled trapezoid for solid borders (CSS-like mitered corners)
+                        const drawSolidTrapezoid = (side: typeof bs.top, points: [number, number][]) => {
+                            if (!side || side.width <= 0) return;
+                            const rgb = options.isGreyscale ? hexToGreyscale(side.color) : hexToRgb(side.color);
+                            if (!rgb) return;
+                            doc.setFillColor(rgb.r, rgb.g, rgb.b);
+                            // Build path as delta vectors from starting point
+                            const vectors: [number, number][] = [];
+                            for (let i = 1; i < points.length; i++) {
+                                vectors.push([points[i][0] - points[i - 1][0], points[i][1] - points[i - 1][1]]);
+                            }
+                            doc.lines(vectors, points[0][0], points[0][1], [1, 1], 'F', true);
+                        };
+
+                        // Draw an inset line for dashed/dotted borders
+                        const drawDashedLine = (side: typeof bs.top, x1: number, y1: number, x2: number, y2: number) => {
+                            if (!side || side.width <= 0) return;
+                            const rgb = options.isGreyscale ? hexToGreyscale(side.color) : hexToRgb(side.color);
+                            if (!rgb) return;
+                            doc.setDrawColor(rgb.r, rgb.g, rgb.b);
+                            doc.setLineWidth(side.width);
+                            if (side.style === 'dashed') doc.setLineDashPattern([3, 3], 0);
+                            else if (side.style === 'dotted') doc.setLineDashPattern([1, 1], 0);
+                            doc.line(x1, y1, x2, y2);
+                        };
+
+                        // Top border
+                        if (bs.top && bs.top.width > 0) {
+                            if (bs.top.style === 'dashed' || bs.top.style === 'dotted') {
+                                drawDashedLine(bs.top, bx + leftW, by + topW / 2, bx + w - rightW, by + topW / 2);
+                            } else {
+                                drawSolidTrapezoid(bs.top, [[bx, by], [bx + w, by], [bx + w - rightW, by + topW], [bx + leftW, by + topW]]);
+                            }
+                        }
+                        // Right border
+                        if (bs.right && bs.right.width > 0) {
+                            if (bs.right.style === 'dashed' || bs.right.style === 'dotted') {
+                                drawDashedLine(bs.right, bx + w - rightW / 2, by + topW, bx + w - rightW / 2, by + h - bottomW);
+                            } else {
+                                drawSolidTrapezoid(bs.right, [[bx + w, by], [bx + w, by + h], [bx + w - rightW, by + h - bottomW], [bx + w - rightW, by + topW]]);
+                            }
+                        }
+                        // Bottom border
+                        if (bs.bottom && bs.bottom.width > 0) {
+                            if (bs.bottom.style === 'dashed' || bs.bottom.style === 'dotted') {
+                                drawDashedLine(bs.bottom, bx + leftW, by + h - bottomW / 2, bx + w - rightW, by + h - bottomW / 2);
+                            } else {
+                                drawSolidTrapezoid(bs.bottom, [[bx + w, by + h], [bx, by + h], [bx + leftW, by + h - bottomW], [bx + w - rightW, by + h - bottomW]]);
+                            }
+                        }
+                        // Left border
+                        if (bs.left && bs.left.width > 0) {
+                            if (bs.left.style === 'dashed' || bs.left.style === 'dotted') {
+                                drawDashedLine(bs.left, bx + leftW / 2, by + topW, bx + leftW / 2, by + h - bottomW);
+                            } else {
+                                drawSolidTrapezoid(bs.left, [[bx, by + h], [bx, by], [bx + leftW, by + topW], [bx + leftW, by + h - bottomW]]);
+                            }
+                        }
+                    } else {
+                        doc.setDrawColor(strokeRgb.r, strokeRgb.g, strokeRgb.b);
+                        doc.setLineWidth(strokeWidth);
+                        if (el.borderStyle === 'dashed') doc.setLineDashPattern([3, 3], 0);
+                        else if (el.borderStyle === 'dotted') doc.setLineDashPattern([1, 1], 0);
+                        else doc.setLineDashPattern([], 0);
+                        doc.setLineCap('butt');
+                        drawShape('D');
+                    }
                 }
             } else if (fillRgb) {
                 doc.setFillColor(fillRgb.r, fillRgb.g, fillRgb.b);
@@ -1294,13 +1528,75 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
             }
 
             if (strokeRgb && strokeWidth > 0 && el.borderStyle !== 'none' && el.fillType !== 'pattern') {
-                doc.setDrawColor(strokeRgb.r, strokeRgb.g, strokeRgb.b);
-                doc.setLineWidth(strokeWidth);
-                if (el.borderStyle === 'dashed') doc.setLineDashPattern([3, 3], 0);
-                else if (el.borderStyle === 'dotted') doc.setLineDashPattern([1, 1], 0);
-                else doc.setLineDashPattern([], 0);
-                doc.setLineCap('butt');
-                drawShape('D');
+                // Per-side borders for rect/text with new config type
+                if (el.borderSides && (el.type === 'rect' || el.type === 'text')) {
+                    const bs = el.borderSides;
+                    const topW = bs.top?.width || 0;
+                    const rightW = bs.right?.width || 0;
+                    const bottomW = bs.bottom?.width || 0;
+                    const leftW = bs.left?.width || 0;
+                    const bx = lx, by = ly + yOffset;
+
+                    const drawSolidTrapezoid = (side: typeof bs.top, points: [number, number][]) => {
+                        if (!side || side.width <= 0) return;
+                        const rgb = options.isGreyscale ? hexToGreyscale(side.color) : hexToRgb(side.color);
+                        if (!rgb) return;
+                        doc.setFillColor(rgb.r, rgb.g, rgb.b);
+                        const vectors: [number, number][] = [];
+                        for (let i = 1; i < points.length; i++) {
+                            vectors.push([points[i][0] - points[i - 1][0], points[i][1] - points[i - 1][1]]);
+                        }
+                        doc.lines(vectors, points[0][0], points[0][1], [1, 1], 'F', true);
+                    };
+
+                    const drawDashedLine = (side: typeof bs.top, x1: number, y1: number, x2: number, y2: number) => {
+                        if (!side || side.width <= 0) return;
+                        const rgb = options.isGreyscale ? hexToGreyscale(side.color) : hexToRgb(side.color);
+                        if (!rgb) return;
+                        doc.setDrawColor(rgb.r, rgb.g, rgb.b);
+                        doc.setLineWidth(side.width);
+                        if (side.style === 'dashed') doc.setLineDashPattern([3, 3], 0);
+                        else if (side.style === 'dotted') doc.setLineDashPattern([1, 1], 0);
+                        doc.line(x1, y1, x2, y2);
+                    };
+
+                    if (bs.top && bs.top.width > 0) {
+                        if (bs.top.style === 'dashed' || bs.top.style === 'dotted') {
+                            drawDashedLine(bs.top, bx + leftW, by + topW / 2, bx + w - rightW, by + topW / 2);
+                        } else {
+                            drawSolidTrapezoid(bs.top, [[bx, by], [bx + w, by], [bx + w - rightW, by + topW], [bx + leftW, by + topW]]);
+                        }
+                    }
+                    if (bs.right && bs.right.width > 0) {
+                        if (bs.right.style === 'dashed' || bs.right.style === 'dotted') {
+                            drawDashedLine(bs.right, bx + w - rightW / 2, by + topW, bx + w - rightW / 2, by + h - bottomW);
+                        } else {
+                            drawSolidTrapezoid(bs.right, [[bx + w, by], [bx + w, by + h], [bx + w - rightW, by + h - bottomW], [bx + w - rightW, by + topW]]);
+                        }
+                    }
+                    if (bs.bottom && bs.bottom.width > 0) {
+                        if (bs.bottom.style === 'dashed' || bs.bottom.style === 'dotted') {
+                            drawDashedLine(bs.bottom, bx + leftW, by + h - bottomW / 2, bx + w - rightW, by + h - bottomW / 2);
+                        } else {
+                            drawSolidTrapezoid(bs.bottom, [[bx + w, by + h], [bx, by + h], [bx + leftW, by + h - bottomW], [bx + w - rightW, by + h - bottomW]]);
+                        }
+                    }
+                    if (bs.left && bs.left.width > 0) {
+                        if (bs.left.style === 'dashed' || bs.left.style === 'dotted') {
+                            drawDashedLine(bs.left, bx + leftW / 2, by + topW, bx + leftW / 2, by + h - bottomW);
+                        } else {
+                            drawSolidTrapezoid(bs.left, [[bx, by + h], [bx, by], [bx + leftW, by + topW], [bx + leftW, by + h - bottomW]]);
+                        }
+                    }
+                } else {
+                    doc.setDrawColor(strokeRgb.r, strokeRgb.g, strokeRgb.b);
+                    doc.setLineWidth(strokeWidth);
+                    if (el.borderStyle === 'dashed') doc.setLineDashPattern([3, 3], 0);
+                    else if (el.borderStyle === 'dotted') doc.setLineDashPattern([1, 1], 0);
+                    else doc.setLineDashPattern([], 0);
+                    doc.setLineCap('butt');
+                    drawShape('D');
+                }
             }
 
             // Text Content with Ancestral/Referrer Resolution
