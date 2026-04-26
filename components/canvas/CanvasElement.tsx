@@ -448,11 +448,7 @@ export const CanvasElement: React.FC<CanvasElementProps> = (props) => {
 
         // Outer border for the whole grid element (from Appearance section stroke)
         const hasOuterBorder = element.strokeWidth > 0 && !!element.stroke && element.borderStyle !== 'none';
-        const outerBorderStyle: React.CSSProperties = hasOuterBorder ? {
-            border: `${element.strokeWidth}px ${element.borderStyle || 'solid'} ${element.stroke}`,
-            boxSizing: 'border-box',
-            borderRadius: element.borderRadius || 0,
-        } : {};
+        const hasOuterBorderSides = !!element.borderSides;
 
         // Compute total rows for border mode logic
         const totalItems = displayItems.length + offset;
@@ -633,13 +629,24 @@ export const CanvasElement: React.FC<CanvasElementProps> = (props) => {
                 })}
 
                 {/* Outer grid border — rendered AFTER cells so it appears on top */}
-                {hasOuterBorder && (
+                {(hasOuterBorder || hasOuterBorderSides) && (
                     <div style={{
                         position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                        border: `${element.strokeWidth}px ${element.borderStyle || 'solid'} ${element.stroke}`,
                         boxSizing: 'border-box',
                         borderRadius: element.borderRadius || 0,
                         pointerEvents: 'none',
+                        ...(hasOuterBorderSides ? (() => {
+                            const makeBorder = (side: { width: number; color: string; style: string }) =>
+                                `${side.width}px ${side.style === 'double' ? 'double' : side.style} ${side.color}`;
+                            const s: React.CSSProperties = {};
+                            if (element.borderSides!.top) s.borderTop = makeBorder(element.borderSides!.top);
+                            if (element.borderSides!.right) s.borderRight = makeBorder(element.borderSides!.right);
+                            if (element.borderSides!.bottom) s.borderBottom = makeBorder(element.borderSides!.bottom);
+                            if (element.borderSides!.left) s.borderLeft = makeBorder(element.borderSides!.left);
+                            return s;
+                        })() : {
+                            border: `${element.strokeWidth}px ${element.borderStyle || 'solid'} ${element.stroke}`,
+                        }),
                     }} />
                 )}
 

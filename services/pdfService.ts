@@ -1382,19 +1382,32 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
                 });
 
                 // Draw outer grid border (from element's stroke settings — highest priority, drawn last)
-                const outerStrokeRgb = options.isGreyscale ? hexToGreyscale(el.stroke) : strokeRgb;
-                if (outerStrokeRgb && strokeWidth > 0 && el.borderStyle !== 'none') {
-                    doc.setDrawColor(outerStrokeRgb.r, outerStrokeRgb.g, outerStrokeRgb.b);
-                    doc.setLineWidth(strokeWidth);
-                    if (el.borderStyle === 'dashed') doc.setLineDashPattern([3, 3], 0);
-                    else if (el.borderStyle === 'dotted') doc.setLineDashPattern([1, 1], 0);
-                    else doc.setLineDashPattern([], 0);
-                    // Grid bounds = all cols * cellW + gaps, all rows * cellH + gaps
-                    const gridW = safeCols * cellW + (safeCols - 1) * sGapX;
-                    const gridH = totalRows * cellH + (totalRows - 1) * sGapY;
-                    // Inset by half stroke width so border stays inside the grid
-                    const sw2 = strokeWidth / 2;
-                    doc.roundedRect(lx + sw2, ly + yOffset + sw2, gridW - strokeWidth, gridH - strokeWidth, radius, radius, 'D');
+                // Grid bounds = all cols * cellW + gaps, all rows * cellH + gaps
+                const gridW = safeCols * cellW + (safeCols - 1) * sGapX;
+                const gridH = totalRows * cellH + (totalRows - 1) * sGapY;
+
+                if (el.borderSides) {
+                    // Per-side outer border using borderSides config
+                    const outerSides: { top?: BSide; right?: BSide; bottom?: BSide; left?: BSide } = {};
+                    if (el.borderSides.top) outerSides.top = { width: el.borderSides.top.width, color: el.borderSides.top.color, style: el.borderSides.top.style as any };
+                    if (el.borderSides.right) outerSides.right = { width: el.borderSides.right.width, color: el.borderSides.right.color, style: el.borderSides.right.style as any };
+                    if (el.borderSides.bottom) outerSides.bottom = { width: el.borderSides.bottom.width, color: el.borderSides.bottom.color, style: el.borderSides.bottom.style as any };
+                    if (el.borderSides.left) outerSides.left = { width: el.borderSides.left.width, color: el.borderSides.left.color, style: el.borderSides.left.style as any };
+                    if (outerSides.top || outerSides.right || outerSides.bottom || outerSides.left) {
+                        drawCellBorders(lx, ly, gridW, gridH, yOffset, outerSides);
+                    }
+                } else {
+                    const outerStrokeRgb = options.isGreyscale ? hexToGreyscale(el.stroke) : strokeRgb;
+                    if (outerStrokeRgb && strokeWidth > 0 && el.borderStyle !== 'none') {
+                        doc.setDrawColor(outerStrokeRgb.r, outerStrokeRgb.g, outerStrokeRgb.b);
+                        doc.setLineWidth(strokeWidth);
+                        if (el.borderStyle === 'dashed') doc.setLineDashPattern([3, 3], 0);
+                        else if (el.borderStyle === 'dotted') doc.setLineDashPattern([1, 1], 0);
+                        else doc.setLineDashPattern([], 0);
+                        // Inset by half stroke width so border stays inside the grid
+                        const sw2 = strokeWidth / 2;
+                        doc.roundedRect(lx + sw2, ly + yOffset + sw2, gridW - strokeWidth, gridH - strokeWidth, radius, radius, 'D');
+                    }
                 }
 
                 doc.setLineDashPattern([], 0);
