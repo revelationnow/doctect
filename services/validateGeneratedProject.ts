@@ -1,10 +1,10 @@
 import type { AppNode, Variant } from '../types';
 import {
     MAX_ELEMENTS,
+    MAX_GENERATOR_OUTPUT_BYTES,
     MAX_LAYERS_PER_TEMPLATE,
     MAX_NODES,
     MAX_REFERENCE_DEPTH,
-    MAX_STATE_BYTES,
     MAX_TEMPLATE_DIMENSION,
     MAX_TRAVERSAL_DEPTH,
     MAX_VARIANTS,
@@ -165,8 +165,8 @@ export function validateGeneratedProject(raw: GeneratorSandboxRawResult): Genera
     } catch {
         return fail('hierarchy', 'Generator output is not serializable.');
     }
-    if (utf8Bytes(serialized) > MAX_STATE_BYTES) {
-        return fail('limits', `Generated output exceeds ${MAX_STATE_BYTES} bytes.`);
+    if (utf8Bytes(serialized) > MAX_GENERATOR_OUTPUT_BYTES) {
+        return fail('limits', `Generated output exceeds ${MAX_GENERATOR_OUTPUT_BYTES} bytes.`);
     }
 
     const cloned = JSON.parse(serialized) as GeneratorSandboxRawResult;
@@ -307,8 +307,8 @@ export function validateGeneratedProject(raw: GeneratorSandboxRawResult): Genera
         activeVariantId,
         schemaVersion: CURRENT_SCHEMA_VERSION,
     });
-    if (utf8Bytes(serializedProject) > MAX_STATE_BYTES) {
-        return fail('limits', `Generated project exceeds ${MAX_STATE_BYTES} bytes after normalization.`);
+    if (utf8Bytes(serializedProject) > MAX_GENERATOR_OUTPUT_BYTES) {
+        return fail('limits', `Generated project exceeds ${MAX_GENERATOR_OUTPUT_BYTES} bytes after normalization.`);
     }
     const project = JSON.parse(serializedProject) as GeneratedProject;
 

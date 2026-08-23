@@ -2,7 +2,7 @@ import {
     GENERATOR_COMBINED_MAX_BYTES,
     GENERATOR_SCRIPT_MAX_BYTES,
 } from '../shared/generatorMetadata.js';
-import { MAX_STATE_BYTES } from '../shared/projectLimits.js';
+import { MAX_GENERATOR_OUTPUT_BYTES } from '../shared/projectLimits.js';
 
 export interface GeneratorSandboxRequest {
     templateScript: string;
@@ -413,7 +413,7 @@ function generatorSupervisorMain(evaluatorSource: string) {
     };
 }
 
-const EVALUATOR_SOURCE = `(${generatorEvaluatorMain.toString()})(${MAX_STATE_BYTES});`;
+const EVALUATOR_SOURCE = `(${generatorEvaluatorMain.toString()})(${MAX_GENERATOR_OUTPUT_BYTES});`;
 const WORKER_SOURCE = `(${generatorSupervisorMain.toString()})(${JSON.stringify(EVALUATOR_SOURCE)});`;
 
 const iframeDocument = (): string => {

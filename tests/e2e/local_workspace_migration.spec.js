@@ -6,7 +6,7 @@ import {
     updateActiveProject,
 } from './localWorkspaceHelpers.js';
 import {
-    MAX_STATE_BYTES,
+    LEGACY_STATE_BYTES,
     WORKSPACE_STORE_NAMES,
     armLegacyStorageEvent,
     createChangedLegacyWorkspace,
@@ -535,7 +535,7 @@ test.describe('local workspace migration release gate', () => {
         }
     });
 
-    test('aggregate legacy JSON above 5 MiB and one project near MAX_STATE_BYTES migrate exactly', async ({ page }, testInfo) => {
+    test('aggregate legacy JSON above 5 MiB and one project near LEGACY_STATE_BYTES migrate exactly', async ({ page }, testInfo) => {
         test.skip(!testInfo.project.name.startsWith('workspace-large-'), 'Dedicated large-storage project only.');
         test.setTimeout(180_000);
         const legacy = await prepareLargeLegacyWorkspace(page);
@@ -546,8 +546,8 @@ test.describe('local workspace migration release gate', () => {
 
         expect(legacy.seed.bytes).toBe(expectedSeedBytes);
         expect(legacy.aggregateProjectBytes).toBeGreaterThan(5 * 1024 * 1024);
-        expect(legacy.nearLimitStateBytes).toBeGreaterThan(MAX_STATE_BYTES - 2048);
-        expect(legacy.nearLimitStateBytes).toBeLessThan(MAX_STATE_BYTES);
+        expect(legacy.nearLimitStateBytes).toBeGreaterThan(LEGACY_STATE_BYTES - 2048);
+        expect(legacy.nearLimitStateBytes).toBeLessThan(LEGACY_STATE_BYTES);
         await page.goto('/app');
         await expect(receiptHeading(page)).toBeVisible();
         const migrated = await readWorkspace(page);
@@ -597,7 +597,7 @@ test.describe('local workspace migration release gate', () => {
 
         const large = await prepareNearLimitLegacyWorkspaceFromBuiltEditor(page);
         const nearLimitProject = large.projects[0];
-        expect(large.nearLimitStateBytes).toBeGreaterThan(MAX_STATE_BYTES - 2048);
+        expect(large.nearLimitStateBytes).toBeGreaterThan(LEGACY_STATE_BYTES - 2048);
         await page.goto('/app');
         await continueToEditor(page);
 

@@ -9,7 +9,9 @@ export const WORKSPACE_STORE_NAMES = [
     'migrationLedger',
     'legacyBackup',
 ];
-export const MAX_STATE_BYTES = 5 * 1024 * 1024;
+// The pre-2026-08 state ceiling. Migration fixtures deliberately pin the old
+// value: the point is to prove a project authored under it still migrates.
+export const LEGACY_STATE_BYTES = 5 * 1024 * 1024;
 
 const LEGACY_KEYS = {
     projects: 'hype_projects',
@@ -623,7 +625,7 @@ export const createLargeLegacyWorkspace = async (page, baseState) => {
     const firstState = baseState === undefined
         ? await stateFromProduction(page)
         : clone(baseState);
-    const targetBytes = MAX_STATE_BYTES - 1024;
+    const targetBytes = LEGACY_STATE_BYTES - 1024;
     firstState.nodes[firstState.rootId].data = {
         ...firstState.nodes[firstState.rootId].data,
         unicodeSeed: 'Café 根 😀',
