@@ -7,9 +7,20 @@ import { computePageOrder } from '../../services/pdfService';
 import { normalizeCssColor } from '../../services/svgColorNormalize';
 import { hasVisibleTextFontSize } from '../../services/textVisibility';
 
+export interface LoadedGalleryVariant {
+    id: string;
+    name: string;
+    templates: Record<string, any>;
+    pageWidth: number;
+    pageHeight: number;
+}
+
 export interface LoadedGallerySample {
     slug: string;
+    /** The active variant's templates. Single-variant samples are unaffected. */
     templates: Record<string, any>;
+    variants: LoadedGalleryVariant[];
+    activeVariantId: string;
     nodes: Record<string, any>;
     rootId: string;
     templateSource: string;
@@ -22,6 +33,8 @@ export interface GallerySampleContract {
     pageCount: [number, number];
     palette: string[];
     requiredStableNodeIds: ['root', 'start_here', 'example_workspace', 'blank_workspace'];
+    /** Expected page size per variant id. Omit for a single 509x679 variant. */
+    expectedVariants?: Record<string, { width: number; height: number }>;
 }
 
 const GALLERY_SAMPLES_DIR = join(dirname(fileURLToPath(import.meta.url)), '../../gallery-samples');
@@ -135,7 +148,23 @@ export function executeGallerySample(
     const templateFn = new Function('consts', `with (consts) { ${templateSource} }`);
     const raw = templateFn({ RM_PP_WIDTH: 509, RM_PP_HEIGHT: 679, A4_WIDTH: 595, A4_HEIGHT: 842 });
     const normalized = normalizeGeneratedTemplates(raw);
-    const templates = normalized.templates ?? normalized.variants![normalized.activeVariantId!].templates;
+    const rawVariants: Record<string, { name?: string; templates: Record<string, any> }> =
+        normalized.variants ?? { default: { name: 'Default', templates: normalized.templates! } };
+    const activeVariantId = normalized.variants
+        ? normalized.activeVariantId!
+        : 'default';
+
+    const variants: LoadedGalleryVariant[] = Object.entries(rawVariants).map(([id, variant]) => {
+        const first: any = Object.values(variant.templates ?? {})[0];
+        return {
+            id,
+            name: typeof variant.name === 'string' ? variant.name : id,
+            templates: variant.templates ?? {},
+            pageWidth: typeof first?.width === 'number' ? first.width : PAGE_WIDTH,
+            pageHeight: typeof first?.height === 'number' ? first.height : PAGE_HEIGHT,
+        };
+    });
+    const templates = variants.find(variant => variant.id === activeVariantId)?.templates ?? {};
     let sequence = 0;
     const createId = (prefix = 'node') => `${prefix}_${String(++sequence).padStart(4, '0')}`;
     const hierarchyFn = new Function('templates', 'createId', 'SAMPLE_CONFIG', hierarchySource);
@@ -148,6 +177,8 @@ export function executeGallerySample(
     const sample: LoadedGallerySample = {
         slug: 'fixture',
         templates,
+        variants,
+        activeVariantId,
         nodes: result.nodes,
         rootId: result.rootId,
         templateSource,
@@ -406,10 +437,10 @@ const validateDeterministicIds = (sample: LoadedGallerySample, errors: string[])
             sample.hierarchySource,
             executionConfigs.get(sample) ?? {},
         );
-        const templateIds = Object.keys(sample.templates).sort();
-        const repeatedTemplateIds = Object.keys(repeated.templates).sort();
-        if (JSON.stringify(templateIds) !== JSON.stringify(repeatedTemplateIds)) {
-            errors.push('template IDs are not deterministic across repeated execution');
+        const variantIds = sample.variants.map(variant => variant.id).sort();
+        const repeatedVariantIds = repeated.variants.map(variant => variant.id).sort();
+        if (JSON.stringify(variantIds) !== JSON.stringify(repeatedVariantIds)) {
+            errors.push('variant IDs are not deterministic across repeated execution');
             return;
         }
         const nodeKeys = Object.keys(sample.nodes).sort();
@@ -422,50 +453,65 @@ const validateDeterministicIds = (sample: LoadedGallerySample, errors: string[])
         if (JSON.stringify(nodeIds) !== JSON.stringify(repeatedNodeIds)) {
             errors.push('hierarchy node IDs are not deterministic across repeated execution');
         }
-        templateIds.forEach(templateId => {
-            const elements = Array.isArray(sample.templates[templateId]?.elements)
-                ? sample.templates[templateId].elements
-                : [];
-            const repeatedElements = Array.isArray(repeated.templates[templateId]?.elements)
-                ? repeated.templates[templateId].elements
-                : [];
-            const count = Math.max(elements.length, repeatedElements.length);
-            for (let index = 0; index < count; index += 1) {
-                if (elements[index]?.id !== repeatedElements[index]?.id) {
-                    errors.push(`template '${templateId}' element at index ${index} id is not deterministic across repeated execution`);
-                }
+
+        for (const variant of sample.variants) {
+            const repeatedVariant = repeated.variants.find(candidate => candidate.id === variant.id)!;
+            const templateIds = Object.keys(variant.templates).sort();
+            const repeatedTemplateIds = Object.keys(repeatedVariant.templates).sort();
+            if (JSON.stringify(templateIds) !== JSON.stringify(repeatedTemplateIds)) {
+                errors.push(`variant '${variant.id}' template IDs are not deterministic across repeated execution`);
+                continue;
             }
-        });
+            templateIds.forEach(templateId => {
+                const elements = Array.isArray(variant.templates[templateId]?.elements)
+                    ? variant.templates[templateId].elements
+                    : [];
+                const repeatedElements = Array.isArray(repeatedVariant.templates[templateId]?.elements)
+                    ? repeatedVariant.templates[templateId].elements
+                    : [];
+                const count = Math.max(elements.length, repeatedElements.length);
+                for (let index = 0; index < count; index += 1) {
+                    if (elements[index]?.id !== repeatedElements[index]?.id) {
+                        errors.push(`variant '${variant.id}' template '${templateId}' element at index ${index} id is not deterministic across repeated execution`);
+                    }
+                }
+            });
+        }
     } catch (error) {
         errors.push(`deterministic ID check failed: ${error instanceof Error ? error.message : String(error)}`);
     }
 };
 
-const validateTemplates = (sample: LoadedGallerySample, errors: string[]) => {
+const validateVariantTemplates = (
+    sample: LoadedGallerySample,
+    variant: LoadedGalleryVariant,
+    errors: string[],
+) => {
+    const label = sample.variants.length > 1 ? `variant '${variant.id}' ` : '';
     const seenElementIds = new Map<string, string>();
-    Object.entries(sample.templates).forEach(([templateId, template]) => {
+    Object.entries(variant.templates).forEach(([templateId, template]) => {
         if (!isRecord(template)) {
-            errors.push(`template '${templateId}' must be an object`);
+            errors.push(`${label}template '${templateId}' must be an object`);
             return;
         }
-        if (!isNonEmptyString(templateId)) errors.push('template key must be a non-empty string');
-        if (!isNonEmptyString(template.id)) errors.push(`template '${templateId}' id must be a non-empty string`);
-        else if (template.id !== templateId) errors.push(`template key '${templateId}' does not match id '${template.id}'`);
-        if (template.width !== PAGE_WIDTH || template.height !== PAGE_HEIGHT) {
-            errors.push(`template '${templateId}' must be ${PAGE_WIDTH}x${PAGE_HEIGHT}`);
+        if (!isNonEmptyString(templateId)) errors.push(`${label}template key must be a non-empty string`);
+        if (!isNonEmptyString(template.id)) errors.push(`${label}template '${templateId}' id must be a non-empty string`);
+        else if (template.id !== templateId) errors.push(`${label}template key '${templateId}' does not match id '${template.id}'`);
+        if (template.width !== variant.pageWidth || template.height !== variant.pageHeight) {
+            errors.push(`${label}template '${templateId}' must be ${variant.pageWidth}x${variant.pageHeight}`);
         }
         if (!Array.isArray(template.elements)) {
-            errors.push(`template '${templateId}' elements must be an array`);
+            errors.push(`${label}template '${templateId}' elements must be an array`);
             return;
         }
 
         template.elements.forEach((element: any, elementIndex: number) => {
             if (!isNonEmptyString(element?.id)) {
-                errors.push(`template '${templateId}' element at index ${elementIndex} id must be a non-empty string`);
+                errors.push(`${label}template '${templateId}' element at index ${elementIndex} id must be a non-empty string`);
             } else {
                 const previousTemplate = seenElementIds.get(element.id);
                 if (previousTemplate) {
-                    errors.push(`element id '${element.id}' is duplicated in templates '${previousTemplate}' and '${templateId}'`);
+                    errors.push(`${label}element id '${element.id}' is duplicated in templates '${previousTemplate}' and '${templateId}'`);
                 } else {
                     seenElementIds.set(element.id, templateId);
                 }
@@ -473,29 +519,29 @@ const validateTemplates = (sample: LoadedGallerySample, errors: string[]) => {
             if (element?.type === 'grid') {
                 const grid = element.gridConfig;
                 if ((isNonEmptyString(element.stroke) && element.stroke !== 'none') || element.strokeWidth !== 0) {
-                    errors.push(`${element.id} grid element stroke must be empty or none with strokeWidth 0`);
+                    errors.push(`${label}${element.id} grid element stroke must be empty or none with strokeWidth 0`);
                 }
                 if (!isRecord(grid)) {
-                    errors.push(`template '${templateId}' element '${element.id}' gridConfig is missing`);
+                    errors.push(`${label}template '${templateId}' element '${element.id}' gridConfig is missing`);
                 } else {
-                    if (grid.gridBorderMode === undefined) errors.push(`${element.id} gridBorderMode must be explicit`);
-                    else if (!GRID_MODES.has(grid.gridBorderMode)) errors.push(`${element.id} gridBorderMode '${grid.gridBorderMode}' is invalid`);
-                    if (grid.gridBorderStyle === undefined) errors.push(`${element.id} gridBorderStyle must be explicit`);
-                    else if (!GRID_STYLES.has(grid.gridBorderStyle)) errors.push(`${element.id} gridBorderStyle '${grid.gridBorderStyle}' is invalid`);
+                    if (grid.gridBorderMode === undefined) errors.push(`${label}${element.id} gridBorderMode must be explicit`);
+                    else if (!GRID_MODES.has(grid.gridBorderMode)) errors.push(`${label}${element.id} gridBorderMode '${grid.gridBorderMode}' is invalid`);
+                    if (grid.gridBorderStyle === undefined) errors.push(`${label}${element.id} gridBorderStyle must be explicit`);
+                    else if (!GRID_STYLES.has(grid.gridBorderStyle)) errors.push(`${label}${element.id} gridBorderStyle '${grid.gridBorderStyle}' is invalid`);
                     const bordered = grid.gridBorderMode !== 'none';
                     if (bordered && (typeof grid.gridBorderColor !== 'string'
                         || !/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(grid.gridBorderColor))) {
-                        errors.push(`${element.id} gridBorderColor must be opaque #RGB or #RRGGBB for bordered mode '${grid.gridBorderMode}'`);
+                        errors.push(`${label}${element.id} gridBorderColor must be opaque #RGB or #RRGGBB for bordered mode '${grid.gridBorderMode}'`);
                     }
                     if (typeof grid.gridBorderWidth !== 'number' || !Number.isFinite(grid.gridBorderWidth)
                         || (bordered ? grid.gridBorderWidth <= 0 : grid.gridBorderWidth < 0)) {
-                        errors.push(`${element.id} gridBorderWidth must be a ${bordered ? 'positive finite' : 'non-negative finite'} number`);
+                        errors.push(`${label}${element.id} gridBorderWidth must be a ${bordered ? 'positive finite' : 'non-negative finite'} number`);
                     }
                     if (bordered && grid.gridBorderStyle === 'none') {
-                        errors.push(`${element.id} gridBorderStyle must not be 'none' for bordered mode '${grid.gridBorderMode}'`);
+                        errors.push(`${label}${element.id} gridBorderStyle must not be 'none' for bordered mode '${grid.gridBorderMode}'`);
                     }
                     if (grid.sourceType === 'specific' && (typeof grid.sourceId !== 'string' || !sample.nodes[grid.sourceId])) {
-                        errors.push(`${element.id} grid source '${grid.sourceId ?? ''}' does not exist`);
+                        errors.push(`${label}${element.id} grid source '${grid.sourceId ?? ''}' does not exist`);
                     }
                 }
             }
@@ -505,16 +551,16 @@ const validateTemplates = (sample: LoadedGallerySample, errors: string[]) => {
                 try {
                     const bounds = getElementBounds(element, sample.nodes, node.id);
                     if (![element.x, element.y, bounds.w, bounds.h].every(Number.isFinite)) {
-                        errors.push(`template '${templateId}' element '${element.id}' has non-finite bounds for node '${node.id}'`);
+                        errors.push(`${label}template '${templateId}' element '${element.id}' has non-finite bounds for node '${node.id}'`);
                     } else {
-                        if (bounds.w <= 0 || bounds.h <= 0) errors.push(`template '${templateId}' element '${element.id}' has non-positive bounds for node '${node.id}'`);
-                        if (element.x < 0) errors.push(`template '${templateId}' element '${element.id}' starts before x=0 for node '${node.id}'`);
-                        if (element.y < 0) errors.push(`template '${templateId}' element '${element.id}' starts before y=0 for node '${node.id}'`);
-                        if (element.x + bounds.w > PAGE_WIDTH) errors.push(`template '${templateId}' element '${element.id}' overflows width for node '${node.id}'`);
-                        if (element.y + bounds.h > PAGE_HEIGHT) errors.push(`template '${templateId}' element '${element.id}' overflows height for node '${node.id}'`);
+                        if (bounds.w <= 0 || bounds.h <= 0) errors.push(`${label}template '${templateId}' element '${element.id}' has non-positive bounds for node '${node.id}'`);
+                        if (element.x < 0) errors.push(`${label}template '${templateId}' element '${element.id}' starts before x=0 for node '${node.id}'`);
+                        if (element.y < 0) errors.push(`${label}template '${templateId}' element '${element.id}' starts before y=0 for node '${node.id}'`);
+                        if (element.x + bounds.w > variant.pageWidth) errors.push(`${label}template '${templateId}' element '${element.id}' overflows width for node '${node.id}'`);
+                        if (element.y + bounds.h > variant.pageHeight) errors.push(`${label}template '${templateId}' element '${element.id}' overflows height for node '${node.id}'`);
                     }
                 } catch (error) {
-                    errors.push(`template '${templateId}' element '${element.id}' bounds failed for node '${node.id}': ${error instanceof Error ? error.message : String(error)}`);
+                    errors.push(`${label}template '${templateId}' element '${element.id}' bounds failed for node '${node.id}': ${error instanceof Error ? error.message : String(error)}`);
                 }
             });
         });
@@ -598,8 +644,10 @@ const findNonJsonValue = (root: unknown): string | undefined => {
 };
 
 const validateJsonClonable = (sample: LoadedGallerySample, errors: string[]) => {
-    const templateIssue = findNonJsonValue(sample.templates);
-    if (templateIssue) errors.push(`templates: ${templateIssue} — sandbox rejects non-JSON output`);
+    sample.variants.forEach(variant => {
+        const templateIssue = findNonJsonValue(variant.templates);
+        if (templateIssue) errors.push(`variant '${variant.id}' templates: ${templateIssue} — sandbox rejects non-JSON output`);
+    });
     const nodeIssue = findNonJsonValue(sample.nodes);
     if (nodeIssue) errors.push(`nodes: ${nodeIssue} — sandbox rejects non-JSON output`);
 };
@@ -615,7 +663,7 @@ export function validateSharedGalleryInvariants(sample: LoadedGallerySample): st
     if (typeof sample?.hierarchySource !== 'string') errors.push('hierarchySource must be a string');
     if (templatesValid && nodesValid) {
         validateStructure(sample, errors);
-        validateTemplates(sample, errors);
+        sample.variants.forEach(variant => validateVariantTemplates(sample, variant, errors));
         validateExampleChrome(sample, errors);
         validateJsonClonable(sample, errors);
         if (typeof sample.templateSource === 'string' && typeof sample.hierarchySource === 'string') {
@@ -629,14 +677,39 @@ export function validateGallerySample(sample: LoadedGallerySample, contract: Gal
     const errors = validateSharedGalleryInvariants(sample);
     if (sample?.slug !== contract.slug) errors.push(`sample slug '${sample?.slug}' does not match contract slug '${contract.slug}'`);
 
-    const templates = isRecord(sample?.templates) ? sample.templates : {};
     const nodes = isRecord(sample?.nodes) ? sample.nodes : {};
+    const variants = Array.isArray(sample?.variants) ? sample.variants : [];
     const expectedTemplates = new Set(contract.expectedTemplateIds);
-    contract.expectedTemplateIds.forEach(templateId => {
-        if (!templates[templateId]) errors.push(`expected template '${templateId}' is missing`);
+
+    const expectedVariants = contract.expectedVariants
+        ?? { default: { width: 509, height: 679 } };
+    const actualVariantIds = new Set(variants.map(variant => variant.id));
+    Object.entries(expectedVariants).forEach(([variantId, size]) => {
+        const variant = variants.find(candidate => candidate.id === variantId);
+        if (!variant) {
+            errors.push(`expected variant '${variantId}' is missing`);
+            return;
+        }
+        if (variant.pageWidth !== size.width || variant.pageHeight !== size.height) {
+            errors.push(`variant '${variantId}' is ${variant.pageWidth}x${variant.pageHeight}, expected ${size.width}x${size.height}`);
+        }
     });
-    Object.keys(templates).forEach(templateId => {
-        if (!expectedTemplates.has(templateId)) errors.push(`unexpected template '${templateId}' is present`);
+    actualVariantIds.forEach(variantId => {
+        if (!expectedVariants[variantId]) errors.push(`unexpected variant '${variantId}' is present`);
+    });
+
+    variants.forEach(variant => {
+        const label = variants.length > 1 ? `variant '${variant.id}' ` : '';
+        contract.expectedTemplateIds.forEach(templateId => {
+            if (!variant.templates[templateId]) {
+                errors.push(`${label}expected template '${templateId}' is missing`);
+            }
+        });
+        Object.keys(variant.templates).forEach(templateId => {
+            if (!expectedTemplates.has(templateId)) {
+                errors.push(`${label}unexpected template '${templateId}' is present`);
+            }
+        });
     });
 
     let pageCount: number | undefined;
