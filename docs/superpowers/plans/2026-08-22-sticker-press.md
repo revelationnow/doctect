@@ -23,6 +23,8 @@
 - Sheet ground is pure white. No borders around sticker cells. Labels sit in a gutter strip below the artwork.
 - Element ids must be deterministic across repeated execution — use a monotonic counter, never `Math.random()`.
 - Generator scripts are capped at 512 KiB each (`shared/generatorMetadata.js:2`).
+- **Every sheet needs its own template.** Unlike the other twenty products, which reuse one template across many nodes via `{{field}}` binding, `svgContent` is not data-bindable — it is read raw at both render sites. Each sheet's artwork is therefore baked into its own template, so a variant holds ~77 templates rather than the ~11 a planner needs.
+- **Tests never evaluate `templates.js` with an appended `return`.** The script ends with its own top-level `return`, which would make an appended one unreachable. All unit tests load internals through `tests/unit/gallerySamples/stickerPressScope.ts` (`loadStickerPressScope`, `runStickerPressGenerator`), which cuts the source at the `GENERATE_SENTINEL` line. Task 11 must emit that sentinel verbatim.
 - Skip-to-blank link text is exactly `Skip to blank workspace →` (trailing arrow required by the harness).
 - Run the full unit suite with `npx vitest run`. Run one file with `npx vitest run <path>`.
 
@@ -497,6 +499,8 @@ variants reusing ids is what makes them one product."
 - Create: `gallery-samples/21-sticker-press/templates.js` (profiles + a handful of builders only)
 - Create: `gallery-samples/21-sticker-press/hierarchy.js` (minimal)
 - Create: `scratch/spike_sticker_bytes.mjs` (not committed)
+- Already present: `tests/unit/gallerySamples/stickerPressScope.ts` — the shared loader every
+  later test uses. Do not modify it.
 
 **Interfaces:**
 - Consumes: Tasks 1 and 2.
@@ -566,7 +570,10 @@ import { readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 
 const source = readFileSync('gallery-samples/21-sticker-press/templates.js', 'utf8');
-const scope = new Function(`${source}; return { DEVICES, builders, svgMarkup };`)();
+const SENTINEL = '// ---- GENERATE (tests strip below this line) ----';
+const cut = source.indexOf(SENTINEL);
+const body = cut === -1 ? source : source.slice(0, cut);
+const scope = new Function(`${body}\nreturn { DEVICES, builders, svgMarkup };`)();
 
 const samples = [
     scope.svgMarkup(scope.builders.star(5, 0.5), '#f0c674', '#23292f'),
@@ -682,11 +689,10 @@ Measured: <mean markup> bytes/sticker, <placement> bytes/placement,
 Create `tests/unit/gallerySamples/stickerPressBuilders.test.ts`:
 
 ```ts
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { loadStickerPressScope, runStickerPressGenerator } from './stickerPressScope';
 
-const SOURCE = readFileSync('gallery-samples/21-sticker-press/templates.js', 'utf8');
-const scope = new Function(`${SOURCE}; return { builders, svgMarkup, DEVICES };`)();
+const scope = loadStickerPressScope(['builders', 'svgMarkup', 'DEVICES']);
 
 const PATH_DATA = /^[MmLlHhVvCcSsQqTtAaZz0-9 .,-]+$/;
 
@@ -1075,13 +1081,13 @@ git commit -m "feat(sticker-press): travel, celebration, home and symbol builder
 Create `tests/unit/gallerySamples/stickerPressRegistry.test.ts`:
 
 ```ts
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { loadStickerPressScope, runStickerPressGenerator } from './stickerPressScope';
 
-const SOURCE = readFileSync('gallery-samples/21-sticker-press/templates.js', 'utf8');
-const scope = new Function(
-    `${SOURCE}; return { builders, REGISTRY, CATEGORIES, STRUCTURAL_COLOURWAYS, INK_TREATMENTS, PICTORIAL_TREATMENTS, svgMarkup };`,
-)();
+const scope = loadStickerPressScope([
+    'builders', 'REGISTRY', 'CATEGORIES',
+    'STRUCTURAL_COLOURWAYS', 'INK_TREATMENTS', 'PICTORIAL_TREATMENTS', 'svgMarkup',
+]);
 
 const luminance = (hex: string) => {
     const digits = hex.replace('#', '');
@@ -1256,13 +1262,13 @@ git commit -m "feat(sticker-press): 500-sticker registry with categories and col
 Create `tests/unit/gallerySamples/stickerPressLayout.test.ts`:
 
 ```ts
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { loadStickerPressScope, runStickerPressGenerator } from './stickerPressScope';
 
-const SOURCE = readFileSync('gallery-samples/21-sticker-press/templates.js', 'utf8');
-const scope = new Function(
-    `${SOURCE}; return { DEVICES, REGISTRY, planSheets, buildStickerElements, resetElementIds };`,
-)();
+const scope = loadStickerPressScope([
+    'DEVICES', 'REGISTRY', 'planSheets', 'buildStickerElements', 'resetElementIds',
+    'buildRail', 'buildSwitcher',
+]);
 
 const device = (id: string) => scope.DEVICES.find((d: any) => d.id === id);
 
@@ -1425,6 +1431,9 @@ git commit -m "feat(sticker-press): sheet layout engine with per-device packing"
 
 **Interfaces:**
 - Consumes: `planSheets`, `buildStickerElements`.
+- **Emits the `GENERATE_SENTINEL` line verbatim** immediately before the variant-building
+  block. `tests/unit/gallerySamples/stickerPressScope.ts` cuts the source there; omitting it
+  breaks every test written in Tasks 4-10.
 - Produces:
   - `buildRail(device, sheet)` → `TemplateElement[]` — full rail on `paper_pro`/`note_air`/`pure`, reduced 8-chip rail on `move`
   - `buildSwitcher(device, sheet)` → `TemplateElement[]` — six `specific_node` chips
@@ -1463,20 +1472,20 @@ describe('sticker press chrome', () => {
     });
 
     it('returns four variants with paper_pro active', () => {
-        const result = new Function(`${SOURCE}`)();
+        const result = runStickerPressGenerator();
         expect(Object.keys(result.variants).sort()).toEqual(['move', 'note_air', 'paper_pro', 'pure']);
         expect(result.activeVariantId).toBe('paper_pro');
     });
 
     it('gives all four variants an identical template id set', () => {
-        const result = new Function(`${SOURCE}`)();
+        const result = runStickerPressGenerator();
         const sets = Object.values(result.variants)
             .map((variant: any) => Object.keys(variant.templates).sort().join(','));
         expect(new Set(sets).size).toBe(1);
     });
 
     it('sizes every template to its own device page', () => {
-        const result = new Function(`${SOURCE}`)();
+        const result = runStickerPressGenerator();
         const expected: Record<string, [number, number]> = {
             paper_pro: [509, 679], move: [260, 463], note_air: [446, 595], pure: [447, 596],
         };
@@ -1499,6 +1508,11 @@ Expected: FAIL — `buildRail is not defined`.
 Add `buildRail`, `buildSwitcher` and `buildSheetTemplate`, then close the script:
 
 ```js
+// ---- GENERATE (tests strip below this line) ----
+// This sentinel is load-bearing: tests/unit/gallerySamples/stickerPressScope.ts cuts the
+// source here to reach the internals. Without it the script's own return below wins and
+// every builder, registry and layout test loses its handle on the module. Keep verbatim.
+
 const buildVariant = device => {
     resetElementIds();
     const templates = {};
@@ -1546,7 +1560,7 @@ git commit -m "feat(sticker-press): rail, colourway switcher and four-variant as
 Create `tests/unit/gallerySamples/stickerPress.test.ts`:
 
 ```ts
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { expectValidGallerySample, type GallerySampleContract } from '../../helpers/gallerySampleHarness';
 
 const CONTRACT: GallerySampleContract = {
@@ -1595,7 +1609,17 @@ root (cover)
 
 Every node in the `example_workspace` subtree must set `data.example_label = 'EXAMPLE'` and `data.skip_label = 'Skip to blank workspace →'`, and its template must bind both as visible text with the skip element carrying `linkTarget: 'specific_node'`, `linkValue: 'blank_workspace'`. This is enforced at `gallerySampleHarness.ts:524-563`.
 
-Then fill `expectedTemplateIds` in the test by running the generator and listing its template ids — do not hand-maintain that list.
+Then fill `expectedTemplateIds` with the generator's actual template ids. Because every sheet owns a template, this is a literal array of roughly 77 sorted strings, not the ~11 the planner products declare. Generate it once and paste it:
+
+```bash
+node -e "
+const { runStickerPressGenerator } = { runStickerPressGenerator: new Function(require('fs').readFileSync('gallery-samples/21-sticker-press/templates.js','utf8')) };
+const ids = Object.keys(runStickerPressGenerator().variants.paper_pro.templates).sort();
+console.log(JSON.stringify(ids, null, 4));
+"
+```
+
+Paste the output verbatim. It is a checked-in fact, not boilerplate: the harness compares it in both directions, so an accidentally added or dropped sheet fails the suite.
 
 - [ ] **Step 4: Run the tests**
 
@@ -1627,7 +1651,11 @@ Append to `tests/unit/gallerySamples/stickerPress.test.ts`:
 
 ```ts
 describe('21-sticker-press guards', () => {
-    const sample = () => expectValidGallerySample('21-sticker-press', CONTRACT);
+    // expectValidGallerySample re-executes the generator to check determinism, so this
+    // is a ~10 MB, four-variant build. Load it once for the whole block, never per test.
+    let loaded: ReturnType<typeof expectValidGallerySample>;
+    beforeAll(() => { loaded = expectValidGallerySample('21-sticker-press', CONTRACT); });
+    const sample = () => loaded;
 
     const everySvg = () => sample().variants.flatMap(variant =>
         Object.values(variant.templates).flatMap((template: any) =>
