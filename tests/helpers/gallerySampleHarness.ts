@@ -430,6 +430,12 @@ const validateStructure = (sample: LoadedGallerySample, errors: string[]) => {
     Object.keys(nodes).forEach(nodeId => visit(nodeId, []));
 };
 
+// Multi-variant samples name which variant an error belongs to; single-variant samples (the
+// twenty existing products, which all flow through one `default` variant) keep exactly the
+// pre-variant-support error text, unprefixed.
+const variantLabel = (sample: LoadedGallerySample, variant: LoadedGalleryVariant): string =>
+    sample.variants.length > 1 ? `variant '${variant.id}' ` : '';
+
 const validateDeterministicIds = (sample: LoadedGallerySample, errors: string[]) => {
     try {
         const repeated = executeGallerySample(
@@ -459,7 +465,7 @@ const validateDeterministicIds = (sample: LoadedGallerySample, errors: string[])
             const templateIds = Object.keys(variant.templates).sort();
             const repeatedTemplateIds = Object.keys(repeatedVariant.templates).sort();
             if (JSON.stringify(templateIds) !== JSON.stringify(repeatedTemplateIds)) {
-                errors.push(`variant '${variant.id}' template IDs are not deterministic across repeated execution`);
+                errors.push(`${variantLabel(sample, variant)}template IDs are not deterministic across repeated execution`);
                 continue;
             }
             templateIds.forEach(templateId => {
@@ -472,7 +478,7 @@ const validateDeterministicIds = (sample: LoadedGallerySample, errors: string[])
                 const count = Math.max(elements.length, repeatedElements.length);
                 for (let index = 0; index < count; index += 1) {
                     if (elements[index]?.id !== repeatedElements[index]?.id) {
-                        errors.push(`variant '${variant.id}' template '${templateId}' element at index ${index} id is not deterministic across repeated execution`);
+                        errors.push(`${variantLabel(sample, variant)}template '${templateId}' element at index ${index} id is not deterministic across repeated execution`);
                     }
                 }
             });
@@ -487,7 +493,7 @@ const validateVariantTemplates = (
     variant: LoadedGalleryVariant,
     errors: string[],
 ) => {
-    const label = sample.variants.length > 1 ? `variant '${variant.id}' ` : '';
+    const label = variantLabel(sample, variant);
     const seenElementIds = new Map<string, string>();
     Object.entries(variant.templates).forEach(([templateId, template]) => {
         if (!isRecord(template)) {
@@ -646,7 +652,7 @@ const findNonJsonValue = (root: unknown): string | undefined => {
 const validateJsonClonable = (sample: LoadedGallerySample, errors: string[]) => {
     sample.variants.forEach(variant => {
         const templateIssue = findNonJsonValue(variant.templates);
-        if (templateIssue) errors.push(`variant '${variant.id}' templates: ${templateIssue} — sandbox rejects non-JSON output`);
+        if (templateIssue) errors.push(`${variantLabel(sample, variant)}templates: ${templateIssue} — sandbox rejects non-JSON output`);
     });
     const nodeIssue = findNonJsonValue(sample.nodes);
     if (nodeIssue) errors.push(`nodes: ${nodeIssue} — sandbox rejects non-JSON output`);
@@ -699,7 +705,7 @@ export function validateGallerySample(sample: LoadedGallerySample, contract: Gal
     });
 
     variants.forEach(variant => {
-        const label = variants.length > 1 ? `variant '${variant.id}' ` : '';
+        const label = variantLabel(sample, variant);
         contract.expectedTemplateIds.forEach(templateId => {
             if (!variant.templates[templateId]) {
                 errors.push(`${label}expected template '${templateId}' is missing`);

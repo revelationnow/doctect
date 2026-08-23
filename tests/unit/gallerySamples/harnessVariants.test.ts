@@ -82,4 +82,28 @@ describe('harness variant support', () => {
 
         expect(errors.join('\n')).toMatch(/must be 509x679/);
     });
+
+    it('does not prefix determinism or JSON-clonable errors with a variant label for a single-variant sample', () => {
+        // No explicit element id (so normalization auto-generates a fresh random one on every
+        // execution) plus a function-valued field (not JSON-clonable) — trips both
+        // validateDeterministicIds and validateJsonClonable on a plain, non-`variants`-shaped
+        // sample, which the twenty existing gallery products all are.
+        const source = `
+            return {
+                sheet: {
+                    id: 'sheet', name: 'Sheet', width: 509, height: 679, elements: [
+                        { type: 'rect', x: 10, y: 10, w: 100, h: 20, rotation: 0, fill: '#fff', stroke: '', strokeWidth: 0, opacity: 1, badFn: () => {} },
+                    ],
+                },
+            };
+        `;
+        const sample = executeGallerySample(source, HIERARCHY);
+        expect(sample.variants).toHaveLength(1);
+
+        const errors = validateSharedGalleryInvariants(sample);
+
+        expect(errors.some(error => error.includes('is not deterministic across repeated execution'))).toBe(true);
+        expect(errors.some(error => error.includes('is a non-JSON function value'))).toBe(true);
+        expect(errors.every(error => !error.startsWith("variant '"))).toBe(true);
+    });
 });
