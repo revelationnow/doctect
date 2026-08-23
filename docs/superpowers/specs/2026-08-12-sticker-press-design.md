@@ -1,8 +1,8 @@
 # The Sticker Press — design
 
-**Date:** 2026-08-12
+**Date:** 2026-08-12 (revised 2026-08-22 after the IndexedDB local-workspace round)
 **Status:** design approved, plan not yet written
-**Slots:** `gallery-samples/21-sticker-press/`, `gallery-samples/22-sticker-press-compact/`
+**Slot:** `gallery-samples/21-sticker-press/`
 
 ## What this is
 
@@ -16,62 +16,53 @@ That single difference drives most of the decisions below: there is no data bind
 sheets, no per-page writing area, and the page chrome is deliberately kept out of the way of
 a crop.
 
-500 distinct stickers, each available in several colours and sizes. Colours and sizes do not
-count toward the 500.
+500 distinct stickers, each available in several colours and sizes, across four device
+variants. Colours, sizes and variants do not count toward the 500.
 
-## Editions
+## Device variants
 
-Sticker artwork is fixed-count, so it does not shrink on a smaller page — a smaller page just
-means more sheets. Each edition therefore costs roughly the same bytes regardless of its page
-size, and each must fit inside `MAX_STATE_BYTES` on its own. Two editions ship:
+One project, four variants. Exporting produces one PDF per variant, so a single download
+covers every supported device.
 
-| Edition | Page (pt) | Serves | Sheets | Pages | Est. state |
-|---|---|---|---:|---:|---:|
-| The Sticker Press | 509×679 | Paper Pro (exact fit) | ~62 | ~80 | ~2.4 MB |
-| The Sticker Press · Compact | 260×463 | Paper Pro Move (exact fit); Paper Pure and Boox Note Air 5C by scaling | ~143 | ~158 | ~2.5 MB |
+| Variant | Page (pt) | Device | Panel | Pixels | PPI | Sheets | Pages |
+|---|---|---|---|---|---:|---:|---:|
+| `paper_pro` | 509×679 | reMarkable Paper Pro | 11.8″ 3:4 colour | 1620×2160 | 229 | ~62 | ~80 |
+| `move` | 260×463 | reMarkable Paper Pro Move | 7.3″ 16:9 colour | 954×1696 | 264 | ~143 | ~158 |
+| `note_air` | 446×595 | Boox Note Air 5C | 10.3″ 4:3 colour | 1860×2480 | 300 | ~115 | ~132 |
+| `pure` | 447×596 | reMarkable Paper Pure | 10.3″ 4:3 **mono** | 1404×1872 | 226 | ~115 | ~132 |
 
-Device geometry, points at 72/inch, portrait:
+Points at 72/inch, portrait. 509×679 matches the app's existing `RM_PP_WIDTH`/`RM_PP_HEIGHT`
+constants (`types.ts:207-208`).
 
-| Device | Panel | Pixels | PPI | Page (pt) |
-|---|---|---|---:|---|
-| reMarkable Paper Pro | 11.8″ 3:4 colour | 1620×2160 | 229 | 509×679 |
-| reMarkable Paper Pro Move | 7.3″ 16:9 colour | 954×1696 | 264 | 260×463 |
-| reMarkable Paper Pure | 10.3″ 4:3 **mono** | 1404×1872 | 226 | 447×596 |
-| Boox Note Air 5C | 10.3″ 4:3 colour | 1860×2480 | 300 | 446×595 |
+Note Air 5C and Paper Pure compute to 446×595 and 447×596 — one point apart, invisible in use.
+They nonetheless get **separate variants**, because Paper Pure is monochrome and earns a
+different treatment set (see Colourways). The one-point page difference is incidental; the ink
+treatment is the reason.
 
-509×679 matches the app's existing `RM_PP_WIDTH`/`RM_PP_HEIGHT` constants (`types.ts:207-208`).
+The template script returns the documented multi-device shape,
+`{ variants, activeVariantId }` (`services/generatorTemplates.ts:37,42-54`), which
+`validateGeneratedProject` already understands (`:143-147`). `MAX_VARIANTS` is 50, so four is
+not close to any limit.
 
-Paper Pure and Note Air 5C compute to 447×596 and 446×595 — one point apart, which is
-invisible. They do not need separate editions, and neither gets one: both read the Compact
-edition scaled up. Readers on both platforms scale PDFs to fit.
+### Why variants cannot share bytes
 
-### Why not one project with four variants
+`Variant` carries its own complete `templates` map (`types.ts:151-155`), and the state cap is
+measured on `JSON.stringify`. JSON has no back-references, so two variants holding the same
+object in memory serialise as two full copies.
 
-`Variant` carries its own complete `templates` map (`types.ts:151-155`), and the byte cap is
-measured on `JSON.stringify` of the whole state. JSON has no back-references, so two variants
-holding the same object in memory serialise as two full copies. **There is no way for variants
-to share bytes.**
-
-The one mechanism that could have helped does not apply: `svgContent` is read raw at both
+The one mechanism that could have avoided this does not apply: `svgContent` is read raw at both
 render sites (`components/canvas/CanvasElement.tsx:461`, `services/pdfService.ts:1165`), and
 data binding is text-only (`services/previewText.ts:96` takes
 `Pick<TemplateElement, 'text' | 'dataBinding'>`). There is no asset library, symbol table, or
 shared-element concept in the schema. Storing each sticker's markup once in shared node data
 and binding it into four variants is not possible today.
 
-Four full-depth variants would be roughly 10 MB against a 5 MB ceiling.
-
-### Why a device constant is acceptable where a palette knob was not
-
-Alternate colourways must be baked into the exported PDF, because a screenshot captures
-whatever colour is drawn — you want every colour available in *your* file without re-running
-anything. Devices are the opposite: you own one. Re-running to target a different device costs
-nothing you care about, and it is the same `DEFAULT_CONFIG` pattern the other twenty flagships
-already use.
+Four variants therefore cost roughly four times one variant, and the state cap has to
+accommodate that directly. See Prerequisite A.
 
 ## Inventory
 
-### Structural — 180 stickers × 6 colourways × 3 sizes = 3,240 placements
+### Structural — 180 stickers × 6 colourways × 3 sizes = 3,240 placements per variant
 
 | # | Category | n | Contents |
 |---|---|---:|---|
@@ -83,7 +74,7 @@ already use.
 | 6 | Stars, sparkles, bursts | 22 | 4/5/6/8-point stars, twinkle clusters, starbursts, sunbursts, seals, medals |
 | 7 | Dividers, corners, frames | 32 | dotted, dashed, wave and zigzag rules, floral dividers, corner flourishes, bracket pairs, box frames, washi strips |
 
-### Pictorial — 320 stickers × 3 treatments × 2 sizes = 1,920 placements
+### Pictorial — 320 stickers × 3 treatments × 2 sizes = 1,920 placements per variant
 
 | # | Category | n | Contents |
 |---|---|---:|---|
@@ -99,7 +90,7 @@ already use.
 | 17 | Money & home | 22 | coins, banknote, wallet, piggy bank, receipt, shopping bag, houses, door, lamp, bed, tools |
 | 18 | Symbols & misc | 30 | exclamation, question, warning, hourglass, battery, wifi, sync, infinity, hashtag, music notes, dice, puzzle, flame |
 
-**Total: 500 stickers, 5,160 placements per edition.**
+**Total: 500 stickers, 5,160 placements per variant, 20,640 across the project.**
 
 ## Art style
 
@@ -111,46 +102,70 @@ One path carries both `fill` and `stroke`, so the style costs one element, not t
 
 ## Colourways and treatments
 
-### Structural: six colourways
+### Colour variants: six colourways (structural)
 
-Because the Compact edition is read on the monochrome Paper Pure, the six fills are chosen so
-their greyscale luminances stay separated. The app's own formula is
-`y = 0.299r + 0.587g + 0.114b` (`services/svgColorNormalize.ts:198`, `services/pdfService.ts:600`).
+| Colourway | Fill | Luminance |
+|---|---|---:|
+| Outline | none (paper) | 255 |
+| Amber | `#f0c674` | 201 |
+| Green | `#86c08e` | 169 |
+| Blue | `#5b93c4` | 136 |
+| Red | `#b04a46` | 104 |
+| Ink | `#3d4650` | 68 |
 
-| Colourway | Fill | Luminance | Gap to next |
-|---|---|---:|---:|
-| Outline | none (paper) | 255 | 54 |
-| Amber | `#f0c674` | 201 | 32 |
-| Green | `#86c08e` | 169 | 33 |
-| Blue | `#5b93c4` | 136 | 32 |
-| Red | `#b04a46` | 104 | 36 |
-| Ink | `#3d4650` | 68 | — |
+Luminance under the exporter's own formula, `y = 0.299r + 0.587g + 0.114b`
+(`services/svgColorNormalize.ts:198`, `services/pdfService.ts:600`). Minimum separation between
+adjacent fills is 32, and the outline (`#23292f`, luminance 40) stays 28 below the darkest fill.
 
-Minimum separation 32. The outline itself (`#23292f`, luminance 40) stays 28 below the darkest
-fill, so it still reads against Ink.
+The separation is retained even though Paper Pure now has its own variant, for two reasons: the
+app's own greyscale *export* toggle applies the same desaturation to any variant, and a colour
+device rendering in a low-contrast mode benefits equally.
 
-Pale fills are not a compromise here — a light fill under a heavy dark outline is the classic
-sticker look, and it is also what makes the luminance ladder possible.
+Pale fills are not a compromise — a light fill under a heavy dark outline is the classic sticker
+look, and it is also what makes the luminance ladder possible.
 
-### Pictorial: three treatments
+### Colour variants: three treatments (pictorial)
 
 - **Natural** — per-sticker authored colours (a leaf is green, a coffee is brown).
-- **Mono** — outline only, no fill. This is why the outline style was worth paying for: the
-  mono treatment is a genuine second look, not a degraded fallback.
+- **Mono** — outline only, no fill. This is why the outline style was worth paying for: the mono
+  treatment is a genuine second look, not a degraded fallback.
 - **Pastel** — natural, lightened.
+
+### The `pure` variant: six ink treatments
+
+Paper Pure is monochrome, so six hues there would be six greys pretending to be colours. The
+variant keeps the same six switcher slots and the same sheet structure, substituting ink
+treatments for hues:
+
+| Slot | Treatment |
+|---|---|
+| 1 | Outline only |
+| 2 | Light halftone (sparse dot fill) |
+| 3 | Medium halftone |
+| 4 | Dense halftone |
+| 5 | Solid mid-grey `#7a8290` |
+| 6 | Solid ink `#3d4650` |
+
+Its pictorial treatments become Outline / Halftone / Solid rather than
+Natural / Mono / Pastel.
+
+Halftone fills are emitted as SVG `<pattern>` definitions, which both DOMPurify's SVG profile
+and svg2pdf support. One pattern definition per density is declared once per sheet and
+referenced by every sticker on it, so the cost is per-sheet, not per-sticker.
 
 ### Sizes
 
-| Edition | Structural | Pictorial |
+| Variant | Structural | Pictorial |
 |---|---|---|
-| Paper Pro | L 48pt / M 32pt / S 20pt | L 48pt / S 24pt |
-| Compact | L 36pt / M 24pt / S 16pt | L 36pt / S 18pt |
+| `paper_pro` | L 48 / M 32 / S 20 pt | L 48 / S 24 pt |
+| `note_air`, `pure` | L 42 / M 28 / S 18 pt | L 42 / S 21 pt |
+| `move` | L 36 / M 24 / S 16 pt | L 36 / S 18 pt |
 
 Wide structural stickers (banners, dividers, rules, tape) use L 192×24 / M 128×16 / S 80×10 on
-Paper Pro, scaled by 0.75 on Compact.
+`paper_pro`, scaled proportionally on the others.
 
-The Compact edition's smaller points are not a downgrade: at 264 PPI on Move, a 16pt sticker
-still carries more pixels than a 20pt sticker at 229 PPI on Paper Pro.
+Smaller points on the smaller variants are not a downgrade: at 264 PPI on Move, a 16pt sticker
+carries more pixels than a 20pt sticker at 229 PPI on Paper Pro.
 
 ## Sheet layout and crop hygiene
 
@@ -165,26 +180,29 @@ requirements, not preferences:
 
 Sheets are organised one per (category, colourway) for structural and one per
 (category, treatment) for pictorial. Wide categories (Banners, Dividers) take two sheets per
-colourway on Paper Pro and more on Compact.
+colourway on `paper_pro` and more on the smaller variants.
 
 Each sticker occupies one **cluster** — its size variants laid out left to right, largest
 first, sharing one label. A cluster is the crop unit.
 
 ## Navigation
 
-Roughly 1,500 validated links on Paper Pro and 1,700 on Compact, across three mechanisms.
+Roughly 1,500 validated links on `paper_pro`, 1,700 on `move`, per variant.
 
 - **Family rail**, top of every sheet. On structural sheets, chips for the 7 structural
   categories; on pictorial sheets, chips for the 11 pictorial categories; plus one chip
-  crossing to the other family. Paper Pro carries the full rail — 14 chips on a structural
-  sheet, 18 on a pictorial one, counting the switcher below. **Compact carries a reduced 8-chip
-  rail**: the six switcher chips plus two family arrows (see the byte budget — rail cost scales
-  with sheet count, and Compact has 2.3× the sheets).
+  crossing to the other family. `paper_pro`, `note_air` and `pure` carry the full rail — 14
+  chips on a structural sheet, 18 on a pictorial one, counting the switcher below. **`move`
+  carries a reduced 8-chip rail**: the six switcher chips plus two family arrows. Rail cost
+  scales with sheet count, and `move` has 2.3× the sheets.
 - **Colourway switcher**, bottom of every sheet. Six chips that jump to *this same sheet* in
   another colourway, via `specific_node`. Two taps from any sticker to the same sticker in any
   colour.
 - **A–Z index**, 6 pages, 500 entries, each a `specific_node` link to the sheet its sticker
   lives on.
+
+All links resolve **within** a variant. Nothing links across variants, because a node's page
+is resolved per variant and cross-variant navigation is not a concept the schema has.
 
 ## Required chrome
 
@@ -193,95 +211,69 @@ The harness requires `root`, `start_here`, `example_workspace` and `blank_worksp
 
 - **Cover** → full-page tap link and a CTA into `start_here`.
 - **`start_here`** — how to crop on each device, how the rail and switcher work, what the
-  colourways mean.
+  colourways mean, and which variant the reader is in.
 - **Contents** — 18 category chips.
-- **Colour guide** — the six colourways and three treatments, with the greyscale note for
-  Paper Pure owners.
+- **Colour guide** — the six colourways and three treatments, with the ink-treatment table on
+  the `pure` variant instead.
 - **`example_workspace`** — two pages: a decorated weekly spread with stickers actually
   applied, then an annotated copy naming which sticker went where. Both carry the `EXAMPLE`
   eyebrow and the `Skip to blank workspace →` link, per the harness's chrome rules
   (`gallerySampleHarness.ts:524-563`).
 - **`blank_workspace`** — three undecorated pages to decorate: weekly grid, dot grid, ruled.
 
+The node hierarchy is shared across variants — nodes are project-level, not per-variant — so
+this chrome is authored once and each variant supplies its own template for it.
+
 ## Generator architecture
 
 500 stickers cannot be 500 string literals — `GENERATOR_SCRIPT_MAX_BYTES` is 512 KiB per script
 (`shared/generatorMetadata.js:2`), applied independently to `templateScript` and
 `hierarchyScript`. The cap is on source text, not emitted output, so parametric construction
-solves it.
+solves it — and it is what makes four variants nearly free in source terms, since all four run
+the same builders through a different device profile.
 
 `templates.js` contains, in order:
 
-1. **`DEVICE`** — a single constant block at the top selecting page size, size ladder, and rail
-   width. The only difference between the two editions' files.
+1. **A `DEVICES` table** — page size, size ladder, rail width and treatment set per variant.
 2. **~90 parametric shape builders** — `star(points, innerRatio)`, `tab(style, notch)`,
-   `leaf(veins, curl)`, `arrow(curve, head, tail)`, and so on, each returning path data for a
-   24×24 viewBox.
+   `leaf(veins, curl)`, `arrow(curve, head, tail)`, each returning path data for a 24×24
+   viewBox.
 3. **A 500-entry registry** naming, per sticker, its builder, arguments, natural colours,
    category, and cell aspect (square, wide, tall).
-4. **A layout engine** that walks the registry, packs clusters into sheets for the current
-   `DEVICE`, and emits templates with the rail and switcher chrome.
+4. **A layout engine** that walks the registry once per device profile, packs clusters into
+   sheets, emits templates with rail and switcher chrome, and returns
+   `{ variants, activeVariantId: 'paper_pro' }`.
 
-Estimated source: ~180 KB, comfortably inside 512 KiB.
+Estimated source: ~185 KB, comfortably inside 512 KiB.
 
-`hierarchy.js` builds the node tree — cover, guide pages, one node per sheet, the A–Z index
-pages, and the example/blank workspaces — plus the `specific_node` link targets the switcher
-and index resolve against.
+`hierarchy.js` builds the node tree once — cover, guide pages, one node per sheet, the A–Z index
+pages, and the example/blank workspaces. **Because every variant must render every node, all
+four variants must expose the same template id set**, differing only in geometry and treatment.
 
 ## Byte budget
 
-Three independent enforcement points, all on `MAX_STATE_BYTES = 5 * 1024 * 1024`
-(`shared/projectLimits.js:1`):
-
-- `services/validateGeneratedProject.ts:168` — in the browser, on Preview, before anything is
-  applied. Re-checked after normalisation at `:311`.
-- `services/generatorSandbox.ts:422` — compiled into the sandboxed evaluator as a hardening
-  boundary. The sandbox captures `TextEncoder` and the `byteLength` getter as trusted
-  intrinsics at `:135-138` specifically so evaluated source cannot patch them to smuggle
-  oversized output past the check.
-- `server/validateAppState.js:26` — on publish.
-
-A fourth ceiling matters more in practice, and it is stricter than it looks. Local projects all
-live in one `localStorage` key (`pages/EditorPage.tsx:33`). Web Storage is **not** governed by
-the percentage-of-disk Storage API quotas that cover IndexedDB, Cache Storage and the OPFS; it
-has its own fixed per-origin cap — 5 MiB by the spec's recommendation, 10 MiB by MDN's current
-Web Storage page, varying by browser and version — and that cap covers every project the user
-has, not just this one.
-
-**localStorage counts UTF-16 code units, two bytes per character.** `MAX_STATE_BYTES` is
-measured in UTF-8 bytes (`Buffer.byteLength(state, 'utf8')` server-side,
-`new TextEncoder().encode(...).byteLength` client-side), and for mostly-ASCII JSON those bytes
-are roughly one per character. So a project's localStorage cost is about **twice** its
-`MAX_STATE_BYTES` measurement.
-
-This makes `MAX_STATE_BYTES` unreachable for a locally-saved project: a state at the 5 MiB
-ceiling costs ~10.5 MB of localStorage quota. Anything between roughly 2.5 MB and 5 MB passes
-every validator in the codebase and then fails to save. The app degrades cleanly — 
-`tests/unit/EditorPageGeneratedProject.test.tsx:123,146` assert a rollback of both storage keys
-on `QuotaExceededError` — but the user is left with a project they can generate and cannot
-keep.
-
-**Target is ~2.4 MB per edition** — about 4.8 MB of localStorage, comfortable against a 10 MiB
-quota and marginal against 5 MiB. Task 1 must settle this against a real browser rather than
-this paragraph. The product's normal use is generate → export PDF → done, so long-term
-localStorage residency is not required, but a book that cannot be saved at all is not
-acceptable.
-
-This is an app-wide finding, not a sticker-book one, and it is worth its own issue: the
-declared 5 MiB document limit and the real local limit differ by 2×, in the direction that
-surprises the user.
-
-Estimated composition per edition:
+Estimated per variant:
 
 | Component | Count | Bytes each | Total |
 |---|---:|---:|---:|
 | SVG placements | 4,440 | ~405 (175 element JSON + ~230 markup) | 1.80 MB |
 | Primitive placements | 720 | ~190 | 0.14 MB |
-| Labels (first-sheet-per-category only) | 500 | ~230 | 0.12 MB |
-| Rail and switcher chrome | ~1,000 (Pro) / ~1,150 (Compact) | ~250 | 0.25–0.29 MB |
+| Labels (first sheet per category only) | 500 | ~230 | 0.12 MB |
+| Rail and switcher chrome | ~1,000–1,150 | ~250 | 0.25–0.29 MB |
 | A–Z index | 500 | ~250 | 0.13 MB |
 | Cover, guides, example, blank | — | — | 0.10 MB |
-| **Total** | | | **~2.4–2.5 MB** |
+| **Per variant** | | | **~2.4 MB** |
+
+| Variant | Estimate |
+|---|---:|
+| `paper_pro` | ~2.40 MB |
+| `move` | ~2.50 MB |
+| `note_air` | ~2.45 MB |
+| `pure` | ~2.30 MB |
+| **Project total** | **~9.65 MB** |
+
+Against a raised 16 MiB cap that is 58% — deliberate headroom, because every figure here is
+arithmetic (see Task 1).
 
 Four economies are load-bearing and belong in the implementation, not left to chance:
 
@@ -295,12 +287,72 @@ Four economies are load-bearing and belong in the implementation, not left to ch
   stickers stay as SVG.
 - **Labels on the first sheet of each category only** — the Ink sheet for structural
   categories, the Natural sheet for pictorial ones. Every other sheet in that category is the
-  same grid in the same order, so the label is recoverable by position, and the A–Z index
-  names every sticker regardless.
-- **Compact rail on the Compact edition.** Rail cost scales with sheet count; at 143 sheets the
-  full 18-chip rail would cost ~0.64 MB against the compact rail's 0.29 MB.
+  same grid in the same order, so the label is recoverable by position, and the A–Z index names
+  every sticker regardless.
+- **Reduced rail on `move`.** At 143 sheets the full 18-chip rail would cost ~0.64 MB against
+  the reduced rail's 0.29 MB.
 
-**These figures are estimates, not measurements.** See Task 1.
+### Storage reality after the IndexedDB round
+
+Local persistence now runs through `services/localWorkspace/`, IndexedDB-backed, with no byte
+cap of its own — the adapter surfaces the browser's own `QuotaExceededError` as a typed
+`'quota'` error (`services/localWorkspace/indexedDbAdapter.ts:201`). IndexedDB receives the
+percentage-of-disk Storage API quotas (roughly 60% of disk on Chromium and WebKit, the lesser of
+10% of disk or 10 GiB on Firefox), so a ~10 MB project is not remotely near a local limit.
+
+This replaced a much tighter ceiling. The previous `localStorage` persistence had a fixed
+5–10 MiB per-origin cap *and* counted UTF-16 code units, two bytes per character, so a project
+cost roughly double its measured UTF-8 size. That is what forced the earlier, abandoned design
+of two separate ~2.4 MB products.
+
+Cloud storage is unaffected by the raise: commits are gzipped before storage accounting
+(`server/stateCodec.js:9` returns `bytes: gzip.length`), and sticker markup is highly
+repetitive, so a full snapshot should compress well past 5:1 — roughly 1.5 MB against the
+50 MB default per-user quota (`server/middleware/limits.js:31`). Task 1 measures the real
+compression ratio rather than assuming it.
+
+## Prerequisites
+
+### A. Raise `MAX_STATE_BYTES` to 16 MiB
+
+`shared/projectLimits.js:1`, currently `5 * 1024 * 1024`. Four variants need ~9.65 MB and the
+5 MiB cap rejects the project at generator Preview, before it can be applied.
+
+This is an **app-wide change**, not a sticker-book one, and it affects three enforcement points
+that are independent of each other and of local storage:
+
+| Point | What it protects | Effect of the raise |
+|---|---|---|
+| `services/validateGeneratedProject.ts:168`, `:310` | generator output sanity, pre-apply | The binding one. Rejects the book today. |
+| `services/generatorSandbox.ts:416` | DoS bound compiled into the sandboxed evaluator | A hostile script may allocate up to 16 MiB before being cut. The 10 s timeout (`SANDBOX_TIMEOUT_MS`) and worker isolation remain the primary controls; 16 MiB of transient worker memory is not a meaningful browser DoS. |
+| `shared/validateAppState.js:38` | stored and published state | Gzipped before quota accounting; a ~10 MB state is ~1.5 MB stored against a 50 MB quota. |
+
+The sandbox's trusted-intrinsics capture (`generatorSandbox.ts:135-138`) is unaffected — it
+guards against the cap being *forged*, whatever the cap is.
+
+Worth doing in the same change: the sandbox bound and the storage bound are now unrelated
+concerns sharing one constant, which is why nobody noticed the localStorage mismatch for months.
+Splitting them into two named constants with the same value is cheap and makes the next change
+safe. Recommended but not required.
+
+### B. Teach the gallery harness about variants
+
+`tests/helpers/gallerySampleHarness.ts` needs three additive changes. This is a genuine
+prerequisite: without it, three of four variants ship completely unvalidated.
+
+1. **Validate every variant, not just the active one.** Line 138 currently reads
+   `normalized.templates ?? normalized.variants![normalized.activeVariantId!].templates` — it
+   discards every non-active variant. Structure, bounds, links and chrome must run per variant.
+2. **Page size from the variant, not module constants.** `:28-29` hardcode 509×679, which would
+   reject three of the four variants outright.
+3. **Scope element-id uniqueness per variant.** The current map is global across all templates
+   (`:466-471`). Sibling variants legitimately reuse template *and* element ids — that is what
+   makes them the same product — so a global map would report false duplicates on every
+   element.
+
+Twenty existing sample suites depend on this helper. All three changes are additive and
+single-variant behaviour is unchanged, so no existing suite is touched. `collection.test.ts`
+gains the new slug in `EXPECTED_SLUGS`.
 
 ## SVG authoring rules
 
@@ -316,6 +368,9 @@ rather than loudly.
 - **No `<use>`.** DOMPurify's SVG profile does not allow it, so it is stripped on canvas
   (`CanvasElement.tsx:473-476`) while still working in PDF export — a canvas/PDF divergence.
   No `<script>`, `<style>`, `<foreignObject>`, or `on*` handlers either.
+- **`<pattern>` and `<defs>` are permitted** by both DOMPurify's SVG profile and svg2pdf, and
+  the `pure` variant's halftones depend on them. Task 1 must confirm they survive both renderers
+  before the variant is built on them.
 - **Avoid overlapping shapes inside a semi-transparent sticker.** Element opacity is baked into
   the tree rather than applied as an outer graphics state (`pdfService.ts:1180`), so crossings
   accumulate alpha. Not expected to bite here — stickers are fully opaque — but recorded.
@@ -323,26 +378,18 @@ rather than loudly.
   element silently disappears. This is why the test suite parses every `svgContent` rather than
   trusting a visual check.
 
-## Harness changes
-
-`tests/helpers/gallerySampleHarness.ts` needs one additive change: the page size must come from
-the sample's contract instead of the module constants at `:28-29`, which currently hardcode
-509×679 and would reject the Compact edition outright. Everything else the harness validates
-applies unchanged.
-
-Twenty existing sample suites depend on this helper. The change is additive — a contract field
-defaulting to 509×679 — so no existing suite is touched.
-
 ## Testing
 
-`tests/unit/gallerySamples/stickerPress.test.ts` and `stickerPressCompact.test.ts`, through
-`expectValidGallerySample`, which already covers structure, page size, element bounds, globally
-unique and deterministic ids, link resolution, EXAMPLE chrome, and JSON-clonability.
+`tests/unit/gallerySamples/stickerPress.test.ts`, through `expectValidGallerySample`, which
+after Prerequisite B covers structure, per-variant page size, element bounds, deterministic ids,
+link resolution, EXAMPLE chrome, and JSON-clonability across all four variants.
 
 Product-specific assertions on top:
 
-- Every one of the 500 stickers resolves in every colourway or treatment it declares.
-- All 500 A–Z index entries resolve to an existing sheet node.
+- All four variants expose the identical template id set, so every node renders in every
+  variant.
+- Every one of the 500 stickers resolves in every colourway or treatment its variant declares.
+- All 500 A–Z index entries resolve to an existing sheet node, in every variant.
 - Every `svgContent` parses as `image/svg+xml` with no `parsererror`, carries a `viewBox`, and
   has no root `width`/`height`.
 - No `hsl(`, `hsla(`, 4- or 8-digit hex, `<use`, `<script`, `<style`, or `<foreignObject`
@@ -350,46 +397,44 @@ Product-specific assertions on top:
 - Per-sticker markup is within the 400-byte maximum, and the set average is within 230.
 - **Greyscale separation:** every pair of structural colourway fills differs by at least 25
   luminance under `0.299r + 0.587g + 0.114b`, and the outline differs from every fill by at
-  least 25. This is what keeps the Compact edition legible on Paper Pure.
-- **State size:** the generated `AppState` serialises to under **3.0 MB**. This fails the build
+  least 25.
+- **State size:** the generated `AppState` serialises to under **12 MiB**, failing the build
   rather than a publish.
-- The two editions' `templates.js` files are byte-identical below their `DEVICE` block, so they
-  cannot drift.
+- Halftone `<pattern>` definitions are declared once per sheet, not once per sticker.
 
 ## Implementation notes
 
 **Task 1 is a measurement spike, not a feature.** Build one category — Botanical, 34 stickers,
-3 treatments, 2 sizes — at both page sizes, then:
+3 treatments, 2 sizes — across all four device profiles, then:
 
 1. Generate it and weigh the actual serialised state, to check the ~405 bytes-per-placement
-   assumption the whole scope rests on.
-2. **Extrapolate to 500 stickers, synthesise a state of that size, and actually save it to
-   `localStorage` in real Chrome and real Firefox.** The UTF-16 doubling above means the
-   arithmetic ceiling and the practical one differ by 2×, and browser quotas vary by version.
-   A `QuotaExceededError` here is the finding that resizes the product, and it is far cheaper
-   to hit it now than at 500 stickers.
+   assumption the whole scope rests on. Extrapolate to 500 and compare against 16 MiB.
+2. **Gzip the extrapolated state** and confirm the compression ratio, since cloud quota
+   accounting uses compressed size and the ~5:1 assumption is untested.
+3. **Render a halftone `<pattern>` sticker through both the canvas and a real PDF export.** The
+   `pure` variant depends on patterns surviving DOMPurify *and* svg2pdf. If they do not, that
+   variant falls back to stippled paths, which cost materially more bytes — a scope change worth
+   discovering at 34 stickers rather than 500.
 
-If the real per-sticker cost lands materially above 405 bytes, or the save fails, the sticker
-count or the colourway depth is what gives.
+If the real per-sticker cost lands materially above 405 bytes, the sticker count or the
+colourway depth is what gives.
+
+Prerequisites A and B both land before Task 1, since neither the project nor its tests can exist
+without them.
 
 ## Non-goals
 
 - **No hand-drawn or wobbly style.** Costs roughly 900 bytes per sticker in extra path points,
-  which pushes a single edition past 4.5 MB.
-- **No `palette` config knob.** Colours must be in the exported PDF, not behind a re-run.
-- **No separate Paper Pure edition.** It reads Compact scaled up; the luminance-separated
-  palette is what makes that acceptable.
-- **No raising of `MAX_STATE_BYTES`, and no move to IndexedDB.** Both are legitimate — and the
-  case is stronger than it first appears, because Web Storage's fixed 5–10 MiB cap is the one
-  storage API that does *not* get the percentage-of-disk quotas (roughly 60% of disk on
-  Chromium and WebKit, the lesser of 10% of disk or 10 GiB on Firefox) that IndexedDB, Cache
-  Storage and the OPFS all receive. Moving local persistence off localStorage would take the
-  practical document ceiling from single-digit megabytes to gigabytes, and would let the
-  sandbox's DoS bound be chosen on its own merits instead of inheriting a storage number. That
-  is a platform round with its own design, not a prerequisite for this product, and it should
-  not be coupled to it.
-- **No animation, gradients, or filters** in sticker markup, despite DOMPurify permitting them
-  — they cost bytes and degrade unpredictably through svg2pdf.
+  which would put the project past 16 MiB.
+- **No `palette` config knob.** Colours must be in the exported PDF, not behind a re-run. This
+  is the whole reason colourways are baked as separate sheets.
+- **No cross-variant navigation.** A node's page resolves per variant; the schema has no concept
+  of linking from one variant to another.
+- **No animation, gradients, or filters** in sticker markup, despite DOMPurify permitting them —
+  they cost bytes and degrade unpredictably through svg2pdf. `<pattern>` is the one exception,
+  and only for the `pure` variant's halftones.
+- **No raise beyond 16 MiB.** 16 MiB is chosen as ~1.65× the project's need. A larger number
+  should be argued on its own evidence, not inherited from this product.
 
 ## Open decisions
 
@@ -399,3 +444,5 @@ count or the colourway depth is what gives.
   500 and are the design target, but individual categories may shift by a few stickers during
   authoring as some ideas prove too detailed to draw within the byte budget. The total and the
   structural/pictorial split are fixed; the per-category distribution is not.
+- **Whether to split the sandbox and storage bounds** into two constants during Prerequisite A
+  (recommended, not required).
