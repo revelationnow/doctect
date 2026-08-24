@@ -6,7 +6,17 @@
 // result plus both upstream licence files and a manifest into this
 // directory (gallery-samples/21-sticker-press/vendor/).
 //
-// Usage: node gallery-samples/21-sticker-press/vendor/build.mjs
+// Usage:
+//   node gallery-samples/21-sticker-press/vendor/build.mjs           full vendor run
+//   node gallery-samples/21-sticker-press/vendor/build.mjs --check   pre-flight only: HEAD-checks
+//                                                                    every id in WANTED and reports
+//                                                                    every missing one, without
+//                                                                    downloading or writing anything.
+//                                                                    Use this before a big curation
+//                                                                    pass (Task B's 500-id list) so
+//                                                                    bad ids surface as one report
+//                                                                    instead of one slow full rerun
+//                                                                    per discovery.
 //
 // Design notes — read before touching the minifier. Every one of these was
 // learned by shipping a blank or solid-black render first.
@@ -130,6 +140,18 @@ async function fetchText(url) {
         throw new Error(`fetch failed for ${url}: HTTP ${res.status} ${res.statusText}`);
     }
     return res.text();
+}
+
+/** HEAD-only existence check — no response body is downloaded. Returns
+ * { ok, status } rather than throwing, since callers (preflightCheck) want
+ * to collect every failure rather than stop at the first one. */
+async function headCheck(url) {
+    try {
+        const res = await fetch(url, { method: 'HEAD' });
+        return { ok: res.ok, status: String(res.status) };
+    } catch (err) {
+        return { ok: false, status: `network error: ${err.message}` };
+    }
 }
 
 /** Best-effort git ref for provenance metadata. Never fails the build: an
@@ -319,6 +341,38 @@ async function buildIcon(spec, featherIds) {
     };
 }
 
+/** Pre-flight mode (`--check`): HEAD-checks every id in WANTED against its
+ * upstream URL, sequentially, and reports every missing one at the end —
+ * downloads nothing, writes nothing. This exists because the npm-packaged
+ * `lucide-static` and the live `lucide-icons/lucide` `main` icons/ tree have
+ * drifted: npm carries deprecated aliases (e.g. `smile`) with no standalone
+ * file upstream anymore, so a curated id list built by eye against the npm
+ * package can contain several dead ids at once. Discovering those one at a
+ * time by running the full sequential fetch-and-minify pipeline over and
+ * over is slow; this turns it into a single report. */
+async function preflightCheck() {
+    console.log(`Pre-flight: HEAD-checking ${WANTED.length} icon ids (no downloads, no writes) ...`);
+    const missing = [];
+    for (const spec of WANTED) {
+        const url = spec.source === 'lucide'
+            ? `${LUCIDE_ICON_BASE}/${spec.upstream}.svg`
+            : `${TWEMOJI_SVG_BASE}/${spec.upstream}.svg`;
+        const { ok, status } = await headCheck(url);
+        console.log(`  ${spec.source}/${spec.id} ... ${ok ? 'OK' : `MISSING (${status})`}`);
+        if (!ok) missing.push({ ...spec, url, status });
+    }
+
+    console.log('');
+    if (missing.length === 0) {
+        console.log(`Pre-flight OK: all ${WANTED.length} ids resolve upstream.`);
+        return;
+    }
+
+    console.log(`Pre-flight FAILED: ${missing.length} of ${WANTED.length} ids do not resolve upstream:`);
+    missing.forEach(m => console.log(`  ${m.source}/${m.id} -> ${m.url} (${m.status})`));
+    process.exitCode = 1;
+}
+
 async function main() {
     console.log(`Fetching Lucide LICENSE from ${LUCIDE_LICENSE_URL} ...`);
     const lucideLicenseText = await fetchText(LUCIDE_LICENSE_URL);
@@ -383,7 +437,8 @@ async function main() {
 // an import side effect.
 const isMain = process.argv[1] && import.meta.url === `file://${process.argv[1]}`;
 if (isMain) {
-    main().catch(err => {
+    const task = process.argv.includes('--check') ? preflightCheck() : main();
+    task.catch(err => {
         console.error('');
         console.error(`sticker-press vendor build FAILED: ${err.message}`);
         process.exitCode = 1;
