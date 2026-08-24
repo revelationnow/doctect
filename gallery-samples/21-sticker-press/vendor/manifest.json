@@ -1,0 +1,154 @@
+{
+  "generatedFrom": {
+    "lucide": {
+      "version": "main@23f9abc",
+      "url": "https://github.com/lucide-icons/lucide"
+    },
+    "twemoji": {
+      "ref": "main@b6b55fe",
+      "url": "https://github.com/jdecked/twemoji"
+    }
+  },
+  "icons": [
+    {
+      "id": "heart",
+      "source": "lucide",
+      "upstream": "icons/heart.svg",
+      "bytes": 324,
+      "licence": "ISC"
+    },
+    {
+      "id": "star",
+      "source": "lucide",
+      "upstream": "icons/star.svg",
+      "bytes": 539,
+      "licence": "ISC"
+    },
+    {
+      "id": "gift",
+      "source": "lucide",
+      "upstream": "icons/gift.svg",
+      "bytes": 653,
+      "licence": "ISC"
+    },
+    {
+      "id": "leaf",
+      "source": "lucide",
+      "upstream": "icons/leaf.svg",
+      "bytes": 411,
+      "licence": "ISC"
+    },
+    {
+      "id": "flame",
+      "source": "lucide",
+      "upstream": "icons/flame.svg",
+      "bytes": 265,
+      "licence": "ISC"
+    },
+    {
+      "id": "zap",
+      "source": "lucide",
+      "upstream": "icons/zap.svg",
+      "bytes": 341,
+      "licence": "ISC"
+    },
+    {
+      "id": "check",
+      "source": "lucide",
+      "upstream": "icons/check.svg",
+      "bytes": 190,
+      "licence": "MIT"
+    },
+    {
+      "id": "circle",
+      "source": "lucide",
+      "upstream": "icons/circle.svg",
+      "bytes": 195,
+      "licence": "MIT"
+    },
+    {
+      "id": "moon",
+      "source": "lucide",
+      "upstream": "icons/moon.svg",
+      "bytes": 285,
+      "licence": "MIT"
+    },
+    {
+      "id": "music",
+      "source": "lucide",
+      "upstream": "icons/music.svg",
+      "bytes": 443,
+      "licence": "MIT"
+    },
+    {
+      "id": "feather",
+      "source": "lucide",
+      "upstream": "icons/feather.svg",
+      "bytes": 502,
+      "licence": "MIT"
+    },
+    {
+      "id": "grinning-face",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f600.svg",
+      "bytes": 451,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "red-heart",
+      "source": "twemoji",
+      "upstream": "assets/svg/2764.svg",
+      "bytes": 369,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "sparkles",
+      "source": "twemoji",
+      "upstream": "assets/svg/2728.svg",
+      "bytes": 1053,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "glowing-star",
+      "source": "twemoji",
+      "upstream": "assets/svg/2b50.svg",
+      "bytes": 555,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "cloud",
+      "source": "twemoji",
+      "upstream": "assets/svg/2601.svg",
+      "bytes": 749,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "wrapped-gift",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f381.svg",
+      "bytes": 657,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "rocket",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f680.svg",
+      "bytes": 678,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "red-apple",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f34e.svg",
+      "bytes": 447,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "musical-note",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f3b5.svg",
+      "bytes": 374,
+      "licence": "CC-BY-4.0"
+    }
+  ]
+}
