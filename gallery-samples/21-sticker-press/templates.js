@@ -516,14 +516,25 @@ const builders = {
         const wing = wings === 'up' ? 'M8 13Q11 5 15 9Q12 12 8 13Z' : 'M6 13Q10 11 15 14Q10 17 6 15Z';
         return `${body}${head}${beak}${tail}${eye}${wing}`;
     },
-    // Butterfly. pattern adds a pair of true cut-through spots on the upper wings.
+    // Butterfly. pattern adds a pair of true cut-through spots on the upper wings. Coordinates
+    // are rounded to whole points (not round1) so `dotted` — the densest case in the whole
+    // builder set at 394/400 bytes on first measurement — gets real margin, the same fix
+    // `rosette`/`burst`/`seal` already needed once their point counts grew.
     butterfly(pattern) {
-        const body = 'M10.8 12A1.2 7 0 1 1 13.2 12A1.2 7 0 1 1 10.8 12Z';
-        const antennae = 'M11 6L9.3 1.5L10.5 5.5ZM13 6L14.7 1.5L13.5 5.5Z';
-        const wing = (x, y, dx, dy) => `M${x} ${y}Q${round1(x + dx * 0.3)} ${round1(y + dy * 1.3)} `
-            + `${round1(x + dx)} ${round1(y + dy)}Q${round1(x + dx * 1.3)} ${round1(y + dy * 0.3)} ${x} ${y}Z`;
+        const body = 'M11 12A1 7 0 1 1 13 12A1 7 0 1 1 11 12Z';
+        const antennae = 'M11 6L9 1L10 5ZM13 6L15 1L14 5Z';
+        const wing = (x, y, dx, dy) => `M${x} ${y}Q${Math.round(x + dx * 0.3)} ${Math.round(y + dy * 1.3)} `
+            + `${Math.round(x + dx)} ${Math.round(y + dy)}Q${Math.round(x + dx * 1.3)} ${Math.round(y + dy * 0.3)} ${x} ${y}Z`;
         const wingShapes = [wing(11, 10, -7, -5), wing(13, 10, 7, -5), wing(11, 14, -5, 4), wing(13, 14, 5, 4)].join('');
-        const dots = pattern === 'dotted' ? 'M7 6.2A0.8 0.8 0 1 0 6.9 6.2ZM17 6.2A0.8 0.8 0 1 0 16.9 6.2Z' : '';
+        // The left and right upper wings are mirror images of each other, which mirrors their
+        // winding direction too (verified by shoelace: upperL is negative, upperR positive) —
+        // so a dot hole needs the *opposite* sweep on each side to land opposite its own wing's
+        // winding. Using the same sweep for both (an earlier version of this line) made the
+        // right dot a real hole but left the left dot same-signed as its wing: same-signed ink
+        // on top of already-filled ink, i.e. invisible, not a hole — the classic hole-punching
+        // mistake this project has hit before (`checkbox('empty')`, Task 5), just in a subtler,
+        // per-side form since one of the two dots happened to be correct by chance.
+        const dots = pattern === 'dotted' ? 'M7 5A1 1 0 1 1 6.9 5ZM17 5A1 1 0 1 0 16.9 5Z' : '';
         return `${body}${antennae}${wingShapes}${dots}`;
     },
     // Bee. stripes (2-3) true cut-through bands across the body.
