@@ -29,6 +29,30 @@ const ARG_DOMAINS: Record<string, unknown[][]> = {
     tag: [[true, false]],
     stickyNote: [['plain', 'lined', 'torn']],
     speechBubble: [['left', 'right', 'none']],
+    // Task 5: structural — arrows, markers, stars, dividers.
+    arrow: [
+        ['straight', 'curved', 'looped', 'elbow', 'uturn'],
+        ['line', 'block', 'doodle'],
+        ['plain', 'dashed', 'branch'],
+    ],
+    hand: [['left', 'right', 'up', 'down']],
+    checkbox: [['empty', 'checked', 'crossed']],
+    bullet: [['dot', 'star', 'arrow', 'diamond', 'square']],
+    pip: [[true, false]],
+    priorityFlag: [[1, 2, 3]], // min/mid/max of the documented 1-3 range
+    // `star` already exists from Task 3 but had no sweep coverage until now (it was never added
+    // to ARG_DOMAINS by Task 3 or 4, so it was completely untested by this file). Domain is the
+    // two documented sample values used throughout the plan (star(5, 0.5), star(8, 0.4)), swept
+    // as a full cross-product rather than only the two literal pairs the plan happened to show.
+    star: [[5, 8], [0.4, 0.5]],
+    sparkle: [[4, 6, 8]], // min/mid/max of the documented 4-8 range
+    burst: [[8, 12, 16], [true, false]], // min/mid/max of the documented 8-16 range
+    seal: [[10, 15, 20]], // min/mid/max of the documented 10-20 range
+    medal: [[true, false]],
+    rule: [['dotted', 'dashed', 'wave', 'zigzag', 'double']],
+    flourish: [['left', 'right', 'both']],
+    bracket: [['left', 'right']],
+    boxFrame: [['square', 'round', 'ornate']],
 };
 
 const cartesian = (domains: unknown[][]): unknown[][] =>
@@ -92,6 +116,10 @@ const pathBoundingBox = (d: string) => {
      * SVG's own endpoint-to-center arc parameterization (spec appendix F.6.5), simplified for
      * this project's arcs: x-axis-rotation is always 0 (every builder emits `A rx ry 0 ...`), so
      * the rotation terms are omitted rather than carried through as dead multiplications by 1/0.
+     * The `A` case in the walk below now enforces this (throws if rotation !== 0) rather than
+     * silently discarding the token — for a rotated arc this formula's center would be wrong in
+     * a way that can UNDER-report the bounding box, the one failure direction this whole guard
+     * exists to prevent, so a future rotated arc must not slip past it silently.
      *
      * A first version of this helper expanded the box by rx/ry around *each arc endpoint*
      * instead of around the true center. That is a real bug, not just extra caution: the two
@@ -156,7 +184,10 @@ const pathBoundingBox = (d: string) => {
             }
             case 'A': {
                 const rx = next(); const ry = next();
-                next(); // x-axis-rotation -- always 0 in this project's arcs, see arcBox above
+                const rotation = next(); // x-axis-rotation -- always 0 in this project's arcs, see arcBox above
+                if (rotation !== 0) {
+                    throw new Error(`pathBoundingBox: rotated arc (x-axis-rotation=${rotation}) is unsupported in "${d}"`);
+                }
                 const largeArc = next(); const sweep = next();
                 const x = next(); const y = next();
                 arcBox(curX, curY, rx, ry, largeArc, sweep, x, y);
