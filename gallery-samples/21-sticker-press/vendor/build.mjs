@@ -18,33 +18,57 @@
 //                                                                    instead of one slow full rerun
 //                                                                    per discovery.
 //
-// Design notes — read before touching the minifier. Every one of these was
-// learned by shipping a blank or solid-black render first.
+// Design notes — read before touching the minifier.
 //
-// 1. svg2pdf.js does NOT inherit presentation attributes (fill, stroke,
-//    stroke-width, stroke-linecap, stroke-linejoin, stroke-miterlimit) from
-//    the root <svg>. Lucide declares them once on the root and lets
-//    children inherit — imported as-is, every icon renders as a solid
-//    black blob. This script flattens those attributes onto every drawable
+// 1. Flatten root presentation attributes (fill, stroke, stroke-width,
+//    stroke-linecap, stroke-linejoin, stroke-miterlimit) onto every drawable
 //    descendant (path, circle, ellipse, rect, line, polyline, polygon, g)
-//    that doesn't already carry its own value, respecting any override
-//    along the way (an element's own attribute always wins over an
-//    ancestor's).
+//    that doesn't already carry its own value, respecting any override along
+//    the way (an element's own attribute always wins over an ancestor's).
+//    The reason is narrower than "svg2pdf can't inherit from the root" —
+//    verified directly, it can, for both single- and multi-child icons.
+//    Flattening is required for two things that have nothing to do with
+//    inheritance breaking: (a) `currentColor` has no other path to the
+//    intended colour — nobody downstream can tell svg2pdf "use the
+//    colourway's colour" except by putting that literal string on the
+//    attribute it reads, and the only reliable place to guarantee that
+//    attribute exists on every element is to put it there explicitly; and
+//    (b) the six-colourway substitution mechanism (one stroke colour, one
+//    string swap) only works if PLACEHOLDER_STROKE is sitting on every
+//    drawable child for a later find-and-replace to reach. (Historical note:
+//    an earlier "renders as a solid black blob" framing for this step traced
+//    to a different, unrelated bug in this project's abandoned hand-drawn
+//    SVG builders — open subpaths being implicitly closed and filled — not
+//    to anything about root-attribute inheritance. Don't go looking for that
+//    symptom here.)
 //
 // 2. Never call setAttribute('xmlns', ...) after stripping root attributes.
 //    XMLSerializer emits the SVG namespace itself from the element's parsed
-//    namespaceURI, regardless of whether an `xmlns` attribute is present.
-//    Setting it by hand produces a document svg2pdf silently refuses to
-//    draw — it fails through a swallowed console.error at
-//    services/pdfService.ts:1192-1194, with no visible error, just a blank
-//    page. This script never calls setAttribute('xmlns', ...); it only
-//    ever removes attributes and lets the serializer do its job.
+//    namespaceURI, regardless of whether an `xmlns` attribute is present —
+//    calling setAttribute('xmlns', ...) as well adds a second, literal
+//    `xmlns` attribute alongside the one the serializer emits on its own.
+//    Verified directly: the serialized output is `<svg xmlns="..."
+//    viewBox="..." xmlns="...">` — a duplicate attribute, which is an XML
+//    well-formedness violation. Reparsing that string (exactly what
+//    pdfService.ts's `DOMParser().parseFromString(el.svgContent, ...)` does
+//    at render time) fails and yields a `<parsererror>` node instead of
+//    `<svg>`. Also verified directly: svg2pdf does not throw on that
+//    `<parsererror>` root, it just silently draws nothing for it — no
+//    exception, no console output, no visible error, the sticker is simply
+//    absent from the page. This script never calls setAttribute('xmlns',
+//    ...); it only ever removes attributes and lets the serializer do its
+//    job.
 //
 // 3. currentColor is resolved here, not left in the file. Lucide's single
 //    stroke colour is the recolouring mechanism for the six sticker
 //    colourways applied by a later build step, so every occurrence is
 //    replaced with the placeholder token PLACEHOLDER_STROKE (see below). A
-//    later build step substitutes that token per colourway.
+//    later build step substitutes that token per colourway. Note this isn't
+//    about rendering safety either: an unresolved `currentColor` reaching
+//    svg2pdf renders with correct geometry in svg2pdf's own default colour
+//    (black), not invisibly and not as a filled blob — verified directly.
+//    It has to be resolved because nothing else will pick the *intended*
+//    colour, not because leaving it in would break the render.
 //
 // 4. Byte caps are enforced per icon (LUCIDE_MAX_BYTES / TWEMOJI_MAX_BYTES).
 //    An over-cap icon aborts the whole build with the offending id and its
@@ -68,11 +92,23 @@ const VENDOR_DIR = dirname(fileURLToPath(import.meta.url));
 // --- Placeholder token -----------------------------------------------------
 //
 // Chosen deliberately: curly-brace-delimited so it reads unmistakably as a
-// template placeholder rather than a real colour (it is not valid CSS, so
-// any renderer that sees it unsubstituted fails loudly instead of quietly
-// drawing black); all-caps and prefixed/suffixed identically so it is easy
-// to grep for or regex-replace; short, so it doesn't meaningfully affect the
-// 700-byte Lucide cap.
+// template placeholder rather than a real colour; all-caps and
+// prefixed/suffixed identically so it is easy to grep for or regex-replace;
+// short, so it doesn't meaningfully affect the 700-byte Lucide cap.
+//
+// It is not valid CSS, and that matters for a *static* check, not a
+// rendering one: verified directly, a renderer left holding an unsubstituted
+// `{{STROKE}}` does not fail loudly — it renders exactly like an unresolved
+// `currentColor` would, a visible stroke in whatever colour happened to be
+// ambient in the surrounding graphics context (svg2pdf sets no colour for
+// either unparseable value, so it inherits whatever was already active).
+// The advantage of the placeholder over leaving `currentColor` in place is
+// that it can never validly appear in shipped output, so a test or lint
+// (`not.toMatch(/currentColor/)` is not enough on its own; grepping for
+// `{{STROKE}}` in a would-be-final file is what actually catches a missed
+// substitution) can catch a forgotten substitution before anything is
+// rendered — not that the renderer itself will complain if one slips
+// through.
 export const PLACEHOLDER_STROKE = '{{STROKE}}';
 
 // --- Upstream sources --------------------------------------------------------
@@ -229,9 +265,11 @@ function stripInsignificantWhitespace(node) {
 
 /** Copies root's fill/stroke/stroke-width/stroke-linecap/stroke-linejoin/
  * stroke-miterlimit onto every drawable descendant that doesn't already
- * declare its own value, respecting any override closer to the leaf. This
- * is the fix for svg2pdf not inheriting presentation attributes from the
- * root <svg> — see design note 1 above. */
+ * declare its own value, respecting any override closer to the leaf. Not a
+ * fix for broken inheritance (svg2pdf inherits from the root fine) — this is
+ * what guarantees PLACEHOLDER_STROKE ends up on every child so a later
+ * per-colourway find-and-replace can reach all of them. See design note 1
+ * above. */
 function flattenPresentationAttrs(root) {
     const rootValues = {};
     FLATTEN_ATTRS.forEach(name => {
