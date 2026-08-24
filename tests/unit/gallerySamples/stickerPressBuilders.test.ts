@@ -57,6 +57,45 @@ const ARG_DOMAINS: Record<string, unknown[][]> = {
     flourish: [['left', 'right', 'both']],
     bracket: [['left', 'right']],
     boxFrame: [['square', 'round', 'ornate']],
+    // Task 6: weather, botanical and animal builders. Numeric-range args use full enumeration
+    // rather than min/mid/max where the range is small enough that it costs nothing extra
+    // (these are single- or double-argument builders, so there's no combinatorial explosion);
+    // min/mid/max is used only where a builder's own args already multiply (flower) or where
+    // the documented range is wide enough that full enumeration would be wasteful (moon's 8
+    // phases are each qualitatively distinct so it's fully enumerated instead).
+    sun: [[6, 9, 12]], // rays (6-12), min/mid/max
+    cloud: [[3, 4, 5]], // puffs (3-5)
+    rain: [[2, 3, 4]], // drops (2-4)
+    storm: [[true, false]],
+    snowflake: [[4, 6, 8]], // arms (4-8), min/mid/max
+    moon: [[0, 1, 2, 3, 4, 5, 6, 7]], // phase (0-7), fully enumerated: each of the 8 is a
+    // qualitatively different silhouette (crescent/quarter/gibbous/full), not a magnitude, so
+    // min/mid/max would under-cover it the way Task 4's point sample missed a builder.
+    rainbow: [[3, 4, 5, 6]], // bands (3-6)
+    umbrella: [[true, false]],
+    wind: [[2, 3]], // gusts (2-3)
+    fern: [[2, 3, 4]], // fronds (2-4)
+    branch: [[2, 3, 4]], // leaves (2-4)
+    flower: [[4, 6, 8], [true, false]], // petals (4-8, min/mid/max) x centre
+    sprig: [[2, 3, 4]], // berries (2-4)
+    mushroom: [[0, 2, 4]], // spots (0-4), min/mid/max
+    acorn: [[true, false]],
+    cactus: [[0, 1, 2]], // arms (0-2)
+    succulent: [[1, 2, 3]], // rings (1-3)
+    tree: [['round', 'pine', 'palm']],
+    cat: [['awake', 'sleepy']],
+    dog: [['floppy', 'pointy']],
+    bird: [['up', 'folded']],
+    butterfly: [['plain', 'dotted']],
+    bee: [[2, 3]], // stripes (2-3)
+    ladybug: [[2, 4, 6]], // spots (2-6), min/mid/max
+    snail: [[1, 2, 3]], // swirls (1-3)
+    fox: [[true, false]],
+    bear: [['big', 'small']],
+    rabbit: [['up', 'droopy']],
+    whale: [[true, false]],
+    fish: [[1, 2, 3]], // fins (1-3)
+    owl: [[true, false]],
 };
 
 const cartesian = (domains: unknown[][]): unknown[][] =>
@@ -209,6 +248,13 @@ const pathBoundingBox = (d: string) => {
 };
 
 describe('sticker press structural builders', () => {
+    // Without this, a builder added without an ARG_DOMAINS entry is silently swept zero times —
+    // it happened twice already (star, then leaf), caught both times only because someone
+    // looked. This makes the gap itself a test failure instead of a silent hole in coverage.
+    it('ARG_DOMAINS covers every builder', () => {
+        expect(Object.keys(ARG_DOMAINS).sort()).toEqual(Object.keys(scope.builders).sort());
+    });
+
     it.each(BUILDER_CASES)('%s produces valid path data', (name, args) => {
         const result = scope.builders[name](...(args as unknown[]));
         expect(typeof result).toBe('string');
@@ -233,5 +279,16 @@ describe('sticker press structural builders', () => {
     it.each(BUILDER_CASES)('%s is deterministic', (name, args) => {
         expect(scope.builders[name](...(args as unknown[])))
             .toBe(scope.builders[name](...(args as unknown[])));
+    });
+
+    // Guards the *average* markup size, which is what the 230-byte sticker budget actually
+    // depends on (500 stickers sharing one mean, not any single sticker). The per-case byte
+    // test above already caps every individual case at 400; this catches the case where every
+    // builder is individually in-budget but the pictorial builders (denser than structural)
+    // have pulled the mean past what the product can afford.
+    it('keeps the mean markup within the 230-byte budget', () => {
+        const total = BUILDER_CASES.reduce((sum, [name, args]) => sum
+            + Buffer.byteLength(scope.svgMarkup(scope.builders[name](...args), '#86c08e', '#23292f'), 'utf8'), 0);
+        expect(Math.round(total / BUILDER_CASES.length)).toBeLessThanOrEqual(230);
     });
 });
