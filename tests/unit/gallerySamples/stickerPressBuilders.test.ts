@@ -45,6 +45,10 @@ const ARG_DOMAINS: Record<string, unknown[][]> = {
     // two documented sample values used throughout the plan (star(5, 0.5), star(8, 0.4)), swept
     // as a full cross-product rather than only the two literal pairs the plan happened to show.
     star: [[5, 8], [0.4, 0.5]],
+    // `leaf` has the exact same gap as `star` above — it's existed since Task 3, alongside star,
+    // and was never added to ARG_DOMAINS by Task 3 or 4 either, so it too was completely
+    // untested by this file until now (caught in review, not by me the first time through).
+    leaf: [[true, false]],
     sparkle: [[4, 6, 8]], // min/mid/max of the documented 4-8 range
     burst: [[8, 12, 16], [true, false]], // min/mid/max of the documented 8-16 range
     seal: [[10, 15, 20]], // min/mid/max of the documented 10-20 range
