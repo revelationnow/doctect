@@ -11,143 +11,3153 @@
   },
   "icons": [
     {
-      "id": "heart",
+      "id": "lucide-arrow-big-up",
       "source": "lucide",
-      "upstream": "icons/heart.svg",
-      "bytes": 324,
+      "upstream": "icons/arrow-big-up.svg",
+      "bytes": 342,
       "licence": "ISC"
     },
     {
-      "id": "star",
+      "id": "lucide-arrow-big-down",
       "source": "lucide",
-      "upstream": "icons/star.svg",
-      "bytes": 539,
+      "upstream": "icons/arrow-big-down.svg",
+      "bytes": 340,
       "licence": "ISC"
     },
     {
-      "id": "gift",
+      "id": "lucide-arrow-big-left",
       "source": "lucide",
-      "upstream": "icons/gift.svg",
-      "bytes": 653,
+      "upstream": "icons/arrow-big-left.svg",
+      "bytes": 348,
       "licence": "ISC"
     },
     {
-      "id": "leaf",
+      "id": "lucide-arrow-big-right",
       "source": "lucide",
-      "upstream": "icons/leaf.svg",
-      "bytes": 411,
+      "upstream": "icons/arrow-big-right.svg",
+      "bytes": 346,
       "licence": "ISC"
     },
     {
-      "id": "flame",
+      "id": "lucide-arrow-up-right",
       "source": "lucide",
-      "upstream": "icons/flame.svg",
-      "bytes": 265,
+      "upstream": "icons/arrow-up-right.svg",
+      "bytes": 303,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-arrow-up-left",
+      "source": "lucide",
+      "upstream": "icons/arrow-up-left.svg",
+      "bytes": 303,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-arrow-down-right",
+      "source": "lucide",
+      "upstream": "icons/arrow-down-right.svg",
+      "bytes": 303,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-arrow-down-left",
+      "source": "lucide",
+      "upstream": "icons/arrow-down-left.svg",
+      "bytes": 303,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-arrow-up-down",
+      "source": "lucide",
+      "upstream": "icons/arrow-up-down.svg",
+      "bytes": 540,
       "licence": "ISC"
     },
     {
-      "id": "zap",
+      "id": "lucide-arrow-left-right",
       "source": "lucide",
-      "upstream": "icons/zap.svg",
-      "bytes": 341,
+      "upstream": "icons/arrow-left-right.svg",
+      "bytes": 540,
       "licence": "ISC"
     },
     {
-      "id": "check",
+      "id": "lucide-corner-up-right",
+      "source": "lucide",
+      "upstream": "icons/corner-up-right.svg",
+      "bytes": 322,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-corner-up-left",
+      "source": "lucide",
+      "upstream": "icons/corner-up-left.svg",
+      "bytes": 321,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-corner-down-right",
+      "source": "lucide",
+      "upstream": "icons/corner-down-right.svg",
+      "bytes": 320,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-corner-down-left",
+      "source": "lucide",
+      "upstream": "icons/corner-down-left.svg",
+      "bytes": 319,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-chevron-up",
+      "source": "lucide",
+      "upstream": "icons/chevron-up.svg",
+      "bytes": 189,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-chevron-down",
+      "source": "lucide",
+      "upstream": "icons/chevron-down.svg",
+      "bytes": 187,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-chevron-left",
+      "source": "lucide",
+      "upstream": "icons/chevron-left.svg",
+      "bytes": 189,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-chevron-right",
+      "source": "lucide",
+      "upstream": "icons/chevron-right.svg",
+      "bytes": 188,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-chevrons-up",
+      "source": "lucide",
+      "upstream": "icons/chevrons-up.svg",
+      "bytes": 311,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-chevrons-down",
+      "source": "lucide",
+      "upstream": "icons/chevrons-down.svg",
+      "bytes": 308,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-circle-arrow-up",
+      "source": "lucide",
+      "upstream": "icons/circle-arrow-up.svg",
+      "bytes": 433,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-circle-arrow-down",
+      "source": "lucide",
+      "upstream": "icons/circle-arrow-down.svg",
+      "bytes": 431,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-circle-arrow-left",
+      "source": "lucide",
+      "upstream": "icons/circle-arrow-left.svg",
+      "bytes": 432,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-circle-arrow-right",
+      "source": "lucide",
+      "upstream": "icons/circle-arrow-right.svg",
+      "bytes": 432,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-mouse-pointer",
+      "source": "lucide",
+      "upstream": "icons/mouse-pointer.svg",
+      "bytes": 443,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-mouse-pointer-click",
+      "source": "lucide",
+      "upstream": "icons/mouse-pointer-click.svg",
+      "bytes": 782,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-trending-up",
+      "source": "lucide",
+      "upstream": "icons/trending-up.svg",
+      "bytes": 314,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-trending-down",
+      "source": "lucide",
+      "upstream": "icons/trending-down.svg",
+      "bytes": 316,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-navigation",
+      "source": "lucide",
+      "upstream": "icons/navigation.svg",
+      "bytes": 209,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-navigation-2",
+      "source": "lucide",
+      "upstream": "icons/navigation-2.svg",
+      "bytes": 209,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-redo",
+      "source": "lucide",
+      "upstream": "icons/redo.svg",
+      "bytes": 334,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-undo",
+      "source": "lucide",
+      "upstream": "icons/undo.svg",
+      "bytes": 332,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-refresh-cw",
+      "source": "lucide",
+      "upstream": "icons/refresh-cw.svg",
+      "bytes": 619,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-rotate-cw",
+      "source": "lucide",
+      "upstream": "icons/rotate-cw.svg",
+      "bytes": 342,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-expand",
+      "source": "lucide",
+      "upstream": "icons/expand.svg",
+      "bytes": 1005,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-shrink",
+      "source": "lucide",
+      "upstream": "icons/shrink.svg",
+      "bytes": 606,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-box",
+      "source": "lucide",
+      "upstream": "icons/box.svg",
+      "bytes": 536,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-package",
+      "source": "lucide",
+      "upstream": "icons/package.svg",
+      "bytes": 673,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-archive",
+      "source": "lucide",
+      "upstream": "icons/archive.svg",
+      "bytes": 475,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-inbox",
+      "source": "lucide",
+      "upstream": "icons/inbox.svg",
+      "bytes": 431,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-layers",
+      "source": "lucide",
+      "upstream": "icons/layers.svg",
+      "bytes": 645,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-grid-3x3",
+      "source": "lucide",
+      "upstream": "icons/grid-3x3.svg",
+      "bytes": 674,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-list",
+      "source": "lucide",
+      "upstream": "icons/list.svg",
+      "bytes": 764,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-list-checks",
+      "source": "lucide",
+      "upstream": "icons/list-checks.svg",
+      "bytes": 655,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-list-todo",
+      "source": "lucide",
+      "upstream": "icons/list-todo.svg",
+      "bytes": 678,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-check",
       "source": "lucide",
       "upstream": "icons/check.svg",
       "bytes": 190,
       "licence": "MIT"
     },
     {
-      "id": "circle",
+      "id": "lucide-circle-check",
+      "source": "lucide",
+      "upstream": "icons/circle-check.svg",
+      "bytes": 316,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-square-check",
+      "source": "lucide",
+      "upstream": "icons/square-check.svg",
+      "bytes": 333,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-circle",
       "source": "lucide",
       "upstream": "icons/circle.svg",
       "bytes": 195,
       "licence": "MIT"
     },
     {
-      "id": "moon",
+      "id": "lucide-square",
+      "source": "lucide",
+      "upstream": "icons/square.svg",
+      "bytes": 212,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-triangle",
+      "source": "lucide",
+      "upstream": "icons/triangle.svg",
+      "bytes": 242,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-hexagon",
+      "source": "lucide",
+      "upstream": "icons/hexagon.svg",
+      "bytes": 296,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-pentagon",
+      "source": "lucide",
+      "upstream": "icons/pentagon.svg",
+      "bytes": 313,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-octagon",
+      "source": "lucide",
+      "upstream": "icons/octagon.svg",
+      "bytes": 409,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-diamond",
+      "source": "lucide",
+      "upstream": "icons/diamond.svg",
+      "bytes": 308,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-disc",
+      "source": "lucide",
+      "upstream": "icons/disc.svg",
+      "bytes": 322,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-target",
+      "source": "lucide",
+      "upstream": "icons/target.svg",
+      "bytes": 449,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-crosshair",
+      "source": "lucide",
+      "upstream": "icons/crosshair.svg",
+      "bytes": 731,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-badge",
+      "source": "lucide",
+      "upstream": "icons/badge.svg",
+      "bytes": 334,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-badge-check",
+      "source": "lucide",
+      "upstream": "icons/badge-check.svg",
+      "bytes": 455,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-tag",
+      "source": "lucide",
+      "upstream": "icons/tag.svg",
+      "bytes": 459,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-tags",
+      "source": "lucide",
+      "upstream": "icons/tags.svg",
+      "bytes": 627,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-bookmark",
+      "source": "lucide",
+      "upstream": "icons/bookmark.svg",
+      "bytes": 293,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-flag",
+      "source": "lucide",
+      "upstream": "icons/flag.svg",
+      "bytes": 321,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-pin",
+      "source": "lucide",
+      "upstream": "icons/pin.svg",
+      "bytes": 493,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-map-pin",
+      "source": "lucide",
+      "upstream": "icons/map-pin.svg",
+      "bytes": 402,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-shapes",
+      "source": "lucide",
+      "upstream": "icons/shapes.svg",
+      "bytes": 540,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-star",
+      "source": "lucide",
+      "upstream": "icons/star.svg",
+      "bytes": 539,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-vote",
+      "source": "lucide",
+      "upstream": "icons/vote.svg",
+      "bytes": 455,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-sparkle",
+      "source": "lucide",
+      "upstream": "icons/sparkle.svg",
+      "bytes": 437,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-sparkles",
+      "source": "lucide",
+      "upstream": "icons/sparkles.svg",
+      "bytes": 794,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-award",
+      "source": "lucide",
+      "upstream": "icons/award.svg",
+      "bytes": 419,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-trophy",
+      "source": "lucide",
+      "upstream": "icons/trophy.svg",
+      "bytes": 965,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-medal",
+      "source": "lucide",
+      "upstream": "icons/medal.svg",
+      "bytes": 896,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-crown",
+      "source": "lucide",
+      "upstream": "icons/crown.svg",
+      "bytes": 507,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-gem",
+      "source": "lucide",
+      "upstream": "icons/gem.svg",
+      "bytes": 560,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-ribbon",
+      "source": "lucide",
+      "upstream": "icons/ribbon.svg",
+      "bytes": 965,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-shield",
+      "source": "lucide",
+      "upstream": "icons/shield.svg",
+      "bytes": 337,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-shield-check",
+      "source": "lucide",
+      "upstream": "icons/shield-check.svg",
+      "bytes": 458,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-heart",
+      "source": "lucide",
+      "upstream": "icons/heart.svg",
+      "bytes": 324,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-heart-handshake",
+      "source": "lucide",
+      "upstream": "icons/heart-handshake.svg",
+      "bytes": 514,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-thumbs-up",
+      "source": "lucide",
+      "upstream": "icons/thumbs-up.svg",
+      "bytes": 443,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-zap",
+      "source": "lucide",
+      "upstream": "icons/zap.svg",
+      "bytes": 341,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-square-star",
+      "source": "lucide",
+      "upstream": "icons/square-star.svg",
+      "bytes": 635,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-asterisk",
+      "source": "lucide",
+      "upstream": "icons/asterisk.svg",
+      "bytes": 434,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-flame",
+      "source": "lucide",
+      "upstream": "icons/flame.svg",
+      "bytes": 265,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-diamond-plus",
+      "source": "lucide",
+      "upstream": "icons/diamond-plus.svg",
+      "bytes": 537,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-moon-star",
+      "source": "lucide",
+      "upstream": "icons/moon-star.svg",
+      "bytes": 515,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-handshake",
+      "source": "lucide",
+      "upstream": "icons/handshake.svg",
+      "bytes": 824,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-stamp",
+      "source": "lucide",
+      "upstream": "icons/stamp.svg",
+      "bytes": 545,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-podium",
+      "source": "lucide",
+      "upstream": "icons/podium.svg",
+      "bytes": 544,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-circle-star",
+      "source": "lucide",
+      "upstream": "icons/circle-star.svg",
+      "bytes": 619,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-spotlight",
+      "source": "lucide",
+      "upstream": "icons/spotlight.svg",
+      "bytes": 794,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-circle-gauge",
+      "source": "lucide",
+      "upstream": "icons/circle-gauge.svg",
+      "bytes": 454,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-separator-horizontal",
+      "source": "lucide",
+      "upstream": "icons/separator-horizontal.svg",
+      "bytes": 425,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-separator-vertical",
+      "source": "lucide",
+      "upstream": "icons/separator-vertical.svg",
+      "bytes": 425,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-minus",
+      "source": "lucide",
+      "upstream": "icons/minus.svg",
+      "bytes": 183,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-frame",
+      "source": "lucide",
+      "upstream": "icons/frame.svg",
+      "bytes": 599,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-crop",
+      "source": "lucide",
+      "upstream": "icons/crop.svg",
+      "bytes": 331,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-scan",
+      "source": "lucide",
+      "upstream": "icons/scan.svg",
+      "bytes": 593,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-scan-line",
+      "source": "lucide",
+      "upstream": "icons/scan-line.svg",
+      "bytes": 709,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-ruler",
+      "source": "lucide",
+      "upstream": "icons/ruler.svg",
+      "bytes": 780,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-ellipsis",
+      "source": "lucide",
+      "upstream": "icons/ellipsis.svg",
+      "bytes": 447,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-ellipsis-vertical",
+      "source": "lucide",
+      "upstream": "icons/ellipsis-vertical.svg",
+      "bytes": 447,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-square-round-corner",
+      "source": "lucide",
+      "upstream": "icons/square-round-corner.svg",
+      "bytes": 359,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-rows-2",
+      "source": "lucide",
+      "upstream": "icons/rows-2.svg",
+      "bytes": 328,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-layout-grid",
+      "source": "lucide",
+      "upstream": "icons/layout-grid.svg",
+      "bytes": 643,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-grip-horizontal",
+      "source": "lucide",
+      "upstream": "icons/grip-horizontal.svg",
+      "bytes": 824,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-grip-vertical",
+      "source": "lucide",
+      "upstream": "icons/grip-vertical.svg",
+      "bytes": 824,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-dot",
+      "source": "lucide",
+      "upstream": "icons/dot.svg",
+      "bytes": 194,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-slash",
+      "source": "lucide",
+      "upstream": "icons/slash.svg",
+      "bytes": 185,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-columns-2",
+      "source": "lucide",
+      "upstream": "icons/columns-2.svg",
+      "bytes": 328,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-waypoints",
+      "source": "lucide",
+      "upstream": "icons/waypoints.svg",
+      "bytes": 956,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-spline",
+      "source": "lucide",
+      "upstream": "icons/spline.svg",
+      "bytes": 449,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-diameter",
+      "source": "lucide",
+      "upstream": "icons/diameter.svg",
+      "bytes": 733,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-ratio",
+      "source": "lucide",
+      "upstream": "icons/ratio.svg",
+      "bytes": 357,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-ruler-dimension-line",
+      "source": "lucide",
+      "upstream": "icons/ruler-dimension-line.svg",
+      "bytes": 1023,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-square-slash",
+      "source": "lucide",
+      "upstream": "icons/square-slash.svg",
+      "bytes": 345,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-square-dashed-bottom",
+      "source": "lucide",
+      "upstream": "icons/square-dashed-bottom.svg",
+      "bytes": 475,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-sun",
+      "source": "lucide",
+      "upstream": "icons/sun.svg",
+      "bytes": 1172,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-moon",
       "source": "lucide",
       "upstream": "icons/moon.svg",
       "bytes": 285,
       "licence": "MIT"
     },
     {
-      "id": "music",
+      "id": "lucide-cloud",
       "source": "lucide",
-      "upstream": "icons/music.svg",
-      "bytes": 443,
-      "licence": "MIT"
+      "upstream": "icons/cloud.svg",
+      "bytes": 226,
+      "licence": "ISC"
     },
     {
-      "id": "feather",
+      "id": "lucide-cloud-rain",
       "source": "lucide",
-      "upstream": "icons/feather.svg",
-      "bytes": 502,
-      "licence": "MIT"
+      "upstream": "icons/cloud-rain.svg",
+      "bytes": 578,
+      "licence": "ISC"
     },
     {
-      "id": "grinning-face",
+      "id": "lucide-cloud-snow",
+      "source": "lucide",
+      "upstream": "icons/cloud-snow.svg",
+      "bytes": 937,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-cloud-lightning",
+      "source": "lucide",
+      "upstream": "icons/cloud-lightning.svg",
+      "bytes": 355,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-cloud-sun",
+      "source": "lucide",
+      "upstream": "icons/cloud-sun.svg",
+      "bytes": 848,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-wind",
+      "source": "lucide",
+      "upstream": "icons/wind.svg",
+      "bytes": 471,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-umbrella",
+      "source": "lucide",
+      "upstream": "icons/umbrella.svg",
+      "bytes": 495,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-rainbow",
+      "source": "lucide",
+      "upstream": "icons/rainbow.svg",
+      "bytes": 454,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-thermometer-snowflake",
+      "source": "lucide",
+      "upstream": "icons/thermometer-snowflake.svg",
+      "bytes": 1077,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-thermometer",
+      "source": "lucide",
+      "upstream": "icons/thermometer.svg",
+      "bytes": 217,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-sunrise",
+      "source": "lucide",
+      "upstream": "icons/sunrise.svg",
+      "bytes": 1036,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-sunset",
+      "source": "lucide",
+      "upstream": "icons/sunset.svg",
+      "bytes": 1038,
+      "licence": "ISC"
+    },
+    {
+      "id": "twemoji-sun",
       "source": "twemoji",
-      "upstream": "assets/svg/1f600.svg",
-      "bytes": 451,
+      "upstream": "assets/svg/2600.svg",
+      "bytes": 760,
       "licence": "CC-BY-4.0"
     },
     {
-      "id": "red-heart",
-      "source": "twemoji",
-      "upstream": "assets/svg/2764.svg",
-      "bytes": 369,
-      "licence": "CC-BY-4.0"
-    },
-    {
-      "id": "sparkles",
-      "source": "twemoji",
-      "upstream": "assets/svg/2728.svg",
-      "bytes": 1053,
-      "licence": "CC-BY-4.0"
-    },
-    {
-      "id": "glowing-star",
-      "source": "twemoji",
-      "upstream": "assets/svg/2b50.svg",
-      "bytes": 555,
-      "licence": "CC-BY-4.0"
-    },
-    {
-      "id": "cloud",
+      "id": "twemoji-cloud",
       "source": "twemoji",
       "upstream": "assets/svg/2601.svg",
       "bytes": 749,
       "licence": "CC-BY-4.0"
     },
     {
-      "id": "wrapped-gift",
+      "id": "twemoji-cloud-rain",
       "source": "twemoji",
-      "upstream": "assets/svg/1f381.svg",
-      "bytes": 657,
+      "upstream": "assets/svg/1f327.svg",
+      "bytes": 1328,
       "licence": "CC-BY-4.0"
     },
     {
-      "id": "rocket",
+      "id": "twemoji-cloud-lightning",
       "source": "twemoji",
-      "upstream": "assets/svg/1f680.svg",
-      "bytes": 678,
+      "upstream": "assets/svg/1f329.svg",
+      "bytes": 718,
       "licence": "CC-BY-4.0"
     },
     {
-      "id": "red-apple",
+      "id": "twemoji-rainbow",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f308.svg",
+      "bytes": 734,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-snowflake",
+      "source": "twemoji",
+      "upstream": "assets/svg/2744.svg",
+      "bytes": 1446,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-umbrella-rain",
+      "source": "twemoji",
+      "upstream": "assets/svg/2614.svg",
+      "bytes": 1127,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-water-wave",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f30a.svg",
+      "bytes": 688,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-droplet",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f4a7.svg",
+      "bytes": 240,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-high-voltage",
+      "source": "twemoji",
+      "upstream": "assets/svg/26a1.svg",
+      "bytes": 452,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-comet",
+      "source": "twemoji",
+      "upstream": "assets/svg/2604.svg",
+      "bytes": 1000,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-sun-behind-cloud",
+      "source": "twemoji",
+      "upstream": "assets/svg/26c5.svg",
+      "bytes": 815,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "lucide-tree-deciduous",
+      "source": "lucide",
+      "upstream": "icons/tree-deciduous.svg",
+      "bytes": 398,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-tree-palm",
+      "source": "lucide",
+      "upstream": "icons/tree-palm.svg",
+      "bytes": 762,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-tree-pine",
+      "source": "lucide",
+      "upstream": "icons/tree-pine.svg",
+      "bytes": 450,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-trees",
+      "source": "lucide",
+      "upstream": "icons/trees.svg",
+      "bytes": 668,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-citrus",
+      "source": "lucide",
+      "upstream": "icons/citrus.svg",
+      "bytes": 644,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-flower-2",
+      "source": "lucide",
+      "upstream": "icons/flower-2.svg",
+      "bytes": 822,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-leaf",
+      "source": "lucide",
+      "upstream": "icons/leaf.svg",
+      "bytes": 411,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-leafy-green",
+      "source": "lucide",
+      "upstream": "icons/leafy-green.svg",
+      "bytes": 580,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-sprout",
+      "source": "lucide",
+      "upstream": "icons/sprout.svg",
+      "bytes": 532,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-cherry",
+      "source": "lucide",
+      "upstream": "icons/cherry.svg",
+      "bytes": 709,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-clover",
+      "source": "lucide",
+      "upstream": "icons/clover.svg",
+      "bytes": 642,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-shrub",
+      "source": "lucide",
+      "upstream": "icons/shrub.svg",
+      "bytes": 512,
+      "licence": "ISC"
+    },
+    {
+      "id": "twemoji-seedling",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f331.svg",
+      "bytes": 516,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-tulip",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f337.svg",
+      "bytes": 587,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-shamrock",
+      "source": "twemoji",
+      "upstream": "assets/svg/2618.svg",
+      "bytes": 634,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-maple-leaf",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f341.svg",
+      "bytes": 756,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-rose",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f339.svg",
+      "bytes": 906,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-mushroom",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f344.svg",
+      "bytes": 1238,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-cactus",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f335.svg",
+      "bytes": 1101,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-four-leaf-clover",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f340.svg",
+      "bytes": 1059,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-deciduous-tree",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f333.svg",
+      "bytes": 1073,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-sunflower",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f33b.svg",
+      "bytes": 1425,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-monkey-face",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f435.svg",
+      "bytes": 1396,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-cow-face",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f42e.svg",
+      "bytes": 850,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-pig-face",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f437.svg",
+      "bytes": 1122,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-elephant",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f418.svg",
+      "bytes": 998,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-bison",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f9ac.svg",
+      "bytes": 1208,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-water-buffalo",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f403.svg",
+      "bytes": 816,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-rabbit-face",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f430.svg",
+      "bytes": 1248,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-koala",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f428.svg",
+      "bytes": 1064,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-panda",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f43c.svg",
+      "bytes": 1041,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-chicken",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f414.svg",
+      "bytes": 1077,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-penguin",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f427.svg",
+      "bytes": 1255,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-duck",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f986.svg",
+      "bytes": 1473,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-frog",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f438.svg",
+      "bytes": 801,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-turtle",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f422.svg",
+      "bytes": 1165,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-snake",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f40d.svg",
+      "bytes": 1004,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-dolphin",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f42c.svg",
+      "bytes": 970,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-tropical-fish",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f420.svg",
+      "bytes": 1174,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-octopus",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f419.svg",
+      "bytes": 844,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-snail",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f40c.svg",
+      "bytes": 1365,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-leopard",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f406.svg",
+      "bytes": 1345,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-ox",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f402.svg",
+      "bytes": 623,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-ewe",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f411.svg",
+      "bytes": 1102,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-rat",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f400.svg",
+      "bytes": 1471,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-rooster",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f413.svg",
+      "bytes": 1076,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-dove",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f54a.svg",
+      "bytes": 1187,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-swan",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f9a2.svg",
+      "bytes": 1418,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-crocodile",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f40a.svg",
+      "bytes": 1277,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-whale",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f40b.svg",
+      "bytes": 674,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-shark",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f988.svg",
+      "bytes": 1351,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-squid",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f991.svg",
+      "bytes": 1450,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-eagle",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f985.svg",
+      "bytes": 917,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-camel",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f42a.svg",
+      "bytes": 1293,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-two-hump-camel",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f42b.svg",
+      "bytes": 1458,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-paw-prints",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f43e.svg",
+      "bytes": 1496,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "lucide-chef-hat",
+      "source": "lucide",
+      "upstream": "icons/chef-hat.svg",
+      "bytes": 450,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-utensils",
+      "source": "lucide",
+      "upstream": "icons/utensils.svg",
+      "bytes": 483,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-soup",
+      "source": "lucide",
+      "upstream": "icons/soup.svg",
+      "bytes": 990,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-salad",
+      "source": "lucide",
+      "upstream": "icons/salad.svg",
+      "bytes": 858,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-ice-cream-cone",
+      "source": "lucide",
+      "upstream": "icons/ice-cream-cone.svg",
+      "bytes": 484,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-martini",
+      "source": "lucide",
+      "upstream": "icons/martini.svg",
+      "bytes": 481,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-cake",
+      "source": "lucide",
+      "upstream": "icons/cake.svg",
+      "bytes": 1186,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-sandwich",
+      "source": "lucide",
+      "upstream": "icons/sandwich.svg",
+      "bytes": 820,
+      "licence": "ISC"
+    },
+    {
+      "id": "twemoji-watermelon",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f349.svg",
+      "bytes": 1167,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-lemon",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f34b.svg",
+      "bytes": 1100,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-banana",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f34c.svg",
+      "bytes": 1107,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-red-apple",
       "source": "twemoji",
       "upstream": "assets/svg/1f34e.svg",
       "bytes": 447,
       "licence": "CC-BY-4.0"
     },
     {
-      "id": "musical-note",
+      "id": "twemoji-green-apple",
       "source": "twemoji",
-      "upstream": "assets/svg/1f3b5.svg",
+      "upstream": "assets/svg/1f34f.svg",
+      "bytes": 524,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-pear",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f350.svg",
+      "bytes": 534,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-cherries",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f352.svg",
+      "bytes": 707,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-tomato",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f345.svg",
+      "bytes": 770,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-avocado",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f951.svg",
+      "bytes": 1151,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-carrot",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f955.svg",
+      "bytes": 1036,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-hot-pepper",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f336.svg",
+      "bytes": 603,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-bread",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f35e.svg",
+      "bytes": 543,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-croissant",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f950.svg",
+      "bytes": 1303,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-pizza",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f355.svg",
+      "bytes": 1064,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-egg",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f95a.svg",
+      "bytes": 495,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-chocolate-bar",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f36b.svg",
+      "bytes": 906,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-honey-pot",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f36f.svg",
+      "bytes": 1150,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-hot-beverage",
+      "source": "twemoji",
+      "upstream": "assets/svg/2615.svg",
+      "bytes": 1295,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-wine-glass",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f377.svg",
+      "bytes": 1172,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-beer-mug",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f37a.svg",
+      "bytes": 1215,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-fork-knife",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f374.svg",
+      "bytes": 696,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-spoon",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f944.svg",
+      "bytes": 251,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-grapes",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f347.svg",
+      "bytes": 632,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-tangerine",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f34a.svg",
+      "bytes": 623,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-bowl-with-spoon",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f963.svg",
+      "bytes": 564,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-butter",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f9c8.svg",
+      "bytes": 966,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-salt",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f9c2.svg",
+      "bytes": 989,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-grinning-face",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f600.svg",
+      "bytes": 451,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-grinning-smiling-eyes",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f604.svg",
+      "bytes": 921,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-beaming-face",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f601.svg",
+      "bytes": 1130,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-dizzy-face",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f635.svg",
+      "bytes": 1341,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-slightly-smiling",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f642.svg",
+      "bytes": 526,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-winking-face",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f609.svg",
+      "bytes": 1184,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-smiling-face",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f60a.svg",
+      "bytes": 1056,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-heart-eyes",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f60d.svg",
+      "bytes": 942,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-star-struck",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f929.svg",
+      "bytes": 1271,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-savoring-food",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f60b.svg",
+      "bytes": 1385,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-tongue",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f61b.svg",
+      "bytes": 666,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-neutral",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f610.svg",
+      "bytes": 412,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-smirking",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f60f.svg",
+      "bytes": 1390,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-rolling-eyes",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f644.svg",
+      "bytes": 745,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-grimacing",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f62c.svg",
+      "bytes": 818,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-relieved",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f60c.svg",
+      "bytes": 1340,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-medical-mask",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f637.svg",
+      "bytes": 921,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-nauseated",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f922.svg",
+      "bytes": 1312,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-pouting",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f621.svg",
+      "bytes": 1071,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-angry",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f620.svg",
+      "bytes": 1071,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-crying",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f622.svg",
+      "bytes": 1057,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-fearful",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f628.svg",
+      "bytes": 1167,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-sunglasses-face",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f60e.svg",
+      "bytes": 998,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-no-mouth",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f636.svg",
+      "bytes": 312,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "lucide-book",
+      "source": "lucide",
+      "upstream": "icons/book.svg",
+      "bytes": 261,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-book-open",
+      "source": "lucide",
+      "upstream": "icons/book-open.svg",
+      "bytes": 430,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-notebook",
+      "source": "lucide",
+      "upstream": "icons/notebook.svg",
+      "bytes": 787,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-pencil",
+      "source": "lucide",
+      "upstream": "icons/pencil.svg",
+      "bytes": 420,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-pen",
+      "source": "lucide",
+      "upstream": "icons/pen.svg",
+      "bytes": 303,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-pen-tool",
+      "source": "lucide",
+      "upstream": "icons/pen-tool.svg",
+      "bytes": 771,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-highlighter",
+      "source": "lucide",
+      "upstream": "icons/highlighter.svg",
+      "bytes": 360,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-eraser",
+      "source": "lucide",
+      "upstream": "icons/eraser.svg",
+      "bytes": 426,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-clipboard-pen",
+      "source": "lucide",
+      "upstream": "icons/clipboard-pen.svg",
+      "bytes": 722,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-backpack",
+      "source": "lucide",
+      "upstream": "icons/backpack.svg",
+      "bytes": 768,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-graduation-cap",
+      "source": "lucide",
+      "upstream": "icons/graduation-cap.svg",
+      "bytes": 547,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-school",
+      "source": "lucide",
+      "upstream": "icons/school.svg",
+      "bytes": 915,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-briefcase",
+      "source": "lucide",
+      "upstream": "icons/briefcase.svg",
+      "bytes": 362,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-folder",
+      "source": "lucide",
+      "upstream": "icons/folder.svg",
+      "bytes": 293,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-folder-open",
+      "source": "lucide",
+      "upstream": "icons/folder-open.svg",
+      "bytes": 352,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-file",
+      "source": "lucide",
+      "upstream": "icons/file.svg",
+      "bytes": 416,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-file-text",
+      "source": "lucide",
+      "upstream": "icons/file-text.svg",
+      "bytes": 763,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-clipboard",
+      "source": "lucide",
+      "upstream": "icons/clipboard.svg",
+      "bytes": 397,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-clipboard-list",
+      "source": "lucide",
+      "upstream": "icons/clipboard-list.svg",
+      "bytes": 863,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-clipboard-check",
+      "source": "lucide",
+      "upstream": "icons/clipboard-check.svg",
+      "bytes": 518,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-paperclip",
+      "source": "lucide",
+      "upstream": "icons/paperclip.svg",
+      "bytes": 295,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-scissors",
+      "source": "lucide",
+      "upstream": "icons/scissors.svg",
+      "bytes": 690,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-laptop",
+      "source": "lucide",
+      "upstream": "icons/laptop.svg",
+      "bytes": 448,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-monitor",
+      "source": "lucide",
+      "upstream": "icons/monitor.svg",
+      "bytes": 481,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-keyboard",
+      "source": "lucide",
+      "upstream": "icons/keyboard.svg",
+      "bytes": 1148,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-mouse",
+      "source": "lucide",
+      "upstream": "icons/mouse.svg",
+      "bytes": 327,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-printer",
+      "source": "lucide",
+      "upstream": "icons/printer.svg",
+      "bytes": 541,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-presentation",
+      "source": "lucide",
+      "upstream": "icons/presentation.svg",
+      "bytes": 451,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-chart-bar",
+      "source": "lucide",
+      "upstream": "icons/chart-bar.svg",
+      "bytes": 544,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-chart-line",
+      "source": "lucide",
+      "upstream": "icons/chart-line.svg",
+      "bytes": 324,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-chart-pie",
+      "source": "lucide",
+      "upstream": "icons/chart-pie.svg",
+      "bytes": 414,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-library",
+      "source": "lucide",
+      "upstream": "icons/library.svg",
+      "bytes": 531,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-microscope",
+      "source": "lucide",
+      "upstream": "icons/microscope.svg",
+      "bytes": 840,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-flask-conical",
+      "source": "lucide",
+      "upstream": "icons/flask-conical.svg",
+      "bytes": 518,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-atom",
+      "source": "lucide",
+      "upstream": "icons/atom.svg",
+      "bytes": 658,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-globe",
+      "source": "lucide",
+      "upstream": "icons/globe.svg",
+      "bytes": 466,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-compass",
+      "source": "lucide",
+      "upstream": "icons/compass.svg",
+      "bytes": 394,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-calendar",
+      "source": "lucide",
+      "upstream": "icons/calendar.svg",
+      "bytes": 556,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-clock",
+      "source": "lucide",
+      "upstream": "icons/clock.svg",
+      "bytes": 314,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-alarm-clock",
+      "source": "lucide",
+      "upstream": "icons/alarm-clock.svg",
+      "bytes": 795,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-timer",
+      "source": "lucide",
+      "upstream": "icons/timer.svg",
+      "bytes": 462,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-lightbulb",
+      "source": "lucide",
+      "upstream": "icons/lightbulb.svg",
+      "bytes": 506,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-puzzle",
+      "source": "lucide",
+      "upstream": "icons/puzzle.svg",
+      "bytes": 636,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-activity",
+      "source": "lucide",
+      "upstream": "icons/activity.svg",
+      "bytes": 297,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-bandage",
+      "source": "lucide",
+      "upstream": "icons/bandage.svg",
+      "bytes": 927,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-bath",
+      "source": "lucide",
+      "upstream": "icons/bath.svg",
+      "bytes": 714,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-bed",
+      "source": "lucide",
+      "upstream": "icons/bed.svg",
+      "bytes": 544,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-bike",
+      "source": "lucide",
+      "upstream": "icons/bike.svg",
+      "bytes": 592,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-brain",
+      "source": "lucide",
+      "upstream": "icons/brain.svg",
+      "bytes": 1196,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-cross",
+      "source": "lucide",
+      "upstream": "icons/cross.svg",
       "bytes": 374,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-dumbbell",
+      "source": "lucide",
+      "upstream": "icons/dumbbell.svg",
+      "bytes": 939,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-footprints",
+      "source": "lucide",
+      "upstream": "icons/footprints.svg",
+      "bytes": 747,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-heart-pulse",
+      "source": "lucide",
+      "upstream": "icons/heart-pulse.svg",
+      "bytes": 472,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-pill",
+      "source": "lucide",
+      "upstream": "icons/pill.svg",
+      "bytes": 359,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-scale",
+      "source": "lucide",
+      "upstream": "icons/scale.svg",
+      "bytes": 714,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-stethoscope",
+      "source": "lucide",
+      "upstream": "icons/stethoscope.svg",
+      "bytes": 718,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-syringe",
+      "source": "lucide",
+      "upstream": "icons/syringe.svg",
+      "bytes": 820,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-weight",
+      "source": "lucide",
+      "upstream": "icons/weight.svg",
+      "bytes": 404,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-accessibility",
+      "source": "lucide",
+      "upstream": "icons/accessibility.svg",
+      "bytes": 717,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-ambulance",
+      "source": "lucide",
+      "upstream": "icons/ambulance.svg",
+      "bytes": 1053,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-eye",
+      "source": "lucide",
+      "upstream": "icons/eye.svg",
+      "bytes": 403,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-glasses",
+      "source": "lucide",
+      "upstream": "icons/glasses.svg",
+      "bytes": 737,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-hand-heart",
+      "source": "lucide",
+      "upstream": "icons/hand-heart.svg",
+      "bytes": 794,
+      "licence": "ISC"
+    },
+    {
+      "id": "twemoji-pill",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f48a.svg",
+      "bytes": 412,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-hospital",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f3e5.svg",
+      "bytes": 672,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-adhesive-bandage",
+      "source": "twemoji",
+      "upstream": "assets/svg/1fa79.svg",
+      "bytes": 1327,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-tooth",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f9b7.svg",
+      "bytes": 662,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-toothbrush",
+      "source": "twemoji",
+      "upstream": "assets/svg/1faa5.svg",
+      "bytes": 1259,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-bathtub",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f6c1.svg",
+      "bytes": 821,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-zzz",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f4a4.svg",
+      "bytes": 651,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-lotion-bottle",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f9f4.svg",
+      "bytes": 690,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-petri-dish",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f9eb.svg",
+      "bytes": 1123,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "lucide-plane",
+      "source": "lucide",
+      "upstream": "icons/plane.svg",
+      "bytes": 372,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-car",
+      "source": "lucide",
+      "upstream": "icons/car.svg",
+      "bytes": 713,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-train-front",
+      "source": "lucide",
+      "upstream": "icons/train-front.svg",
+      "bytes": 838,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-bus",
+      "source": "lucide",
+      "upstream": "icons/bus.svg",
+      "bytes": 995,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-ship",
+      "source": "lucide",
+      "upstream": "icons/ship.svg",
+      "bytes": 858,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-map",
+      "source": "lucide",
+      "upstream": "icons/map.svg",
+      "bytes": 651,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-tent",
+      "source": "lucide",
+      "upstream": "icons/tent.svg",
+      "bytes": 553,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-mountain",
+      "source": "lucide",
+      "upstream": "icons/mountain.svg",
+      "bytes": 199,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-luggage",
+      "source": "lucide",
+      "upstream": "icons/luggage.svg",
+      "bytes": 761,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-anchor",
+      "source": "lucide",
+      "upstream": "icons/anchor.svg",
+      "bytes": 561,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-sailboat",
+      "source": "lucide",
+      "upstream": "icons/sailboat.svg",
+      "bytes": 547,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-rocket",
+      "source": "lucide",
+      "upstream": "icons/rocket.svg",
+      "bytes": 756,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-ferris-wheel",
+      "source": "lucide",
+      "upstream": "icons/ferris-wheel.svg",
+      "bytes": 1160,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-camera",
+      "source": "lucide",
+      "upstream": "icons/camera.svg",
+      "bytes": 480,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-binoculars",
+      "source": "lucide",
+      "upstream": "icons/binoculars.svg",
+      "bytes": 1015,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-landmark",
+      "source": "lucide",
+      "upstream": "icons/landmark.svg",
+      "bytes": 843,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-castle",
+      "source": "lucide",
+      "upstream": "icons/castle.svg",
+      "bytes": 1038,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-signpost",
+      "source": "lucide",
+      "upstream": "icons/signpost.svg",
+      "bytes": 595,
+      "licence": "ISC"
+    },
+    {
+      "id": "twemoji-globe-africa",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f30d.svg",
+      "bytes": 1157,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-compass",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f9ed.svg",
+      "bytes": 637,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-mountain",
+      "source": "twemoji",
+      "upstream": "assets/svg/26f0.svg",
+      "bytes": 1189,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-tent",
+      "source": "twemoji",
+      "upstream": "assets/svg/26fa.svg",
+      "bytes": 827,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-anchor",
+      "source": "twemoji",
+      "upstream": "assets/svg/2693.svg",
+      "bytes": 515,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-sailboat",
+      "source": "twemoji",
+      "upstream": "assets/svg/26f5.svg",
+      "bytes": 516,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-ship",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f6a2.svg",
+      "bytes": 890,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-airplane",
+      "source": "twemoji",
+      "upstream": "assets/svg/2708.svg",
+      "bytes": 910,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-rocket",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f680.svg",
+      "bytes": 678,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-luggage",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f9f3.svg",
+      "bytes": 1276,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-beach-umbrella",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f3d6.svg",
+      "bytes": 1389,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-train",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f686.svg",
+      "bytes": 1129,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "lucide-balloon",
+      "source": "lucide",
+      "upstream": "icons/balloon.svg",
+      "bytes": 493,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-cake-slice",
+      "source": "lucide",
+      "upstream": "icons/cake-slice.svg",
+      "bytes": 664,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-candy-cane",
+      "source": "lucide",
+      "upstream": "icons/candy-cane.svg",
+      "bytes": 772,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-gift",
+      "source": "lucide",
+      "upstream": "icons/gift.svg",
+      "bytes": 653,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-venetian-mask",
+      "source": "lucide",
+      "upstream": "icons/venetian-mask.svg",
+      "bytes": 559,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-drum",
+      "source": "lucide",
+      "upstream": "icons/drum.svg",
+      "bytes": 923,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-music",
+      "source": "lucide",
+      "upstream": "icons/music.svg",
+      "bytes": 443,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-wand-sparkles",
+      "source": "lucide",
+      "upstream": "icons/wand-sparkles.svg",
+      "bytes": 1124,
+      "licence": "ISC"
+    },
+    {
+      "id": "twemoji-2nd-place-medal",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f948.svg",
+      "bytes": 906,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-firecracker",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f9e8.svg",
+      "bytes": 1227,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-balloon",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f388.svg",
+      "bytes": 699,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-wrapped-gift",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f381.svg",
+      "bytes": 657,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-crystal-ball",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f52e.svg",
+      "bytes": 696,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-bullseye",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f3af.svg",
+      "bytes": 1030,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-yo-yo",
+      "source": "twemoji",
+      "upstream": "assets/svg/1fa80.svg",
+      "bytes": 919,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-3rd-place-medal",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f949.svg",
+      "bytes": 1042,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-pool-8-ball",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f3b1.svg",
+      "bytes": 708,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-admission-tickets",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f39f.svg",
+      "bytes": 1086,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-ticket",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f3ab.svg",
+      "bytes": 1499,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-wind-chime",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f390.svg",
+      "bytes": 803,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-carp-streamer",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f38f.svg",
+      "bytes": 1084,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-basketball",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f3c0.svg",
+      "bytes": 618,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-american-football",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f3c8.svg",
+      "bytes": 1466,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-trophy",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f3c6.svg",
+      "bytes": 1238,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-1st-place-medal",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f947.svg",
+      "bytes": 666,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-military-medal",
+      "source": "twemoji",
+      "upstream": "assets/svg/1f396.svg",
+      "bytes": 1045,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "lucide-dollar-sign",
+      "source": "lucide",
+      "upstream": "icons/dollar-sign.svg",
+      "bytes": 358,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-credit-card",
+      "source": "lucide",
+      "upstream": "icons/credit-card.svg",
+      "bytes": 346,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-wallet",
+      "source": "lucide",
+      "upstream": "icons/wallet.svg",
+      "bytes": 430,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-piggy-bank",
+      "source": "lucide",
+      "upstream": "icons/piggy-bank.svg",
+      "bytes": 628,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-banknote",
+      "source": "lucide",
+      "upstream": "icons/banknote.svg",
+      "bytes": 466,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-coins",
+      "source": "lucide",
+      "upstream": "icons/coins.svg",
+      "bytes": 588,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-receipt",
+      "source": "lucide",
+      "upstream": "icons/receipt.svg",
+      "bytes": 876,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-percent",
+      "source": "lucide",
+      "upstream": "icons/percent.svg",
+      "bytes": 464,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-hand-coins",
+      "source": "lucide",
+      "upstream": "icons/hand-coins.svg",
+      "bytes": 792,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-circle-dollar-sign",
+      "source": "lucide",
+      "upstream": "icons/circle-dollar-sign.svg",
+      "bytes": 459,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-building-2",
+      "source": "lucide",
+      "upstream": "icons/building-2.svg",
+      "bytes": 760,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-house",
+      "source": "lucide",
+      "upstream": "icons/house.svg",
+      "bytes": 426,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-door-open",
+      "source": "lucide",
+      "upstream": "icons/door-open.svg",
+      "bytes": 751,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-key",
+      "source": "lucide",
+      "upstream": "icons/key.svg",
+      "bytes": 490,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-key-round",
+      "source": "lucide",
+      "upstream": "icons/key-round.svg",
+      "bytes": 482,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-lamp",
+      "source": "lucide",
+      "upstream": "icons/lamp.svg",
+      "bytes": 571,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-sofa",
+      "source": "lucide",
+      "upstream": "icons/sofa.svg",
+      "bytes": 780,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-armchair",
+      "source": "lucide",
+      "upstream": "icons/armchair.svg",
+      "bytes": 664,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-plug",
+      "source": "lucide",
+      "upstream": "icons/plug.svg",
+      "bytes": 590,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-wrench",
+      "source": "lucide",
+      "upstream": "icons/wrench.svg",
+      "bytes": 368,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-hammer",
+      "source": "lucide",
+      "upstream": "icons/hammer.svg",
+      "bytes": 618,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-paintbrush",
+      "source": "lucide",
+      "upstream": "icons/paintbrush.svg",
+      "bytes": 758,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-fan",
+      "source": "lucide",
+      "upstream": "icons/fan.svg",
+      "bytes": 474,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-washing-machine",
+      "source": "lucide",
+      "upstream": "icons/washing-machine.svg",
+      "bytes": 720,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-refrigerator",
+      "source": "lucide",
+      "upstream": "icons/refrigerator.svg",
+      "bytes": 476,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-trash-2",
+      "source": "lucide",
+      "upstream": "icons/trash-2.svg",
+      "bytes": 708,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-recycle",
+      "source": "lucide",
+      "upstream": "icons/recycle.svg",
+      "bytes": 1041,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-toilet",
+      "source": "lucide",
+      "upstream": "icons/toilet.svg",
+      "bytes": 461,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-lock-keyhole",
+      "source": "lucide",
+      "upstream": "icons/lock-keyhole.svg",
+      "bytes": 472,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-fence",
+      "source": "lucide",
+      "upstream": "icons/fence.svg",
+      "bytes": 982,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-bell",
+      "source": "lucide",
+      "upstream": "icons/bell.svg",
+      "bytes": 436,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-blinds",
+      "source": "lucide",
+      "upstream": "icons/blinds.svg",
+      "bytes": 887,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-warehouse",
+      "source": "lucide",
+      "upstream": "icons/warehouse.svg",
+      "bytes": 674,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-infinity",
+      "source": "lucide",
+      "upstream": "icons/infinity.svg",
+      "bytes": 235,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-hash",
+      "source": "lucide",
+      "upstream": "icons/hash.svg",
+      "bytes": 600,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-at-sign",
+      "source": "lucide",
+      "upstream": "icons/at-sign.svg",
+      "bytes": 342,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-plus",
+      "source": "lucide",
+      "upstream": "icons/plus.svg",
+      "bytes": 299,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-x",
+      "source": "lucide",
+      "upstream": "icons/x.svg",
+      "bytes": 303,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-equal",
+      "source": "lucide",
+      "upstream": "icons/equal.svg",
+      "bytes": 333,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-circle-question-mark",
+      "source": "lucide",
+      "upstream": "icons/circle-question-mark.svg",
+      "bytes": 457,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-circle-alert",
+      "source": "lucide",
+      "upstream": "icons/circle-alert.svg",
+      "bytes": 467,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-info",
+      "source": "lucide",
+      "upstream": "icons/info.svg",
+      "bytes": 429,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-lock",
+      "source": "lucide",
+      "upstream": "icons/lock.svg",
+      "bytes": 352,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-lock-open",
+      "source": "lucide",
+      "upstream": "icons/lock-open.svg",
+      "bytes": 351,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-link",
+      "source": "lucide",
+      "upstream": "icons/link.svg",
+      "bytes": 402,
+      "licence": "MIT"
+    },
+    {
+      "id": "lucide-share-2",
+      "source": "lucide",
+      "upstream": "icons/share-2.svg",
+      "bytes": 737,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-wifi",
+      "source": "lucide",
+      "upstream": "icons/wifi.svg",
+      "bytes": 584,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-bluetooth",
+      "source": "lucide",
+      "upstream": "icons/bluetooth.svg",
+      "bytes": 200,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-battery",
+      "source": "lucide",
+      "upstream": "icons/battery.svg",
+      "bytes": 335,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-battery-charging",
+      "source": "lucide",
+      "upstream": "icons/battery-charging.svg",
+      "bytes": 619,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-volume-2",
+      "source": "lucide",
+      "upstream": "icons/volume-2.svg",
+      "bytes": 611,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-mic",
+      "source": "lucide",
+      "upstream": "icons/mic.svg",
+      "bytes": 461,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-video",
+      "source": "lucide",
+      "upstream": "icons/video.svg",
+      "bytes": 393,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-phone",
+      "source": "lucide",
+      "upstream": "icons/phone.svg",
+      "bytes": 388,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-message-circle",
+      "source": "lucide",
+      "upstream": "icons/message-circle.svg",
+      "bytes": 298,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-usb",
+      "source": "lucide",
+      "upstream": "icons/usb.svg",
+      "bytes": 943,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-barcode",
+      "source": "lucide",
+      "upstream": "icons/barcode.svg",
+      "bytes": 645,
+      "licence": "ISC"
+    },
+    {
+      "id": "lucide-settings",
+      "source": "lucide",
+      "upstream": "icons/settings.svg",
+      "bytes": 629,
+      "licence": "ISC"
+    },
+    {
+      "id": "twemoji-warning",
+      "source": "twemoji",
+      "upstream": "assets/svg/26a0.svg",
+      "bytes": 549,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-no-entry",
+      "source": "twemoji",
+      "upstream": "assets/svg/26d4.svg",
+      "bytes": 283,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-radioactive",
+      "source": "twemoji",
+      "upstream": "assets/svg/2622.svg",
+      "bytes": 776,
+      "licence": "CC-BY-4.0"
+    },
+    {
+      "id": "twemoji-wheelchair",
+      "source": "twemoji",
+      "upstream": "assets/svg/267f.svg",
+      "bytes": 872,
       "licence": "CC-BY-4.0"
     }
   ]

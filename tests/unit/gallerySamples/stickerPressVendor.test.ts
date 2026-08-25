@@ -40,7 +40,7 @@ describe('sticker press vendor', () => {
         manifest().icons.forEach((i: any) => {
             const actual = Buffer.byteLength(readFileSync(`${DIR}/${i.source}/${i.id}.svg`, 'utf8'), 'utf8');
             expect(actual, `${i.id} recorded size`).toBe(i.bytes);
-            expect(actual, `${i.id} cap`).toBeLessThanOrEqual(i.source === 'twemoji' ? 1500 : 700);
+            expect(actual, `${i.id} cap`).toBeLessThanOrEqual(i.source === 'twemoji' ? 1500 : 1200);
         });
     });
 

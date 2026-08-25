@@ -1,0 +1,7838 @@
+[
+  {
+    "id": "furn-tab-square",
+    "name": "Square Index Tab",
+    "cat": "index-tabs-flags",
+    "source": "furniture",
+    "upstream": "tab(null, false)",
+    "keywords": [
+      "tab",
+      "index",
+      "divider",
+      "filing"
+    ]
+  },
+  {
+    "id": "furn-tab-square-notch",
+    "name": "Notched Square Tab",
+    "cat": "index-tabs-flags",
+    "source": "furniture",
+    "upstream": "tab(null, true)",
+    "keywords": [
+      "tab",
+      "index",
+      "notch",
+      "filing"
+    ]
+  },
+  {
+    "id": "furn-tab-rounded",
+    "name": "Rounded Index Tab",
+    "cat": "index-tabs-flags",
+    "source": "furniture",
+    "upstream": "tab('rounded', false)",
+    "keywords": [
+      "tab",
+      "index",
+      "rounded",
+      "filing"
+    ]
+  },
+  {
+    "id": "furn-tab-rounded-notch",
+    "name": "Rounded Notched Tab",
+    "cat": "index-tabs-flags",
+    "source": "furniture",
+    "upstream": "tab('rounded', true)",
+    "keywords": [
+      "tab",
+      "index",
+      "rounded",
+      "notch"
+    ]
+  },
+  {
+    "id": "furn-tab-angled",
+    "name": "Angled Index Tab",
+    "cat": "index-tabs-flags",
+    "source": "furniture",
+    "upstream": "tab('angled', false)",
+    "keywords": [
+      "tab",
+      "index",
+      "angled",
+      "filing"
+    ]
+  },
+  {
+    "id": "furn-tab-angled-notch",
+    "name": "Angled Notched Tab",
+    "cat": "index-tabs-flags",
+    "source": "furniture",
+    "upstream": "tab('angled', true)",
+    "keywords": [
+      "tab",
+      "index",
+      "angled",
+      "notch"
+    ]
+  },
+  {
+    "id": "furn-flag-point",
+    "name": "Pointed Flag Marker",
+    "cat": "index-tabs-flags",
+    "source": "furniture",
+    "upstream": "flag('point')",
+    "keywords": [
+      "flag",
+      "marker",
+      "pointer",
+      "index"
+    ]
+  },
+  {
+    "id": "furn-flag-swallow",
+    "name": "Swallowtail Flag",
+    "cat": "index-tabs-flags",
+    "source": "furniture",
+    "upstream": "flag('swallow')",
+    "keywords": [
+      "flag",
+      "marker",
+      "pennant",
+      "index"
+    ]
+  },
+  {
+    "id": "furn-corner-triangle",
+    "name": "Corner Triangle Marker",
+    "cat": "index-tabs-flags",
+    "source": "furniture",
+    "upstream": "cornerTriangle(false)",
+    "keywords": [
+      "corner",
+      "triangle",
+      "marker",
+      "index"
+    ]
+  },
+  {
+    "id": "furn-corner-triangle-crease",
+    "name": "Creased Corner Triangle",
+    "cat": "index-tabs-flags",
+    "source": "furniture",
+    "upstream": "cornerTriangle(true)",
+    "keywords": [
+      "corner",
+      "triangle",
+      "crease",
+      "marker"
+    ]
+  },
+  {
+    "id": "furn-dogear-medium",
+    "name": "Medium Page Curl",
+    "cat": "index-tabs-flags",
+    "source": "furniture",
+    "upstream": "dogEar(2)",
+    "keywords": [
+      "dog ear",
+      "page curl",
+      "corner",
+      "fold"
+    ]
+  },
+  {
+    "id": "furn-dogear-large",
+    "name": "Large Page Curl",
+    "cat": "index-tabs-flags",
+    "source": "furniture",
+    "upstream": "dogEar(3)",
+    "keywords": [
+      "dog ear",
+      "page curl",
+      "corner",
+      "fold"
+    ]
+  },
+  {
+    "id": "furn-dogear-full",
+    "name": "Full Page Fold",
+    "cat": "index-tabs-flags",
+    "source": "furniture",
+    "upstream": "dogEar(4)",
+    "keywords": [
+      "dog ear",
+      "page fold",
+      "corner"
+    ]
+  },
+  {
+    "id": "furn-priority-flag-1",
+    "name": "Single Signal Flag",
+    "cat": "index-tabs-flags",
+    "source": "furniture",
+    "upstream": "priorityFlag(1)",
+    "keywords": [
+      "flag",
+      "priority",
+      "signal",
+      "level"
+    ]
+  },
+  {
+    "id": "furn-priority-flag-2",
+    "name": "Double Signal Flag",
+    "cat": "index-tabs-flags",
+    "source": "furniture",
+    "upstream": "priorityFlag(2)",
+    "keywords": [
+      "flag",
+      "priority",
+      "signal",
+      "level"
+    ]
+  },
+  {
+    "id": "furn-priority-flag-3",
+    "name": "Triple Signal Flag",
+    "cat": "index-tabs-flags",
+    "source": "furniture",
+    "upstream": "priorityFlag(3)",
+    "keywords": [
+      "flag",
+      "priority",
+      "signal",
+      "level"
+    ]
+  },
+  {
+    "id": "furn-star-marker",
+    "name": "Marker Star",
+    "cat": "index-tabs-flags",
+    "source": "furniture",
+    "upstream": "star(5, 0.5)",
+    "keywords": [
+      "star",
+      "marker",
+      "favourite",
+      "flag"
+    ]
+  },
+  {
+    "id": "furn-bullet-dot",
+    "name": "Dot Bullet Marker",
+    "cat": "index-tabs-flags",
+    "source": "furniture",
+    "upstream": "bullet(null)",
+    "keywords": [
+      "bullet",
+      "dot",
+      "marker",
+      "index"
+    ]
+  },
+  {
+    "id": "furn-bookmark-ribbon",
+    "name": "Ribbon Bookmark",
+    "cat": "banners-ribbons",
+    "source": "furniture",
+    "upstream": "bookmark(true)",
+    "keywords": [
+      "bookmark",
+      "ribbon",
+      "page marker"
+    ]
+  },
+  {
+    "id": "furn-banner-tails",
+    "name": "Tailed Ribbon Banner",
+    "cat": "banners-ribbons",
+    "source": "furniture",
+    "upstream": "banner(true, false)",
+    "keywords": [
+      "banner",
+      "ribbon",
+      "tails"
+    ]
+  },
+  {
+    "id": "furn-seal-20",
+    "name": "Densely Scalloped Seal",
+    "cat": "banners-ribbons",
+    "source": "furniture",
+    "upstream": "seal(20)",
+    "keywords": [
+      "seal",
+      "wax seal",
+      "medallion",
+      "scalloped"
+    ]
+  },
+  {
+    "id": "furn-banner-tails-fold",
+    "name": "Ribbon Banner with Fold",
+    "cat": "banners-ribbons",
+    "source": "furniture",
+    "upstream": "banner(true, true)",
+    "keywords": [
+      "banner",
+      "ribbon",
+      "tails",
+      "fold"
+    ]
+  },
+  {
+    "id": "furn-pennant",
+    "name": "Pennant Flag",
+    "cat": "banners-ribbons",
+    "source": "furniture",
+    "upstream": "pennant(false)",
+    "keywords": [
+      "pennant",
+      "bunting",
+      "flag",
+      "banner"
+    ]
+  },
+  {
+    "id": "furn-pennant-notch",
+    "name": "Notched Pennant Bunting",
+    "cat": "banners-ribbons",
+    "source": "furniture",
+    "upstream": "pennant(true)",
+    "keywords": [
+      "pennant",
+      "bunting",
+      "flag",
+      "notch"
+    ]
+  },
+  {
+    "id": "furn-rosette-6",
+    "name": "Simple Rosette Award",
+    "cat": "banners-ribbons",
+    "source": "furniture",
+    "upstream": "rosette(6)",
+    "keywords": [
+      "rosette",
+      "award",
+      "ribbon",
+      "medallion"
+    ]
+  },
+  {
+    "id": "furn-rosette-10",
+    "name": "Rosette Award Medallion",
+    "cat": "banners-ribbons",
+    "source": "furniture",
+    "upstream": "rosette(10)",
+    "keywords": [
+      "rosette",
+      "award",
+      "ribbon",
+      "medallion"
+    ]
+  },
+  {
+    "id": "furn-rosette-14",
+    "name": "Fine Rosette Award",
+    "cat": "banners-ribbons",
+    "source": "furniture",
+    "upstream": "rosette(14)",
+    "keywords": [
+      "rosette",
+      "award",
+      "ribbon",
+      "medallion"
+    ]
+  },
+  {
+    "id": "furn-sparkle-accent",
+    "name": "Sparkle Accent",
+    "cat": "banners-ribbons",
+    "source": "furniture",
+    "upstream": "sparkle(6)",
+    "keywords": [
+      "sparkle",
+      "accent",
+      "decoration",
+      "twinkle"
+    ]
+  },
+  {
+    "id": "furn-burst-star",
+    "name": "Starburst Badge",
+    "cat": "banners-ribbons",
+    "source": "furniture",
+    "upstream": "burst(8, false)",
+    "keywords": [
+      "burst",
+      "starburst",
+      "badge",
+      "award"
+    ]
+  },
+  {
+    "id": "furn-burst-jagged",
+    "name": "Jagged Impact Burst",
+    "cat": "banners-ribbons",
+    "source": "furniture",
+    "upstream": "burst(12, true)",
+    "keywords": [
+      "burst",
+      "impact",
+      "jagged",
+      "explosion"
+    ]
+  },
+  {
+    "id": "furn-seal-10",
+    "name": "Wax Seal Medallion",
+    "cat": "banners-ribbons",
+    "source": "furniture",
+    "upstream": "seal(10)",
+    "keywords": [
+      "seal",
+      "wax seal",
+      "medallion",
+      "award"
+    ]
+  },
+  {
+    "id": "furn-seal-16",
+    "name": "Fine-Scalloped Wax Seal",
+    "cat": "banners-ribbons",
+    "source": "furniture",
+    "upstream": "seal(16)",
+    "keywords": [
+      "seal",
+      "wax seal",
+      "medallion",
+      "scalloped"
+    ]
+  },
+  {
+    "id": "furn-medal-ribbon",
+    "name": "Ribbon Medal",
+    "cat": "banners-ribbons",
+    "source": "furniture",
+    "upstream": "medal(true)",
+    "keywords": [
+      "medal",
+      "ribbon",
+      "award",
+      "prize"
+    ]
+  },
+  {
+    "id": "furn-medal-plain",
+    "name": "Plain Medal Disc",
+    "cat": "banners-ribbons",
+    "source": "furniture",
+    "upstream": "medal(false)",
+    "keywords": [
+      "medal",
+      "disc",
+      "award",
+      "badge"
+    ]
+  },
+  {
+    "id": "furn-tape-torn",
+    "name": "Torn Washi Tape Strip",
+    "cat": "labels-tape",
+    "source": "furniture",
+    "upstream": "tape(true)",
+    "keywords": [
+      "tape",
+      "washi",
+      "label",
+      "torn"
+    ]
+  },
+  {
+    "id": "furn-tag-plain",
+    "name": "Luggage Tag",
+    "cat": "labels-tape",
+    "source": "furniture",
+    "upstream": "tag(false)",
+    "keywords": [
+      "tag",
+      "label",
+      "luggage",
+      "price tag"
+    ]
+  },
+  {
+    "id": "furn-tag-hole",
+    "name": "Tag with Grommet",
+    "cat": "labels-tape",
+    "source": "furniture",
+    "upstream": "tag(true)",
+    "keywords": [
+      "tag",
+      "label",
+      "grommet",
+      "hole"
+    ]
+  },
+  {
+    "id": "furn-sticky-note",
+    "name": "Sticky Note",
+    "cat": "labels-tape",
+    "source": "furniture",
+    "upstream": "stickyNote(null)",
+    "keywords": [
+      "sticky note",
+      "label",
+      "memo"
+    ]
+  },
+  {
+    "id": "furn-sticky-note-lined",
+    "name": "Lined Sticky Note",
+    "cat": "labels-tape",
+    "source": "furniture",
+    "upstream": "stickyNote('lined')",
+    "keywords": [
+      "sticky note",
+      "label",
+      "lined",
+      "memo"
+    ]
+  },
+  {
+    "id": "furn-sticky-note-torn",
+    "name": "Torn-Edge Sticky Note",
+    "cat": "labels-tape",
+    "source": "furniture",
+    "upstream": "stickyNote('torn')",
+    "keywords": [
+      "sticky note",
+      "label",
+      "torn",
+      "memo"
+    ]
+  },
+  {
+    "id": "furn-speech-bubble-left",
+    "name": "Speech Bubble, Left Tail",
+    "cat": "labels-tape",
+    "source": "furniture",
+    "upstream": "speechBubble('left')",
+    "keywords": [
+      "speech bubble",
+      "callout",
+      "chat",
+      "label"
+    ]
+  },
+  {
+    "id": "furn-speech-bubble-right",
+    "name": "Speech Bubble, Right Tail",
+    "cat": "labels-tape",
+    "source": "furniture",
+    "upstream": "speechBubble('right')",
+    "keywords": [
+      "speech bubble",
+      "callout",
+      "chat",
+      "label"
+    ]
+  },
+  {
+    "id": "furn-frame-square",
+    "name": "Square Frame Label",
+    "cat": "labels-tape",
+    "source": "furniture",
+    "upstream": "boxFrame(null)",
+    "keywords": [
+      "frame",
+      "label",
+      "square",
+      "border"
+    ]
+  },
+  {
+    "id": "furn-frame-round",
+    "name": "Round-Corner Frame",
+    "cat": "labels-tape",
+    "source": "furniture",
+    "upstream": "boxFrame('round')",
+    "keywords": [
+      "frame",
+      "label",
+      "round",
+      "border"
+    ]
+  },
+  {
+    "id": "furn-bracket-left",
+    "name": "Opening Bracket Marker",
+    "cat": "labels-tape",
+    "source": "furniture",
+    "upstream": "bracket('left')",
+    "keywords": [
+      "bracket",
+      "marker",
+      "label"
+    ]
+  },
+  {
+    "id": "furn-bracket-right",
+    "name": "Closing Bracket Marker",
+    "cat": "labels-tape",
+    "source": "furniture",
+    "upstream": "bracket('right')",
+    "keywords": [
+      "bracket",
+      "marker",
+      "label"
+    ]
+  },
+  {
+    "id": "furn-checkbox-empty",
+    "name": "Empty Checkbox",
+    "cat": "labels-tape",
+    "source": "furniture",
+    "upstream": "checkbox(null)",
+    "keywords": [
+      "checkbox",
+      "to-do",
+      "label",
+      "task"
+    ]
+  },
+  {
+    "id": "furn-checkbox-checked",
+    "name": "Checked Checkbox",
+    "cat": "labels-tape",
+    "source": "furniture",
+    "upstream": "checkbox('checked')",
+    "keywords": [
+      "checkbox",
+      "to-do",
+      "done",
+      "task"
+    ]
+  },
+  {
+    "id": "furn-pip-filled",
+    "name": "Solid Pip Dot",
+    "cat": "labels-tape",
+    "source": "furniture",
+    "upstream": "pip(true)",
+    "keywords": [
+      "pip",
+      "dot",
+      "label",
+      "sticker dot"
+    ]
+  },
+  {
+    "id": "furn-pip-open",
+    "name": "Open Pip Ring",
+    "cat": "labels-tape",
+    "source": "furniture",
+    "upstream": "pip(false)",
+    "keywords": [
+      "pip",
+      "ring",
+      "label",
+      "sticker dot"
+    ]
+  },
+  {
+    "id": "lucide-arrow-big-up",
+    "name": "Big Up Arrow",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "arrow-big-up",
+    "keywords": [
+      "shift",
+      "keyboard",
+      "button",
+      "mac",
+      "capitalize",
+      "capitalise",
+      "forward",
+      "direction",
+      "north"
+    ]
+  },
+  {
+    "id": "lucide-arrow-big-down",
+    "name": "Big Down Arrow",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "arrow-big-down",
+    "keywords": [
+      "backwards",
+      "reverse",
+      "direction",
+      "south"
+    ]
+  },
+  {
+    "id": "lucide-arrow-big-left",
+    "name": "Big Left Arrow",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "arrow-big-left",
+    "keywords": [
+      "previous",
+      "back",
+      "direction",
+      "west",
+      "indicate turn"
+    ]
+  },
+  {
+    "id": "lucide-arrow-big-right",
+    "name": "Big Right Arrow",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "arrow-big-right",
+    "keywords": [
+      "next",
+      "forward",
+      "direction",
+      "east",
+      "indicate turn"
+    ]
+  },
+  {
+    "id": "lucide-arrow-up-right",
+    "name": "Diagonal Arrow, Up Right",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "arrow-up-right",
+    "keywords": [
+      "direction",
+      "north-east",
+      "diagonal"
+    ]
+  },
+  {
+    "id": "lucide-arrow-up-left",
+    "name": "Diagonal Arrow, Up Left",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "arrow-up-left",
+    "keywords": [
+      "direction",
+      "north-west",
+      "diagonal"
+    ]
+  },
+  {
+    "id": "lucide-arrow-down-right",
+    "name": "Diagonal Arrow, Down Right",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "arrow-down-right",
+    "keywords": [
+      "direction",
+      "south-east",
+      "diagonal"
+    ]
+  },
+  {
+    "id": "lucide-arrow-down-left",
+    "name": "Diagonal Arrow, Down Left",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "arrow-down-left",
+    "keywords": [
+      "direction",
+      "south-west",
+      "diagonal"
+    ]
+  },
+  {
+    "id": "lucide-arrow-up-down",
+    "name": "Up-Down Arrow",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "arrow-up-down",
+    "keywords": [
+      "bidirectional",
+      "two-way",
+      "2-way",
+      "swap",
+      "switch",
+      "network",
+      "mobile data",
+      "internet",
+      "sort",
+      "reorder",
+      "move"
+    ]
+  },
+  {
+    "id": "lucide-arrow-left-right",
+    "name": "Left-Right Arrow",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "arrow-left-right",
+    "keywords": [
+      "bidirectional",
+      "two-way",
+      "2-way",
+      "swap",
+      "switch",
+      "transaction",
+      "reorder",
+      "move",
+      "<-",
+      "->"
+    ]
+  },
+  {
+    "id": "lucide-corner-up-right",
+    "name": "Corner Arrow, Up Right",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "corner-up-right",
+    "keywords": [
+      "arrow"
+    ]
+  },
+  {
+    "id": "lucide-corner-up-left",
+    "name": "Corner Arrow, Up Left",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "corner-up-left",
+    "keywords": [
+      "arrow"
+    ]
+  },
+  {
+    "id": "lucide-corner-down-right",
+    "name": "Corner Arrow, Down Right",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "corner-down-right",
+    "keywords": [
+      "arrow",
+      "indent",
+      "tab"
+    ]
+  },
+  {
+    "id": "lucide-corner-down-left",
+    "name": "Corner Arrow, Down Left",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "corner-down-left",
+    "keywords": [
+      "arrow",
+      "return"
+    ]
+  },
+  {
+    "id": "lucide-chevron-up",
+    "name": "Up Chevron",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "chevron-up",
+    "keywords": [
+      "caret",
+      "keyboard",
+      "mac",
+      "control",
+      "ctrl",
+      "superscript",
+      "exponential",
+      "power",
+      "ahead",
+      "fast",
+      "^",
+      "dropdown"
+    ]
+  },
+  {
+    "id": "lucide-chevron-down",
+    "name": "Down Chevron",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "chevron-down",
+    "keywords": [
+      "backwards",
+      "reverse",
+      "slow",
+      "dropdown"
+    ]
+  },
+  {
+    "id": "lucide-chevron-left",
+    "name": "Left Chevron",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "chevron-left",
+    "keywords": [
+      "back",
+      "previous",
+      "less than",
+      "fewer",
+      "menu",
+      "<"
+    ]
+  },
+  {
+    "id": "lucide-chevron-right",
+    "name": "Right Chevron",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "chevron-right",
+    "keywords": [
+      "forward",
+      "next",
+      "more than",
+      "greater",
+      "menu",
+      "code",
+      "coding",
+      "command line",
+      "terminal",
+      "prompt",
+      "shell",
+      ">"
+    ]
+  },
+  {
+    "id": "lucide-chevrons-up",
+    "name": "Double Up Chevron",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "chevrons-up",
+    "keywords": [
+      "forward",
+      "ahead",
+      "faster",
+      "speed",
+      "boost"
+    ]
+  },
+  {
+    "id": "lucide-chevrons-down",
+    "name": "Double Down Chevron",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "chevrons-down",
+    "keywords": [
+      "backwards",
+      "reverse",
+      "slower"
+    ]
+  },
+  {
+    "id": "lucide-circle-arrow-up",
+    "name": "Up Arrow in Circle",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "circle-arrow-up",
+    "keywords": [
+      "forward",
+      "direction",
+      "north",
+      "sign",
+      "button",
+      "up",
+      "circle"
+    ]
+  },
+  {
+    "id": "lucide-circle-arrow-down",
+    "name": "Down Arrow in Circle",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "circle-arrow-down",
+    "keywords": [
+      "backwards",
+      "reverse",
+      "direction",
+      "south",
+      "sign",
+      "button",
+      "down",
+      "circle"
+    ]
+  },
+  {
+    "id": "lucide-circle-arrow-left",
+    "name": "Left Arrow in Circle",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "circle-arrow-left",
+    "keywords": [
+      "previous",
+      "back",
+      "direction",
+      "west",
+      "sign",
+      "turn",
+      "button",
+      "<-",
+      "left",
+      "circle"
+    ]
+  },
+  {
+    "id": "lucide-circle-arrow-right",
+    "name": "Right Arrow in Circle",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "circle-arrow-right",
+    "keywords": [
+      "next",
+      "forward",
+      "direction",
+      "east",
+      "sign",
+      "turn",
+      "button",
+      "->",
+      "right",
+      "circle"
+    ]
+  },
+  {
+    "id": "lucide-mouse-pointer",
+    "name": "Mouse Cursor",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "mouse-pointer",
+    "keywords": [
+      "click",
+      "select"
+    ]
+  },
+  {
+    "id": "lucide-mouse-pointer-click",
+    "name": "Cursor Click",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "mouse-pointer-click",
+    "keywords": [
+      "click",
+      "select"
+    ]
+  },
+  {
+    "id": "lucide-trending-up",
+    "name": "Trending Up",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "trending-up",
+    "keywords": [
+      "statistics"
+    ]
+  },
+  {
+    "id": "lucide-trending-down",
+    "name": "Trending Down",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "trending-down",
+    "keywords": [
+      "statistics"
+    ]
+  },
+  {
+    "id": "lucide-navigation",
+    "name": "Compass Needle",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "navigation",
+    "keywords": [
+      "location",
+      "travel"
+    ]
+  },
+  {
+    "id": "lucide-navigation-2",
+    "name": "Compass Arrow",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "navigation-2",
+    "keywords": [
+      "location",
+      "travel"
+    ]
+  },
+  {
+    "id": "lucide-redo",
+    "name": "Redo Arrow",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "redo",
+    "keywords": [
+      "undo",
+      "rerun",
+      "history"
+    ]
+  },
+  {
+    "id": "lucide-undo",
+    "name": "Undo Arrow",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "undo",
+    "keywords": [
+      "redo",
+      "rerun",
+      "history"
+    ]
+  },
+  {
+    "id": "lucide-refresh-cw",
+    "name": "Refresh Arrows",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "refresh-cw",
+    "keywords": [
+      "rotate",
+      "reload",
+      "rerun",
+      "synchronise",
+      "synchronize",
+      "arrows",
+      "circular",
+      "cycle"
+    ]
+  },
+  {
+    "id": "lucide-rotate-cw",
+    "name": "Rotate Clockwise",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "rotate-cw",
+    "keywords": [
+      "arrow",
+      "right",
+      "clockwise",
+      "refresh",
+      "reload",
+      "rerun",
+      "redo"
+    ]
+  },
+  {
+    "id": "lucide-expand",
+    "name": "Expand Arrows",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "expand",
+    "keywords": [
+      "scale",
+      "fullscreen",
+      "maximize",
+      "minimize",
+      "contract"
+    ]
+  },
+  {
+    "id": "lucide-shrink",
+    "name": "Shrink Arrows",
+    "cat": "arrows-pointers",
+    "source": "lucide",
+    "upstream": "shrink",
+    "keywords": [
+      "scale",
+      "fullscreen"
+    ]
+  },
+  {
+    "id": "lucide-box",
+    "name": "Box",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "box",
+    "keywords": [
+      "cube",
+      "package",
+      "container",
+      "storage",
+      "geometry",
+      "3d",
+      "isometric",
+      "box"
+    ]
+  },
+  {
+    "id": "lucide-package",
+    "name": "Package",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "package",
+    "keywords": [
+      "box",
+      "container",
+      "storage",
+      "sealed",
+      "delivery",
+      "undelivered",
+      "unopened",
+      "packed",
+      "archive",
+      "zip",
+      "module"
+    ]
+  },
+  {
+    "id": "lucide-archive",
+    "name": "Archive Box",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "archive",
+    "keywords": [
+      "index",
+      "backup",
+      "box",
+      "storage",
+      "records",
+      "archive"
+    ]
+  },
+  {
+    "id": "lucide-inbox",
+    "name": "Inbox Tray",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "inbox",
+    "keywords": [
+      "email",
+      "inbox",
+      "tray",
+      "mail"
+    ]
+  },
+  {
+    "id": "lucide-layers",
+    "name": "Stacked Layers",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "layers",
+    "keywords": [
+      "stack",
+      "pile",
+      "pages",
+      "sheets",
+      "paperwork",
+      "copies",
+      "copy",
+      "layers"
+    ]
+  },
+  {
+    "id": "lucide-grid-3x3",
+    "name": "Grid, 3x3",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "grid-3x3",
+    "keywords": [
+      "table",
+      "rows",
+      "columns",
+      "grid",
+      "squares"
+    ]
+  },
+  {
+    "id": "lucide-list",
+    "name": "List",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "list",
+    "keywords": [
+      "options",
+      "list",
+      "bullets"
+    ]
+  },
+  {
+    "id": "lucide-list-checks",
+    "name": "Checklist",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "list-checks",
+    "keywords": [
+      "todo",
+      "done",
+      "check",
+      "tick",
+      "complete",
+      "tasks",
+      "items",
+      "pending",
+      "list",
+      "checklist"
+    ]
+  },
+  {
+    "id": "lucide-list-todo",
+    "name": "To-Do List",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "list-todo",
+    "keywords": [
+      "todo",
+      "done",
+      "check",
+      "tick",
+      "complete",
+      "tasks",
+      "items",
+      "pending",
+      "list",
+      "checklist"
+    ]
+  },
+  {
+    "id": "lucide-check",
+    "name": "Checkmark",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "check",
+    "keywords": [
+      "done",
+      "todo",
+      "tick",
+      "complete",
+      "task",
+      "check",
+      "checkmark",
+      "yes"
+    ]
+  },
+  {
+    "id": "lucide-circle-check",
+    "name": "Check in Circle",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "circle-check",
+    "keywords": [
+      "done",
+      "todo",
+      "tick",
+      "complete",
+      "task",
+      "check",
+      "circle"
+    ]
+  },
+  {
+    "id": "lucide-square-check",
+    "name": "Check in Square",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "square-check",
+    "keywords": [
+      "done",
+      "todo",
+      "tick",
+      "complete",
+      "task",
+      "check",
+      "square"
+    ]
+  },
+  {
+    "id": "lucide-circle",
+    "name": "Circle",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "circle",
+    "keywords": [
+      "off",
+      "zero",
+      "record",
+      "shape",
+      "circle",
+      "marker"
+    ]
+  },
+  {
+    "id": "lucide-square",
+    "name": "Square",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "square",
+    "keywords": [
+      "stop",
+      "playback",
+      "music",
+      "audio",
+      "video",
+      "rectangle",
+      "aspect ratio",
+      "1:1",
+      "shape",
+      "square",
+      "marker"
+    ]
+  },
+  {
+    "id": "lucide-triangle",
+    "name": "Triangle",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "triangle",
+    "keywords": [
+      "equilateral",
+      "delta",
+      "shape",
+      "pyramid",
+      "hierarchy",
+      "triangle",
+      "marker"
+    ]
+  },
+  {
+    "id": "lucide-hexagon",
+    "name": "Hexagon",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "hexagon",
+    "keywords": [
+      "shape",
+      "node.js",
+      "logo",
+      "hexagon",
+      "marker"
+    ]
+  },
+  {
+    "id": "lucide-pentagon",
+    "name": "Pentagon",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "pentagon",
+    "keywords": [
+      "shape",
+      "pentagon",
+      "marker"
+    ]
+  },
+  {
+    "id": "lucide-octagon",
+    "name": "Octagon",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "octagon",
+    "keywords": [
+      "stop",
+      "shape",
+      "octagon"
+    ]
+  },
+  {
+    "id": "lucide-diamond",
+    "name": "Diamond",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "diamond",
+    "keywords": [
+      "square",
+      "rectangle",
+      "oblique",
+      "rhombus",
+      "shape",
+      "suit",
+      "playing",
+      "cards",
+      "diamond",
+      "marker"
+    ]
+  },
+  {
+    "id": "lucide-disc",
+    "name": "Disc",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "disc",
+    "keywords": [
+      "album",
+      "music",
+      "songs",
+      "format",
+      "cd",
+      "dvd",
+      "vinyl",
+      "sleeve",
+      "cover",
+      "platinum",
+      "compilation",
+      "ep",
+      "recording",
+      "playback",
+      "spin",
+      "rotate",
+      "rpm",
+      "dj",
+      "disc",
+      "circle",
+      "marker"
+    ]
+  },
+  {
+    "id": "lucide-target",
+    "name": "Target",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "target",
+    "keywords": [
+      "logo",
+      "bullseye",
+      "deadline",
+      "projects",
+      "overview",
+      "work",
+      "productivity",
+      "target",
+      "goal"
+    ]
+  },
+  {
+    "id": "lucide-crosshair",
+    "name": "Crosshair",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "crosshair",
+    "keywords": [
+      "aim",
+      "target",
+      "crosshair"
+    ]
+  },
+  {
+    "id": "lucide-badge",
+    "name": "Badge",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "badge",
+    "keywords": [
+      "check",
+      "verified",
+      "unverified",
+      "badge",
+      "marker",
+      "label"
+    ]
+  },
+  {
+    "id": "lucide-badge-check",
+    "name": "Verified Badge",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "badge-check",
+    "keywords": [
+      "verified",
+      "check",
+      "badge"
+    ]
+  },
+  {
+    "id": "lucide-tag",
+    "name": "Price Tag",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "tag",
+    "keywords": [
+      "label",
+      "badge",
+      "ticket",
+      "mark",
+      "tag",
+      "price"
+    ]
+  },
+  {
+    "id": "lucide-tags",
+    "name": "Tags",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "tags",
+    "keywords": [
+      "labels",
+      "badges",
+      "tickets",
+      "marks",
+      "copy",
+      "multiple",
+      "tags"
+    ]
+  },
+  {
+    "id": "lucide-bookmark",
+    "name": "Bookmark",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "bookmark",
+    "keywords": [
+      "save",
+      "favorite",
+      "mark",
+      "label",
+      "attachment",
+      "file",
+      "stick",
+      "pin",
+      "read",
+      "clip",
+      "marker",
+      "tag",
+      "bookmark"
+    ]
+  },
+  {
+    "id": "lucide-flag",
+    "name": "Flag",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "flag",
+    "keywords": [
+      "report",
+      "marker",
+      "notification",
+      "warning",
+      "milestone",
+      "goal",
+      "notice",
+      "signal",
+      "attention",
+      "banner",
+      "flag"
+    ]
+  },
+  {
+    "id": "lucide-pin",
+    "name": "Pin",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "pin",
+    "keywords": [
+      "save",
+      "map",
+      "lock",
+      "fix",
+      "pin",
+      "marker",
+      "location"
+    ]
+  },
+  {
+    "id": "lucide-map-pin",
+    "name": "Map Pin",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "map-pin",
+    "keywords": [
+      "location",
+      "waypoint",
+      "marker",
+      "drop",
+      "map",
+      "pin"
+    ]
+  },
+  {
+    "id": "lucide-shapes",
+    "name": "Assorted Shapes",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "shapes",
+    "keywords": [
+      "triangle",
+      "equilateral",
+      "square",
+      "circle",
+      "classification",
+      "different",
+      "collection",
+      "toy",
+      "blocks",
+      "learning",
+      "shapes",
+      "geometry"
+    ]
+  },
+  {
+    "id": "lucide-star",
+    "name": "Star",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "star",
+    "keywords": [
+      "bookmark",
+      "favorite",
+      "like",
+      "review",
+      "rating",
+      "star",
+      "favourite"
+    ]
+  },
+  {
+    "id": "lucide-vote",
+    "name": "Approved Ballot",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "vote",
+    "keywords": [
+      "vote",
+      "poll",
+      "ballot",
+      "political",
+      "social",
+      "check",
+      "tick",
+      "approved",
+      "checked"
+    ]
+  },
+  {
+    "id": "lucide-sparkle",
+    "name": "Sparkle",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "sparkle",
+    "keywords": [
+      "star",
+      "effect",
+      "filter",
+      "night",
+      "magic",
+      "shiny",
+      "glitter",
+      "twinkle",
+      "celebration",
+      "sparkle",
+      "shine"
+    ]
+  },
+  {
+    "id": "lucide-sparkles",
+    "name": "Sparkles",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "sparkles",
+    "keywords": [
+      "stars",
+      "effect",
+      "filter",
+      "night",
+      "magic",
+      "sparkles",
+      "shine"
+    ]
+  },
+  {
+    "id": "lucide-award",
+    "name": "Award Ribbon",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "award",
+    "keywords": [
+      "achievement",
+      "badge",
+      "rosette",
+      "prize",
+      "winner"
+    ]
+  },
+  {
+    "id": "lucide-trophy",
+    "name": "Trophy (Outline)",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "trophy",
+    "keywords": [
+      "prize",
+      "sports",
+      "winner",
+      "achievement",
+      "award",
+      "champion",
+      "celebration",
+      "victory",
+      "competition",
+      "tournament",
+      "leaderboard",
+      "ranking",
+      "success",
+      "reward",
+      "cup",
+      "first",
+      "gold"
+    ]
+  },
+  {
+    "id": "lucide-medal",
+    "name": "Medal",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "medal",
+    "keywords": [
+      "prize",
+      "sports",
+      "winner",
+      "trophy",
+      "award",
+      "achievement"
+    ]
+  },
+  {
+    "id": "lucide-crown",
+    "name": "Crown",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "crown",
+    "keywords": [
+      "diadem",
+      "tiara",
+      "circlet",
+      "corona",
+      "king",
+      "ruler",
+      "winner",
+      "favourite"
+    ]
+  },
+  {
+    "id": "lucide-gem",
+    "name": "Gem",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "gem",
+    "keywords": [
+      "diamond",
+      "crystal",
+      "ruby",
+      "jewellery",
+      "price",
+      "special",
+      "present",
+      "gift",
+      "ring",
+      "wedding",
+      "proposal",
+      "marriage",
+      "rubygems"
+    ]
+  },
+  {
+    "id": "lucide-ribbon",
+    "name": "Ribbon",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "ribbon",
+    "keywords": [
+      "awareness",
+      "strip",
+      "band",
+      "tape",
+      "strap",
+      "cordon",
+      "ribbon",
+      "award",
+      "decoration"
+    ]
+  },
+  {
+    "id": "lucide-shield",
+    "name": "Shield",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "shield",
+    "keywords": [
+      "cybersecurity",
+      "secure",
+      "safety",
+      "protection",
+      "guardian",
+      "armored",
+      "armoured",
+      "defense",
+      "defence",
+      "defender",
+      "block",
+      "threat",
+      "prevention",
+      "antivirus",
+      "vigilance",
+      "vigilant",
+      "detection",
+      "scan",
+      "find",
+      "strength",
+      "strong",
+      "tough",
+      "invincible",
+      "invincibility",
+      "invulnerable",
+      "undamaged",
+      "audit",
+      "admin",
+      "verification",
+      "crest",
+      "bravery",
+      "knight",
+      "foot soldier",
+      "infantry",
+      "trooper",
+      "pawn",
+      "battle",
+      "war",
+      "military",
+      "army",
+      "cadet",
+      "scout",
+      "shield",
+      "security"
+    ]
+  },
+  {
+    "id": "lucide-shield-check",
+    "name": "Verified Shield",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "shield-check",
+    "keywords": [
+      "cybersecurity",
+      "secured",
+      "safety",
+      "protection",
+      "protected",
+      "guardian",
+      "guarded",
+      "armored",
+      "armoured",
+      "defense",
+      "defence",
+      "defended",
+      "blocked",
+      "threat",
+      "prevention",
+      "prevented",
+      "antivirus",
+      "vigilance",
+      "vigilant",
+      "active",
+      "activated",
+      "enabled",
+      "detection",
+      "scanned",
+      "found",
+      "strength",
+      "strong",
+      "tough",
+      "invincible",
+      "invincibility",
+      "invulnerable",
+      "undamaged",
+      "audited",
+      "admin",
+      "verification",
+      "verified",
+      "certification",
+      "certified",
+      "tested",
+      "passed",
+      "qualified",
+      "cleared",
+      "cleaned",
+      "disinfected",
+      "uninfected",
+      "task",
+      "completed",
+      "todo",
+      "done",
+      "ticked",
+      "checked",
+      "crest",
+      "bravery",
+      "shield",
+      "check"
+    ]
+  },
+  {
+    "id": "lucide-heart",
+    "name": "Heart",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "heart",
+    "keywords": [
+      "like",
+      "love",
+      "emotion",
+      "suit",
+      "playing",
+      "cards",
+      "heart",
+      "favourite"
+    ]
+  },
+  {
+    "id": "lucide-heart-handshake",
+    "name": "Heart Handshake",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "heart-handshake",
+    "keywords": [
+      "agreement",
+      "charity",
+      "help",
+      "deal",
+      "terms",
+      "emotion",
+      "together",
+      "handshake",
+      "heart",
+      "care"
+    ]
+  },
+  {
+    "id": "lucide-thumbs-up",
+    "name": "Thumbs Up",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "thumbs-up",
+    "keywords": [
+      "like",
+      "good",
+      "emotion",
+      "thumbs up",
+      "approve"
+    ]
+  },
+  {
+    "id": "lucide-zap",
+    "name": "Lightning Bolt (Outline)",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "zap",
+    "keywords": [
+      "flash",
+      "camera",
+      "lightning",
+      "electricity",
+      "energy",
+      "power",
+      "quick",
+      "zap",
+      "bolt"
+    ]
+  },
+  {
+    "id": "lucide-square-star",
+    "name": "Star Badge",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "square-star",
+    "keywords": [
+      "badge",
+      "medal",
+      "honour",
+      "decoration",
+      "order",
+      "pin",
+      "laurel",
+      "trophy",
+      "medallion",
+      "insignia",
+      "bronze",
+      "silver",
+      "gold",
+      "star",
+      "square",
+      "award"
+    ]
+  },
+  {
+    "id": "lucide-asterisk",
+    "name": "Asterisk",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "asterisk",
+    "keywords": [
+      "reference",
+      "times",
+      "multiply",
+      "multiplication",
+      "operator",
+      "code",
+      "glob pattern",
+      "wildcard",
+      "*",
+      "asterisk",
+      "star",
+      "footnote"
+    ]
+  },
+  {
+    "id": "lucide-flame",
+    "name": "Flame",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "flame",
+    "keywords": [
+      "heat",
+      "burn",
+      "light",
+      "glow",
+      "ignite",
+      "passion",
+      "ember",
+      "fire",
+      "lit",
+      "burning",
+      "spark",
+      "embers",
+      "smoke",
+      "firefighter",
+      "fireman",
+      "department",
+      "brigade",
+      "station",
+      "emergency",
+      "flame",
+      "hot"
+    ]
+  },
+  {
+    "id": "lucide-diamond-plus",
+    "name": "Premium Diamond",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "diamond-plus",
+    "keywords": [
+      "keyframe",
+      "add",
+      "new",
+      "increase",
+      "increment",
+      "positive",
+      "calculate",
+      "toolbar",
+      "crosshair",
+      "aim",
+      "target",
+      "scope",
+      "sight",
+      "reticule",
+      "maximum",
+      "upgrade",
+      "extra",
+      "+",
+      "diamond",
+      "premium",
+      "badge",
+      "special"
+    ]
+  },
+  {
+    "id": "lucide-moon-star",
+    "name": "Crescent Moon and Star",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "moon-star",
+    "keywords": [
+      "dark",
+      "night",
+      "star",
+      "moon",
+      "sparkle"
+    ]
+  },
+  {
+    "id": "lucide-handshake",
+    "name": "Handshake",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "handshake",
+    "keywords": [
+      "agreement",
+      "partnership",
+      "deal",
+      "business",
+      "assistance",
+      "cooperation",
+      "friendship",
+      "union",
+      "terms",
+      "handshake"
+    ]
+  },
+  {
+    "id": "lucide-stamp",
+    "name": "Approval Stamp",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "stamp",
+    "keywords": [
+      "mark",
+      "print",
+      "clone",
+      "loyalty",
+      "library",
+      "stamp",
+      "approve",
+      "certified"
+    ]
+  },
+  {
+    "id": "lucide-podium",
+    "name": "Winner’s Podium",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "podium",
+    "keywords": [
+      "award",
+      "stage",
+      "winner",
+      "celebration",
+      "performance",
+      "medal",
+      "success",
+      "achievement",
+      "highlight",
+      "ranking",
+      "winning",
+      "place",
+      "placing",
+      "leaderboard",
+      "first",
+      "second",
+      "third",
+      "gold",
+      "silver",
+      "bronze",
+      "podium",
+      "first place"
+    ]
+  },
+  {
+    "id": "lucide-circle-star",
+    "name": "Circled Star",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "circle-star",
+    "keywords": [
+      "badge",
+      "medal",
+      "honour",
+      "decoration",
+      "order",
+      "pin",
+      "laurel",
+      "trophy",
+      "medallion",
+      "insignia",
+      "bronze",
+      "silver",
+      "gold",
+      "circle",
+      "star"
+    ]
+  },
+  {
+    "id": "lucide-spotlight",
+    "name": "Spotlight",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "spotlight",
+    "keywords": [
+      "winner",
+      "soapbox",
+      "stage",
+      "entertainment",
+      "drama",
+      "podium",
+      "actor",
+      "actress",
+      "singer",
+      "light",
+      "beam",
+      "play",
+      "theatre",
+      "show",
+      "focus",
+      "concert",
+      "performance",
+      "lens",
+      "leaderboard",
+      "followspot",
+      "best",
+      "highlight",
+      "spotlight"
+    ]
+  },
+  {
+    "id": "lucide-circle-gauge",
+    "name": "Performance Gauge",
+    "cat": "stars-sparkles-awards",
+    "source": "lucide",
+    "upstream": "circle-gauge",
+    "keywords": [
+      "dashboard",
+      "dial",
+      "meter",
+      "speed",
+      "pressure",
+      "measure",
+      "level",
+      "gauge",
+      "score"
+    ]
+  },
+  {
+    "id": "lucide-separator-horizontal",
+    "name": "Horizontal Divider",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "separator-horizontal",
+    "keywords": [
+      "move",
+      "split",
+      "divider",
+      "separator",
+      "rule"
+    ]
+  },
+  {
+    "id": "lucide-separator-vertical",
+    "name": "Vertical Divider",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "separator-vertical",
+    "keywords": [
+      "move",
+      "split",
+      "divider",
+      "separator",
+      "rule"
+    ]
+  },
+  {
+    "id": "lucide-minus",
+    "name": "Minus Line",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "minus",
+    "keywords": [
+      "subtract",
+      "remove",
+      "decrease",
+      "decrement",
+      "reduce",
+      "negative",
+      "calculate",
+      "line",
+      "divider",
+      "separator",
+      "horizontal rule",
+      "hr",
+      "html",
+      "markup",
+      "markdown",
+      "---",
+      "toolbar",
+      "operator",
+      "code",
+      "coding",
+      "minimum",
+      "downgrade",
+      "minus",
+      "rule"
+    ]
+  },
+  {
+    "id": "lucide-frame",
+    "name": "Picture Frame",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "frame",
+    "keywords": [
+      "logo",
+      "design",
+      "tool",
+      "frame",
+      "border",
+      "picture"
+    ]
+  },
+  {
+    "id": "lucide-crop",
+    "name": "Crop Corners",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "crop",
+    "keywords": [
+      "photo",
+      "image",
+      "crop",
+      "corners",
+      "trim"
+    ]
+  },
+  {
+    "id": "lucide-scan",
+    "name": "Scan Frame Corners",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "scan",
+    "keywords": [
+      "qr-code",
+      "barcode",
+      "checkout",
+      "augmented reality",
+      "ar",
+      "target",
+      "surveillance",
+      "camera",
+      "lens",
+      "focus",
+      "frame",
+      "select",
+      "box",
+      "boundary",
+      "bounds",
+      "area",
+      "square",
+      "dashed",
+      "scan",
+      "viewfinder"
+    ]
+  },
+  {
+    "id": "lucide-scan-line",
+    "name": "Scan Line",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "scan-line",
+    "keywords": [
+      "checkout",
+      "till",
+      "cart",
+      "transaction",
+      "purchase",
+      "buy",
+      "product",
+      "packaging",
+      "retail",
+      "consumer",
+      "qr-code",
+      "dashed",
+      "scan",
+      "line",
+      "viewfinder"
+    ]
+  },
+  {
+    "id": "lucide-ruler",
+    "name": "Ruler",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "ruler",
+    "keywords": [
+      "measurements",
+      "centimeters",
+      "cm",
+      "millimeters",
+      "mm",
+      "metre",
+      "foot",
+      "feet",
+      "inches",
+      "units",
+      "size",
+      "length",
+      "width",
+      "height",
+      "dimensions",
+      "depth",
+      "breadth",
+      "extent",
+      "stationery",
+      "ruler",
+      "measure",
+      "straightedge"
+    ]
+  },
+  {
+    "id": "lucide-ellipsis",
+    "name": "Ellipsis Dots",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "ellipsis",
+    "keywords": [
+      "et cetera",
+      "etc",
+      "loader",
+      "loading",
+      "progress",
+      "pending",
+      "throbber",
+      "menu",
+      "options",
+      "operator",
+      "code",
+      "coding",
+      "spread",
+      "rest",
+      "more",
+      "further",
+      "extra",
+      "overflow",
+      "dots",
+      "…",
+      "...",
+      "ellipsis"
+    ]
+  },
+  {
+    "id": "lucide-ellipsis-vertical",
+    "name": "Vertical Ellipsis",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "ellipsis-vertical",
+    "keywords": [
+      "menu",
+      "options",
+      "spread",
+      "more",
+      "further",
+      "extra",
+      "overflow",
+      "dots",
+      "…",
+      "...",
+      "ellipsis",
+      "vertical"
+    ]
+  },
+  {
+    "id": "lucide-square-round-corner",
+    "name": "Rounded Corner",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "square-round-corner",
+    "keywords": [
+      "border",
+      "radius",
+      "style",
+      "design",
+      "corner",
+      "layout",
+      "round",
+      "rounded",
+      "frame"
+    ]
+  },
+  {
+    "id": "lucide-rows-2",
+    "name": "Two Rows",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "rows-2",
+    "keywords": [
+      "lines",
+      "list",
+      "queue",
+      "preview",
+      "panel",
+      "paragraphs",
+      "parallel",
+      "series",
+      "split",
+      "vertical",
+      "horizontal",
+      "half",
+      "center",
+      "middle",
+      "even",
+      "drawer",
+      "rows",
+      "divider",
+      "layout"
+    ]
+  },
+  {
+    "id": "lucide-layout-grid",
+    "name": "Grid Layout",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "layout-grid",
+    "keywords": [
+      "app",
+      "home",
+      "start",
+      "layout",
+      "grid",
+      "panels"
+    ]
+  },
+  {
+    "id": "lucide-grip-horizontal",
+    "name": "Horizontal Grip",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "grip-horizontal",
+    "keywords": [
+      "grab",
+      "dots",
+      "handle",
+      "move",
+      "drag",
+      "grip",
+      "horizontal"
+    ]
+  },
+  {
+    "id": "lucide-grip-vertical",
+    "name": "Vertical Grip",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "grip-vertical",
+    "keywords": [
+      "grab",
+      "dots",
+      "handle",
+      "move",
+      "drag",
+      "grip",
+      "vertical"
+    ]
+  },
+  {
+    "id": "lucide-dot",
+    "name": "Dot",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "dot",
+    "keywords": [
+      "interpunct",
+      "interpoint",
+      "middot",
+      "step",
+      "punctuation",
+      "period",
+      "full stop",
+      "end",
+      "finish",
+      "final",
+      "characters",
+      "font",
+      "typography",
+      "type",
+      "center",
+      ".",
+      "dot",
+      "bullet",
+      "point"
+    ]
+  },
+  {
+    "id": "lucide-slash",
+    "name": "Diagonal Slash",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "slash",
+    "keywords": [
+      "divide",
+      "division",
+      "or",
+      "/",
+      "slash",
+      "diagonal",
+      "line"
+    ]
+  },
+  {
+    "id": "lucide-columns-2",
+    "name": "Two Columns",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "columns-2",
+    "keywords": [
+      "lines",
+      "list",
+      "queue",
+      "preview",
+      "panel",
+      "parallel",
+      "series",
+      "split",
+      "vertical",
+      "horizontal",
+      "half",
+      "center",
+      "middle",
+      "even",
+      "sidebar",
+      "drawer",
+      "gutter",
+      "fold",
+      "reflow",
+      "typography",
+      "pagination",
+      "pages",
+      "columns",
+      "divider",
+      "layout"
+    ]
+  },
+  {
+    "id": "lucide-waypoints",
+    "name": "Waypoints",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "waypoints",
+    "keywords": [
+      "indirection",
+      "vpn",
+      "virtual private network",
+      "proxy",
+      "connections",
+      "bounce",
+      "reroute",
+      "path",
+      "journey",
+      "planner",
+      "stops",
+      "stations",
+      "shared",
+      "spread",
+      "viral",
+      "waypoints",
+      "route"
+    ]
+  },
+  {
+    "id": "lucide-spline",
+    "name": "Spline Curve",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "spline",
+    "keywords": [
+      "path",
+      "pen",
+      "tool",
+      "shape",
+      "curve",
+      "draw",
+      "spline"
+    ]
+  },
+  {
+    "id": "lucide-diameter",
+    "name": "Diameter",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "diameter",
+    "keywords": [
+      "shape",
+      "circle",
+      "geometry",
+      "trigonometry",
+      "width",
+      "height",
+      "size",
+      "calculate",
+      "measure",
+      "diameter"
+    ]
+  },
+  {
+    "id": "lucide-ratio",
+    "name": "Aspect Ratio",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "ratio",
+    "keywords": [
+      "screens",
+      "sizes",
+      "rotate",
+      "rotation",
+      "adjust",
+      "aspect ratio",
+      "proportions",
+      "16:9",
+      "widescreen",
+      "4:3",
+      "resolution",
+      "responsive",
+      "mobile",
+      "desktop",
+      "dimensions",
+      "monitor",
+      "orientation",
+      "portrait",
+      "landscape",
+      "ratio",
+      "proportion",
+      "frame"
+    ]
+  },
+  {
+    "id": "lucide-ruler-dimension-line",
+    "name": "Dimension Line",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "ruler-dimension-line",
+    "keywords": [
+      "measurements",
+      "centimeters",
+      "cm",
+      "millimeters",
+      "mm",
+      "metre",
+      "foot",
+      "feet",
+      "inches",
+      "units",
+      "size",
+      "length",
+      "width",
+      "height",
+      "dimensions",
+      "depth",
+      "breadth",
+      "extent",
+      "stationery",
+      "ruler",
+      "dimension",
+      "measure"
+    ]
+  },
+  {
+    "id": "lucide-square-slash",
+    "name": "Slashed Square",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "square-slash",
+    "keywords": [
+      "git",
+      "diff",
+      "ignored",
+      "divide",
+      "division",
+      "shortcut",
+      "or",
+      "/",
+      "slash",
+      "square",
+      "frame"
+    ]
+  },
+  {
+    "id": "lucide-square-dashed-bottom",
+    "name": "Dashed-Bottom Square",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "square-dashed-bottom",
+    "keywords": [
+      "rectangle",
+      "aspect ratio",
+      "1:1",
+      "shape",
+      "snippet",
+      "code",
+      "coding",
+      "dashed",
+      "square",
+      "frame",
+      "border"
+    ]
+  },
+  {
+    "id": "lucide-book",
+    "name": "Book",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "book",
+    "keywords": [
+      "reading",
+      "paperback",
+      "booklet",
+      "magazine",
+      "leaflet",
+      "pamphlet",
+      "tome",
+      "library",
+      "writing",
+      "written",
+      "writer",
+      "author",
+      "story",
+      "script",
+      "fiction",
+      "novel",
+      "information",
+      "knowledge",
+      "education",
+      "high school",
+      "university",
+      "college",
+      "academy",
+      "student",
+      "study",
+      "learning",
+      "homework",
+      "research",
+      "documentation",
+      "book"
+    ]
+  },
+  {
+    "id": "lucide-book-open",
+    "name": "Open Book",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "book-open",
+    "keywords": [
+      "reading",
+      "pages",
+      "booklet",
+      "magazine",
+      "leaflet",
+      "pamphlet",
+      "library",
+      "writing",
+      "written",
+      "writer",
+      "author",
+      "story",
+      "script",
+      "screenplay",
+      "fiction",
+      "novel",
+      "information",
+      "knowledge",
+      "education",
+      "high school",
+      "university",
+      "college",
+      "academy",
+      "student",
+      "study",
+      "learning",
+      "homework",
+      "research",
+      "documentation",
+      "revealed",
+      "blank",
+      "plain",
+      "book",
+      "open"
+    ]
+  },
+  {
+    "id": "lucide-notebook",
+    "name": "Notebook",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "notebook",
+    "keywords": [
+      "notepad",
+      "notes",
+      "stationery",
+      "sketchbook",
+      "moleskine",
+      "closure",
+      "strap",
+      "band",
+      "elastic",
+      "organizer",
+      "organiser",
+      "planner",
+      "diary",
+      "journal",
+      "writing",
+      "written",
+      "writer",
+      "reading",
+      "high school",
+      "university",
+      "college",
+      "academy",
+      "student",
+      "study",
+      "homework",
+      "research",
+      "notebook"
+    ]
+  },
+  {
+    "id": "lucide-pencil",
+    "name": "Pencil",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "pencil",
+    "keywords": [
+      "rubber",
+      "edit",
+      "create",
+      "draw",
+      "sketch",
+      "draft",
+      "writer",
+      "writing",
+      "stationery",
+      "artist",
+      "pencil",
+      "write"
+    ]
+  },
+  {
+    "id": "lucide-pen",
+    "name": "Pen",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "pen",
+    "keywords": [
+      "pencil",
+      "change",
+      "create",
+      "draw",
+      "writer",
+      "writing",
+      "biro",
+      "ink",
+      "marker",
+      "felt tip",
+      "stationery",
+      "artist",
+      "pen",
+      "write"
+    ]
+  },
+  {
+    "id": "lucide-pen-tool",
+    "name": "Pen Tool",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "pen-tool",
+    "keywords": [
+      "vector",
+      "drawing",
+      "path",
+      "pen tool",
+      "draw"
+    ]
+  },
+  {
+    "id": "lucide-highlighter",
+    "name": "Highlighter",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "highlighter",
+    "keywords": [
+      "mark",
+      "text",
+      "highlighter",
+      "marker",
+      "study"
+    ]
+  },
+  {
+    "id": "lucide-eraser",
+    "name": "Eraser",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "eraser",
+    "keywords": [
+      "pencil",
+      "drawing",
+      "undo",
+      "delete",
+      "clear",
+      "trash",
+      "remove",
+      "eraser",
+      "erase"
+    ]
+  },
+  {
+    "id": "lucide-clipboard-pen",
+    "name": "Clipboard with Pen",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "clipboard-pen",
+    "keywords": [
+      "paste",
+      "signature",
+      "clipboard",
+      "pen",
+      "notes",
+      "writing"
+    ]
+  },
+  {
+    "id": "lucide-backpack",
+    "name": "Backpack",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "backpack",
+    "keywords": [
+      "bag",
+      "hiking",
+      "travel",
+      "camping",
+      "school",
+      "childhood",
+      "backpack"
+    ]
+  },
+  {
+    "id": "lucide-graduation-cap",
+    "name": "Graduation Cap",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "graduation-cap",
+    "keywords": [
+      "school",
+      "university",
+      "learn",
+      "study",
+      "mortarboard",
+      "education",
+      "ceremony",
+      "academic",
+      "hat",
+      "diploma",
+      "bachlor's",
+      "master's",
+      "doctorate",
+      "graduation",
+      "cap"
+    ]
+  },
+  {
+    "id": "lucide-school",
+    "name": "School",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "school",
+    "keywords": [
+      "building",
+      "education",
+      "childhood",
+      "university",
+      "learning",
+      "campus",
+      "scholar",
+      "student",
+      "lecture",
+      "degree",
+      "course",
+      "academia",
+      "study",
+      "knowledge",
+      "classroom",
+      "research",
+      "diploma",
+      "graduation",
+      "professor",
+      "tutorial",
+      "homework",
+      "assignment",
+      "exam",
+      "school"
+    ]
+  },
+  {
+    "id": "lucide-briefcase",
+    "name": "Briefcase",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "briefcase",
+    "keywords": [
+      "work",
+      "bag",
+      "baggage",
+      "folder",
+      "briefcase"
+    ]
+  },
+  {
+    "id": "lucide-folder",
+    "name": "Folder",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "folder",
+    "keywords": [
+      "directory",
+      "folder",
+      "files"
+    ]
+  },
+  {
+    "id": "lucide-folder-open",
+    "name": "Open Folder",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "folder-open",
+    "keywords": [
+      "directory",
+      "folder",
+      "open",
+      "files"
+    ]
+  },
+  {
+    "id": "lucide-file",
+    "name": "File",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "file",
+    "keywords": [
+      "document",
+      "file"
+    ]
+  },
+  {
+    "id": "lucide-file-text",
+    "name": "Text File",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "file-text",
+    "keywords": [
+      "data",
+      "txt",
+      "pdf",
+      "document",
+      "file",
+      "text"
+    ]
+  },
+  {
+    "id": "lucide-clipboard",
+    "name": "Clipboard",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "clipboard",
+    "keywords": [
+      "copy",
+      "paste",
+      "clipboard",
+      "notes"
+    ]
+  },
+  {
+    "id": "lucide-clipboard-list",
+    "name": "Clipboard List",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "clipboard-list",
+    "keywords": [
+      "copy",
+      "paste",
+      "tasks",
+      "clipboard",
+      "list",
+      "checklist"
+    ]
+  },
+  {
+    "id": "lucide-clipboard-check",
+    "name": "Clipboard, Checked",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "clipboard-check",
+    "keywords": [
+      "copied",
+      "pasted",
+      "done",
+      "todo",
+      "tick",
+      "complete",
+      "task",
+      "clipboard",
+      "check"
+    ]
+  },
+  {
+    "id": "lucide-paperclip",
+    "name": "Paperclip",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "paperclip",
+    "keywords": [
+      "attachment",
+      "file",
+      "paperclip",
+      "attach"
+    ]
+  },
+  {
+    "id": "lucide-scissors",
+    "name": "Scissors",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "scissors",
+    "keywords": [
+      "cut",
+      "snip",
+      "chop",
+      "stationery",
+      "crafts",
+      "scissors"
+    ]
+  },
+  {
+    "id": "lucide-laptop",
+    "name": "Laptop",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "laptop",
+    "keywords": [
+      "computer",
+      "screen",
+      "remote",
+      "laptop"
+    ]
+  },
+  {
+    "id": "lucide-monitor",
+    "name": "Monitor",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "monitor",
+    "keywords": [
+      "tv",
+      "screen",
+      "display",
+      "virtual machine",
+      "vm",
+      "monitor",
+      "computer"
+    ]
+  },
+  {
+    "id": "lucide-keyboard",
+    "name": "Keyboard",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "keyboard",
+    "keywords": [
+      "layout",
+      "spell",
+      "settings",
+      "mouse",
+      "keyboard",
+      "typing"
+    ]
+  },
+  {
+    "id": "lucide-mouse",
+    "name": "Computer Mouse",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "mouse",
+    "keywords": [
+      "device",
+      "scroll",
+      "click",
+      "mouse",
+      "computer"
+    ]
+  },
+  {
+    "id": "lucide-printer",
+    "name": "Printer",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "printer",
+    "keywords": [
+      "fax",
+      "office",
+      "device",
+      "printer",
+      "print"
+    ]
+  },
+  {
+    "id": "lucide-presentation",
+    "name": "Presentation",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "presentation",
+    "keywords": [
+      "screen",
+      "whiteboard",
+      "marker pens",
+      "markers",
+      "blackboard",
+      "chalk",
+      "easel",
+      "school",
+      "learning",
+      "lesson",
+      "office",
+      "meeting",
+      "project",
+      "planning",
+      "presentation",
+      "slides",
+      "chart"
+    ]
+  },
+  {
+    "id": "lucide-chart-bar",
+    "name": "Bar Chart",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "chart-bar",
+    "keywords": [
+      "statistics",
+      "analytics",
+      "diagram",
+      "graph",
+      "chart",
+      "bar"
+    ]
+  },
+  {
+    "id": "lucide-chart-line",
+    "name": "Line Chart",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "chart-line",
+    "keywords": [
+      "statistics",
+      "analytics",
+      "diagram",
+      "graph",
+      "chart",
+      "line"
+    ]
+  },
+  {
+    "id": "lucide-chart-pie",
+    "name": "Pie Chart",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "chart-pie",
+    "keywords": [
+      "statistics",
+      "analytics",
+      "diagram",
+      "presentation",
+      "chart",
+      "pie",
+      "graph"
+    ]
+  },
+  {
+    "id": "lucide-library",
+    "name": "Library",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "library",
+    "keywords": [
+      "books",
+      "reading",
+      "written",
+      "authors",
+      "stories",
+      "fiction",
+      "novels",
+      "information",
+      "knowledge",
+      "education",
+      "high school",
+      "university",
+      "college",
+      "academy",
+      "learning",
+      "study",
+      "research",
+      "collection",
+      "vinyl",
+      "records",
+      "albums",
+      "music",
+      "package",
+      "library"
+    ]
+  },
+  {
+    "id": "lucide-microscope",
+    "name": "Microscope",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "microscope",
+    "keywords": [
+      "medical",
+      "education",
+      "science",
+      "imaging",
+      "research",
+      "microscope"
+    ]
+  },
+  {
+    "id": "lucide-flask-conical",
+    "name": "Flask",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "flask-conical",
+    "keywords": [
+      "beaker",
+      "erlenmeyer",
+      "lab",
+      "chemistry",
+      "experiment",
+      "test",
+      "flask",
+      "science"
+    ]
+  },
+  {
+    "id": "lucide-atom",
+    "name": "Atom",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "atom",
+    "keywords": [
+      "atomic",
+      "nuclear",
+      "physics",
+      "particle",
+      "element",
+      "molecule",
+      "electricity",
+      "energy",
+      "chemistry",
+      "atom",
+      "science"
+    ]
+  },
+  {
+    "id": "lucide-globe",
+    "name": "Globe",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "globe",
+    "keywords": [
+      "world",
+      "browser",
+      "language",
+      "translate",
+      "globe",
+      "geography"
+    ]
+  },
+  {
+    "id": "lucide-compass",
+    "name": "Compass (Outline)",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "compass",
+    "keywords": [
+      "direction",
+      "north",
+      "east",
+      "south",
+      "west",
+      "browser",
+      "compass",
+      "navigation"
+    ]
+  },
+  {
+    "id": "lucide-calendar",
+    "name": "Calendar",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "calendar",
+    "keywords": [
+      "date",
+      "month",
+      "year",
+      "event",
+      "birthday",
+      "birthdate",
+      "calendar",
+      "schedule"
+    ]
+  },
+  {
+    "id": "lucide-clock",
+    "name": "Clock",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "clock",
+    "keywords": [
+      "time",
+      "watch",
+      "alarm",
+      "clock"
+    ]
+  },
+  {
+    "id": "lucide-alarm-clock",
+    "name": "Alarm Clock",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "alarm-clock",
+    "keywords": [
+      "morning",
+      "alarm",
+      "clock",
+      "time"
+    ]
+  },
+  {
+    "id": "lucide-timer",
+    "name": "Timer",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "timer",
+    "keywords": [
+      "time",
+      "timer",
+      "stopwatch",
+      "countdown"
+    ]
+  },
+  {
+    "id": "lucide-lightbulb",
+    "name": "Lightbulb",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "lightbulb",
+    "keywords": [
+      "idea",
+      "bright",
+      "lights",
+      "lightbulb"
+    ]
+  },
+  {
+    "id": "lucide-puzzle",
+    "name": "Puzzle Piece",
+    "cat": "study-work",
+    "source": "lucide",
+    "upstream": "puzzle",
+    "keywords": [
+      "component",
+      "module",
+      "part",
+      "piece",
+      "puzzle",
+      "problem solving"
+    ]
+  },
+  {
+    "id": "lucide-dollar-sign",
+    "name": "Dollar Sign",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "dollar-sign",
+    "keywords": [
+      "currency",
+      "money",
+      "payment",
+      "dollar"
+    ]
+  },
+  {
+    "id": "lucide-credit-card",
+    "name": "Credit Card",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "credit-card",
+    "keywords": [
+      "bank",
+      "purchase",
+      "payment",
+      "cc",
+      "credit card",
+      "money"
+    ]
+  },
+  {
+    "id": "lucide-wallet",
+    "name": "Wallet",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "wallet",
+    "keywords": [
+      "money",
+      "finance",
+      "pocket",
+      "wallet"
+    ]
+  },
+  {
+    "id": "lucide-piggy-bank",
+    "name": "Piggy Bank",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "piggy-bank",
+    "keywords": [
+      "money",
+      "savings",
+      "piggy bank"
+    ]
+  },
+  {
+    "id": "lucide-banknote",
+    "name": "Banknote",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "banknote",
+    "keywords": [
+      "currency",
+      "money",
+      "payment",
+      "banknote",
+      "cash"
+    ]
+  },
+  {
+    "id": "lucide-coins",
+    "name": "Coins",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "coins",
+    "keywords": [
+      "money",
+      "cash",
+      "finance",
+      "gamble",
+      "coins",
+      "currency"
+    ]
+  },
+  {
+    "id": "lucide-receipt",
+    "name": "Receipt",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "receipt",
+    "keywords": [
+      "bill",
+      "voucher",
+      "slip",
+      "check",
+      "counterfoil",
+      "currency",
+      "dollar",
+      "usd",
+      "$",
+      "receipt",
+      "invoice"
+    ]
+  },
+  {
+    "id": "lucide-percent",
+    "name": "Percent Sign",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "percent",
+    "keywords": [
+      "percentage",
+      "modulo",
+      "modulus",
+      "remainder",
+      "%",
+      "sale",
+      "discount",
+      "offer",
+      "marketing",
+      "percent"
+    ]
+  },
+  {
+    "id": "lucide-hand-coins",
+    "name": "Hand with Coins",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "hand-coins",
+    "keywords": [
+      "savings",
+      "banking",
+      "money",
+      "finance",
+      "offers",
+      "mortgage",
+      "payment",
+      "received",
+      "wage",
+      "payroll",
+      "allowance",
+      "pocket money",
+      "handout",
+      "pennies",
+      "hand",
+      "coins",
+      "give"
+    ]
+  },
+  {
+    "id": "lucide-circle-dollar-sign",
+    "name": "Dollar Sign in Circle",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "circle-dollar-sign",
+    "keywords": [
+      "monetization",
+      "marketing",
+      "currency",
+      "money",
+      "payment",
+      "dollar",
+      "circle"
+    ]
+  },
+  {
+    "id": "lucide-building-2",
+    "name": "Apartment Building",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "building-2",
+    "keywords": [
+      "business",
+      "company",
+      "enterprise",
+      "skyscraper",
+      "organisation",
+      "organization",
+      "city",
+      "apartment",
+      "building",
+      "home"
+    ]
+  },
+  {
+    "id": "lucide-house",
+    "name": "House",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "house",
+    "keywords": [
+      "home",
+      "living",
+      "building",
+      "residence",
+      "architecture",
+      "house"
+    ]
+  },
+  {
+    "id": "lucide-door-open",
+    "name": "Open Door",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "door-open",
+    "keywords": [
+      "entrance",
+      "entry",
+      "exit",
+      "ingress",
+      "egress",
+      "gate",
+      "gateway",
+      "emergency exit",
+      "door",
+      "open"
+    ]
+  },
+  {
+    "id": "lucide-key",
+    "name": "Key",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "key",
+    "keywords": [
+      "password",
+      "login",
+      "authentication",
+      "secure",
+      "unlock",
+      "keychain",
+      "key ring",
+      "fob",
+      "key",
+      "lock"
+    ]
+  },
+  {
+    "id": "lucide-key-round",
+    "name": "Round Key",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "key-round",
+    "keywords": [
+      "password",
+      "login",
+      "authentication",
+      "secure",
+      "unlock",
+      "key",
+      "lock"
+    ]
+  },
+  {
+    "id": "lucide-lamp",
+    "name": "Lamp",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "lamp",
+    "keywords": [
+      "lighting",
+      "household",
+      "home",
+      "furniture",
+      "lamp",
+      "light"
+    ]
+  },
+  {
+    "id": "lucide-sofa",
+    "name": "Sofa",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "sofa",
+    "keywords": [
+      "armchair",
+      "furniture",
+      "leisure",
+      "lounge",
+      "loveseat",
+      "couch",
+      "sofa"
+    ]
+  },
+  {
+    "id": "lucide-armchair",
+    "name": "Armchair",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "armchair",
+    "keywords": [
+      "sofa",
+      "furniture",
+      "leisure",
+      "lounge",
+      "loveseat",
+      "couch",
+      "armchair",
+      "chair"
+    ]
+  },
+  {
+    "id": "lucide-plug",
+    "name": "Power Plug",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "plug",
+    "keywords": [
+      "electricity",
+      "energy",
+      "electronics",
+      "socket",
+      "outlet",
+      "power",
+      "voltage",
+      "current",
+      "charger",
+      "plug",
+      "electric"
+    ]
+  },
+  {
+    "id": "lucide-wrench",
+    "name": "Wrench",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "wrench",
+    "keywords": [
+      "account",
+      "settings",
+      "spanner",
+      "diy",
+      "toolbox",
+      "build",
+      "construction",
+      "wrench",
+      "tool",
+      "repair"
+    ]
+  },
+  {
+    "id": "lucide-hammer",
+    "name": "Hammer",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "hammer",
+    "keywords": [
+      "mallet",
+      "nails",
+      "diy",
+      "toolbox",
+      "build",
+      "construction",
+      "hammer",
+      "tool"
+    ]
+  },
+  {
+    "id": "lucide-paintbrush",
+    "name": "Paintbrush",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "paintbrush",
+    "keywords": [
+      "brush",
+      "paintbrush",
+      "design",
+      "color",
+      "colour",
+      "decoration",
+      "diy",
+      "paint"
+    ]
+  },
+  {
+    "id": "lucide-fan",
+    "name": "Fan",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "fan",
+    "keywords": [
+      "air",
+      "cooler",
+      "ventilation",
+      "ventilator",
+      "blower",
+      "fan",
+      "cooling",
+      "home"
+    ]
+  },
+  {
+    "id": "lucide-washing-machine",
+    "name": "Washing Machine",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "washing-machine",
+    "keywords": [
+      "tumble dryer",
+      "amenities",
+      "electronics",
+      "cycle",
+      "clothes",
+      "rinse",
+      "spin",
+      "drum",
+      "washing machine",
+      "laundry"
+    ]
+  },
+  {
+    "id": "lucide-refrigerator",
+    "name": "Refrigerator",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "refrigerator",
+    "keywords": [
+      "frigerator",
+      "fridge",
+      "freezer",
+      "cooler",
+      "icebox",
+      "chiller",
+      "cold storage",
+      "refrigerator",
+      "kitchen"
+    ]
+  },
+  {
+    "id": "lucide-trash-2",
+    "name": "Trash Can",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "trash-2",
+    "keywords": [
+      "garbage",
+      "delete",
+      "remove",
+      "bin",
+      "trash"
+    ]
+  },
+  {
+    "id": "lucide-recycle",
+    "name": "Recycle",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "recycle",
+    "keywords": [
+      "sustainability",
+      "salvage",
+      "arrows",
+      "recycle",
+      "environment"
+    ]
+  },
+  {
+    "id": "lucide-toilet",
+    "name": "Toilet",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "toilet",
+    "keywords": [
+      "toilet",
+      "potty",
+      "bathroom",
+      "washroom"
+    ]
+  },
+  {
+    "id": "lucide-lock-keyhole",
+    "name": "Keyhole Lock",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "lock-keyhole",
+    "keywords": [
+      "security",
+      "password",
+      "secure",
+      "admin",
+      "lock",
+      "keyhole",
+      "vault"
+    ]
+  },
+  {
+    "id": "lucide-fence",
+    "name": "Fence",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "fence",
+    "keywords": [
+      "picket",
+      "panels",
+      "woodwork",
+      "diy",
+      "materials",
+      "suburban",
+      "garden",
+      "property",
+      "territory",
+      "fence",
+      "yard"
+    ]
+  },
+  {
+    "id": "lucide-bell",
+    "name": "Bell",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "bell",
+    "keywords": [
+      "alarm",
+      "notification",
+      "sound",
+      "reminder",
+      "bell",
+      "doorbell"
+    ]
+  },
+  {
+    "id": "lucide-blinds",
+    "name": "Window Blinds",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "blinds",
+    "keywords": [
+      "shades",
+      "screen",
+      "curtain",
+      "shutter",
+      "roller blind",
+      "window",
+      "lighting",
+      "household",
+      "home",
+      "blinds"
+    ]
+  },
+  {
+    "id": "lucide-warehouse",
+    "name": "Warehouse",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "warehouse",
+    "keywords": [
+      "storage",
+      "storehouse",
+      "depot",
+      "depository",
+      "repository",
+      "stockroom",
+      "logistics",
+      "building",
+      "warehouse"
+    ]
+  },
+  {
+    "id": "lucide-infinity",
+    "name": "Infinity Symbol",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "infinity",
+    "keywords": [
+      "unlimited",
+      "forever",
+      "loop",
+      "math",
+      "infinity",
+      "symbol",
+      "endless"
+    ]
+  },
+  {
+    "id": "lucide-hash",
+    "name": "Hash Symbol",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "hash",
+    "keywords": [
+      "hashtag",
+      "number",
+      "pound",
+      "hash"
+    ]
+  },
+  {
+    "id": "lucide-at-sign",
+    "name": "At Sign",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "at-sign",
+    "keywords": [
+      "mention",
+      "at",
+      "email",
+      "message",
+      "@",
+      "at sign"
+    ]
+  },
+  {
+    "id": "lucide-plus",
+    "name": "Plus Sign",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "plus",
+    "keywords": [
+      "add",
+      "new",
+      "increase",
+      "increment",
+      "positive",
+      "calculate",
+      "toolbar",
+      "crosshair",
+      "aim",
+      "target",
+      "scope",
+      "sight",
+      "reticule",
+      "maximum",
+      "upgrade",
+      "extra",
+      "+",
+      "plus",
+      "symbol"
+    ]
+  },
+  {
+    "id": "lucide-x",
+    "name": "X Mark",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "x",
+    "keywords": [
+      "cancel",
+      "close",
+      "cross",
+      "delete",
+      "ex",
+      "remove",
+      "times",
+      "clear",
+      "math",
+      "multiply",
+      "multiplication",
+      "x"
+    ]
+  },
+  {
+    "id": "lucide-equal",
+    "name": "Equals Sign",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "equal",
+    "keywords": [
+      "calculate",
+      "math",
+      "operator",
+      "assignment",
+      "code",
+      "=",
+      "equal",
+      "equation",
+      "symbol"
+    ]
+  },
+  {
+    "id": "lucide-circle-question-mark",
+    "name": "Question Mark",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "circle-question-mark",
+    "keywords": [
+      "question mark",
+      "question",
+      "help",
+      "circle"
+    ]
+  },
+  {
+    "id": "lucide-circle-alert",
+    "name": "Alert Circle",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "circle-alert",
+    "keywords": [
+      "warning",
+      "alert",
+      "danger",
+      "exclamation mark",
+      "circle"
+    ]
+  },
+  {
+    "id": "lucide-info",
+    "name": "Info",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "info",
+    "keywords": [
+      "about",
+      "advice",
+      "clue",
+      "details",
+      "help",
+      "hint",
+      "indicator",
+      "information",
+      "knowledge",
+      "notice",
+      "status",
+      "support",
+      "tooltip",
+      "info"
+    ]
+  },
+  {
+    "id": "lucide-lock",
+    "name": "Lock",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "lock",
+    "keywords": [
+      "security",
+      "password",
+      "secure",
+      "admin",
+      "lock",
+      "private"
+    ]
+  },
+  {
+    "id": "lucide-lock-open",
+    "name": "Unlock",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "lock-open",
+    "keywords": [
+      "security",
+      "unlock",
+      "open",
+      "access"
+    ]
+  },
+  {
+    "id": "lucide-link",
+    "name": "Link",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "link",
+    "keywords": [
+      "chain",
+      "url",
+      "link"
+    ]
+  },
+  {
+    "id": "lucide-share-2",
+    "name": "Share",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "share-2",
+    "keywords": [
+      "network",
+      "connections",
+      "share",
+      "send"
+    ]
+  },
+  {
+    "id": "lucide-wifi",
+    "name": "Wifi Signal",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "wifi",
+    "keywords": [
+      "connection",
+      "signal",
+      "wireless",
+      "wifi",
+      "internet"
+    ]
+  },
+  {
+    "id": "lucide-bluetooth",
+    "name": "Bluetooth",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "bluetooth",
+    "keywords": [
+      "wireless",
+      "bluetooth"
+    ]
+  },
+  {
+    "id": "lucide-battery",
+    "name": "Battery",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "battery",
+    "keywords": [
+      "power",
+      "electricity",
+      "energy",
+      "accumulator",
+      "charge",
+      "battery"
+    ]
+  },
+  {
+    "id": "lucide-battery-charging",
+    "name": "Battery Charging",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "battery-charging",
+    "keywords": [
+      "power",
+      "electricity",
+      "energy",
+      "accumulator",
+      "charge",
+      "battery",
+      "charging"
+    ]
+  },
+  {
+    "id": "lucide-volume-2",
+    "name": "Volume",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "volume-2",
+    "keywords": [
+      "music",
+      "sound",
+      "speaker",
+      "volume"
+    ]
+  },
+  {
+    "id": "lucide-mic",
+    "name": "Microphone",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "mic",
+    "keywords": [
+      "record",
+      "sound",
+      "listen",
+      "radio",
+      "podcast",
+      "microphone",
+      "mic"
+    ]
+  },
+  {
+    "id": "lucide-video",
+    "name": "Video Camera",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "video",
+    "keywords": [
+      "camera",
+      "movie",
+      "film",
+      "recording",
+      "motion picture",
+      "camcorder",
+      "reel",
+      "video"
+    ]
+  },
+  {
+    "id": "lucide-phone",
+    "name": "Phone",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "phone",
+    "keywords": [
+      "call",
+      "phone"
+    ]
+  },
+  {
+    "id": "lucide-message-circle",
+    "name": "Chat Bubble",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "message-circle",
+    "keywords": [
+      "comment",
+      "chat",
+      "conversation",
+      "dialog",
+      "feedback",
+      "speech bubble",
+      "message",
+      "bubble"
+    ]
+  },
+  {
+    "id": "lucide-usb",
+    "name": "USB Connector",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "usb",
+    "keywords": [
+      "universal",
+      "serial",
+      "bus",
+      "controller",
+      "connector",
+      "interface",
+      "usb",
+      "cable",
+      "tech"
+    ]
+  },
+  {
+    "id": "lucide-barcode",
+    "name": "Barcode",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "barcode",
+    "keywords": [
+      "scan",
+      "checkout",
+      "till",
+      "cart",
+      "transaction",
+      "purchase",
+      "buy",
+      "product",
+      "packaging",
+      "retail",
+      "consumer",
+      "barcode"
+    ]
+  },
+  {
+    "id": "lucide-settings",
+    "name": "Settings Gear",
+    "cat": "symbols-misc",
+    "source": "lucide",
+    "upstream": "settings",
+    "keywords": [
+      "cog",
+      "edit",
+      "gear",
+      "preferences",
+      "settings",
+      "config"
+    ]
+  },
+  {
+    "id": "lucide-sun",
+    "name": "Sun (Outline)",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "sun",
+    "keywords": [
+      "brightness",
+      "weather",
+      "light",
+      "summer",
+      "sun",
+      "sunny"
+    ]
+  },
+  {
+    "id": "lucide-moon",
+    "name": "Moon",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "moon",
+    "keywords": [
+      "dark",
+      "night",
+      "moon",
+      "sky"
+    ]
+  },
+  {
+    "id": "lucide-cloud",
+    "name": "Cloud (Outline)",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "cloud",
+    "keywords": [
+      "weather",
+      "cloud",
+      "sky"
+    ]
+  },
+  {
+    "id": "lucide-cloud-rain",
+    "name": "Rain Cloud (Outline)",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "cloud-rain",
+    "keywords": [
+      "weather",
+      "rainfall",
+      "cloud",
+      "rain"
+    ]
+  },
+  {
+    "id": "lucide-cloud-snow",
+    "name": "Snow Cloud",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "cloud-snow",
+    "keywords": [
+      "weather",
+      "blizzard",
+      "cloud",
+      "snow"
+    ]
+  },
+  {
+    "id": "lucide-cloud-lightning",
+    "name": "Lightning Cloud",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "cloud-lightning",
+    "keywords": [
+      "weather",
+      "bolt",
+      "cloud",
+      "lightning",
+      "storm"
+    ]
+  },
+  {
+    "id": "lucide-cloud-sun",
+    "name": "Sun Behind Cloud (Outline)",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "cloud-sun",
+    "keywords": [
+      "weather",
+      "partly",
+      "cloud",
+      "sun"
+    ]
+  },
+  {
+    "id": "lucide-wind",
+    "name": "Wind",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "wind",
+    "keywords": [
+      "weather",
+      "air",
+      "blow",
+      "wind",
+      "breeze"
+    ]
+  },
+  {
+    "id": "lucide-umbrella",
+    "name": "Umbrella",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "umbrella",
+    "keywords": [
+      "rain",
+      "weather",
+      "umbrella"
+    ]
+  },
+  {
+    "id": "lucide-rainbow",
+    "name": "Rainbow (Outline)",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "rainbow",
+    "keywords": [
+      "colors",
+      "colours",
+      "spectrum",
+      "light",
+      "prism",
+      "arc",
+      "clear",
+      "sunshine",
+      "rainbow",
+      "weather",
+      "colour"
+    ]
+  },
+  {
+    "id": "lucide-thermometer-snowflake",
+    "name": "Cold Thermometer",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "thermometer-snowflake",
+    "keywords": [
+      "temperature",
+      "celsius",
+      "fahrenheit",
+      "weather",
+      "cold",
+      "freeze",
+      "freezing",
+      "thermometer",
+      "snowflake"
+    ]
+  },
+  {
+    "id": "lucide-thermometer",
+    "name": "Thermometer",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "thermometer",
+    "keywords": [
+      "temperature",
+      "celsius",
+      "fahrenheit",
+      "weather",
+      "thermometer"
+    ]
+  },
+  {
+    "id": "lucide-sunrise",
+    "name": "Sunrise",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "sunrise",
+    "keywords": [
+      "weather",
+      "time",
+      "morning",
+      "day",
+      "sunrise",
+      "sun"
+    ]
+  },
+  {
+    "id": "lucide-sunset",
+    "name": "Sunset",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "sunset",
+    "keywords": [
+      "weather",
+      "time",
+      "evening",
+      "night",
+      "sunset",
+      "sun"
+    ]
+  },
+  {
+    "id": "lucide-tree-deciduous",
+    "name": "Deciduous Tree (Outline)",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "tree-deciduous",
+    "keywords": [
+      "tree",
+      "forest",
+      "park",
+      "nature",
+      "deciduous",
+      "plant"
+    ]
+  },
+  {
+    "id": "lucide-tree-palm",
+    "name": "Palm Tree",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "tree-palm",
+    "keywords": [
+      "vacation",
+      "leisure",
+      "island",
+      "tree",
+      "palm",
+      "tropical"
+    ]
+  },
+  {
+    "id": "lucide-tree-pine",
+    "name": "Pine Tree",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "tree-pine",
+    "keywords": [
+      "tree",
+      "pine",
+      "forest",
+      "park",
+      "nature",
+      "evergreen"
+    ]
+  },
+  {
+    "id": "lucide-trees",
+    "name": "Trees",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "trees",
+    "keywords": [
+      "tree",
+      "forest",
+      "park",
+      "nature",
+      "trees",
+      "plant"
+    ]
+  },
+  {
+    "id": "lucide-citrus",
+    "name": "Citrus Fruit",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "citrus",
+    "keywords": [
+      "lemon",
+      "orange",
+      "grapefruit",
+      "fruit",
+      "citrus",
+      "plant"
+    ]
+  },
+  {
+    "id": "lucide-flower-2",
+    "name": "Daisy Flower",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "flower-2",
+    "keywords": [
+      "sustainability",
+      "nature",
+      "plant",
+      "flower",
+      "daisy"
+    ]
+  },
+  {
+    "id": "lucide-leaf",
+    "name": "Leaf",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "leaf",
+    "keywords": [
+      "sustainability",
+      "nature",
+      "energy",
+      "plant",
+      "autumn",
+      "leaf"
+    ]
+  },
+  {
+    "id": "lucide-leafy-green",
+    "name": "Leafy Greens",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "leafy-green",
+    "keywords": [
+      "salad",
+      "lettuce",
+      "vegetable",
+      "chard",
+      "cabbage",
+      "bok choy",
+      "leafy green",
+      "plant"
+    ]
+  },
+  {
+    "id": "lucide-sprout",
+    "name": "Sprout",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "sprout",
+    "keywords": [
+      "eco",
+      "green",
+      "growth",
+      "leaf",
+      "nature",
+      "plant",
+      "seed",
+      "spring",
+      "sustainability",
+      "sprout",
+      "seedling"
+    ]
+  },
+  {
+    "id": "lucide-cherry",
+    "name": "Cherries (Outline)",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "cherry",
+    "keywords": [
+      "fruit",
+      "food",
+      "cherry",
+      "plant"
+    ]
+  },
+  {
+    "id": "lucide-clover",
+    "name": "Four-Leaf Clover (Outline)",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "clover",
+    "keywords": [
+      "leaf",
+      "luck",
+      "plant",
+      "clover"
+    ]
+  },
+  {
+    "id": "lucide-shrub",
+    "name": "Shrub",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "shrub",
+    "keywords": [
+      "forest",
+      "undergrowth",
+      "park",
+      "nature",
+      "shrub",
+      "bush",
+      "plant"
+    ]
+  },
+  {
+    "id": "lucide-chef-hat",
+    "name": "Chef Hat",
+    "cat": "food-drink",
+    "source": "lucide",
+    "upstream": "chef-hat",
+    "keywords": [
+      "cooking",
+      "food",
+      "kitchen",
+      "restaurant",
+      "chef hat"
+    ]
+  },
+  {
+    "id": "lucide-utensils",
+    "name": "Fork and Knife (Outline)",
+    "cat": "food-drink",
+    "source": "lucide",
+    "upstream": "utensils",
+    "keywords": [
+      "fork",
+      "knife",
+      "cutlery",
+      "flatware",
+      "tableware",
+      "silverware",
+      "food",
+      "restaurant",
+      "meal",
+      "breakfast",
+      "dinner",
+      "supper",
+      "utensils",
+      "dining"
+    ]
+  },
+  {
+    "id": "lucide-soup",
+    "name": "Bowl of Soup",
+    "cat": "food-drink",
+    "source": "lucide",
+    "upstream": "soup",
+    "keywords": [
+      "food",
+      "dish",
+      "restaurant",
+      "course",
+      "meal",
+      "bowl",
+      "starter",
+      "soup"
+    ]
+  },
+  {
+    "id": "lucide-salad",
+    "name": "Salad Bowl",
+    "cat": "food-drink",
+    "source": "lucide",
+    "upstream": "salad",
+    "keywords": [
+      "food",
+      "vegetarian",
+      "dish",
+      "restaurant",
+      "course",
+      "meal",
+      "side",
+      "vegetables",
+      "health",
+      "salad",
+      "bowl",
+      "healthy"
+    ]
+  },
+  {
+    "id": "lucide-ice-cream-cone",
+    "name": "Ice Cream Cone",
+    "cat": "food-drink",
+    "source": "lucide",
+    "upstream": "ice-cream-cone",
+    "keywords": [
+      "gelato",
+      "food",
+      "ice cream",
+      "cone",
+      "dessert"
+    ]
+  },
+  {
+    "id": "lucide-martini",
+    "name": "Martini Glass",
+    "cat": "food-drink",
+    "source": "lucide",
+    "upstream": "martini",
+    "keywords": [
+      "cocktail",
+      "alcohol",
+      "beverage",
+      "bar",
+      "drink",
+      "glass",
+      "spirit",
+      "party",
+      "celebration",
+      "mixer",
+      "martini"
+    ]
+  },
+  {
+    "id": "lucide-cake",
+    "name": "Cake",
+    "cat": "food-drink",
+    "source": "lucide",
+    "upstream": "cake",
+    "keywords": [
+      "birthday",
+      "birthdate",
+      "celebration",
+      "party",
+      "surprise",
+      "gateaux",
+      "dessert",
+      "fondant",
+      "icing sugar",
+      "sweet",
+      "baking",
+      "cake"
+    ]
+  },
+  {
+    "id": "lucide-sandwich",
+    "name": "Sandwich",
+    "cat": "food-drink",
+    "source": "lucide",
+    "upstream": "sandwich",
+    "keywords": [
+      "food",
+      "snack",
+      "dish",
+      "restaurant",
+      "lunch",
+      "meal",
+      "sandwich"
+    ]
+  },
+  {
+    "id": "lucide-activity",
+    "name": "Heartbeat Pulse",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "activity",
+    "keywords": [
+      "pulse",
+      "action",
+      "motion",
+      "movement",
+      "exercise",
+      "fitness",
+      "healthcare",
+      "heart rate monitor",
+      "vital signs",
+      "vitals",
+      "emergency room",
+      "er",
+      "intensive care",
+      "hospital",
+      "defibrillator",
+      "earthquake",
+      "siesmic",
+      "magnitude",
+      "richter scale",
+      "aftershock",
+      "tremor",
+      "shockwave",
+      "audio",
+      "waveform",
+      "synthesizer",
+      "synthesiser",
+      "music",
+      "activity",
+      "heartbeat"
+    ]
+  },
+  {
+    "id": "lucide-bandage",
+    "name": "Bandage",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "bandage",
+    "keywords": [
+      "plaster",
+      "band-aid",
+      "first aid",
+      "medical",
+      "health",
+      "wound",
+      "injury",
+      "care",
+      "treatment",
+      "healing",
+      "protection",
+      "emergency",
+      "aid",
+      "safety",
+      "patch",
+      "bandage"
+    ]
+  },
+  {
+    "id": "lucide-bath",
+    "name": "Bathtub (Outline)",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "bath",
+    "keywords": [
+      "amenities",
+      "services",
+      "bathroom",
+      "shower",
+      "bath",
+      "bathtub",
+      "self-care"
+    ]
+  },
+  {
+    "id": "lucide-bed",
+    "name": "Bed",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "bed",
+    "keywords": [
+      "sleep",
+      "hotel",
+      "furniture",
+      "bed",
+      "rest"
+    ]
+  },
+  {
+    "id": "lucide-bike",
+    "name": "Bicycle",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "bike",
+    "keywords": [
+      "bicycle",
+      "transport",
+      "trip",
+      "bike",
+      "exercise"
+    ]
+  },
+  {
+    "id": "lucide-brain",
+    "name": "Brain",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "brain",
+    "keywords": [
+      "medical",
+      "mind",
+      "mental",
+      "intellect",
+      "cerebral",
+      "consciousness",
+      "genius",
+      "artificial intelligence",
+      "ai",
+      "think",
+      "thought",
+      "insight",
+      "intelligent",
+      "smart",
+      "brain",
+      "mental health"
+    ]
+  },
+  {
+    "id": "lucide-cross",
+    "name": "Medical Cross",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "cross",
+    "keywords": [
+      "healthcare",
+      "first aid",
+      "cross",
+      "medical",
+      "health"
+    ]
+  },
+  {
+    "id": "lucide-dumbbell",
+    "name": "Dumbbell",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "dumbbell",
+    "keywords": [
+      "barbell",
+      "weight",
+      "workout",
+      "gym",
+      "dumbbell",
+      "exercise",
+      "fitness"
+    ]
+  },
+  {
+    "id": "lucide-footprints",
+    "name": "Footprints",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "footprints",
+    "keywords": [
+      "steps",
+      "walking",
+      "foot",
+      "feet",
+      "trail",
+      "shoe",
+      "footprints",
+      "walk"
+    ]
+  },
+  {
+    "id": "lucide-heart-pulse",
+    "name": "Heartbeat",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "heart-pulse",
+    "keywords": [
+      "heartbeat",
+      "pulse",
+      "health",
+      "medical",
+      "blood pressure",
+      "cardiac",
+      "systole",
+      "diastole",
+      "heart"
+    ]
+  },
+  {
+    "id": "lucide-pill",
+    "name": "Pill (Outline)",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "pill",
+    "keywords": [
+      "medicine",
+      "medication",
+      "drug",
+      "prescription",
+      "tablet",
+      "pharmacy",
+      "pill"
+    ]
+  },
+  {
+    "id": "lucide-scale",
+    "name": "Scale",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "scale",
+    "keywords": [
+      "balance",
+      "legal",
+      "license",
+      "right",
+      "rule",
+      "law",
+      "justice",
+      "weight",
+      "measure",
+      "compare",
+      "judge",
+      "fair",
+      "ethics",
+      "decision",
+      "scale"
+    ]
+  },
+  {
+    "id": "lucide-stethoscope",
+    "name": "Stethoscope",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "stethoscope",
+    "keywords": [
+      "phonendoscope",
+      "medical",
+      "heart",
+      "lungs",
+      "sound",
+      "stethoscope",
+      "doctor"
+    ]
+  },
+  {
+    "id": "lucide-syringe",
+    "name": "Syringe",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "syringe",
+    "keywords": [
+      "medicine",
+      "medical",
+      "needle",
+      "pump",
+      "plunger",
+      "nozzle",
+      "blood",
+      "syringe",
+      "injection"
+    ]
+  },
+  {
+    "id": "lucide-weight",
+    "name": "Weight",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "weight",
+    "keywords": [
+      "mass",
+      "heavy",
+      "lead",
+      "metal",
+      "measure",
+      "geometry",
+      "scales",
+      "balance",
+      "weight",
+      "exercise",
+      "fitness"
+    ]
+  },
+  {
+    "id": "lucide-accessibility",
+    "name": "Accessibility",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "accessibility",
+    "keywords": [
+      "disability",
+      "disabled",
+      "dda",
+      "wheelchair",
+      "accessibility"
+    ]
+  },
+  {
+    "id": "lucide-ambulance",
+    "name": "Ambulance",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "ambulance",
+    "keywords": [
+      "ambulance",
+      "emergency",
+      "medical",
+      "vehicle",
+      "siren",
+      "healthcare",
+      "transportation",
+      "rescue",
+      "urgent",
+      "first aid"
+    ]
+  },
+  {
+    "id": "lucide-eye",
+    "name": "Eye",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "eye",
+    "keywords": [
+      "view",
+      "watch",
+      "see",
+      "show",
+      "expose",
+      "reveal",
+      "display",
+      "visible",
+      "visibility",
+      "vision",
+      "preview",
+      "read",
+      "eye",
+      "sight"
+    ]
+  },
+  {
+    "id": "lucide-glasses",
+    "name": "Glasses",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "glasses",
+    "keywords": [
+      "glasses",
+      "spectacles",
+      "vision",
+      "eyewear"
+    ]
+  },
+  {
+    "id": "lucide-hand-heart",
+    "name": "Hand Holding Heart",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "hand-heart",
+    "keywords": [
+      "love",
+      "like",
+      "emotion",
+      "hand",
+      "heart",
+      "care",
+      "self-care"
+    ]
+  },
+  {
+    "id": "lucide-plane",
+    "name": "Airplane (Outline)",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "plane",
+    "keywords": [
+      "plane",
+      "trip",
+      "airplane",
+      "travel",
+      "flight"
+    ]
+  },
+  {
+    "id": "lucide-car",
+    "name": "Car",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "car",
+    "keywords": [
+      "vehicle",
+      "drive",
+      "trip",
+      "journey",
+      "car",
+      "travel"
+    ]
+  },
+  {
+    "id": "lucide-train-front",
+    "name": "Train (Outline)",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "train-front",
+    "keywords": [
+      "railway",
+      "metro",
+      "subway",
+      "underground",
+      "high-speed",
+      "bullet",
+      "fast",
+      "track",
+      "line",
+      "train",
+      "travel",
+      "rail"
+    ]
+  },
+  {
+    "id": "lucide-bus",
+    "name": "Bus",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "bus",
+    "keywords": [
+      "bus",
+      "vehicle",
+      "transport",
+      "trip",
+      "travel"
+    ]
+  },
+  {
+    "id": "lucide-ship",
+    "name": "Ship (Outline)",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "ship",
+    "keywords": [
+      "boat",
+      "knots",
+      "nautical mile",
+      "maritime",
+      "sailing",
+      "yacht",
+      "cruise",
+      "ocean liner",
+      "tanker",
+      "vessel",
+      "navy",
+      "trip",
+      "releases",
+      "ship",
+      "travel"
+    ]
+  },
+  {
+    "id": "lucide-map",
+    "name": "Map",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "map",
+    "keywords": [
+      "location",
+      "navigation",
+      "travel",
+      "map"
+    ]
+  },
+  {
+    "id": "lucide-tent",
+    "name": "Tent (Outline)",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "tent",
+    "keywords": [
+      "tipi",
+      "teepee",
+      "wigwam",
+      "lodge",
+      "camping",
+      "campsite",
+      "holiday",
+      "retreat",
+      "nomadic",
+      "native american",
+      "indian",
+      "wilderness",
+      "outdoors",
+      "tent"
+    ]
+  },
+  {
+    "id": "lucide-mountain",
+    "name": "Mountain (Outline)",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "mountain",
+    "keywords": [
+      "climb",
+      "hike",
+      "rock",
+      "mountain",
+      "outdoors",
+      "hiking"
+    ]
+  },
+  {
+    "id": "lucide-luggage",
+    "name": "Luggage (Outline)",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "luggage",
+    "keywords": [
+      "baggage",
+      "luggage",
+      "travel",
+      "suitcase"
+    ]
+  },
+  {
+    "id": "lucide-anchor",
+    "name": "Anchor (Outline)",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "anchor",
+    "keywords": [
+      "ship",
+      "anchor",
+      "boat",
+      "nautical"
+    ]
+  },
+  {
+    "id": "lucide-sailboat",
+    "name": "Sailboat (Outline)",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "sailboat",
+    "keywords": [
+      "ship",
+      "boat",
+      "harbor",
+      "harbour",
+      "dock",
+      "sailboat",
+      "sailing"
+    ]
+  },
+  {
+    "id": "lucide-rocket",
+    "name": "Rocket (Outline)",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "rocket",
+    "keywords": [
+      "release",
+      "boost",
+      "launch",
+      "space",
+      "version",
+      "rocket"
+    ]
+  },
+  {
+    "id": "lucide-ferris-wheel",
+    "name": "Ferris Wheel",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "ferris-wheel",
+    "keywords": [
+      "big wheel",
+      "daisy wheel",
+      "observation",
+      "attraction",
+      "entertainment",
+      "amusement park",
+      "theme park",
+      "funfair",
+      "ferris wheel",
+      "carnival",
+      "fair"
+    ]
+  },
+  {
+    "id": "lucide-camera",
+    "name": "Camera",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "camera",
+    "keywords": [
+      "photography",
+      "lens",
+      "focus",
+      "capture",
+      "shot",
+      "visual",
+      "image",
+      "device",
+      "equipment",
+      "photo",
+      "webcam",
+      "video",
+      "camera",
+      "travel"
+    ]
+  },
+  {
+    "id": "lucide-binoculars",
+    "name": "Binoculars",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "binoculars",
+    "keywords": [
+      "field glasses",
+      "lorgnette",
+      "pince-nez",
+      "observation",
+      "sightseeing",
+      "nature",
+      "wildlife",
+      "birdwatching",
+      "scouting",
+      "surveillance",
+      "search",
+      "discovery",
+      "monitoring",
+      "lookout",
+      "viewpoint",
+      "travel",
+      "tourism",
+      "research",
+      "binoculars",
+      "explore",
+      "observe"
+    ]
+  },
+  {
+    "id": "lucide-landmark",
+    "name": "Landmark",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "landmark",
+    "keywords": [
+      "bank",
+      "building",
+      "capitol",
+      "finance",
+      "money",
+      "museum",
+      "art gallery",
+      "hall",
+      "institute",
+      "pediment",
+      "portico",
+      "doric",
+      "columns",
+      "pillars",
+      "classical",
+      "architecture",
+      "government",
+      "institution",
+      "monument",
+      "site",
+      "history",
+      "historic",
+      "library",
+      "temple",
+      "ancient",
+      "structure",
+      "landmark",
+      "travel"
+    ]
+  },
+  {
+    "id": "lucide-castle",
+    "name": "Castle",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "castle",
+    "keywords": [
+      "fortress",
+      "stronghold",
+      "palace",
+      "chateau",
+      "building",
+      "castle",
+      "landmark",
+      "travel"
+    ]
+  },
+  {
+    "id": "lucide-signpost",
+    "name": "Signpost",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "signpost",
+    "keywords": [
+      "navigation",
+      "direction",
+      "arrow",
+      "wayfinding",
+      "guide",
+      "location",
+      "pointer",
+      "route",
+      "indicator",
+      "marker",
+      "bidirectional",
+      "left",
+      "right",
+      "east",
+      "west",
+      "signpost",
+      "travel"
+    ]
+  },
+  {
+    "id": "lucide-balloon",
+    "name": "Balloon (Outline)",
+    "cat": "celebration-seasons",
+    "source": "lucide",
+    "upstream": "balloon",
+    "keywords": [
+      "party",
+      "festival",
+      "congratulations",
+      "celebration",
+      "decoration",
+      "colorful",
+      "floating",
+      "fun",
+      "birthday",
+      "event",
+      "entertainment",
+      "balloon"
+    ]
+  },
+  {
+    "id": "lucide-cake-slice",
+    "name": "Cake Slice",
+    "cat": "celebration-seasons",
+    "source": "lucide",
+    "upstream": "cake-slice",
+    "keywords": [
+      "birthday",
+      "birthdate",
+      "celebration",
+      "party",
+      "surprise",
+      "gateaux",
+      "dessert",
+      "candles",
+      "wish",
+      "fondant",
+      "icing sugar",
+      "sweet",
+      "baking",
+      "cake",
+      "slice"
+    ]
+  },
+  {
+    "id": "lucide-candy-cane",
+    "name": "Candy Cane",
+    "cat": "celebration-seasons",
+    "source": "lucide",
+    "upstream": "candy-cane",
+    "keywords": [
+      "sugar",
+      "food",
+      "sweet",
+      "christmas",
+      "xmas",
+      "candy cane",
+      "holiday"
+    ]
+  },
+  {
+    "id": "lucide-gift",
+    "name": "Gift",
+    "cat": "celebration-seasons",
+    "source": "lucide",
+    "upstream": "gift",
+    "keywords": [
+      "present",
+      "box",
+      "birthday",
+      "party",
+      "gift"
+    ]
+  },
+  {
+    "id": "lucide-venetian-mask",
+    "name": "Masquerade Mask",
+    "cat": "celebration-seasons",
+    "source": "lucide",
+    "upstream": "venetian-mask",
+    "keywords": [
+      "mask",
+      "masquerade",
+      "impersonate",
+      "secret",
+      "incognito",
+      "party",
+      "celebration"
+    ]
+  },
+  {
+    "id": "lucide-drum",
+    "name": "Drum",
+    "cat": "celebration-seasons",
+    "source": "lucide",
+    "upstream": "drum",
+    "keywords": [
+      "drummer",
+      "kit",
+      "sticks",
+      "instrument",
+      "beat",
+      "bang",
+      "bass",
+      "backing track",
+      "band",
+      "play",
+      "performance",
+      "concert",
+      "march",
+      "music",
+      "audio",
+      "sound",
+      "noise",
+      "loud",
+      "drum",
+      "celebration"
+    ]
+  },
+  {
+    "id": "lucide-music",
+    "name": "Music Note",
+    "cat": "celebration-seasons",
+    "source": "lucide",
+    "upstream": "music",
+    "keywords": [
+      "note",
+      "quaver",
+      "eighth note",
+      "music",
+      "song"
+    ]
+  },
+  {
+    "id": "lucide-wand-sparkles",
+    "name": "Magic Wand",
+    "cat": "celebration-seasons",
+    "source": "lucide",
+    "upstream": "wand-sparkles",
+    "keywords": [
+      "magic",
+      "wizard",
+      "magician",
+      "wand",
+      "sparkles"
+    ]
+  },
+  {
+    "id": "twemoji-sun",
+    "name": "Sun",
+    "cat": "weather-sky",
+    "source": "twemoji",
+    "upstream": "2600",
+    "keywords": [
+      "sun",
+      "weather",
+      "sunny",
+      "hot"
+    ]
+  },
+  {
+    "id": "twemoji-cloud",
+    "name": "Cloud",
+    "cat": "weather-sky",
+    "source": "twemoji",
+    "upstream": "2601",
+    "keywords": [
+      "cloud",
+      "weather",
+      "sky",
+      "overcast"
+    ]
+  },
+  {
+    "id": "twemoji-cloud-rain",
+    "name": "Rain Cloud",
+    "cat": "weather-sky",
+    "source": "twemoji",
+    "upstream": "1f327",
+    "keywords": [
+      "rain",
+      "cloud",
+      "weather",
+      "wet"
+    ]
+  },
+  {
+    "id": "twemoji-cloud-lightning",
+    "name": "Thunder Cloud",
+    "cat": "weather-sky",
+    "source": "twemoji",
+    "upstream": "1f329",
+    "keywords": [
+      "thunder",
+      "lightning",
+      "cloud",
+      "storm"
+    ]
+  },
+  {
+    "id": "twemoji-rainbow",
+    "name": "Rainbow",
+    "cat": "weather-sky",
+    "source": "twemoji",
+    "upstream": "1f308",
+    "keywords": [
+      "rainbow",
+      "weather",
+      "colour",
+      "sky"
+    ]
+  },
+  {
+    "id": "twemoji-snowflake",
+    "name": "Snowflake",
+    "cat": "weather-sky",
+    "source": "twemoji",
+    "upstream": "2744",
+    "keywords": [
+      "snowflake",
+      "snow",
+      "winter",
+      "cold"
+    ]
+  },
+  {
+    "id": "twemoji-umbrella-rain",
+    "name": "Umbrella with Raindrops",
+    "cat": "weather-sky",
+    "source": "twemoji",
+    "upstream": "2614",
+    "keywords": [
+      "umbrella",
+      "rain",
+      "weather"
+    ]
+  },
+  {
+    "id": "twemoji-water-wave",
+    "name": "Water Wave",
+    "cat": "weather-sky",
+    "source": "twemoji",
+    "upstream": "1f30a",
+    "keywords": [
+      "wave",
+      "ocean",
+      "sea",
+      "water"
+    ]
+  },
+  {
+    "id": "twemoji-droplet",
+    "name": "Droplet",
+    "cat": "weather-sky",
+    "source": "twemoji",
+    "upstream": "1f4a7",
+    "keywords": [
+      "droplet",
+      "water",
+      "drop"
+    ]
+  },
+  {
+    "id": "twemoji-high-voltage",
+    "name": "Lightning Bolt",
+    "cat": "weather-sky",
+    "source": "twemoji",
+    "upstream": "26a1",
+    "keywords": [
+      "lightning",
+      "bolt",
+      "electric",
+      "storm"
+    ]
+  },
+  {
+    "id": "twemoji-comet",
+    "name": "Comet",
+    "cat": "weather-sky",
+    "source": "twemoji",
+    "upstream": "2604",
+    "keywords": [
+      "comet",
+      "space",
+      "sky",
+      "shooting star"
+    ]
+  },
+  {
+    "id": "twemoji-sun-behind-cloud",
+    "name": "Sun Behind Cloud",
+    "cat": "weather-sky",
+    "source": "twemoji",
+    "upstream": "26c5",
+    "keywords": [
+      "sun",
+      "cloud",
+      "weather",
+      "partly cloudy"
+    ]
+  },
+  {
+    "id": "twemoji-seedling",
+    "name": "Seedling",
+    "cat": "botanical",
+    "source": "twemoji",
+    "upstream": "1f331",
+    "keywords": [
+      "seedling",
+      "plant",
+      "sprout",
+      "grow"
+    ]
+  },
+  {
+    "id": "twemoji-tulip",
+    "name": "Tulip",
+    "cat": "botanical",
+    "source": "twemoji",
+    "upstream": "1f337",
+    "keywords": [
+      "tulip",
+      "flower",
+      "plant",
+      "spring"
+    ]
+  },
+  {
+    "id": "twemoji-shamrock",
+    "name": "Shamrock",
+    "cat": "botanical",
+    "source": "twemoji",
+    "upstream": "2618",
+    "keywords": [
+      "shamrock",
+      "clover",
+      "luck",
+      "irish"
+    ]
+  },
+  {
+    "id": "twemoji-maple-leaf",
+    "name": "Maple Leaf",
+    "cat": "botanical",
+    "source": "twemoji",
+    "upstream": "1f341",
+    "keywords": [
+      "maple leaf",
+      "autumn",
+      "fall",
+      "leaf"
+    ]
+  },
+  {
+    "id": "twemoji-rose",
+    "name": "Rose",
+    "cat": "botanical",
+    "source": "twemoji",
+    "upstream": "1f339",
+    "keywords": [
+      "rose",
+      "flower",
+      "plant",
+      "romance"
+    ]
+  },
+  {
+    "id": "twemoji-mushroom",
+    "name": "Mushroom",
+    "cat": "botanical",
+    "source": "twemoji",
+    "upstream": "1f344",
+    "keywords": [
+      "mushroom",
+      "fungus",
+      "plant"
+    ]
+  },
+  {
+    "id": "twemoji-cactus",
+    "name": "Cactus",
+    "cat": "botanical",
+    "source": "twemoji",
+    "upstream": "1f335",
+    "keywords": [
+      "cactus",
+      "plant",
+      "desert"
+    ]
+  },
+  {
+    "id": "twemoji-four-leaf-clover",
+    "name": "Four-Leaf Clover",
+    "cat": "botanical",
+    "source": "twemoji",
+    "upstream": "1f340",
+    "keywords": [
+      "clover",
+      "luck",
+      "plant"
+    ]
+  },
+  {
+    "id": "twemoji-deciduous-tree",
+    "name": "Deciduous Tree",
+    "cat": "botanical",
+    "source": "twemoji",
+    "upstream": "1f333",
+    "keywords": [
+      "tree",
+      "plant",
+      "nature"
+    ]
+  },
+  {
+    "id": "twemoji-sunflower",
+    "name": "Sunflower",
+    "cat": "botanical",
+    "source": "twemoji",
+    "upstream": "1f33b",
+    "keywords": [
+      "sunflower",
+      "flower",
+      "plant",
+      "summer"
+    ]
+  },
+  {
+    "id": "twemoji-monkey-face",
+    "name": "Monkey",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f435",
+    "keywords": [
+      "monkey",
+      "animal",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-cow-face",
+    "name": "Cow",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f42e",
+    "keywords": [
+      "cow",
+      "animal",
+      "farm",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-pig-face",
+    "name": "Pig",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f437",
+    "keywords": [
+      "pig",
+      "animal",
+      "farm",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-elephant",
+    "name": "Elephant",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f418",
+    "keywords": [
+      "elephant",
+      "animal"
+    ]
+  },
+  {
+    "id": "twemoji-bison",
+    "name": "Bison",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f9ac",
+    "keywords": [
+      "bison",
+      "animal",
+      "buffalo"
+    ]
+  },
+  {
+    "id": "twemoji-water-buffalo",
+    "name": "Water Buffalo",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f403",
+    "keywords": [
+      "water buffalo",
+      "animal",
+      "farm"
+    ]
+  },
+  {
+    "id": "twemoji-rabbit-face",
+    "name": "Rabbit",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f430",
+    "keywords": [
+      "rabbit",
+      "bunny",
+      "animal",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-koala",
+    "name": "Koala",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f428",
+    "keywords": [
+      "koala",
+      "animal"
+    ]
+  },
+  {
+    "id": "twemoji-panda",
+    "name": "Panda",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f43c",
+    "keywords": [
+      "panda",
+      "animal",
+      "bear"
+    ]
+  },
+  {
+    "id": "twemoji-chicken",
+    "name": "Chicken",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f414",
+    "keywords": [
+      "chicken",
+      "animal",
+      "farm",
+      "bird"
+    ]
+  },
+  {
+    "id": "twemoji-penguin",
+    "name": "Penguin",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f427",
+    "keywords": [
+      "penguin",
+      "animal",
+      "bird"
+    ]
+  },
+  {
+    "id": "twemoji-duck",
+    "name": "Duck",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f986",
+    "keywords": [
+      "duck",
+      "animal",
+      "bird"
+    ]
+  },
+  {
+    "id": "twemoji-frog",
+    "name": "Frog",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f438",
+    "keywords": [
+      "frog",
+      "animal",
+      "amphibian"
+    ]
+  },
+  {
+    "id": "twemoji-turtle",
+    "name": "Turtle",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f422",
+    "keywords": [
+      "turtle",
+      "animal",
+      "reptile"
+    ]
+  },
+  {
+    "id": "twemoji-snake",
+    "name": "Snake",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f40d",
+    "keywords": [
+      "snake",
+      "animal",
+      "reptile"
+    ]
+  },
+  {
+    "id": "twemoji-dolphin",
+    "name": "Dolphin",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f42c",
+    "keywords": [
+      "dolphin",
+      "animal",
+      "sea",
+      "ocean"
+    ]
+  },
+  {
+    "id": "twemoji-tropical-fish",
+    "name": "Tropical Fish",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f420",
+    "keywords": [
+      "fish",
+      "tropical",
+      "animal",
+      "sea"
+    ]
+  },
+  {
+    "id": "twemoji-octopus",
+    "name": "Octopus",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f419",
+    "keywords": [
+      "octopus",
+      "animal",
+      "sea",
+      "ocean"
+    ]
+  },
+  {
+    "id": "twemoji-snail",
+    "name": "Snail",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f40c",
+    "keywords": [
+      "snail",
+      "animal",
+      "slow"
+    ]
+  },
+  {
+    "id": "twemoji-leopard",
+    "name": "Leopard",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f406",
+    "keywords": [
+      "leopard",
+      "animal",
+      "wild cat"
+    ]
+  },
+  {
+    "id": "twemoji-ox",
+    "name": "Ox",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f402",
+    "keywords": [
+      "ox",
+      "animal",
+      "farm"
+    ]
+  },
+  {
+    "id": "twemoji-ewe",
+    "name": "Sheep",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f411",
+    "keywords": [
+      "sheep",
+      "ewe",
+      "animal",
+      "farm"
+    ]
+  },
+  {
+    "id": "twemoji-rat",
+    "name": "Rat",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f400",
+    "keywords": [
+      "rat",
+      "animal",
+      "rodent"
+    ]
+  },
+  {
+    "id": "twemoji-rooster",
+    "name": "Rooster",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f413",
+    "keywords": [
+      "rooster",
+      "animal",
+      "farm",
+      "bird"
+    ]
+  },
+  {
+    "id": "twemoji-dove",
+    "name": "Dove",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f54a",
+    "keywords": [
+      "dove",
+      "animal",
+      "bird",
+      "peace"
+    ]
+  },
+  {
+    "id": "twemoji-swan",
+    "name": "Swan",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f9a2",
+    "keywords": [
+      "swan",
+      "animal",
+      "bird"
+    ]
+  },
+  {
+    "id": "twemoji-crocodile",
+    "name": "Crocodile",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f40a",
+    "keywords": [
+      "crocodile",
+      "animal",
+      "reptile"
+    ]
+  },
+  {
+    "id": "twemoji-whale",
+    "name": "Whale",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f40b",
+    "keywords": [
+      "whale",
+      "animal",
+      "sea",
+      "ocean"
+    ]
+  },
+  {
+    "id": "twemoji-shark",
+    "name": "Shark",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f988",
+    "keywords": [
+      "shark",
+      "animal",
+      "sea",
+      "ocean"
+    ]
+  },
+  {
+    "id": "twemoji-squid",
+    "name": "Squid",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f991",
+    "keywords": [
+      "squid",
+      "animal",
+      "sea",
+      "ocean"
+    ]
+  },
+  {
+    "id": "twemoji-eagle",
+    "name": "Eagle",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f985",
+    "keywords": [
+      "eagle",
+      "animal",
+      "bird"
+    ]
+  },
+  {
+    "id": "twemoji-camel",
+    "name": "Camel",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f42a",
+    "keywords": [
+      "camel",
+      "animal",
+      "desert"
+    ]
+  },
+  {
+    "id": "twemoji-two-hump-camel",
+    "name": "Bactrian Camel",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f42b",
+    "keywords": [
+      "camel",
+      "animal",
+      "desert"
+    ]
+  },
+  {
+    "id": "twemoji-paw-prints",
+    "name": "Paw Prints",
+    "cat": "animals",
+    "source": "twemoji",
+    "upstream": "1f43e",
+    "keywords": [
+      "paw",
+      "prints",
+      "animal",
+      "tracks"
+    ]
+  },
+  {
+    "id": "twemoji-watermelon",
+    "name": "Watermelon",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f349",
+    "keywords": [
+      "watermelon",
+      "fruit",
+      "food"
+    ]
+  },
+  {
+    "id": "twemoji-lemon",
+    "name": "Lemon",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f34b",
+    "keywords": [
+      "lemon",
+      "fruit",
+      "citrus",
+      "food"
+    ]
+  },
+  {
+    "id": "twemoji-banana",
+    "name": "Banana",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f34c",
+    "keywords": [
+      "banana",
+      "fruit",
+      "food"
+    ]
+  },
+  {
+    "id": "twemoji-red-apple",
+    "name": "Red Apple",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f34e",
+    "keywords": [
+      "apple",
+      "fruit",
+      "food",
+      "red"
+    ]
+  },
+  {
+    "id": "twemoji-green-apple",
+    "name": "Green Apple",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f34f",
+    "keywords": [
+      "apple",
+      "fruit",
+      "food",
+      "green"
+    ]
+  },
+  {
+    "id": "twemoji-pear",
+    "name": "Pear",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f350",
+    "keywords": [
+      "pear",
+      "fruit",
+      "food"
+    ]
+  },
+  {
+    "id": "twemoji-cherries",
+    "name": "Cherries",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f352",
+    "keywords": [
+      "cherries",
+      "fruit",
+      "food"
+    ]
+  },
+  {
+    "id": "twemoji-tomato",
+    "name": "Tomato",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f345",
+    "keywords": [
+      "tomato",
+      "vegetable",
+      "food"
+    ]
+  },
+  {
+    "id": "twemoji-avocado",
+    "name": "Avocado",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f951",
+    "keywords": [
+      "avocado",
+      "fruit",
+      "food"
+    ]
+  },
+  {
+    "id": "twemoji-carrot",
+    "name": "Carrot",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f955",
+    "keywords": [
+      "carrot",
+      "vegetable",
+      "food"
+    ]
+  },
+  {
+    "id": "twemoji-hot-pepper",
+    "name": "Hot Pepper",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f336",
+    "keywords": [
+      "pepper",
+      "chili",
+      "spicy",
+      "food"
+    ]
+  },
+  {
+    "id": "twemoji-bread",
+    "name": "Bread",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f35e",
+    "keywords": [
+      "bread",
+      "bakery",
+      "food"
+    ]
+  },
+  {
+    "id": "twemoji-croissant",
+    "name": "Croissant",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f950",
+    "keywords": [
+      "croissant",
+      "bakery",
+      "food"
+    ]
+  },
+  {
+    "id": "twemoji-pizza",
+    "name": "Pizza",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f355",
+    "keywords": [
+      "pizza",
+      "food",
+      "italian"
+    ]
+  },
+  {
+    "id": "twemoji-egg",
+    "name": "Egg",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f95a",
+    "keywords": [
+      "egg",
+      "food",
+      "breakfast"
+    ]
+  },
+  {
+    "id": "twemoji-chocolate-bar",
+    "name": "Chocolate Bar",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f36b",
+    "keywords": [
+      "chocolate",
+      "candy",
+      "food"
+    ]
+  },
+  {
+    "id": "twemoji-honey-pot",
+    "name": "Honey Pot",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f36f",
+    "keywords": [
+      "honey",
+      "pot",
+      "food",
+      "sweet"
+    ]
+  },
+  {
+    "id": "twemoji-hot-beverage",
+    "name": "Hot Beverage",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "2615",
+    "keywords": [
+      "coffee",
+      "tea",
+      "hot drink"
+    ]
+  },
+  {
+    "id": "twemoji-wine-glass",
+    "name": "Wine Glass",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f377",
+    "keywords": [
+      "wine",
+      "glass",
+      "drink"
+    ]
+  },
+  {
+    "id": "twemoji-beer-mug",
+    "name": "Beer Mug",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f37a",
+    "keywords": [
+      "beer",
+      "mug",
+      "drink"
+    ]
+  },
+  {
+    "id": "twemoji-fork-knife",
+    "name": "Fork and Knife",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f374",
+    "keywords": [
+      "fork",
+      "knife",
+      "utensils",
+      "dining"
+    ]
+  },
+  {
+    "id": "twemoji-spoon",
+    "name": "Spoon",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f944",
+    "keywords": [
+      "spoon",
+      "utensils",
+      "dining"
+    ]
+  },
+  {
+    "id": "twemoji-grapes",
+    "name": "Grapes",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f347",
+    "keywords": [
+      "grapes",
+      "fruit",
+      "food"
+    ]
+  },
+  {
+    "id": "twemoji-tangerine",
+    "name": "Tangerine",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f34a",
+    "keywords": [
+      "tangerine",
+      "orange",
+      "fruit",
+      "food"
+    ]
+  },
+  {
+    "id": "twemoji-bowl-with-spoon",
+    "name": "Bowl with Spoon",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f963",
+    "keywords": [
+      "bowl",
+      "spoon",
+      "food",
+      "cereal"
+    ]
+  },
+  {
+    "id": "twemoji-butter",
+    "name": "Butter",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f9c8",
+    "keywords": [
+      "butter",
+      "dairy",
+      "food"
+    ]
+  },
+  {
+    "id": "twemoji-salt",
+    "name": "Salt",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f9c2",
+    "keywords": [
+      "salt",
+      "seasoning",
+      "food"
+    ]
+  },
+  {
+    "id": "twemoji-grinning-face",
+    "name": "Grinning Face",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f600",
+    "keywords": [
+      "grinning",
+      "happy",
+      "smile",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-grinning-smiling-eyes",
+    "name": "Grinning Face with Smiling Eyes",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f604",
+    "keywords": [
+      "grinning",
+      "happy",
+      "smile",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-beaming-face",
+    "name": "Beaming Face",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f601",
+    "keywords": [
+      "beaming",
+      "happy",
+      "smile",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-dizzy-face",
+    "name": "Dizzy Face",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f635",
+    "keywords": [
+      "dizzy",
+      "woozy",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-slightly-smiling",
+    "name": "Slightly Smiling Face",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f642",
+    "keywords": [
+      "smile",
+      "happy",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-winking-face",
+    "name": "Winking Face",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f609",
+    "keywords": [
+      "wink",
+      "flirt",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-smiling-face",
+    "name": "Smiling Face",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f60a",
+    "keywords": [
+      "smile",
+      "happy",
+      "face",
+      "sweet"
+    ]
+  },
+  {
+    "id": "twemoji-heart-eyes",
+    "name": "Heart Eyes Face",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f60d",
+    "keywords": [
+      "heart eyes",
+      "love",
+      "crush",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-star-struck",
+    "name": "Star-Struck Face",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f929",
+    "keywords": [
+      "star struck",
+      "amazed",
+      "wow",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-savoring-food",
+    "name": "Face Savoring Food",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f60b",
+    "keywords": [
+      "yum",
+      "delicious",
+      "hungry",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-tongue",
+    "name": "Face with Tongue",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f61b",
+    "keywords": [
+      "tongue",
+      "silly",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-neutral",
+    "name": "Neutral Face",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f610",
+    "keywords": [
+      "neutral",
+      "meh",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-smirking",
+    "name": "Smirking Face",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f60f",
+    "keywords": [
+      "smirk",
+      "sly",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-rolling-eyes",
+    "name": "Face with Rolling Eyes",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f644",
+    "keywords": [
+      "eye roll",
+      "annoyed",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-grimacing",
+    "name": "Grimacing Face",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f62c",
+    "keywords": [
+      "grimace",
+      "awkward",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-relieved",
+    "name": "Relieved Face",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f60c",
+    "keywords": [
+      "relieved",
+      "calm",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-medical-mask",
+    "name": "Face with Medical Mask",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f637",
+    "keywords": [
+      "sick",
+      "mask",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-nauseated",
+    "name": "Nauseated Face",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f922",
+    "keywords": [
+      "nauseated",
+      "sick",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-pouting",
+    "name": "Pouting Face",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f621",
+    "keywords": [
+      "pouting",
+      "angry",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-angry",
+    "name": "Angry Face",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f620",
+    "keywords": [
+      "angry",
+      "mad",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-crying",
+    "name": "Crying Face",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f622",
+    "keywords": [
+      "crying",
+      "sad",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-fearful",
+    "name": "Fearful Face",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f628",
+    "keywords": [
+      "fearful",
+      "scared",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-sunglasses-face",
+    "name": "Smiling Face with Sunglasses",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f60e",
+    "keywords": [
+      "sunglasses",
+      "cool",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-no-mouth",
+    "name": "Face Without Mouth",
+    "cat": "faces-moods",
+    "source": "twemoji",
+    "upstream": "1f636",
+    "keywords": [
+      "no mouth",
+      "silent",
+      "face"
+    ]
+  },
+  {
+    "id": "twemoji-pill",
+    "name": "Pill",
+    "cat": "health-self-care",
+    "source": "twemoji",
+    "upstream": "1f48a",
+    "keywords": [
+      "pill",
+      "medicine",
+      "medication"
+    ]
+  },
+  {
+    "id": "twemoji-hospital",
+    "name": "Hospital",
+    "cat": "health-self-care",
+    "source": "twemoji",
+    "upstream": "1f3e5",
+    "keywords": [
+      "hospital",
+      "medical",
+      "health"
+    ]
+  },
+  {
+    "id": "twemoji-adhesive-bandage",
+    "name": "Adhesive Bandage",
+    "cat": "health-self-care",
+    "source": "twemoji",
+    "upstream": "1fa79",
+    "keywords": [
+      "bandage",
+      "first aid",
+      "wound"
+    ]
+  },
+  {
+    "id": "twemoji-tooth",
+    "name": "Tooth",
+    "cat": "health-self-care",
+    "source": "twemoji",
+    "upstream": "1f9b7",
+    "keywords": [
+      "tooth",
+      "dental",
+      "teeth"
+    ]
+  },
+  {
+    "id": "twemoji-toothbrush",
+    "name": "Toothbrush",
+    "cat": "health-self-care",
+    "source": "twemoji",
+    "upstream": "1faa5",
+    "keywords": [
+      "toothbrush",
+      "dental",
+      "hygiene"
+    ]
+  },
+  {
+    "id": "twemoji-bathtub",
+    "name": "Bathtub",
+    "cat": "health-self-care",
+    "source": "twemoji",
+    "upstream": "1f6c1",
+    "keywords": [
+      "bathtub",
+      "bath",
+      "self-care"
+    ]
+  },
+  {
+    "id": "twemoji-zzz",
+    "name": "Sleeping ZZZ",
+    "cat": "health-self-care",
+    "source": "twemoji",
+    "upstream": "1f4a4",
+    "keywords": [
+      "zzz",
+      "sleep",
+      "tired",
+      "rest"
+    ]
+  },
+  {
+    "id": "twemoji-lotion-bottle",
+    "name": "Lotion Bottle",
+    "cat": "health-self-care",
+    "source": "twemoji",
+    "upstream": "1f9f4",
+    "keywords": [
+      "lotion",
+      "skincare",
+      "self-care"
+    ]
+  },
+  {
+    "id": "twemoji-petri-dish",
+    "name": "Petri Dish",
+    "cat": "health-self-care",
+    "source": "twemoji",
+    "upstream": "1f9eb",
+    "keywords": [
+      "petri dish",
+      "lab",
+      "science",
+      "health"
+    ]
+  },
+  {
+    "id": "twemoji-globe-africa",
+    "name": "Globe Showing Europe-Africa",
+    "cat": "travel-places",
+    "source": "twemoji",
+    "upstream": "1f30d",
+    "keywords": [
+      "globe",
+      "world",
+      "earth",
+      "travel"
+    ]
+  },
+  {
+    "id": "twemoji-compass",
+    "name": "Compass",
+    "cat": "travel-places",
+    "source": "twemoji",
+    "upstream": "1f9ed",
+    "keywords": [
+      "compass",
+      "direction",
+      "navigation",
+      "travel"
+    ]
+  },
+  {
+    "id": "twemoji-mountain",
+    "name": "Mountain",
+    "cat": "travel-places",
+    "source": "twemoji",
+    "upstream": "26f0",
+    "keywords": [
+      "mountain",
+      "outdoors",
+      "hiking"
+    ]
+  },
+  {
+    "id": "twemoji-tent",
+    "name": "Tent",
+    "cat": "travel-places",
+    "source": "twemoji",
+    "upstream": "26fa",
+    "keywords": [
+      "tent",
+      "camping",
+      "outdoors"
+    ]
+  },
+  {
+    "id": "twemoji-anchor",
+    "name": "Anchor",
+    "cat": "travel-places",
+    "source": "twemoji",
+    "upstream": "2693",
+    "keywords": [
+      "anchor",
+      "boat",
+      "nautical"
+    ]
+  },
+  {
+    "id": "twemoji-sailboat",
+    "name": "Sailboat",
+    "cat": "travel-places",
+    "source": "twemoji",
+    "upstream": "26f5",
+    "keywords": [
+      "sailboat",
+      "boat",
+      "sailing"
+    ]
+  },
+  {
+    "id": "twemoji-ship",
+    "name": "Ship",
+    "cat": "travel-places",
+    "source": "twemoji",
+    "upstream": "1f6a2",
+    "keywords": [
+      "ship",
+      "boat",
+      "travel"
+    ]
+  },
+  {
+    "id": "twemoji-airplane",
+    "name": "Airplane",
+    "cat": "travel-places",
+    "source": "twemoji",
+    "upstream": "2708",
+    "keywords": [
+      "airplane",
+      "plane",
+      "flight",
+      "travel"
+    ]
+  },
+  {
+    "id": "twemoji-rocket",
+    "name": "Rocket",
+    "cat": "travel-places",
+    "source": "twemoji",
+    "upstream": "1f680",
+    "keywords": [
+      "rocket",
+      "space",
+      "launch"
+    ]
+  },
+  {
+    "id": "twemoji-luggage",
+    "name": "Luggage",
+    "cat": "travel-places",
+    "source": "twemoji",
+    "upstream": "1f9f3",
+    "keywords": [
+      "luggage",
+      "suitcase",
+      "travel"
+    ]
+  },
+  {
+    "id": "twemoji-beach-umbrella",
+    "name": "Beach with Umbrella",
+    "cat": "travel-places",
+    "source": "twemoji",
+    "upstream": "1f3d6",
+    "keywords": [
+      "beach",
+      "umbrella",
+      "vacation"
+    ]
+  },
+  {
+    "id": "twemoji-train",
+    "name": "Train",
+    "cat": "travel-places",
+    "source": "twemoji",
+    "upstream": "1f686",
+    "keywords": [
+      "train",
+      "travel",
+      "rail"
+    ]
+  },
+  {
+    "id": "twemoji-2nd-place-medal",
+    "name": "2nd Place Medal",
+    "cat": "celebration-seasons",
+    "source": "twemoji",
+    "upstream": "1f948",
+    "keywords": [
+      "medal",
+      "second place",
+      "silver"
+    ]
+  },
+  {
+    "id": "twemoji-firecracker",
+    "name": "Firecracker",
+    "cat": "celebration-seasons",
+    "source": "twemoji",
+    "upstream": "1f9e8",
+    "keywords": [
+      "firecracker",
+      "celebration",
+      "new year"
+    ]
+  },
+  {
+    "id": "twemoji-balloon",
+    "name": "Balloon",
+    "cat": "celebration-seasons",
+    "source": "twemoji",
+    "upstream": "1f388",
+    "keywords": [
+      "balloon",
+      "party",
+      "celebration"
+    ]
+  },
+  {
+    "id": "twemoji-wrapped-gift",
+    "name": "Wrapped Gift",
+    "cat": "celebration-seasons",
+    "source": "twemoji",
+    "upstream": "1f381",
+    "keywords": [
+      "gift",
+      "present",
+      "birthday"
+    ]
+  },
+  {
+    "id": "twemoji-crystal-ball",
+    "name": "Crystal Ball",
+    "cat": "celebration-seasons",
+    "source": "twemoji",
+    "upstream": "1f52e",
+    "keywords": [
+      "crystal ball",
+      "fortune",
+      "magic"
+    ]
+  },
+  {
+    "id": "twemoji-bullseye",
+    "name": "Bullseye",
+    "cat": "celebration-seasons",
+    "source": "twemoji",
+    "upstream": "1f3af",
+    "keywords": [
+      "bullseye",
+      "target",
+      "game"
+    ]
+  },
+  {
+    "id": "twemoji-yo-yo",
+    "name": "Yo-Yo",
+    "cat": "celebration-seasons",
+    "source": "twemoji",
+    "upstream": "1fa80",
+    "keywords": [
+      "yo-yo",
+      "toy",
+      "game"
+    ]
+  },
+  {
+    "id": "twemoji-3rd-place-medal",
+    "name": "3rd Place Medal",
+    "cat": "celebration-seasons",
+    "source": "twemoji",
+    "upstream": "1f949",
+    "keywords": [
+      "medal",
+      "third place",
+      "bronze"
+    ]
+  },
+  {
+    "id": "twemoji-pool-8-ball",
+    "name": "Eight Ball",
+    "cat": "celebration-seasons",
+    "source": "twemoji",
+    "upstream": "1f3b1",
+    "keywords": [
+      "eight ball",
+      "pool",
+      "billiards",
+      "game"
+    ]
+  },
+  {
+    "id": "twemoji-admission-tickets",
+    "name": "Admission Tickets",
+    "cat": "celebration-seasons",
+    "source": "twemoji",
+    "upstream": "1f39f",
+    "keywords": [
+      "tickets",
+      "event",
+      "admission"
+    ]
+  },
+  {
+    "id": "twemoji-ticket",
+    "name": "Ticket",
+    "cat": "celebration-seasons",
+    "source": "twemoji",
+    "upstream": "1f3ab",
+    "keywords": [
+      "ticket",
+      "event",
+      "admission"
+    ]
+  },
+  {
+    "id": "twemoji-wind-chime",
+    "name": "Wind Chime",
+    "cat": "celebration-seasons",
+    "source": "twemoji",
+    "upstream": "1f390",
+    "keywords": [
+      "wind chime",
+      "seasonal",
+      "decoration"
+    ]
+  },
+  {
+    "id": "twemoji-carp-streamer",
+    "name": "Carp Streamer",
+    "cat": "celebration-seasons",
+    "source": "twemoji",
+    "upstream": "1f38f",
+    "keywords": [
+      "carp streamer",
+      "festival",
+      "seasonal"
+    ]
+  },
+  {
+    "id": "twemoji-basketball",
+    "name": "Basketball",
+    "cat": "celebration-seasons",
+    "source": "twemoji",
+    "upstream": "1f3c0",
+    "keywords": [
+      "basketball",
+      "sport",
+      "game"
+    ]
+  },
+  {
+    "id": "twemoji-american-football",
+    "name": "Football",
+    "cat": "celebration-seasons",
+    "source": "twemoji",
+    "upstream": "1f3c8",
+    "keywords": [
+      "football",
+      "sport",
+      "game"
+    ]
+  },
+  {
+    "id": "twemoji-trophy",
+    "name": "Trophy",
+    "cat": "celebration-seasons",
+    "source": "twemoji",
+    "upstream": "1f3c6",
+    "keywords": [
+      "trophy",
+      "award",
+      "winner",
+      "celebration"
+    ]
+  },
+  {
+    "id": "twemoji-1st-place-medal",
+    "name": "1st Place Medal",
+    "cat": "celebration-seasons",
+    "source": "twemoji",
+    "upstream": "1f947",
+    "keywords": [
+      "medal",
+      "first place",
+      "winner"
+    ]
+  },
+  {
+    "id": "twemoji-military-medal",
+    "name": "Military Medal",
+    "cat": "celebration-seasons",
+    "source": "twemoji",
+    "upstream": "1f396",
+    "keywords": [
+      "medal",
+      "military",
+      "honour"
+    ]
+  },
+  {
+    "id": "twemoji-warning",
+    "name": "Warning Sign",
+    "cat": "symbols-misc",
+    "source": "twemoji",
+    "upstream": "26a0",
+    "keywords": [
+      "warning",
+      "caution",
+      "alert"
+    ]
+  },
+  {
+    "id": "twemoji-no-entry",
+    "name": "No Entry",
+    "cat": "symbols-misc",
+    "source": "twemoji",
+    "upstream": "26d4",
+    "keywords": [
+      "no entry",
+      "stop",
+      "prohibited"
+    ]
+  },
+  {
+    "id": "twemoji-radioactive",
+    "name": "Radioactive",
+    "cat": "symbols-misc",
+    "source": "twemoji",
+    "upstream": "2622",
+    "keywords": [
+      "radioactive",
+      "hazard",
+      "symbol"
+    ]
+  },
+  {
+    "id": "twemoji-wheelchair",
+    "name": "Wheelchair Symbol",
+    "cat": "symbols-misc",
+    "source": "twemoji",
+    "upstream": "267f",
+    "keywords": [
+      "wheelchair",
+      "accessibility",
+      "symbol"
+    ]
+  }
+]
