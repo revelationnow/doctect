@@ -1,6 +1,8 @@
 # Doctect Gallery Flagships
 
-Twenty reMarkable Paper Pro document products generated through **Hierarchy Generator**.
+Twenty-one document products generated through **Hierarchy Generator**. Twenty are single-variant
+reMarkable Paper Pro; The Sticker Press generates four device variants (Paper Pro, Paper Pro
+Move, Boox Note Air 5C, Paper Pure) from the same pair of scripts.
 
 Each product contains:
 - `templates.js` — paste into Templates Script.
@@ -13,6 +15,7 @@ Shared conventions:
 - Every guided page links directly to **Blank workspace**.
 - Edit `DEFAULT_CONFIG` near the top of `hierarchy.js` before generation when different counts are needed.
 - In The Branching Road and Quiz Night the authored adventure and question rounds ARE the product, so their EXAMPLE chrome sits on the worked specimens in the authoring kit and host kit instead, per the design spec.
+- The Sticker Press has no `DEFAULT_CONFIG` and no original artwork — see its own README before publishing or editing it.
 
 Products:
 1. Academic Success System
@@ -35,3 +38,4 @@ Products:
 18. The Woodshed
 19. The Observatory
 20. The Quest Ledger
+21. The Sticker Press
