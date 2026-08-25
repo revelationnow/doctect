@@ -17,8 +17,13 @@
 - 500 stickers: 50 furniture (6 colourways × 3 sizes), 300 Lucide (6 colourways × 2 sizes), 150 Twemoji (full colour × 2 sizes).
 - Colourways: Outline (none), Amber `#f0c674`, Green `#86c08e`, Blue `#5b93c4`, Red `#b04a46`, Ink `#3d4650`. Outline ink is `#23292f`. Adjacent luminances must differ by ≥25 under `y = 0.299r + 0.587g + 0.114b`.
 - **Twemoji is never recoloured.**
-- Twemoji stickers must each minify to **≤1,500 bytes**. Lucide to **≤700 bytes**.
-- `templates.js` and `hierarchy.js` are each capped at **512 KiB** (`shared/generatorMetadata.js:2`). Target ≤400 KiB for `templates.js`.
+- Twemoji stickers must each minify to **≤1,500 bytes**. Lucide to **≤1,200 bytes**.
+  (Revised 2026-08-24 from 700 B. The original figure came from a random 300-icon sample whose
+  mean is 165 B — but that sample is dominated by simple UI glyphs, and a sticker book wants
+  the detailed end of the set: vehicles, furniture, animals. Across an actual 300-sticker
+  curation the median is 365 B, p90 733 B, max 1205 B. Raising the cap admits essentially every
+  desirable icon for roughly 25 KB against a 512 KiB budget.)
+- `templates.js` and `hierarchy.js` are each capped at **512 KiB** (`shared/generatorMetadata.js:2`). Target ≤450 KiB for `templates.js`, and report the real figure after vendoring rather than assuming it.
 - Generated state must serialise under **12 MiB** (cap is 16 MiB, `shared/projectLimits.js`).
 - **Import rule:** flatten root presentation attributes (`fill, stroke, stroke-width, stroke-linecap, stroke-linejoin, stroke-miterlimit`) onto every drawable child (`path, circle, ellipse, rect, line, polyline, polygon, g`). svg2pdf does not inherit them from the root.
 - **Never** `setAttribute('xmlns', …)` after stripping root attributes — the serializer emits it, and setting it by hand yields a document svg2pdf silently refuses to draw.
