@@ -469,13 +469,21 @@ describe('sticker press navigation chrome — A-Z and keyword indexes', () => {
     it('drops off-context inherited keywords from the index (e.g. a medical-themed sticker keeps no cybersecurity/antivirus tag)', () => {
         scope.resetElementIds();
         const rows = scope.buildIndexPages('keyword').paper_pro.flatMap((p: any) => p.elements.slice(1));
-        const labels = rows.map((r: any) => r.text.toUpperCase());
-        expect(labels.some((l: string) => l.startsWith('ANTIVIRUS'))).toBe(false);
-        expect(labels.some((l: string) => l.startsWith('CYBERSECURITY'))).toBe(false);
-        expect(labels.some((l: string) => l.startsWith('VPN'))).toBe(false);
+        const rawLabels = rows.map((r: any) => r.text as string);
+        const labels = rawLabels.map(l => l.toUpperCase());
+        expect(labels.some(l => l.startsWith('ANTIVIRUS'))).toBe(false);
+        expect(labels.some(l => l.startsWith('CYBERSECURITY'))).toBe(false);
+        expect(labels.some(l => l.startsWith('VPN'))).toBe(false);
+        // 'admin' is dropped from the shield trio specifically (bundled with
+        // the same software-security jargon cluster) but survives overall
+        // because lucide-lock / lucide-lock-keyhole legitimately carry it —
+        // a padlock literally illustrates "admin-only" access.
+        const adminRow = rawLabels.find(l => l.toUpperCase().startsWith('ADMIN'));
+        expect(adminRow).toBeTruthy();
+        expect(adminRow).not.toMatch(/\bShield\b/);
         // But a literally-accurate, jargon-*sounding* keyword survives.
-        expect(labels.some((l: string) => l.startsWith('WIFI'))).toBe(true);
-        expect(labels.some((l: string) => l.startsWith('NOTIFICATION'))).toBe(true);
+        expect(labels.some(l => l.startsWith('WIFI'))).toBe(true);
+        expect(labels.some(l => l.startsWith('NOTIFICATION'))).toBe(true);
     });
 });
 

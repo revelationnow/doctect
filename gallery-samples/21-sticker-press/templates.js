@@ -1294,23 +1294,26 @@ const CHROME_NOTE = '#6b7480';    // footnote-weight chrome (credits link, colou
 // Short display names for the rail. registry.json/CATEGORY_ORDER only carry
 // the kebab-case category id — this is the one place that needs a human
 // label for it.
+// Deliberately terse — 17 of these have to share one row (see RAIL_CHIP_GUTTER
+// below). A longer, fuller name for each category belongs on the contents
+// page (Task F), not squeezed into a rail chip.
 const CATEGORY_LABELS = {
     'index-tabs-flags': 'Tabs & Flags',
-    'labels-tape': 'Labels & Tape',
+    'labels-tape': 'Labels/Tape',
     'arrows-pointers': 'Arrows',
-    'boxes-bullets-markers': 'Boxes & Markers',
-    'stars-sparkles-awards': 'Stars & Awards',
-    'dividers-corners-frames': 'Dividers & Frames',
-    'weather-sky': 'Weather & Sky',
+    'boxes-bullets-markers': 'Markers',
+    'stars-sparkles-awards': 'Stars',
+    'dividers-corners-frames': 'Frames',
+    'weather-sky': 'Weather',
     botanical: 'Botanical',
     animals: 'Animals',
-    'food-drink': 'Food & Drink',
-    'faces-moods': 'Faces & Moods',
-    'study-work': 'Study & Work',
-    'health-self-care': 'Health & Self-Care',
-    'travel-places': 'Travel & Places',
+    'food-drink': 'Food/Drink',
+    'faces-moods': 'Faces',
+    'study-work': 'Study/Work',
+    'health-self-care': 'Self-Care',
+    'travel-places': 'Travel',
     'celebration-seasons': 'Celebration',
-    'money-home': 'Money & Home',
+    'money-home': 'Money/Home',
     'symbols-misc': 'Symbols',
 };
 
@@ -1376,6 +1379,15 @@ const chip = (x, y, w, h, text, target, opts = {}) => ({
 // spread of the rest, up to RAIL_REDUCED_COUNT total.
 const RAIL_REDUCED_COUNT = 8;
 
+// A real gap between chip slots, not just relying on centred text leaving
+// its own whitespace: `textOverflow:'shrink'` guarantees a label fits ITS
+// OWN box, nothing more — a long label in a tight box shrinks until it
+// exactly fills that box, so two zero-gutter neighbours can end up touching
+// edge-to-edge with no visible gap at all. Verified against a rendered
+// contact sheet: the first version of this rail (no gutter) had adjacent
+// 15-18 character labels running into each other with no whitespace.
+const CHIP_GUTTER = 3;
+
 const reducedRailCategories = current => {
     const others = CATEGORY_ORDER.filter(c => c !== current);
     const wanted = RAIL_REDUCED_COUNT - 1;
@@ -1396,7 +1408,7 @@ const buildRail = (device, sheet) => {
     return categories.map((category, index) => {
         const isCurrent = category === sheet.category;
         return chip(
-            SIDE_MARGIN + index * slotWidth, y, slotWidth, h,
+            SIDE_MARGIN + index * slotWidth + CHIP_GUTTER / 2, y, slotWidth - CHIP_GUTTER, h,
             CATEGORY_LABELS[category] || category,
             categoryHomeSheetId(category),
             {
@@ -1433,14 +1445,14 @@ const buildSwitcher = (device, sheet) => {
         const chips = COLOURWAYS.map((colourway, index) => {
             const isCurrent = colourway.id === sheet.colourway;
             return chip(
-                SIDE_MARGIN + index * slotWidth, y, slotWidth, h,
+                SIDE_MARGIN + index * slotWidth + CHIP_GUTTER / 2, y, slotWidth - CHIP_GUTTER, h,
                 colourway.name,
                 `${sheet.category}_${colourway.id}${pageSuffix}`,
                 { fontSize: 5.5, fontWeight: isCurrent ? 'bold' : 'normal', textColor: isCurrent ? CHROME_INK : CHROME_MUTED },
             );
         });
         chips.push(chip(
-            SIDE_MARGIN + COLOURWAYS.length * slotWidth, y, slotWidth, h,
+            SIDE_MARGIN + COLOURWAYS.length * slotWidth + CHIP_GUTTER / 2, y, slotWidth - CHIP_GUTTER, h,
             'Credits', 'credits', { fontSize: 5.5, textColor: CHROME_NOTE },
         ));
         return chips;
@@ -1448,7 +1460,7 @@ const buildSwitcher = (device, sheet) => {
 
     const noteWidth = usableWidth * (COLOURWAYS.length / (COLOURWAYS.length + 1));
     return [
-        chip(SIDE_MARGIN, y, noteWidth, h, 'Full colour — not recoloured', null, {
+        chip(SIDE_MARGIN, y, noteWidth - CHIP_GUTTER, h, 'Full colour — not recoloured', null, {
             fontSize: 5.5, align: 'left', textColor: CHROME_NOTE,
         }),
         chip(SIDE_MARGIN + noteWidth, y, usableWidth - noteWidth, h, 'Credits', 'credits', {
@@ -1491,10 +1503,10 @@ const KEYWORD_DISPLAY_LIMIT = 6; // names shown per keyword row before "+N more"
 // their sticker (a bell tagged "notification", an ID card tagged
 // "authentication", a gauge tagged "dashboard") are deliberately kept.
 const KEYWORD_EXCLUDE = [
-    ['lucide-shield', 'cybersecurity'], ['lucide-shield', 'antivirus'], ['lucide-shield', 'audit'],
-    ['lucide-shield-check', 'cybersecurity'], ['lucide-shield-check', 'antivirus'],
+    ['lucide-shield', 'cybersecurity'], ['lucide-shield', 'antivirus'], ['lucide-shield', 'audit'], ['lucide-shield', 'admin'],
+    ['lucide-shield-check', 'cybersecurity'], ['lucide-shield-check', 'antivirus'], ['lucide-shield-check', 'admin'],
     ['lucide-shield-plus', 'cybersecurity'], ['lucide-shield-plus', 'antivirus'],
-    ['lucide-shield-plus', 'audit'], ['lucide-shield-plus', 'enterprise'],
+    ['lucide-shield-plus', 'audit'], ['lucide-shield-plus', 'enterprise'], ['lucide-shield-plus', 'admin'],
     ['lucide-waypoints', 'vpn'],
     ['lucide-building-2', 'enterprise'],
     ['lucide-book-marked', 'coding'], ['lucide-book-marked', 'git'],
@@ -1504,6 +1516,10 @@ const KEYWORD_EXCLUDE = [
     ['lucide-layout-grid', 'app'],
     ['lucide-square-slash', 'git'],
     ['lucide-square-dashed-bottom', 'coding'],
+    // 'admin' is kept for lucide-lock / lucide-lock-keyhole — a padlock
+    // literally illustrates "admin-only / restricted access" elsewhere in
+    // the same registry, unlike the shield trio above where it arrives
+    // bundled with a whole cluster of unrelated software-security jargon.
 ];
 const KEYWORD_EXCLUDE_SET = new Set(KEYWORD_EXCLUDE.map(([id, kw]) => `${id}:${kw}`));
 
