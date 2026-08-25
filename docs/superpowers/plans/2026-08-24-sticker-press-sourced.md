@@ -202,7 +202,14 @@ Sheets are one per (category, colourway) for the furniture and Lucide bands, one
 **Files:** Modify `gallery-samples/21-sticker-press/hierarchy.js`. Test: `tests/unit/gallerySamples/stickerPress.test.ts`.
 
 - [ ] **Step 1** Failing test via `expectValidGallerySample` with `expectedVariants` for all four page sizes and `expectedTemplateIds` generated from a real run.
-- [ ] **Step 2** Build the tree: cover → `start_here` → contents, colour guide, credits, `example_workspace` (+ annotated), `blank_workspace` (+ dots, ruled), the A–Z and keyword index pages, and one node per sheet in category order. EXAMPLE chrome per the harness rules.
+- [ ] **Step 2** Build the tree in this order: cover → `start_here` → **credits** → contents →
+  colour guide → `example_workspace` (+ annotated) → `blank_workspace` (+ dots, ruled) → the
+  A–Z index pages → the keyword index pages → one node per sheet in category order. EXAMPLE
+  chrome per the harness rules.
+  **Credits sits near the front, directly after `start_here`** (user decision, 2026-08-25 —
+  it rendered at the back of the book and they asked for it moved). It stays reachable from
+  every sheet via the footer chip Task E already built; this is about where it falls in page
+  order, not about removing the link.
 - [ ] **Step 3** `templates.js` returns `{ variants, activeVariantId: 'paper_pro' }` with all four devices.
 - [ ] **Step 4** Run `npx vitest run tests/unit/gallerySamples/`.
 - [ ] **Step 5: Commit** — `feat(sticker-press): hierarchy and four device variants`
