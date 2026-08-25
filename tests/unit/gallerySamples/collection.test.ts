@@ -54,6 +54,35 @@ const resolveAncestorField = (
     return undefined;
 };
 
+// Structural replacement for "assume undefined is always safe": is `field` an
+// actual live binding (dataBinding or a `{{field}}` text interpolation) on any
+// template reachable from a descendant of `rootId`, in ANY device variant?
+// Sweeps `sample.variants`, not `sample.templates` (the active variant only),
+// because a binding present only in a non-active variant's template would
+// otherwise go undetected.
+//
+// This is the question that actually matters for leak safety. resolveText's
+// real search (services/pdfService.ts getContextNodes) checks self+ancestors
+// FIRST, so an explicit '' set anywhere on the direct ancestor chain shadows
+// correctly — that's what resolveAncestorField mirrors. But if that walk
+// finds nothing (returns undefined) and the field is bound nowhere at all,
+// resolveText is never even invoked for it — nothing to leak, so undefined
+// is genuinely safe. If the field IS bound somewhere, resolveText WILL run
+// its full search when that binding renders, and an unshadowed (undefined)
+// ancestor result lets that search fall through to wider sources — the
+// reference target's ancestors, or a referrer's ancestors — which can supply
+// a real, leaked value. So: bound anywhere -> require the explicit '' shadow;
+// bound nowhere -> undefined is the only correct value, and anything else is
+// a stray that should fail too.
+const boundAnywhereUnderRoot = (
+    sample: ReturnType<typeof loadGallerySample>,
+    rootId: string,
+    field: string,
+) => descendants(sample, rootId).some(id =>
+    sample.variants.some(variant => (variant.templates[sample.nodes[id].type]?.elements ?? [])
+        .some((el: any) => el?.dataBinding === field
+            || (typeof el?.text === 'string' && el.text.includes(`{{${field}}}`)))));
+
 const chromeGeometrySignature = (slug: string) => {
     const sample = loadGallerySample(slug);
     const template = sample.templates[sample.nodes.example_workspace.type];
@@ -86,6 +115,27 @@ describe('gallery sample collection', () => {
         expect(new Set(signatures).size).toBe(EXPECTED_SLUGS.length);
     });
 
+    it('the "never bound" exemption is structurally real: zero bindings for Sticker Press, several for every other product', () => {
+        // Sanity check on boundAnywhereUnderRoot itself: it must actually
+        // distinguish products, not just always return the same answer. The
+        // Sticker Press's exemption from the '' shadow requirement (above)
+        // rests entirely on this being 0 for it and non-trivially positive for
+        // everything else — verified directly rather than assumed.
+        const countBound = (slug: string, field: string) => {
+            const sample = loadGallerySample(slug);
+            return descendants(sample, 'blank_workspace').filter(id =>
+                sample.variants.some(variant => (variant.templates[sample.nodes[id].type]?.elements ?? [])
+                    .some((el: any) => el?.dataBinding === field
+                        || (typeof el?.text === 'string' && el.text.includes(`{{${field}}}`))))).length;
+        };
+        ['example_label', 'skip_label'].forEach(field => {
+            expect(countBound('21-sticker-press', field), `21-sticker-press ${field}`).toBe(0);
+            EXPECTED_SLUGS.filter(slug => slug !== '21-sticker-press').forEach(slug => {
+                expect(countBound(slug, field), `${slug} ${field}`).toBeGreaterThanOrEqual(3);
+            });
+        });
+    });
+
     it.each(EXPECTED_SLUGS)('%s shadows example chrome throughout the blank workspace', slug => {
         const sample = loadGallerySample(slug);
 
@@ -93,18 +143,100 @@ describe('gallery sample collection', () => {
         // branch and the blank workspace, so a stray EXAMPLE banner would leak onto
         // blank pages unless the hierarchy explicitly shadows both labels to '' at
         // blank_workspace. The Sticker Press (21) instead gives blank_workspace its
-        // own template that never binds these fields at all (verified: no element
-        // anywhere under blank_workspace references example_label/skip_label), so
-        // the banner cannot leak there by construction and there is nothing to
-        // shadow — `undefined` (field never set by any ancestor) is accepted
-        // alongside the explicit '' shadow. Any other value still fails, so a real
-        // leak (the field set and NOT blanked) is still caught for every product.
-        descendants(sample, 'blank_workspace').forEach(nodeId => {
-            const exampleValue = resolveAncestorField(sample, nodeId, 'example_label');
-            const skipValue = resolveAncestorField(sample, nodeId, 'skip_label');
-            expect(exampleValue === '' || exampleValue === undefined, `${nodeId} example: ${JSON.stringify(exampleValue)}`).toBe(true);
-            expect(skipValue === '' || skipValue === undefined, `${nodeId} skip: ${JSON.stringify(skipValue)}`).toBe(true);
+        // own template that never binds these fields at all in ANY device variant,
+        // so the banner cannot leak there by construction and there is nothing to
+        // shadow.
+        //
+        // "Never bound, therefore undefined is safe" only holds when NOTHING
+        // under blank_workspace binds the field anywhere — checked structurally
+        // per field below, not assumed. When the field IS bound somewhere, only
+        // the explicit '' shadow is accepted; `undefined` there is a real gap
+        // (see the regression test below for why) and now fails like any other
+        // stray value.
+        ['example_label', 'skip_label'].forEach(field => {
+            const boundSomewhere = boundAnywhereUnderRoot(sample, 'blank_workspace', field);
+            descendants(sample, 'blank_workspace').forEach(nodeId => {
+                const value = resolveAncestorField(sample, nodeId, field);
+                if (boundSomewhere) {
+                    expect(value, `${nodeId} ${field}: ${JSON.stringify(value)} (bound under blank_workspace in some variant — must be explicitly shadowed to '')`).toBe('');
+                } else {
+                    expect(value, `${nodeId} ${field}: ${JSON.stringify(value)} (never bound anywhere under blank_workspace — must be left undefined, not a stray value)`).toBe(undefined);
+                }
+            });
         });
+    });
+
+    it('a synthetic product that binds skip_label under blank_workspace via an EXAMPLE-branch referrer, without shadowing it, is caught', async () => {
+        // Regression for the S1 finding: reproduces the reviewer's failing case
+        // directly, rather than trusting the fix by inspection. Shape: a
+        // "mirror" node lives in the EXAMPLE branch and points (`referenceId`)
+        // at a node under blank_workspace; blank_workspace's own subtree never
+        // sets an explicit '' shadow for skip_label. Real resolveText
+        // (services/pdfService.ts getContextNodes) checks self+ancestors first
+        // (finds nothing here — that's the missing shadow), then falls through
+        // to referrers-and-their-ancestors, which reaches the mirror node's
+        // parent in the EXAMPLE branch and finds the real, non-blank text.
+        const nodes: any = {
+            example_workspace: {
+                id: 'example_workspace', parentId: null, type: 'page', title: 'Example',
+                data: { skip_label: 'Skip to blank workspace →' }, children: ['mirror_page'],
+            },
+            mirror_page: {
+                id: 'mirror_page', parentId: 'example_workspace', type: 'page', title: 'Mirror',
+                data: {}, children: [], referenceId: 'blank_target',
+            },
+            blank_workspace: {
+                id: 'blank_workspace', parentId: null, type: 'page', title: 'Blank',
+                data: {}, children: ['blank_target'], // <- the missing shadow: no example_label/skip_label here
+            },
+            blank_target: {
+                id: 'blank_target', parentId: 'blank_workspace', type: 'skip_tpl', title: 'Blank target',
+                data: {}, children: [],
+            },
+        };
+        const templates: any = {
+            page: { id: 'page', name: 'Page', width: 200, height: 200, elements: [] },
+            skip_tpl: {
+                id: 'skip_tpl', name: 'Skip', width: 200, height: 200, elements: [{
+                    id: 'skip_el', type: 'text', x: 10, y: 10, w: 150, h: 20,
+                    dataBinding: 'skip_label', linkTarget: 'specific_node', linkValue: 'blank_workspace', fontSize: 10,
+                }],
+            },
+        };
+        const sample = { nodes, templates, variants: [{ id: 'default', name: 'Default', templates }] } as any;
+
+        // 1. The naive "bound nowhere under blank_workspace" reasoning this
+        // fixture would need to be exempt under is false: skip_label IS bound,
+        // on blank_target's own template.
+        expect(boundAnywhereUnderRoot(sample, 'blank_workspace', 'skip_label')).toBe(true);
+
+        // 2. Because it's bound, the fixed assertion requires the explicit ''
+        // shadow. This fixture doesn't have one anywhere in blank_target's
+        // simple ancestor chain, so the fixed check correctly flags it —
+        // this is the exact assertion the `it.each` test above runs for
+        // every real product, applied here to a fixture the OLD blanket
+        // `'' || undefined` acceptance would have wrongly let through
+        // (resolveAncestorField returns undefined, which that old check
+        // treated as fine regardless of whether the field was ever bound).
+        const resolved = resolveAncestorField(sample, 'blank_target', 'skip_label');
+        expect(resolved).toBe(undefined);
+        const oldBuggyCheckWronglyPasses = resolved === '' || resolved === undefined;
+        expect(oldBuggyCheckWronglyPasses, 'sanity: confirms the widened acceptance really did miss this').toBe(true);
+        expect(resolved === '', 'the fixed check: bound somewhere means only \'\' is acceptable').toBe(false);
+
+        // 3. Prove the defect is real, not just a model mismatch: a real
+        // generatePDF on this exact fixture emits a live /Dest annotation for
+        // the "empty" skip link on the blank page — the ghost-annotation
+        // defect these tests exist to catch.
+        const state = {
+            rootId: 'blank_workspace',
+            nodes,
+            activeVariantId: 'default',
+            variants: { default: { id: 'default', name: 'Default', templates } },
+        } as any;
+        const buffer = await generatePDF(state, { output: 'arraybuffer' }) as ArrayBuffer;
+        const pdf = new TextDecoder('latin1').decode(new Uint8Array(buffer));
+        expect(pdf, 'expected the unshadowed referrer leak to actually produce a /Dest annotation').toContain('/Dest');
     });
 
     it.each(EXPECTED_SLUGS)('%s emits no PDF annotation for its empty blank Skip binding', async slug => {
@@ -117,11 +249,20 @@ describe('gallery sample collection', () => {
             && element.linkTarget === 'specific_node'
             && element.linkValue === 'blank_workspace',
         );
-        // The Sticker Press's blank_workspace template never binds skip_label at
-        // all (its blank pages don't reuse the guided-example template) — the
-        // ghost-annotation failure mode below needs such an element to exist
-        // before it can occur, so there's nothing to build a probe PDF from.
-        if (!skip) return;
+        // A missing `skip` element is only legitimate when skip_label is bound
+        // NOWHERE under blank_workspace for this product (Sticker Press: its
+        // blank pages use a dedicated template that never reuses the guided-
+        // example one, in any variant) — then there's genuinely nothing to
+        // build a probe PDF from. If it's bound somewhere but this exact
+        // element-matching pattern didn't find it, the probe's own matching
+        // assumptions are broken (e.g. a renamed `linkValue`), which would
+        // otherwise silently turn this whole guard into a permanent no-op —
+        // fail loudly instead of returning quietly.
+        if (!skip) {
+            expect(boundAnywhereUnderRoot(sample, 'blank_workspace', 'skip_label'),
+                `${slug}: skip_label is bound somewhere under blank_workspace but no matching element was found on blank_workspace's own template — probe assumptions broken`).toBe(false);
+            return;
+        }
 
         const state = {
             rootId: 'blank_workspace',
@@ -159,11 +300,16 @@ describe('gallery sample collection', () => {
                 && element.linkValue === 'blank_workspace',
             );
         });
-        // Same exemption as the previous test: a product whose blank_workspace
-        // subtree never binds skip_label anywhere has no descendant carrying this
-        // chip either, so the ghost-annotation failure mode this guards against
-        // cannot occur.
-        if (!descendantId) return;
+        // Same gate as the previous test: a missing descendant is only
+        // legitimate when skip_label is bound nowhere under blank_workspace
+        // for this product. If it's bound somewhere but no direct child
+        // matched this exact pattern, fail loudly rather than silently
+        // no-op — same "renamed linkValue" risk as above.
+        if (!descendantId) {
+            expect(boundAnywhereUnderRoot(sample, 'blank_workspace', 'skip_label'),
+                `${slug}: skip_label is bound somewhere under blank_workspace but no direct child of blank_workspace matched — probe assumptions broken`).toBe(false);
+            return;
+        }
 
         const descendant = sample.nodes[descendantId!];
         const descendantTemplate = sample.templates[descendant.type];
