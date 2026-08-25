@@ -34,13 +34,17 @@ so plainly in its README and gallery listing.
 
 ## Sources and licences
 
-Three sources, and every one of them is attributed — including the permissive ones.
+Two sources, and both of them are attributed — including the permissive one.
 
 | Source | Count | Licence | Attribution required? |
 |---|---:|---|---|
 | **Lucide** | 2,034 icons (1,776 tagged) | ISC **and** MIT | Yes — both notices |
 | **Twemoji** | 3,720 emoji | Graphics CC-BY 4.0 | Yes |
-| **House furniture** | ~50 shapes | This repository | n/a |
+
+**UPDATE, post-implementation:** the house furniture band described below (index tabs, banners,
+ribbons, washi tape, pennants, rosettes, bookmarks) was cut entirely during a human design
+review — see "House furniture stays..." further down, now superseded. Every one of the 500
+shipped stickers is sourced artwork; there is no house-drawn content in the final product.
 
 **Lucide's licence has two parts and both must ship.** ISC, copyright 2026 Lucide Icons and
 Contributors, covers the set; MIT, copyright 2013-present Cole Bemis, covers roughly 115 icons
@@ -56,44 +60,55 @@ the real licence is honoured. Attribution is to **"Twitter, Inc and other contri
 there is no individual artist, it is a collective work. Their README explicitly accepts a
 mention in a README, About section, or footer.
 
-**House furniture stays because no icon set supplies it.** Index tabs, banners, ribbons, washi
-tape, pennants, rosettes and bookmarks are sticker furniture, not icons. These were also the
-least-bad of the abandoned drawings. They are reused, minus every shape the contact sheet
-showed as a plain rectangle or a failed silhouette.
+**SUPERSEDED — house furniture was cut, not kept.** This section originally argued for keeping
+index tabs, banners, ribbons, washi tape, pennants, rosettes and bookmarks as house-drawn
+"sticker furniture" since no icon set supplies them, reused minus whatever the contact sheet
+showed as a plain rectangle or a failed silhouette. A later human design review killed the whole
+band anyway: three near-identical scalloped seals, three rosettes differing only in petal count,
+and a "medal disc" that was a plain circle. Nothing house-drawn shipped in the final product —
+see the corrected inventory below.
 
 ## Inventory — 500 stickers
 
 | Band | n | Source | Colourways | Sizes |
 |---|---:|---|---|---|
-| Furniture | 50 | House builders | 6 | 3 |
-| Marks & symbols | 300 | Lucide | 6 | 2 |
-| Picture stickers | 150 | Twemoji | 1 (full colour) | 2 |
+| Marks & symbols | 330 | Lucide | 6 | 2 |
+| Picture stickers | 170 | Twemoji | 1 (full colour) | 2 |
 
 Twemoji is deliberately not recoloured. Recolouring a picture of a cat is not a thing sticker
 books do, and the artwork is multi-colour by design.
 
-Categories keep the original eighteen, re-sourced:
+**SUPERSEDED counts.** The original plan had eighteen categories with three furniture-sourced
+ones (Index tabs & flags, Banners & ribbons, Labels & tape). With furniture cut, Banners &
+ribbons was folded into Labels & tape rather than padded out with near-duplicate Lucide/Twemoji
+ribbon icons — the curator verified only one Lucide ribbon icon and two Twemoji ribbon emoji
+exist in total. The real, shipped breakdown is seventeen categories, read directly off
+`registry.json` and a real four-variant build (matches the README's table exactly):
 
-| # | Category | n | Source |
-|---|---|---:|---|
-| 1 | Index tabs & flags | 18 | Furniture |
-| 2 | Banners & ribbons | 16 | Furniture |
-| 3 | Labels & tape | 16 | Furniture |
-| 4 | Arrows & pointers | 34 | Lucide |
-| 5 | Boxes, bullets, markers | 28 | Lucide |
-| 6 | Stars, sparkles, awards | 24 | Lucide |
-| 7 | Dividers, corners, frames | 22 | Lucide |
-| 8 | Weather & sky | 26 | Lucide 14 / Twemoji 12 |
-| 9 | Botanical | 30 | Lucide 12 / Twemoji 18 |
-| 10 | Animals | 30 | Twemoji 30 |
-| 11 | Food & drink | 32 | Lucide 8 / Twemoji 24 |
-| 12 | Faces & moods | 24 | Twemoji 24 |
-| 13 | Study & work | 40 | Lucide 40 |
-| 14 | Health & self-care | 28 | Lucide 20 / Twemoji 8 |
-| 15 | Travel & places | 30 | Lucide 18 / Twemoji 12 |
-| 16 | Celebration & seasons | 26 | Lucide 8 / Twemoji 18 |
-| 17 | Money & home | 30 | Lucide 30 |
-| 18 | Symbols & misc | 26 | Lucide 22 / Twemoji 4 |
+| Category | n | Lucide | Twemoji |
+|---|---:|---:|---:|
+| Index tabs & flags | 15 | 9 | 6 |
+| Labels & tape | 17 | 10 | 7 |
+| Arrows & pointers | 36 | 36 | 0 |
+| Boxes, bullets, markers | 33 | 33 | 0 |
+| Stars, sparkles, awards | 27 | 27 | 0 |
+| Dividers, corners, frames | 27 | 27 | 0 |
+| Weather & sky | 28 | 15 | 13 |
+| Botanical | 23 | 12 | 11 |
+| Animals | 34 | 0 | 34 |
+| Food & drink | 37 | 9 | 28 |
+| Faces & moods | 24 | 0 | 24 |
+| Study & work | 43 | 43 | 0 |
+| Health & self-care | 30 | 21 | 9 |
+| Travel & places | 31 | 19 | 12 |
+| Celebration & seasons | 27 | 8 | 19 |
+| Money & home | 38 | 36 | 2 |
+| Symbols & misc | 30 | 25 | 5 |
+
+Botanical landed at 23, not the 30 this plan originally called for: a genuine supply shortage,
+not a shortfall to fix — most plant/flower emoji exceed the per-icon byte cap and Lucide's
+botanical range is shallow. The user accepted 23 rather than padding it with off-subject or
+over-cap icons.
 
 ## The binding constraint has moved
 
@@ -112,7 +127,9 @@ mean is more than double it. **Twemoji is therefore curated by complexity as wel
 subject:** of 3,720 emoji, 1,645 are under 1,500 bytes, which is a large enough pool to pick
 150 good ones from — and the simpler emoji tend to be the bolder, more legible stickers anyway.
 
-Projected script budget:
+Projected script budget (pre-implementation estimate — furniture was cut before this shipped and
+the real numbers ended up materially different; templates.js measures 479.4 KiB and the real
+per-variant state is 24.35 MiB, see `tests/unit/gallerySamples/stickerPress.test.ts`):
 
 | Component | Calculation | Bytes |
 |---|---|---:|
@@ -173,17 +190,22 @@ self-contained, which the sandbox requires — it has no network and no module l
 
 This is now the substance of the product, not chrome around it. Four mechanisms.
 
-**Category rail**, top of every sheet: eighteen category chips, plus the current category shown
-as a title. Reduced to a scrolling subset on the `move` variant, whose page is too narrow.
+**Category rail**, top of every sheet: seventeen category chips (eighteen in the original plan,
+before Banners & ribbons was folded into Labels & tape), plus the current category shown as a
+title. Reduced to a scrolling subset on the `move` variant, whose page is too narrow.
 
-**Colourway switcher**, bottom of every sheet that has colourways — furniture and Lucide bands
-only. Six chips jumping to the same sheet in another colourway via `specific_node`. Twemoji
-sheets show a "full colour" note in that strip instead, so the layout does not jump.
+**Colourway switcher**, bottom of every sheet that has colourways — Lucide bands only, since
+furniture was cut and Twemoji is never recoloured. Six chips jumping to the same sheet in
+another colourway via `specific_node`. Twemoji sheets show a "full colour" note in that strip
+instead, so the layout does not jump.
 
-**A–Z index**, ~8 pages: every one of the 500 stickers by name, alphabetically, each a
+**A–Z index**, 6 pages (this plan projected ~8; the real page count is read live off the built
+product, not hand-maintained): every one of the 500 stickers by name, alphabetically, each a
 `specific_node` link to its sheet. Two columns per page.
 
-**Keyword index**, ~6 pages: this is what Lucide's `tags.json` buys — 1,776 of its icons carry
+**Keyword index**, 21 pages (this plan projected ~6; the real count is much larger — every
+keyword a sticker carries gets its own index row, and most stickers carry several): this is what
+Lucide's `tags.json` buys — 1,776 of its icons carry
 search aliases, so "bin" finds `trash`, "hoover" finds `vacuum`. Keywords are grouped
 alphabetically with the sticker names they point to. Twemoji entries get hand-written keywords
 in the registry, since no equivalent tag file ships with them.
@@ -222,8 +244,10 @@ revision:
 
 - **No recolouring of Twemoji.** Multi-colour by design; recolouring a picture is not a sticker
   book idiom.
-- **No further hand-drawn pictorial artwork.** The furniture band is the only house-drawn
-  content, and only its shapes that survived the contact-sheet review.
+- **No further hand-drawn pictorial artwork.** There is no house-drawn content at all in the
+  shipped product — the furniture band this section originally scoped as the one exception was
+  cut entirely during a later human design review (see the superseded note earlier in this
+  document). Every one of the 500 stickers is sourced.
 - **No npm dependency at generate time.** The sandbox has no network and no module loader; the
   artwork is vendored into the repository.
 - **No claim of original artwork.** The README and gallery listing describe this as a curated,

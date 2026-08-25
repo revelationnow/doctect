@@ -46,7 +46,7 @@ Nothing user-visible shipped in this phase, but it fixed the one thing that woul
 
 ## Phase 2 — Cloud Saves + Version History (Tasks 7–11)
 
-**Task 7 — `validateAppState`.** A structural validator (shape, size cap of 5 MB, node/element count caps) that every later task uses to reject malformed or oversized project JSON before it's ever stored.
+**Task 7 — `validateAppState`.** A structural validator (shape, a size cap — 5 MB at the time, since raised to 32 MB for larger generated projects — node/element count caps) that every later task uses to reject malformed or oversized project JSON before it's ever stored.
 
 **Task 8 — Projects + commits API.** The core of cloud storage: `POST/GET /api/projects`, `PATCH/DELETE /api/projects/:id`, and `POST/GET /api/projects/:id/commits` — each commit an immutable, full snapshot of the project's `AppState`, with the project's `head_commit_id` moving forward on every save. Uncovered a subtle bug here: SQLite's `CURRENT_TIMESTAMP` only has whole-second resolution, so two commits saved within the same second would tie, and the tiebreak (a random UUID) made "newest commit first" ordering a coin flip. Fixed by stamping commits with an app-generated millisecond-precision timestamp instead of relying on the database default.
 
