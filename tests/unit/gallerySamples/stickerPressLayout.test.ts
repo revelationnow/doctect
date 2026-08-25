@@ -4,6 +4,7 @@ import { loadStickerPressScope } from './stickerPressScope';
 
 const REGISTRY_PATH = 'gallery-samples/21-sticker-press/registry.json';
 const TEMPLATES_PATH = 'gallery-samples/21-sticker-press/templates.js';
+const MANIFEST_PATH = 'gallery-samples/21-sticker-press/vendor/manifest.json';
 
 type Source = 'lucide' | 'twemoji';
 interface Entry {
@@ -16,11 +17,14 @@ interface Entry {
 }
 
 const registry = (): Entry[] => JSON.parse(readFileSync(REGISTRY_PATH, 'utf8'));
+const manifest = (): { icons: Array<{ id: string; source: string; licence: string }> } =>
+    JSON.parse(readFileSync(MANIFEST_PATH, 'utf8'));
 
 const scope = loadStickerPressScope([
-    'DEVICES', 'COLOURWAYS', 'CATEGORY_ORDER', 'STICKER_ART',
+    'DEVICES', 'COLOURWAYS', 'CATEGORY_ORDER', 'STICKER_ART', 'STICKER_KEYWORDS',
     'planSheets', 'buildStickerElements', 'resetElementIds', 'nextElementId',
     'SIDE_MARGIN', 'TOP_MARGIN', 'BOTTOM_MARGIN', 'PER_SHEET',
+    'buildRail', 'buildSwitcher', 'buildIndexPages', 'buildCreditsPage',
 ]);
 
 const DEVICE_IDS = ['paper_pro', 'move', 'note_air', 'pure'];
@@ -259,5 +263,287 @@ describe('sticker press sheet layout — element construction', () => {
             expect(label.text).toBe(cluster.sticker.name);
             expect(label.y).toBeGreaterThan(bottomOfArt);
         });
+    });
+
+    // Carried finding from Task D's review: the placement suite above bounds-checks
+    // artwork CELLS but never the text elements buildStickerElements actually emits —
+    // and labels are exactly what clipped on `move` before the textOverflow:'shrink'
+    // fix. This closes that gap, and folds in Task E's new rail/switcher chips too,
+    // since they are also text elements that must stay inside the reserved margins.
+    it.each(DEVICE_IDS)('%s keeps every element — sticker svg, sticker label, rail chip, switcher chip — inside the page', id => {
+        const profile = device(id);
+        scope.resetElementIds();
+        const sheets = scope.planSheets(profile);
+        expect(sheets.length).toBeGreaterThan(0);
+        sheets.forEach((sheet: any) => {
+            const elements = [
+                ...scope.buildStickerElements(profile, sheet),
+                ...scope.buildRail(profile, sheet),
+                ...scope.buildSwitcher(profile, sheet),
+            ];
+            expect(elements.length).toBeGreaterThan(0);
+            elements.forEach((el: any) => {
+                expect(['svg', 'text']).toContain(el.type);
+                expect(el.x, `${sheet.id} ${el.type} ${el.id} x`).toBeGreaterThanOrEqual(0);
+                expect(el.y, `${sheet.id} ${el.type} ${el.id} y`).toBeGreaterThanOrEqual(0);
+                expect(el.x + el.w, `${sheet.id} ${el.type} ${el.id} right edge`).toBeLessThanOrEqual(profile.width + 1e-6);
+                expect(el.y + el.h, `${sheet.id} ${el.type} ${el.id} bottom edge`).toBeLessThanOrEqual(profile.height + 1e-6);
+            });
+        });
+    });
+});
+
+describe('sticker press navigation chrome — category rail', () => {
+    it('carries all 17 category chips on the wide devices, in canonical CATEGORY_ORDER', () => {
+        ['paper_pro', 'note_air', 'pure'].forEach(id => {
+            const profile = device(id);
+            scope.resetElementIds();
+            const sheet = scope.planSheets(profile)[0];
+            const chips = scope.buildRail(profile, sheet);
+            expect(chips).toHaveLength(scope.CATEGORY_ORDER.length);
+            expect(chips).toHaveLength(17);
+        });
+    });
+
+    it('gives move a reduced rail that still always includes the sheet\'s own current category', () => {
+        const profile = device('move');
+        scope.resetElementIds();
+        const sheets = scope.planSheets(profile);
+        sheets.filter((s: any) => s.labelled).forEach((sheet: any) => {
+            const chips = scope.buildRail(profile, sheet);
+            expect(chips.length).toBeLessThanOrEqual(8);
+            expect(chips.length).toBeGreaterThan(1);
+            const current = chips.filter((c: any) => c.fontWeight === 'bold');
+            expect(current).toHaveLength(1);
+            // The active chip always names the CURRENT sheet's own category — its
+            // target is that category's canonical home page, which for a mixed
+            // Lucide+Twemoji category is the Lucide-outline reference sheet even
+            // when the sheet being viewed right now is the Twemoji one.
+            const target = sheets.find((s: any) => s.id === current[0].linkValue);
+            expect(target.category).toBe(sheet.category);
+        });
+    });
+
+    it('every rail chip is an unfilled text chip (no fill, no stroke) with a link that resolves to a real sheet of its own category', () => {
+        const profile = device('paper_pro');
+        scope.resetElementIds();
+        const sheets = scope.planSheets(profile);
+        const sheet = sheets.find((s: any) => s.labelled);
+        const chips = scope.buildRail(profile, sheet);
+        expect(chips.length).toBeGreaterThan(0);
+        chips.forEach((c: any) => {
+            expect(c.fill).toBe('');
+            expect(c.stroke).toBe('');
+            expect(c.text.length).toBeGreaterThan(0);
+            expect(c.linkTarget).toBe('specific_node');
+            const destination = sheets.find((s: any) => s.id === c.linkValue);
+            expect(destination, `rail chip '${c.text}' -> '${c.linkValue}'`).toBeTruthy();
+            expect(destination.labelled).toBe(true);
+        });
+    });
+
+    it('marks exactly the current sheet\'s own category chip as active, on every labelled sheet, including paginated continuation pages', () => {
+        const profile = device('paper_pro');
+        scope.resetElementIds();
+        const sheets = scope.planSheets(profile);
+        sheets.filter((s: any) => s.labelled).forEach((sheet: any) => {
+            const chips = scope.buildRail(profile, sheet);
+            const active = chips.filter((c: any) => c.fontWeight === 'bold');
+            expect(active).toHaveLength(1);
+            const activeTarget = sheets.find((s: any) => s.id === active[0].linkValue);
+            expect(activeTarget.category).toBe(sheet.category);
+        });
+        // A page-2 continuation sheet keeps the same category, so the rail
+        // must still highlight it correctly there too.
+        const continuation = sheets.find((s: any) => s.id.endsWith('_p2'));
+        expect(continuation).toBeTruthy();
+        const chips = scope.buildRail(profile, continuation);
+        const active = chips.filter((c: any) => c.fontWeight === 'bold');
+        expect(active).toHaveLength(1);
+        expect(sheets.find((s: any) => s.id === active[0].linkValue).category).toBe(continuation.category);
+    });
+});
+
+describe('sticker press navigation chrome — colourway switcher', () => {
+    it('gives a Lucide sheet 6 colourway chips (self included) plus a Credits chip, all resolving within the same category', () => {
+        const profile = device('paper_pro');
+        scope.resetElementIds();
+        const sheets = scope.planSheets(profile);
+        const sheet = sheets.find((s: any) => s.source === 'lucide' && s.labelled);
+        const chips = scope.buildSwitcher(profile, sheet);
+
+        const colourwayChips = chips.filter((c: any) => c.linkValue !== 'credits');
+        expect(colourwayChips).toHaveLength(6);
+        colourwayChips.forEach((c: any) => {
+            expect(c.fill).toBe('');
+            const destination = sheets.find((s: any) => s.id === c.linkValue);
+            expect(destination, `switcher chip '${c.text}' -> '${c.linkValue}'`).toBeTruthy();
+            expect(destination.category).toBe(sheet.category);
+        });
+        expect(new Set(colourwayChips.map((c: any) => c.text)).size).toBe(6);
+        const current = colourwayChips.filter((c: any) => c.fontWeight === 'bold');
+        expect(current).toHaveLength(1);
+        expect(current[0].linkValue).toBe(sheet.id);
+
+        const creditsChip = chips.find((c: any) => c.linkValue === 'credits');
+        expect(creditsChip).toBeTruthy();
+        expect(creditsChip.fill).toBe('');
+    });
+
+    it('preserves a paginated category\'s page suffix when switching colourway', () => {
+        const profile = device('paper_pro');
+        scope.resetElementIds();
+        const sheets = scope.planSheets(profile);
+        // study-work is all-Lucide with 43 entries — more than one page.
+        const page2 = sheets.find((s: any) => s.category === 'study-work' && s.colourway === 'outline' && s.id.endsWith('_p2'));
+        expect(page2).toBeTruthy();
+        const chips = scope.buildSwitcher(profile, page2).filter((c: any) => c.linkValue !== 'credits');
+        chips.forEach((c: any) => expect(c.linkValue).toMatch(/_p2$/));
+    });
+
+    it('gives a Twemoji sheet a full-colour note instead of colourway chips, plus a Credits chip — no dead-end fill', () => {
+        const profile = device('paper_pro');
+        scope.resetElementIds();
+        const sheets = scope.planSheets(profile);
+        const sheet = sheets.find((s: any) => s.source === 'twemoji');
+        const chips = scope.buildSwitcher(profile, sheet);
+        expect(chips.every((c: any) => c.fill === '')).toBe(true);
+        expect(chips.some((c: any) => /full colour/i.test(c.text))).toBe(true);
+        expect(chips.some((c: any) => c.linkTarget === 'specific_node' && c.linkValue !== 'credits')).toBe(false);
+        expect(chips.some((c: any) => c.linkValue === 'credits')).toBe(true);
+    });
+});
+
+describe('sticker press navigation chrome — A-Z and keyword indexes', () => {
+    it('A-Z index carries every one of the 500 stickers exactly once, alphabetically, each resolving to its labelled sheet', () => {
+        const profile = device('paper_pro');
+        scope.resetElementIds();
+        const sheets = scope.planSheets(profile);
+        const pages = scope.buildIndexPages('alpha').paper_pro;
+        expect(pages.length).toBeGreaterThan(0);
+
+        const rows = pages.flatMap((p: any) => p.elements.slice(1)); // [0] is the page title
+        expect(rows).toHaveLength(500);
+        const names = rows.map((r: any) => r.text);
+        expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
+
+        rows.forEach((row: any) => {
+            expect(row.fill).toBe('');
+            expect(row.linkTarget).toBe('specific_node');
+            const destination = sheets.find((s: any) => s.id === row.linkValue);
+            expect(destination, `A-Z row '${row.text}' -> '${row.linkValue}'`).toBeTruthy();
+            expect(destination.labelled).toBe(true);
+        });
+    });
+
+    it('keyword index groups keywords alphabetically, and every entry resolves to a labelled sheet', () => {
+        const profile = device('paper_pro');
+        scope.resetElementIds();
+        const sheets = scope.planSheets(profile);
+        const pages = scope.buildIndexPages('keyword').paper_pro;
+        expect(pages.length).toBeGreaterThan(0);
+
+        const rows = pages.flatMap((p: any) => p.elements.slice(1));
+        expect(rows.length).toBeGreaterThan(0);
+        const labels = rows.map((r: any) => r.text);
+        expect(labels).toEqual([...labels].sort((a, b) => a.localeCompare(b)));
+
+        rows.forEach((row: any) => {
+            expect(row.fill).toBe('');
+            expect(row.linkTarget).toBe('specific_node');
+            const destination = sheets.find((s: any) => s.id === row.linkValue);
+            expect(destination, `keyword row '${row.text}' -> '${row.linkValue}'`).toBeTruthy();
+            expect(destination.labelled).toBe(true);
+        });
+    });
+
+    it('every device produces the identical page id set for both indexes (Global Constraint)', () => {
+        ['alpha', 'keyword'].forEach(kind => {
+            scope.resetElementIds();
+            const byDevice = scope.buildIndexPages(kind);
+            const idSets = DEVICE_IDS.map(id => byDevice[id].map((p: any) => p.id).sort().join(','));
+            expect(new Set(idSets).size).toBe(1);
+        });
+    });
+
+    it('drops off-context inherited keywords from the index (e.g. a medical-themed sticker keeps no cybersecurity/antivirus tag)', () => {
+        scope.resetElementIds();
+        const rows = scope.buildIndexPages('keyword').paper_pro.flatMap((p: any) => p.elements.slice(1));
+        const labels = rows.map((r: any) => r.text.toUpperCase());
+        expect(labels.some((l: string) => l.startsWith('ANTIVIRUS'))).toBe(false);
+        expect(labels.some((l: string) => l.startsWith('CYBERSECURITY'))).toBe(false);
+        expect(labels.some((l: string) => l.startsWith('VPN'))).toBe(false);
+        // But a literally-accurate, jargon-*sounding* keyword survives.
+        expect(labels.some((l: string) => l.startsWith('WIFI'))).toBe(true);
+        expect(labels.some((l: string) => l.startsWith('NOTIFICATION'))).toBe(true);
+    });
+});
+
+describe('sticker press navigation chrome — credits', () => {
+    it('carries both halves of the Lucide notice and the Twemoji attribution', () => {
+        scope.resetElementIds();
+        const page = scope.buildCreditsPage().paper_pro;
+        const text = page.elements.map((e: any) => e.text).join('\n');
+        expect(text).toContain('ISC License');
+        expect(text).toContain('Lucide Icons and Contributors');
+        expect(text).toContain('Cole Bemis');
+        expect(text).toContain('MIT License');
+        expect(text).toContain('CC-BY 4.0');
+        expect(text).toContain('Twitter, Inc');
+    });
+
+    it('is present, correctly sized, for all four devices', () => {
+        scope.resetElementIds();
+        const byDevice = scope.buildCreditsPage();
+        DEVICE_IDS.forEach(id => {
+            const profile = device(id);
+            const page = byDevice[id];
+            expect(page.id).toBe('credits');
+            expect(page.width).toBe(profile.width);
+            expect(page.height).toBe(profile.height);
+            page.elements.forEach((el: any) => {
+                expect(el.x).toBeGreaterThanOrEqual(0);
+                expect(el.y).toBeGreaterThanOrEqual(0);
+                expect(el.x + el.w).toBeLessThanOrEqual(profile.width + 1e-6);
+                expect(el.y + el.h).toBeLessThanOrEqual(profile.height + 1e-6);
+            });
+        });
+    });
+
+    // Attribution completeness, driven from vendor/manifest.json (not hardcoded)
+    // — this is what makes the licence obligation structural rather than
+    // remembered. If a new source/licence is ever vendored without updating
+    // buildCreditsPage(), this fails.
+    it('fails if a source contributes a sticker but is not credited (driven from vendor/manifest.json)', () => {
+        const licences = new Set(manifest().icons.map(i => i.licence));
+        expect(licences.size).toBeGreaterThan(0);
+
+        const REQUIRED_SUBSTRINGS: Record<string, string[]> = {
+            ISC: ['ISC License', 'Lucide Icons and Contributors'],
+            MIT: ['MIT License', 'Cole Bemis'],
+            'CC-BY-4.0': ['CC-BY 4.0', 'Twitter, Inc'],
+        };
+        licences.forEach(licence => {
+            expect(REQUIRED_SUBSTRINGS[licence], `no required-substring rule for licence '${licence}' — add one`).toBeTruthy();
+        });
+
+        scope.resetElementIds();
+        const text = scope.buildCreditsPage().paper_pro.elements.map((e: any) => e.text).join('\n');
+        licences.forEach(licence => {
+            REQUIRED_SUBSTRINGS[licence].forEach(substring => {
+                expect(text, `credits page missing '${substring}' for licence '${licence}'`).toContain(substring);
+            });
+        });
+    });
+
+    it('reports real sticker counts, not hardcoded ones', () => {
+        const entries = registry();
+        const lucideCount = entries.filter(e => e.source === 'lucide').length;
+        const twemojiCount = entries.filter(e => e.source === 'twemoji').length;
+        scope.resetElementIds();
+        const text = scope.buildCreditsPage().paper_pro.elements.map((e: any) => e.text).join('\n');
+        expect(text).toContain(`${entries.length} stickers`);
+        expect(text).toContain(`${lucideCount} icons`);
+        expect(text).toContain(`${twemojiCount} graphics`);
     });
 });
