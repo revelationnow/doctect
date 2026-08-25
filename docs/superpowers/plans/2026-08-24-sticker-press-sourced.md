@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax.
 
-**Goal:** Ship gallery flagship 21 — a 500-sticker book built on Lucide and Twemoji artwork plus a small house furniture set, with real navigation and complete attribution.
+**Goal:** Ship gallery flagship 21 — a 500-sticker book built entirely on Lucide and Twemoji artwork, with real navigation and complete attribution.
 
-**Architecture:** A committed vendor step fetches and minifies only the icons the registry names, writing them plus upstream licence files and a manifest into `gallery-samples/21-sticker-press/vendor/`. A build step inlines that vendored artwork into `templates.js`, which also carries the surviving house furniture builders, the 500-entry registry, the layout engine and the navigation chrome. `hierarchy.js` builds one node tree shared by four device variants.
+**Architecture:** A committed vendor step fetches and minifies only the icons the registry names, writing them plus upstream licence files and a manifest into `gallery-samples/21-sticker-press/vendor/`. A build step inlines that vendored artwork into `templates.js`, which carries the 500-entry registry, the layout engine and the navigation chrome — and no hand-drawn artwork at all. `hierarchy.js` builds one node tree shared by four device variants.
 
 **Spec:** `docs/superpowers/specs/2026-08-24-sticker-press-sourced-artwork-design.md`
 
@@ -14,7 +14,7 @@
 
 - Page sizes, exact: `paper_pro` 509×679, `move` 260×463, `note_air` 446×595, `pure` 447×596. `activeVariantId` is `paper_pro`.
 - All four variants expose an identical template id set.
-- 500 stickers: 50 furniture (6 colourways × 3 sizes), 300 Lucide (6 colourways × 2 sizes), 150 Twemoji (full colour × 2 sizes).
+- 500 stickers: **~330 Lucide** (6 colourways × 2 sizes) and **~170 Twemoji** (full colour × 2 sizes). **No house-drawn artwork at all** — the furniture band was dropped 2026-08-24 on the user's review of the contact sheet: the sourced pages read well, the house shapes did not, and several were near-duplicate argument variants (three scalloped seals, three rosettes differing only in petal count, a 'medal disc' that was a circle). Categories 1-3 are re-sourced from Lucide and Twemoji, which supply bookmark, tag, label, flag, paperclip, pin, ribbon and similar.
 - Colourways: Outline (none), Amber `#f0c674`, Green `#86c08e`, Blue `#5b93c4`, Red `#b04a46`, Ink `#3d4650`. Outline ink is `#23292f`. Adjacent luminances must differ by ≥25 under `y = 0.299r + 0.587g + 0.114b`.
 - **Twemoji is never recoloured.**
 - Twemoji stickers must each minify to **≤1,500 bytes**. Lucide to **≤1,200 bytes**.
@@ -86,7 +86,7 @@ describe('sticker press vendor', () => {
         manifest().icons.forEach((i: any) => {
             const actual = Buffer.byteLength(readFileSync(`${DIR}/${i.source}/${i.id}.svg`, 'utf8'), 'utf8');
             expect(actual, `${i.id} recorded size`).toBe(i.bytes);
-            expect(actual, `${i.id} cap`).toBeLessThanOrEqual(i.source === 'twemoji' ? 1500 : 700);
+            expect(actual, `${i.id} cap`).toBeLessThanOrEqual(i.source === 'twemoji' ? 1500 : 1200);
         });
     });
 
@@ -146,21 +146,24 @@ Prefer bold, simple shapes — the reviews on the abandoned artwork established 
 
 ---
 
-## Task C: Furniture builders — keep the survivors, delete the rest
+## Task C: Delete the house builders
 
 **Files:** Modify `gallery-samples/21-sticker-press/templates.js`, `tests/unit/gallerySamples/stickerPressBuilders.test.ts`.
 
-The contact sheet at commit `f090ddf` showed which house drawings are usable. **Keep** the geometric furniture that read correctly: `tab`, `flag`, `bookmark`, `cornerTriangle`, `dogEar`, `banner`, `pennant`, `rosette`, `tape`, `tag`, `stickyNote`, `speechBubble`, `boxFrame`, `bracket`, plus `star`, `sparkle`, `burst`, `seal`, `medal`, `checkbox`, `bullet`, `pip`, `priorityFlag`. **Delete every other builder** — all the pictorial ones (`cat`, `dog`, `bird`, `butterfly`, `bee`, `ladybug`, `snail`, `fox`, `bear`, `rabbit`, `whale`, `fish`, `owl`, `sun`, `cloud`, `rain`, `storm`, `snowflake`, `moon`, `rainbow`, `umbrella`, `wind`, `leaf`, `fern`, `branch`, `flower`, `sprig`, `mushroom`, `acorn`, `cactus`, `succulent`, `tree`) and the broken linear ones (`arrow`, `hand`, `rule`, `flourish`, `scroll`), which Lucide now supplies.
+The house-drawn furniture band was dropped on review — the sourced artwork reads well and the
+house shapes did not, and several were near-duplicate argument variants. `templates.js` should
+therefore contain **no shape builders at all**; its artwork comes entirely from `vendor/`.
 
-Also fix, on the survivors the reviews flagged: `bookmark(false)`, `flag('straight')`, `tape(false)` and `banner(false,false)` must not all be the same plain rectangle; `tab('rounded')` must actually round; `dogEar(1)` must be visible at 16pt; `tag`'s grommet and `banner`'s left tail notch must be real holes (both were confirmed sign-inverted). Drop `dogEar(1)` and `rosette(16)` from the shipped argument domains if they cannot be made to read.
+- [ ] **Step 1** Delete every entry from the `builders` object and the `ARG_DOMAINS` table, and
+  delete `tests/unit/gallerySamples/stickerPressBuilders.test.ts` outright — it exists only to
+  test builders that no longer exist. Keep `svgMarkup`, `round1` and `DEVICES` only if the
+  layout engine still uses them; delete whatever it does not.
+- [ ] **Step 2** Confirm nothing else references a deleted builder:
+  `grep -rn "builders\." gallery-samples/21-sticker-press/ tests/` must come back clean.
+- [ ] **Step 3** Run `npx vitest run tests/unit/gallerySamples/`. The registry and vendor suites
+  must stay green; no suite may be left asserting against deleted code.
+- [ ] **Step 4: Commit** — `refactor(sticker-press): drop the house-drawn builders`
 
-- [ ] **Step 1** Prune the builders and their `ARG_DOMAINS` entries; the coverage guard (`ARG_DOMAINS covers every builder`) must still pass.
-- [ ] **Step 2** Fix the flagged survivors, test-first.
-- [ ] **Step 3** Run `npx vitest run tests/unit/gallerySamples/`.
-- [ ] **Step 4** Render a contact sheet of the ~50 survivors at 56pt and 16pt. Look at it. Iterate until every one reads.
-- [ ] **Step 5: Commit** — `feat(sticker-press): keep the furniture builders, drop the rest`
-
----
 
 ## Task D: Sheet layout engine
 
