@@ -1663,3 +1663,322 @@ const buildCreditsPage = () => {
 // This sentinel is load-bearing: tests/unit/gallerySamples/stickerPressScope.ts cuts the
 // source here to reach the internals. Without it the script's own return below wins and
 // every builder, registry and layout test loses its handle on the module. Keep verbatim.
+
+// Section 6: front matter and workspace pages.
+//
+// Rail/switcher chrome (Section 5) is sticker-sheet furniture — cover,
+// start-here, credits, contents, colour guide, the index pages and the two
+// workspaces all read fine without it, the same way buildCreditsPage and
+// buildOneIndexPage already do. Every page below still follows the
+// unfilled-text-chip rule for anything that links (Global Constraint).
+
+const docText = (x, y, w, h, text, opts = {}) => ({
+    id: nextElementId(), type: 'text', x, y, w, h,
+    rotation: 0, fill: '', stroke: '', strokeWidth: 0, opacity: 1,
+    text, fontSize: opts.fontSize || 8, fontFamily: 'helvetica', fontWeight: opts.fontWeight || 'normal',
+    textColor: opts.textColor || CHROME_INK, align: opts.align || 'left', verticalAlign: opts.verticalAlign || 'top',
+    textWrap: opts.textWrap !== false, textOverflow: 'shrink',
+});
+
+const sticker = (stickerId, x, y, size, colourHex, rotation = 0) => {
+    const raw = STICKER_ART[stickerId][2];
+    return {
+        id: nextElementId(), type: 'svg', x, y, w: size, h: size, rotation,
+        fill: '', stroke: '', strokeWidth: 0, opacity: 1,
+        svgContent: colourHex ? raw.split('{{STROKE}}').join(colourHex) : raw,
+    };
+};
+
+// --- Cover ---------------------------------------------------------------
+const COVER_CATEGORIES = ['index-tabs-flags', 'stars-sparkles-awards', 'botanical', 'animals', 'travel-places', 'celebration-seasons'];
+
+const buildCoverPage = device => {
+    const usableWidth = device.width - SIDE_MARGIN * 2;
+    const titleY = device.height * 0.34;
+    const size = Math.min(30, usableWidth / (COVER_CATEGORIES.length * 1.35));
+    const rowWidth = COVER_CATEGORIES.length * size * 1.3 - size * 0.3;
+    const rowY = titleY - size - 16;
+    let x = SIDE_MARGIN + (usableWidth - rowWidth) / 2;
+    const elements = [
+        docText(SIDE_MARGIN, titleY, usableWidth, 30, 'The Sticker Press', {
+            fontSize: 22, fontWeight: 'bold', align: 'center', textWrap: false,
+        }),
+        docText(SIDE_MARGIN, titleY + 30, usableWidth, 14, '500 stickers, sourced and sorted', {
+            fontSize: 9, align: 'center', textColor: CHROME_NOTE, textWrap: false,
+        }),
+        docText(SIDE_MARGIN, device.height - BOTTOM_MARGIN - 4, usableWidth, 10, 'Lucide & Twemoji — full credits inside', {
+            fontSize: 6, align: 'center', textColor: CHROME_NOTE, textWrap: false,
+        }),
+    ];
+    COVER_CATEGORIES.forEach((category, index) => {
+        const stickerId = stickersInCategory(category)[0].id;
+        elements.push(sticker(stickerId, x, rowY + (index % 2 === 0 ? 0 : 6), size, COLOURWAYS[0].hex, index % 2 === 0 ? -6 : 6));
+        x += size * 1.3;
+    });
+    return { id: 'cover', name: 'The Sticker Press', width: device.width, height: device.height, elements };
+};
+
+// --- Start Here ------------------------------------------------------------
+const buildStartHerePage = device => {
+    const usableWidth = device.width - SIDE_MARGIN * 2;
+    const links = [
+        { label: 'Contents', target: 'contents' },
+        { label: 'Colour Guide', target: 'colour_guide' },
+        { label: 'Example: A Filled Page', target: 'example_workspace' },
+        { label: 'Your Workspace', target: 'blank_workspace' },
+        { label: 'A–Z Index', target: alphaIndexPages[device.id][0].id },
+        { label: 'Keyword Index', target: keywordIndexPages[device.id][0].id },
+        { label: 'Credits & Sources', target: 'credits' },
+    ];
+    const elements = [
+        docText(SIDE_MARGIN, 12, usableWidth, 18, 'Start Here', { fontSize: 14, fontWeight: 'bold', textWrap: false }),
+        docText(SIDE_MARGIN, 34, usableWidth, 56,
+            'Every sticker sheet carries category tabs across the top and colour swatches along the bottom, plus a Credits link in the footer. Look a sticker up by name or theme in the indexes below, or see a page filled in before starting your own.',
+            { fontSize: 7, textColor: CHROME_NOTE }),
+    ];
+    let y = 98;
+    links.forEach(link => {
+        elements.push(chip(SIDE_MARGIN, y, usableWidth, 15, link.label, link.target, { fontSize: 7.5, align: 'left', textColor: CHROME_INK }));
+        y += 19;
+    });
+    return { id: 'start_here', name: 'Start Here', width: device.width, height: device.height, elements };
+};
+
+// --- Contents ----------------------------------------------------------------
+const CATEGORY_FULL_LABELS = {
+    'index-tabs-flags': 'Index Tabs & Flags',
+    'labels-tape': 'Labels & Tape',
+    'arrows-pointers': 'Arrows & Pointers',
+    'boxes-bullets-markers': 'Boxes, Bullets & Markers',
+    'stars-sparkles-awards': 'Stars, Sparkles & Awards',
+    'dividers-corners-frames': 'Dividers, Corners & Frames',
+    'weather-sky': 'Weather & Sky',
+    botanical: 'Botanical',
+    animals: 'Animals',
+    'food-drink': 'Food & Drink',
+    'faces-moods': 'Faces & Moods',
+    'study-work': 'Study & Work',
+    'health-self-care': 'Health & Self-Care',
+    'travel-places': 'Travel & Places',
+    'celebration-seasons': 'Celebration & Seasons',
+    'money-home': 'Money & Home',
+    'symbols-misc': 'Symbols & Miscellaneous',
+};
+
+const buildContentsPage = device => {
+    const entries = [
+        { label: 'Colour Guide', target: 'colour_guide' },
+        { label: 'Example: A Filled Page', target: 'example_workspace' },
+        { label: 'Your Workspace (blank)', target: 'blank_workspace' },
+        { label: 'A–Z Index', target: alphaIndexPages[device.id][0].id },
+        { label: 'Keyword Index', target: keywordIndexPages[device.id][0].id },
+        ...CATEGORY_ORDER.map(category => ({ label: CATEGORY_FULL_LABELS[category] || category, target: categoryHomeSheetId(category) })),
+    ];
+    return buildOneIndexPage(device, 'contents', 'Contents', entries);
+};
+
+// --- Colour guide --------------------------------------------------------------
+const buildColourGuidePage = device => {
+    const usableWidth = device.width - SIDE_MARGIN * 2;
+    const elements = [
+        docText(SIDE_MARGIN, 12, usableWidth, 16, 'Colour Guide', { fontSize: 14, fontWeight: 'bold', textWrap: false }),
+        docText(SIDE_MARGIN, 32, usableWidth, 20,
+            'Every Lucide sticker ships in the six colourways below. Twemoji stickers are never recoloured — they already print in full colour throughout this book.',
+            { fontSize: 6.5, textColor: CHROME_NOTE }),
+    ];
+    const top = 58;
+    const rowH = Math.min(24, (device.height - top - BOTTOM_MARGIN) / COLOURWAYS.length);
+    const swatch = rowH - 6;
+    COLOURWAYS.forEach((colourway, index) => {
+        const y = top + index * rowH;
+        elements.push({
+            id: nextElementId(), type: 'rect', x: SIDE_MARGIN, y: y + (rowH - swatch) / 2, w: swatch, h: swatch,
+            rotation: 0, fill: colourway.hex, stroke: '', strokeWidth: 0, opacity: 1,
+        });
+        elements.push(docText(SIDE_MARGIN + swatch + 8, y, usableWidth - swatch - 8, rowH, colourway.name, {
+            fontSize: 8, verticalAlign: 'middle', textWrap: false,
+        }));
+    });
+    return { id: 'colour_guide', name: 'Colour Guide', width: device.width, height: device.height, elements };
+};
+
+// --- Example / blank workspaces ---------------------------------------------
+const exampleChromeElements = device => {
+    const usableWidth = device.width - SIDE_MARGIN * 2;
+    const bandW = usableWidth * 0.42;
+    return [
+        {
+            id: nextElementId(), type: 'text', x: SIDE_MARGIN, y: 8, w: bandW, h: 14,
+            rotation: 0, fill: '', stroke: '', strokeWidth: 0, opacity: 1,
+            text: '{{example_label}}', dataBinding: 'example_label',
+            fontSize: 8, fontFamily: 'helvetica', fontWeight: 'bold', textColor: CHROME_INK,
+            align: 'left', verticalAlign: 'middle', textWrap: false, textOverflow: 'shrink',
+        },
+        {
+            id: nextElementId(), type: 'text', x: device.width - SIDE_MARGIN - bandW, y: 8, w: bandW, h: 14,
+            rotation: 0, fill: '', stroke: '', strokeWidth: 0, opacity: 1,
+            text: '{{skip_label}}', dataBinding: 'skip_label',
+            fontSize: 7, fontFamily: 'helvetica', fontWeight: 'bold', textColor: CHROME_NOTE,
+            align: 'right', verticalAlign: 'middle', textWrap: false, textOverflow: 'shrink',
+            linkTarget: 'specific_node', linkValue: 'blank_workspace',
+        },
+    ];
+};
+
+// Notes describe the CATEGORY, not the specific icon — stickersInCategory(cat)[0] is
+// whichever sticker sorts first within it, which can shift as the registry changes, so
+// the copy stays accurate without needing to match one exact shape.
+const EXAMPLE_ITEMS = [
+    { category: 'labels-tape', note: 'A label/tape sticker marks the week.' },
+    { category: 'stars-sparkles-awards', note: 'A stars & sparkles sticker flags the deadline.' },
+    { category: 'botanical', note: 'A botanical sticker marks a nature walk.' },
+];
+
+const exampleMockup = (device, mockTop, mockHeight, numbered) => {
+    const usableWidth = device.width - SIDE_MARGIN * 2;
+    const size = Math.min(30, usableWidth / 9);
+    const elements = [{
+        id: nextElementId(), type: 'rect', x: SIDE_MARGIN, y: mockTop, w: usableWidth, h: mockHeight,
+        rotation: 0, fill: CHROME_MUTED, fillType: 'pattern', patternType: 'lines-h', patternSpacing: 13, patternWeight: 0.5,
+        stroke: CHROME_MUTED, strokeWidth: 0.5, opacity: 1,
+    }];
+    const positions = EXAMPLE_ITEMS.map((item, index) => ({
+        ...item,
+        stickerId: stickersInCategory(item.category)[0].id,
+        x: SIDE_MARGIN + usableWidth * (0.16 + index * 0.34) - size / 2,
+        y: mockTop + mockHeight * 0.32 + (index % 2 === 0 ? -6 : 8),
+        rotation: index % 2 === 0 ? -7 : 8,
+    }));
+    positions.forEach((item, index) => {
+        elements.push(sticker(item.stickerId, item.x, item.y, size, COLOURWAYS[0].hex, item.rotation));
+        if (numbered) {
+            elements.push(docText(item.x + size - 8, item.y - 6, 14, 10, String(index + 1), {
+                fontSize: 7, fontWeight: 'bold', align: 'center', textWrap: false,
+            }));
+        }
+    });
+    let noteY = mockTop + mockHeight + 8;
+    positions.forEach((item, index) => {
+        elements.push(docText(SIDE_MARGIN, noteY, usableWidth, 9, `${numbered ? `${index + 1}.` : '•'} ${item.note}`, {
+            fontSize: 6.5, textColor: CHROME_NOTE, textWrap: false,
+        }));
+        noteY += 10;
+    });
+    return elements;
+};
+
+const buildExampleWorkspacePage = device => {
+    const usableWidth = device.width - SIDE_MARGIN * 2;
+    const mockTop = 44;
+    const mockHeight = Math.min(120, device.height * 0.26);
+    const elements = [
+        ...exampleChromeElements(device),
+        docText(SIDE_MARGIN, 26, usableWidth, 12, 'A filled-in page', { fontSize: 9, fontWeight: 'bold', textWrap: false }),
+        ...exampleMockup(device, mockTop, mockHeight, false),
+    ];
+    return { id: 'example_workspace', name: 'Example: A Filled Page', width: device.width, height: device.height, elements };
+};
+
+const buildExampleAnnotatedPage = device => {
+    const usableWidth = device.width - SIDE_MARGIN * 2;
+    const mockTop = 44;
+    const mockHeight = Math.min(120, device.height * 0.26);
+    const elements = [
+        ...exampleChromeElements(device),
+        docText(SIDE_MARGIN, 26, usableWidth, 12, "What's happening here", { fontSize: 9, fontWeight: 'bold', textWrap: false }),
+        ...exampleMockup(device, mockTop, mockHeight, true),
+    ];
+    return { id: 'example_workspace_annotated', name: 'Example: Annotated', width: device.width, height: device.height, elements };
+};
+
+const buildWorkspacePage = (device, id, title, subtitle, patternType) => {
+    const usableWidth = device.width - SIDE_MARGIN * 2;
+    const top = 40;
+    const height = device.height - top - BOTTOM_MARGIN;
+    const frame = {
+        id: nextElementId(), type: 'rect', x: SIDE_MARGIN, y: top, w: usableWidth, h: height,
+        rotation: 0, stroke: CHROME_MUTED, strokeWidth: 0.6, opacity: 1,
+        ...(patternType
+            ? { fill: CHROME_MUTED, fillType: 'pattern', patternType, patternSpacing: patternType === 'dots' ? 12 : 15, patternWeight: patternType === 'dots' ? 1 : 0.5 }
+            : { fill: '' }),
+    };
+    const elements = [
+        docText(SIDE_MARGIN, 12, usableWidth, 16, title, { fontSize: 13, fontWeight: 'bold', textWrap: false }),
+        docText(SIDE_MARGIN, 30, usableWidth, 8, subtitle, { fontSize: 6, textColor: CHROME_NOTE, textWrap: false }),
+        frame,
+    ];
+    return { id, name: title, width: device.width, height: device.height, elements };
+};
+
+const buildBlankWorkspacePage = device => buildWorkspacePage(
+    device, 'blank_workspace', 'Your Workspace',
+    'A blank page for your own stickers — dot-grid and ruled variants follow.', null,
+);
+const buildBlankDotsPage = device => buildWorkspacePage(
+    device, 'blank_workspace_dots', 'Your Workspace — Dot Grid',
+    'Same blank page, with a dot grid for freehand layouts.', 'dots',
+);
+const buildBlankRuledPage = device => buildWorkspacePage(
+    device, 'blank_workspace_ruled', 'Your Workspace — Ruled',
+    'Same blank page, ruled for lists and labels.', 'lines-h',
+);
+
+// --- Final assembly ------------------------------------------------------------
+//
+// planSheets(device)'s sheet ids are identical across devices (Global
+// Constraint); chrome/index page ids are identical by construction (each
+// builder above returns the same id regardless of device). So every
+// variant's template dict ends up with the same key set, built in the same
+// order, which is exactly what lets hierarchy.js read the sheet/index order
+// straight back off Object.keys(templates) instead of duplicating
+// CATEGORY_ORDER or the index page counts.
+const creditsPages = buildCreditsPage();
+const alphaIndexPages = buildIndexPages('alpha');
+const keywordIndexPages = buildIndexPages('keyword');
+
+const sheetDisplayName = sheet => {
+    const categoryLabel = CATEGORY_LABELS[sheet.category] || sheet.category;
+    const sourceLabel = sheet.source === 'twemoji'
+        ? 'Full Colour'
+        : (COLOURWAYS.find(c => c.id === sheet.colourway) || {}).name || sheet.colourway;
+    return `${categoryLabel} — ${sourceLabel}${/_p\d+$/.test(sheet.id) ? ' (cont.)' : ''}`;
+};
+
+const buildDeviceTemplates = device => {
+    const templates = {};
+    const register = template => { templates[template.id] = template; };
+
+    register(buildCoverPage(device));
+    register(buildStartHerePage(device));
+    register(creditsPages[device.id]);
+    register(buildContentsPage(device));
+    register(buildColourGuidePage(device));
+    register(buildExampleWorkspacePage(device));
+    register(buildExampleAnnotatedPage(device));
+    register(buildBlankWorkspacePage(device));
+    register(buildBlankDotsPage(device));
+    register(buildBlankRuledPage(device));
+    alphaIndexPages[device.id].forEach(register);
+    keywordIndexPages[device.id].forEach(register);
+    planSheets(device).forEach(sheet => {
+        register({
+            id: sheet.id,
+            name: sheetDisplayName(sheet),
+            width: device.width,
+            height: device.height,
+            elements: [
+                ...buildStickerElements(device, sheet),
+                ...buildRail(device, sheet),
+                ...buildSwitcher(device, sheet),
+            ],
+        });
+    });
+    return templates;
+};
+
+const variants = {};
+DEVICES.forEach(device => {
+    variants[device.id] = { id: device.id, name: device.name, templates: buildDeviceTemplates(device) };
+});
+
+return { variants, activeVariantId: 'paper_pro' };

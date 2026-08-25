@@ -1,0 +1,260 @@
+import { describe, expect, it } from 'vitest';
+import { computePageOrder } from '../../../services/pdfService';
+import {
+    expectValidGallerySample,
+    loadGallerySample,
+    type GallerySampleContract,
+} from '../../helpers/gallerySampleHarness';
+
+// Generated from a real run of the assembled generator (scratch/dump_template_ids.mjs) —
+// not hand-maintained. 190 = 10 front-matter/workspace pages + 6 A-Z index pages + 21
+// keyword index pages + 153 sticker sheets. Regenerate this list (and the counts above)
+// if templates.js's registry, category set or index pagination ever changes.
+const EXPECTED_TEMPLATE_IDS = [
+    'cover',
+    'start_here',
+    'credits',
+    'contents',
+    'colour_guide',
+    'example_workspace',
+    'example_workspace_annotated',
+    'blank_workspace',
+    'blank_workspace_dots',
+    'blank_workspace_ruled',
+    'alpha_index_1',
+    'alpha_index_2',
+    'alpha_index_3',
+    'alpha_index_4',
+    'alpha_index_5',
+    'alpha_index_6',
+    'keyword_index_1',
+    'keyword_index_2',
+    'keyword_index_3',
+    'keyword_index_4',
+    'keyword_index_5',
+    'keyword_index_6',
+    'keyword_index_7',
+    'keyword_index_8',
+    'keyword_index_9',
+    'keyword_index_10',
+    'keyword_index_11',
+    'keyword_index_12',
+    'keyword_index_13',
+    'keyword_index_14',
+    'keyword_index_15',
+    'keyword_index_16',
+    'keyword_index_17',
+    'keyword_index_18',
+    'keyword_index_19',
+    'keyword_index_20',
+    'keyword_index_21',
+    'index-tabs-flags_outline',
+    'index-tabs-flags_amber',
+    'index-tabs-flags_green',
+    'index-tabs-flags_blue',
+    'index-tabs-flags_red',
+    'index-tabs-flags_ink',
+    'index-tabs-flags_twemoji',
+    'labels-tape_outline',
+    'labels-tape_amber',
+    'labels-tape_green',
+    'labels-tape_blue',
+    'labels-tape_red',
+    'labels-tape_ink',
+    'labels-tape_twemoji',
+    'arrows-pointers_outline',
+    'arrows-pointers_outline_p2',
+    'arrows-pointers_amber',
+    'arrows-pointers_amber_p2',
+    'arrows-pointers_green',
+    'arrows-pointers_green_p2',
+    'arrows-pointers_blue',
+    'arrows-pointers_blue_p2',
+    'arrows-pointers_red',
+    'arrows-pointers_red_p2',
+    'arrows-pointers_ink',
+    'arrows-pointers_ink_p2',
+    'boxes-bullets-markers_outline',
+    'boxes-bullets-markers_outline_p2',
+    'boxes-bullets-markers_amber',
+    'boxes-bullets-markers_amber_p2',
+    'boxes-bullets-markers_green',
+    'boxes-bullets-markers_green_p2',
+    'boxes-bullets-markers_blue',
+    'boxes-bullets-markers_blue_p2',
+    'boxes-bullets-markers_red',
+    'boxes-bullets-markers_red_p2',
+    'boxes-bullets-markers_ink',
+    'boxes-bullets-markers_ink_p2',
+    'stars-sparkles-awards_outline',
+    'stars-sparkles-awards_outline_p2',
+    'stars-sparkles-awards_amber',
+    'stars-sparkles-awards_amber_p2',
+    'stars-sparkles-awards_green',
+    'stars-sparkles-awards_green_p2',
+    'stars-sparkles-awards_blue',
+    'stars-sparkles-awards_blue_p2',
+    'stars-sparkles-awards_red',
+    'stars-sparkles-awards_red_p2',
+    'stars-sparkles-awards_ink',
+    'stars-sparkles-awards_ink_p2',
+    'dividers-corners-frames_outline',
+    'dividers-corners-frames_outline_p2',
+    'dividers-corners-frames_amber',
+    'dividers-corners-frames_amber_p2',
+    'dividers-corners-frames_green',
+    'dividers-corners-frames_green_p2',
+    'dividers-corners-frames_blue',
+    'dividers-corners-frames_blue_p2',
+    'dividers-corners-frames_red',
+    'dividers-corners-frames_red_p2',
+    'dividers-corners-frames_ink',
+    'dividers-corners-frames_ink_p2',
+    'weather-sky_outline',
+    'weather-sky_amber',
+    'weather-sky_green',
+    'weather-sky_blue',
+    'weather-sky_red',
+    'weather-sky_ink',
+    'weather-sky_twemoji',
+    'botanical_outline',
+    'botanical_amber',
+    'botanical_green',
+    'botanical_blue',
+    'botanical_red',
+    'botanical_ink',
+    'botanical_twemoji',
+    'animals_twemoji',
+    'animals_twemoji_p2',
+    'food-drink_outline',
+    'food-drink_amber',
+    'food-drink_green',
+    'food-drink_blue',
+    'food-drink_red',
+    'food-drink_ink',
+    'food-drink_twemoji',
+    'food-drink_twemoji_p2',
+    'faces-moods_twemoji',
+    'faces-moods_twemoji_p2',
+    'study-work_outline',
+    'study-work_outline_p2',
+    'study-work_outline_p3',
+    'study-work_amber',
+    'study-work_amber_p2',
+    'study-work_amber_p3',
+    'study-work_green',
+    'study-work_green_p2',
+    'study-work_green_p3',
+    'study-work_blue',
+    'study-work_blue_p2',
+    'study-work_blue_p3',
+    'study-work_red',
+    'study-work_red_p2',
+    'study-work_red_p3',
+    'study-work_ink',
+    'study-work_ink_p2',
+    'study-work_ink_p3',
+    'health-self-care_outline',
+    'health-self-care_amber',
+    'health-self-care_green',
+    'health-self-care_blue',
+    'health-self-care_red',
+    'health-self-care_ink',
+    'health-self-care_twemoji',
+    'travel-places_outline',
+    'travel-places_amber',
+    'travel-places_green',
+    'travel-places_blue',
+    'travel-places_red',
+    'travel-places_ink',
+    'travel-places_twemoji',
+    'celebration-seasons_outline',
+    'celebration-seasons_amber',
+    'celebration-seasons_green',
+    'celebration-seasons_blue',
+    'celebration-seasons_red',
+    'celebration-seasons_ink',
+    'celebration-seasons_twemoji',
+    'money-home_outline',
+    'money-home_outline_p2',
+    'money-home_amber',
+    'money-home_amber_p2',
+    'money-home_green',
+    'money-home_green_p2',
+    'money-home_blue',
+    'money-home_blue_p2',
+    'money-home_red',
+    'money-home_red_p2',
+    'money-home_ink',
+    'money-home_ink_p2',
+    'money-home_twemoji',
+    'symbols-misc_outline',
+    'symbols-misc_outline_p2',
+    'symbols-misc_amber',
+    'symbols-misc_amber_p2',
+    'symbols-misc_green',
+    'symbols-misc_green_p2',
+    'symbols-misc_blue',
+    'symbols-misc_blue_p2',
+    'symbols-misc_red',
+    'symbols-misc_red_p2',
+    'symbols-misc_ink',
+    'symbols-misc_ink_p2',
+    'symbols-misc_twemoji',
+];
+
+const contract: GallerySampleContract = {
+    slug: '21-sticker-press',
+    expectedTemplateIds: EXPECTED_TEMPLATE_IDS,
+    pageCount: [190, 190],
+    palette: ['#f0c674', '#86c08e', '#5b93c4', '#b04a46', '#3d4650', '#23292f'],
+    requiredStableNodeIds: ['root', 'start_here', 'example_workspace', 'blank_workspace'],
+    expectedVariants: {
+        paper_pro: { width: 509, height: 679 },
+        move: { width: 260, height: 463 },
+        note_air: { width: 446, height: 595 },
+        pure: { width: 447, height: 596 },
+    },
+};
+
+describe('The Sticker Press gallery sample', () => {
+    it('generates all four device variants with an identical 190-page tree', () => {
+        const sample = expectValidGallerySample(contract.slug, contract);
+        const exportedPageCount = computePageOrder({ rootId: sample.rootId, nodes: sample.nodes } as any).length;
+
+        expect(exportedPageCount).toBe(190);
+        expect(sample.variants.map(v => v.id).sort()).toEqual(['move', 'note_air', 'paper_pro', 'pure']);
+        expect(sample.activeVariantId).toBe('paper_pro');
+    });
+
+    it('orders the front matter cover, start_here, credits, contents, colour_guide', () => {
+        const sample = loadGallerySample(contract.slug);
+        const order: string[] = [];
+        const walk = (id: string) => {
+            order.push(id);
+            (sample.nodes[id]?.children || []).forEach(walk);
+        };
+        walk(sample.rootId);
+
+        expect(order.slice(0, 10)).toEqual([
+            'root', 'start_here', 'credits', 'contents', 'colour_guide',
+            'example_workspace', 'example_workspace_annotated',
+            'blank_workspace', 'blank_workspace_dots', 'blank_workspace_ruled',
+        ]);
+        expect(sample.nodes.root.type).toBe('cover');
+        // Credits sits right after start_here (user decision 2026-08-25) — not at the back.
+        expect(order.indexOf('credits')).toBe(order.indexOf('start_here') + 1);
+    });
+
+    it('keeps the credits page reachable from every sheet footer', () => {
+        const sample = loadGallerySample(contract.slug);
+        const sheetIds = Object.keys(sample.templates).filter(id => !/^(cover|start_here|credits|contents|colour_guide|example_workspace.*|blank_workspace.*|alpha_index_\d+|keyword_index_\d+)$/.test(id));
+
+        expect(sheetIds.length).toBe(153);
+        sheetIds.forEach(templateId => {
+            const elements = sample.templates[templateId].elements;
+            const creditsLink = elements.find((element: any) => element.linkTarget === 'specific_node' && element.linkValue === 'credits');
+            expect(creditsLink, `${templateId} footer Credits link`).toBeTruthy();
+        });
+    });
+});
