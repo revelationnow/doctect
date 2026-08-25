@@ -20,6 +20,7 @@ const registry = (): Entry[] => JSON.parse(readFileSync(REGISTRY_PATH, 'utf8'));
 const scope = loadStickerPressScope([
     'DEVICES', 'COLOURWAYS', 'CATEGORY_ORDER', 'STICKER_ART',
     'planSheets', 'buildStickerElements', 'resetElementIds', 'nextElementId',
+    'SIDE_MARGIN', 'TOP_MARGIN', 'BOTTOM_MARGIN', 'PER_SHEET',
 ]);
 
 const DEVICE_IDS = ['paper_pro', 'move', 'note_air', 'pure'];
@@ -76,6 +77,41 @@ describe('sticker press sheet layout — placement', () => {
                 expect(cell.x + cell.size).toBeLessThanOrEqual(profile.width);
                 expect(cell.y + cell.size).toBeLessThanOrEqual(profile.height);
             }));
+        });
+    });
+
+    it.each(DEVICE_IDS)('%s fills its own full page on a full sheet — same membership as move, different geometry', id => {
+        const profile = device(id);
+        const sheets = scope.planSheets(profile);
+        // study-work is 100% Lucide with 43 entries, so its first page (the
+        // shared PER_SHEET boundary) is full on every device.
+        const sheet = sheets.find((s: any) => s.category === 'study-work' && s.colourway === 'outline' && !s.id.includes('_p'));
+        expect(sheet).toBeTruthy();
+        expect(sheet.clusters.length).toBe(scope.PER_SHEET);
+
+        const artworkBottomEdge = Math.max(...sheet.clusters.flatMap((c: any) => c.cells.map((cell: any) => cell.y + cell.size)));
+        const rightEdge = Math.max(...sheet.clusters.flatMap((c: any) => c.cells.map((cell: any) => cell.x + cell.size)));
+        // The stretched gutter formula fills the usable area exactly, on
+        // every device — not just the one (move) that defines PER_SHEET.
+        expect(rightEdge).toBeCloseTo(profile.width - scope.SIDE_MARGIN, 5);
+        expect(artworkBottomEdge).toBeLessThanOrEqual(profile.height - scope.BOTTOM_MARGIN);
+    });
+
+    it('paper_pro, note_air and pure now use more of their page than a naive per-device pagination would (regression guard)', () => {
+        // Before the fix, a full study-work outline page on paper_pro used
+        // only ~5 of its 8 natural rows (21 of 40 natural capacity), stopping
+        // around y=24+5*64+4*8=376 rather than reaching the reserved bottom
+        // margin near y=659. Assert the *label* row (the true bottom of
+        // content) now lands close to the reserved bottom margin instead.
+        ['paper_pro', 'note_air', 'pure'].forEach(id => {
+            const profile = device(id);
+            const sheets = scope.planSheets(profile);
+            const sheet = sheets.find((s: any) => s.category === 'study-work' && s.colourway === 'outline' && !s.id.includes('_p'));
+            const lastCluster = sheet.clusters[sheet.clusters.length - 1];
+            const bottomOfLastCluster = Math.max(...lastCluster.cells.map((c: any) => c.y + c.size));
+            const usableBottom = profile.height - scope.BOTTOM_MARGIN;
+            // Within one label-gutter's worth of the true reserved edge.
+            expect(usableBottom - bottomOfLastCluster).toBeLessThan(20);
         });
     });
 

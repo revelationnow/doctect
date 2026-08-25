@@ -607,13 +607,50 @@ const SHEET_CAPACITY = Object.fromEntries(DEVICES.map(d => [d.id, sheetCapacity(
 // Global Constraint: all four variants expose an identical template id set.
 // Sheet ids become template ids downstream, so every device must paginate a
 // given (category, colourway) group into exactly the same number of pages —
-// even though a wider device could physically fit more per page. Pagination
-// is therefore driven by the smallest per-page capacity across all four
-// devices (the narrowest, `move`, fills every page exactly using its own
-// column count); roomier devices use their own larger column count but the
-// same page boundaries, so a given sticker always lands on the same page id
-// everywhere, sometimes with unused space below on the roomier devices.
+// even though a wider device could physically fit more per page. This is a
+// constraint on MEMBERSHIP (which stickers share a page) and ORDER, not on
+// physical arrangement: pagination is driven by the smallest per-page
+// capacity across all four devices (the narrowest, `move`), so a given
+// sticker always lands on the same page id everywhere — but each device
+// then arranges its own copy of that page to fill its own usable area,
+// spacing clusters out rather than leaving unused space below.
 const PER_SHEET = Math.min(...DEVICES.map(d => SHEET_CAPACITY[d.id].perSheet));
+
+// For N stickers on one device, choose a (columns, rows) grid — as many
+// columns as the device's own natural capacity allows, capped so a small
+// page doesn't grow empty trailing columns.
+//
+// A FULL page (N === PER_SHEET) is where the shared-capacity constraint
+// actually bites: every device holds the same PER_SHEET stickers, so the
+// gutter between clusters is stretched (never the outer margins, which stay
+// reserved for Task E's rail/switcher) so the grid's far edge exactly
+// reaches this device's own usable width and height — on the device that
+// defines PER_SHEET (currently `move`) that's very close to the minimal
+// gutter already; on roomier devices it spreads the same N clusters across
+// the whole page instead of stopping partway down it.
+//
+// A REMAINDER page (N < PER_SHEET — the last page of a category/colourway,
+// which by construction happens at most once per group) is not what that
+// constraint is about: it's simply a category that ran out of stickers, the
+// same way a book's last page of a chapter ends early. Stretching a
+// half-empty remainder page to fill the whole device height produced huge,
+// ugly gaps for small remainders (e.g. 2 rows a page-height apart for a
+// 9-sticker category) — worse than the hole it was meant to fix. Remainder
+// pages therefore pack at natural density instead, left/top-aligned, with
+// ordinary blank space below where the page simply ends.
+const pageGeometry = (device, n) => {
+    const capacity = SHEET_CAPACITY[device.id];
+    const columns = Math.max(1, Math.min(capacity.columns, n));
+    const rows = Math.ceil(n / columns);
+    if (n < PER_SHEET) {
+        return { columns, rows, gutterX: CLUSTER_GUTTER, gutterY: CLUSTER_GUTTER };
+    }
+    const usableWidth = device.width - SIDE_MARGIN * 2;
+    const usableHeight = device.height - TOP_MARGIN - BOTTOM_MARGIN;
+    const gutterX = columns > 1 ? (usableWidth - columns * capacity.clusterWidth) / (columns - 1) : 0;
+    const gutterY = rows > 1 ? (usableHeight - rows * capacity.clusterHeight) / (rows - 1) : 0;
+    return { columns, rows, gutterX, gutterY };
+};
 
 // Packs one (category, source[, colourway]) group of stickers into as many
 // sheets as needed. Each sticker becomes one cluster: its size ladder,
@@ -621,7 +658,7 @@ const PER_SHEET = Math.min(...DEVICES.map(d => SHEET_CAPACITY[d.id].perSheet));
 // baseline and one label sitting in the gutter below it. Pure white ground —
 // no cell borders or boxes are ever drawn around a cluster.
 const packStickers = (device, stickers, sheetIdBase, category, source, colourway, labelled) => {
-    const { maxSize, clusterWidth, clusterHeight, columns } = SHEET_CAPACITY[device.id];
+    const { maxSize, clusterWidth, clusterHeight } = SHEET_CAPACITY[device.id];
     const sizes = device.pictorial;
 
     const sheets = [];
@@ -629,11 +666,12 @@ const packStickers = (device, stickers, sheetIdBase, category, source, colourway
         const page = stickers.slice(offset, offset + PER_SHEET);
         const pageIndex = Math.floor(offset / PER_SHEET);
         const id = pageIndex > 0 ? `${sheetIdBase}_p${pageIndex + 1}` : sheetIdBase;
+        const { columns, gutterX, gutterY } = pageGeometry(device, page.length);
         const clusters = page.map((sticker, position) => {
             const column = position % columns;
             const row = Math.floor(position / columns);
-            const x = SIDE_MARGIN + column * (clusterWidth + CLUSTER_GUTTER);
-            const y = TOP_MARGIN + row * (clusterHeight + CLUSTER_GUTTER);
+            const x = SIDE_MARGIN + column * (clusterWidth + gutterX);
+            const y = TOP_MARGIN + row * (clusterHeight + gutterY);
             let cellX = x;
             const cells = sizes.map(size => {
                 const cell = { size, x: cellX, y: y + (maxSize - size) };
