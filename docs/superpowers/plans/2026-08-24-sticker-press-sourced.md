@@ -24,7 +24,12 @@
   curation the median is 365 B, p90 733 B, max 1205 B. Raising the cap admits essentially every
   desirable icon for roughly 25 KB against a 512 KiB budget.)
 - `templates.js` and `hierarchy.js` are each capped at **512 KiB** (`shared/generatorMetadata.js:2`). Target ≤450 KiB for `templates.js`, and report the real figure after vendoring rather than assuming it.
-- Generated state must serialise under **12 MiB** (cap is 16 MiB, `shared/projectLimits.js`).
+- Generated state must serialise under **28 MiB** (cap raised to 32 MiB on 2026-08-25, `shared/projectLimits.js`).
+  The laid-out stickers alone measure 13.1 MB and per-sheet navigation chrome adds several MB
+  more, which would have blocked generation at the previous 16 MiB. The user decided the size
+  is acceptable rather than reduce colourway depth, size variants, or device count, so the cap
+  moves instead of the product. Both `MAX_STATE_BYTES` and `MAX_GENERATOR_OUTPUT_BYTES` go to
+  32 MiB; they remain separate constants because they guard unrelated things.
 - **Import rule:** flatten root presentation attributes (`fill, stroke, stroke-width, stroke-linecap, stroke-linejoin, stroke-miterlimit`) onto every drawable child (`path, circle, ellipse, rect, line, polyline, polygon, g`). svg2pdf does not inherit them from the root.
 - **Never** `setAttribute('xmlns', …)` after stripping root attributes — the serializer emits it, and setting it by hand yields a document svg2pdf silently refuses to draw.
 - Ship `viewBox`; omit root `width`/`height`. 6-digit hex or `rgb()` only. No `<use>`, `<script>`, `<style>`, `<foreignObject>`, `on*`.
