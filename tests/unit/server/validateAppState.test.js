@@ -91,7 +91,7 @@ describe('validateAppState', () => {
     });
     it('rejects oversize payloads', () => {
         const s = goodState();
-        s.nodes.root.data.big = 'x'.repeat(17 * 1024 * 1024);
+        s.nodes.root.data.big = 'x'.repeat(34 * 1024 * 1024);
         expect(validateAppState(s).ok).toBe(false);
     });
     it('reports cyclic state as non-serializable', () => {
@@ -227,7 +227,7 @@ describe('validateAppState', () => {
 
     it('enforces total state size before generator detail validation', () => {
         const state = { ...goodState(), generator: { secret: true } };
-        state.nodes.root.data.padding = 'x'.repeat(17 * 1024 * 1024);
+        state.nodes.root.data.padding = 'x'.repeat(34 * 1024 * 1024);
         expect(validateAppState(state)).toMatchObject({ ok: false, error: expect.stringContaining('state exceeds') });
     });
 });

@@ -401,9 +401,9 @@ describe('validateGeneratedProject', () => {
         })).toMatchObject({ ok: false, category: 'template' });
     });
 
-    it('rejects output larger than 16 MiB', () => {
+    it('rejects output larger than 32 MiB', () => {
         const hierarchy = validHierarchy();
-        (hierarchy.nodes.root as any).data = { large: 'x'.repeat(17 * 1024 * 1024) };
+        (hierarchy.nodes.root as any).data = { large: 'x'.repeat(34 * 1024 * 1024) };
         expect(validateGeneratedProject({ templates: validTemplates(), hierarchy })).toMatchObject({ ok: false, category: 'limits' });
     });
 });

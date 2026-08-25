@@ -231,7 +231,7 @@ describe('browser sandbox frame', () => {
         expect(workerSource).toMatch(/trustedObjectGetOwnPropertyDescriptor\(typedArrayPrototype, \\?"byteLength\\?"\)/);
         expect(iframe!.srcdoc).toContain('trustedByteLengthGetter.call.bind(trustedByteLengthGetter)');
         expect(iframe!.srcdoc).toContain('const trustedPost = resultPort.postMessage.bind(resultPort)');
-        expect(iframe!.srcdoc).toContain(String(16 * 1024 * 1024));
+        expect(iframe!.srcdoc).toContain(String(32 * 1024 * 1024));
         expect(iframe!.srcdoc).toContain('Generated output exceeds');
         expect(iframe!.srcdoc).toContain('JSON.parse(message.serialized)');
         expect(iframe!.srcdoc).toContain('const trustedArrayIsArray = Array.isArray');
@@ -285,7 +285,7 @@ describe('browser sandbox frame', () => {
                         const typedArrayPrototype = Object.getPrototypeOf(Uint8Array.prototype);
                         Object.defineProperty(typedArrayPrototype, 'byteLength', { configurable: true, get: () => 0 });
                         return { page: { id: 'page', name: 'Page', width: 509, height: 679,
-                            elements: [{ id: 'large', type: 'text', text: 'x'.repeat(17 * 1024 * 1024) }] } };
+                            elements: [{ id: 'large', type: 'text', text: 'x'.repeat(34 * 1024 * 1024) }] } };
                     `,
                     hierarchyScript: `return { nodes: { root: { id: 'root', parentId: null, type: 'page', title: 'Root', data: {}, children: [] } }, rootId: 'root' };`,
                     constants,
@@ -318,7 +318,7 @@ describe('browser sandbox frame', () => {
             expect(results.oversized).toEqual({
                 ok: false,
                 category: 'runtime',
-                message: `Generated output exceeds ${16 * 1024 * 1024} bytes.`,
+                message: `Generated output exceeds ${32 * 1024 * 1024} bytes.`,
             });
             expect(JSON.stringify(results.oversized).length).toBeLessThan(200);
             expect(results.layers.ok).toBe(true);
