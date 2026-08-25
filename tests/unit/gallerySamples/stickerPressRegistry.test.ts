@@ -17,33 +17,38 @@ interface Entry {
 const registry = (): Entry[] => JSON.parse(readFileSync(REGISTRY_PATH, 'utf8'));
 const manifest = () => JSON.parse(readFileSync(MANIFEST_PATH, 'utf8'));
 
-// The 18 categories and their curated counts. The spec's original per-category
-// table sums to 480 (not 500) once the fixed 50/300/150 band split is honoured
-// — Lucide alone is short 20 against its 300 target across the table's own
-// numbers — and several individual counts shifted further once curation met
-// what Lucide/Twemoji actually contain at acceptable size and quality (see
-// taskB-report.md for the full account: byte-cap casualties, live-upstream
-// 404s on deprecated npm aliases, and the botanical Twemoji shortfall). The
-// 50/300/150 band split itself is exact and non-negotiable.
+// The 17 categories and their curated counts. The house-drawn furniture band
+// (50 entries, 3 of these categories) was dropped entirely after a human
+// review of the full contact sheet found it padded with argument-variation
+// near-duplicates (three scalloped seals differing only in scallop count,
+// three rosettes differing only in petal count, a "medal disc" that was a
+// circle) while the sourced Lucide/Twemoji pages read well. Categories 1-3
+// (index-tabs-flags, banners-ribbons, labels-tape) were re-sourced from real
+// Lucide/Twemoji marker, tab, flag, ribbon and label artwork; banners-ribbons
+// could not be filled to a sensible size on its own (no literal "ribbon
+// bunting" or "wax seal" exists in either source — only two Twemoji ribbon
+// emoji total) and was merged into labels-tape rather than padded with
+// near-duplicates. The resulting shortfall against the old 50-entry band was
+// backfilled into categories with genuine spare supply of good, distinct,
+// under-cap candidates. See taskB-report.md for the full account.
 const EXPECTED_CATEGORY_COUNTS: Record<string, number> = {
-    'index-tabs-flags': 18,
-    'banners-ribbons': 16,
-    'labels-tape': 16,
+    'index-tabs-flags': 15,
+    'labels-tape': 17,
     'arrows-pointers': 36,
-    'boxes-bullets-markers': 31,
+    'boxes-bullets-markers': 33,
     'stars-sparkles-awards': 27,
-    'dividers-corners-frames': 25,
-    'weather-sky': 26,
-    botanical: 22,
+    'dividers-corners-frames': 27,
+    'weather-sky': 28,
+    botanical: 23,
     animals: 34,
-    'food-drink': 35,
+    'food-drink': 37,
     'faces-moods': 24,
     'study-work': 43,
-    'health-self-care': 29,
-    'travel-places': 30,
-    'celebration-seasons': 26,
-    'money-home': 33,
-    'symbols-misc': 29,
+    'health-self-care': 30,
+    'travel-places': 31,
+    'celebration-seasons': 27,
+    'money-home': 38,
+    'symbols-misc': 30,
 };
 
 describe('sticker press registry', () => {
@@ -51,17 +56,17 @@ describe('sticker press registry', () => {
         expect(registry()).toHaveLength(500);
     });
 
-    it('splits into 50 furniture / 300 lucide / 150 twemoji', () => {
+    it('is sourced entirely from Lucide and Twemoji — no furniture — split 330/170', () => {
         const r = registry();
-        expect(r.filter(e => e.source === 'furniture')).toHaveLength(50);
-        expect(r.filter(e => e.source === 'lucide')).toHaveLength(300);
-        expect(r.filter(e => e.source === 'twemoji')).toHaveLength(150);
+        expect(r.filter(e => e.source === 'furniture')).toHaveLength(0);
+        expect(r.filter(e => e.source === 'lucide')).toHaveLength(330);
+        expect(r.filter(e => e.source === 'twemoji')).toHaveLength(170);
     });
 
-    it('covers exactly the 18 expected categories, with counts summing to 500 and matching membership', () => {
+    it('covers exactly the 17 expected categories, with counts summing to 500 and matching membership', () => {
         const r = registry();
         const cats = Object.keys(EXPECTED_CATEGORY_COUNTS);
-        expect(cats).toHaveLength(18);
+        expect(cats).toHaveLength(17);
         expect(Object.values(EXPECTED_CATEGORY_COUNTS).reduce((a, b) => a + b, 0)).toBe(500);
 
         const actualCats = new Set(r.map(e => e.cat));

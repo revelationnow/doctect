@@ -1,646 +1,387 @@
 [
   {
-    "id": "furn-tab-square",
-    "name": "Square Index Tab",
+    "id": "lucide-bookmark-check",
+    "name": "Checked Bookmark",
     "cat": "index-tabs-flags",
-    "source": "furniture",
-    "upstream": "tab(null, false)",
+    "source": "lucide",
+    "upstream": "bookmark-check",
     "keywords": [
-      "tab",
-      "index",
-      "divider",
-      "filing"
-    ]
-  },
-  {
-    "id": "furn-tab-square-notch",
-    "name": "Notched Square Tab",
-    "cat": "index-tabs-flags",
-    "source": "furniture",
-    "upstream": "tab(null, true)",
-    "keywords": [
-      "tab",
-      "index",
-      "notch",
-      "filing"
-    ]
-  },
-  {
-    "id": "furn-tab-rounded",
-    "name": "Rounded Index Tab",
-    "cat": "index-tabs-flags",
-    "source": "furniture",
-    "upstream": "tab('rounded', false)",
-    "keywords": [
-      "tab",
-      "index",
-      "rounded",
-      "filing"
-    ]
-  },
-  {
-    "id": "furn-tab-rounded-notch",
-    "name": "Rounded Notched Tab",
-    "cat": "index-tabs-flags",
-    "source": "furniture",
-    "upstream": "tab('rounded', true)",
-    "keywords": [
-      "tab",
-      "index",
-      "rounded",
-      "notch"
-    ]
-  },
-  {
-    "id": "furn-tab-angled",
-    "name": "Angled Index Tab",
-    "cat": "index-tabs-flags",
-    "source": "furniture",
-    "upstream": "tab('angled', false)",
-    "keywords": [
-      "tab",
-      "index",
-      "angled",
-      "filing"
-    ]
-  },
-  {
-    "id": "furn-tab-angled-notch",
-    "name": "Angled Notched Tab",
-    "cat": "index-tabs-flags",
-    "source": "furniture",
-    "upstream": "tab('angled', true)",
-    "keywords": [
-      "tab",
-      "index",
-      "angled",
-      "notch"
-    ]
-  },
-  {
-    "id": "furn-flag-point",
-    "name": "Pointed Flag Marker",
-    "cat": "index-tabs-flags",
-    "source": "furniture",
-    "upstream": "flag('point')",
-    "keywords": [
-      "flag",
+      "read",
+      "finished",
+      "complete",
+      "clip",
       "marker",
-      "pointer",
-      "index"
+      "tag",
+      "task",
+      "todo"
     ]
   },
   {
-    "id": "furn-flag-swallow",
-    "name": "Swallowtail Flag",
+    "id": "lucide-bookmark-plus",
+    "name": "Bookmark Plus",
     "cat": "index-tabs-flags",
-    "source": "furniture",
-    "upstream": "flag('swallow')",
+    "source": "lucide",
+    "upstream": "bookmark-plus",
     "keywords": [
-      "flag",
-      "marker",
-      "pennant",
-      "index"
+      "add"
     ]
   },
   {
-    "id": "furn-corner-triangle",
-    "name": "Corner Triangle Marker",
+    "id": "lucide-folder-bookmark",
+    "name": "Bookmarked Folder",
     "cat": "index-tabs-flags",
-    "source": "furniture",
-    "upstream": "cornerTriangle(false)",
+    "source": "lucide",
+    "upstream": "folder-bookmark",
     "keywords": [
-      "corner",
-      "triangle",
-      "marker",
-      "index"
-    ]
-  },
-  {
-    "id": "furn-corner-triangle-crease",
-    "name": "Creased Corner Triangle",
-    "cat": "index-tabs-flags",
-    "source": "furniture",
-    "upstream": "cornerTriangle(true)",
-    "keywords": [
-      "corner",
-      "triangle",
-      "crease",
-      "marker"
-    ]
-  },
-  {
-    "id": "furn-dogear-medium",
-    "name": "Medium Page Curl",
-    "cat": "index-tabs-flags",
-    "source": "furniture",
-    "upstream": "dogEar(2)",
-    "keywords": [
-      "dog ear",
-      "page curl",
-      "corner",
-      "fold"
-    ]
-  },
-  {
-    "id": "furn-dogear-large",
-    "name": "Large Page Curl",
-    "cat": "index-tabs-flags",
-    "source": "furniture",
-    "upstream": "dogEar(3)",
-    "keywords": [
-      "dog ear",
-      "page curl",
-      "corner",
-      "fold"
-    ]
-  },
-  {
-    "id": "furn-dogear-full",
-    "name": "Full Page Fold",
-    "cat": "index-tabs-flags",
-    "source": "furniture",
-    "upstream": "dogEar(4)",
-    "keywords": [
-      "dog ear",
-      "page fold",
-      "corner"
-    ]
-  },
-  {
-    "id": "furn-priority-flag-1",
-    "name": "Single Signal Flag",
-    "cat": "index-tabs-flags",
-    "source": "furniture",
-    "upstream": "priorityFlag(1)",
-    "keywords": [
-      "flag",
-      "priority",
-      "signal",
-      "level"
-    ]
-  },
-  {
-    "id": "furn-priority-flag-2",
-    "name": "Double Signal Flag",
-    "cat": "index-tabs-flags",
-    "source": "furniture",
-    "upstream": "priorityFlag(2)",
-    "keywords": [
-      "flag",
-      "priority",
-      "signal",
-      "level"
-    ]
-  },
-  {
-    "id": "furn-priority-flag-3",
-    "name": "Triple Signal Flag",
-    "cat": "index-tabs-flags",
-    "source": "furniture",
-    "upstream": "priorityFlag(3)",
-    "keywords": [
-      "flag",
-      "priority",
-      "signal",
-      "level"
-    ]
-  },
-  {
-    "id": "furn-star-marker",
-    "name": "Marker Star",
-    "cat": "index-tabs-flags",
-    "source": "furniture",
-    "upstream": "star(5, 0.5)",
-    "keywords": [
-      "star",
-      "marker",
-      "favourite",
-      "flag"
-    ]
-  },
-  {
-    "id": "furn-bullet-dot",
-    "name": "Dot Bullet Marker",
-    "cat": "index-tabs-flags",
-    "source": "furniture",
-    "upstream": "bullet(null)",
-    "keywords": [
-      "bullet",
-      "dot",
-      "marker",
-      "index"
-    ]
-  },
-  {
-    "id": "furn-bookmark-ribbon",
-    "name": "Ribbon Bookmark",
-    "cat": "banners-ribbons",
-    "source": "furniture",
-    "upstream": "bookmark(true)",
-    "keywords": [
+      "folder",
       "bookmark",
-      "ribbon",
-      "page marker"
+      "file",
+      "mark",
+      "storage",
+      "archive",
+      "directory",
+      "project",
+      "favorite",
+      "save",
+      "read later"
     ]
   },
   {
-    "id": "furn-banner-tails",
-    "name": "Tailed Ribbon Banner",
-    "cat": "banners-ribbons",
-    "source": "furniture",
-    "upstream": "banner(true, false)",
+    "id": "lucide-book-marked",
+    "name": "Marked Book",
+    "cat": "index-tabs-flags",
+    "source": "lucide",
+    "upstream": "book-marked",
     "keywords": [
-      "banner",
-      "ribbon",
-      "tails"
+      "dictionary",
+      "reading",
+      "booklet",
+      "magazine",
+      "leaflet",
+      "pamphlet",
+      "tome",
+      "library",
+      "writing",
+      "written",
+      "writer",
+      "author",
+      "story",
+      "script",
+      "fiction",
+      "novel",
+      "information",
+      "knowledge",
+      "education",
+      "high school",
+      "university",
+      "college",
+      "academy",
+      "student",
+      "study",
+      "learning",
+      "homework",
+      "research",
+      "documentation",
+      "saved",
+      "later",
+      "future",
+      "reference",
+      "index",
+      "code",
+      "coding",
+      "version control",
+      "git",
+      "repository"
     ]
   },
   {
-    "id": "furn-seal-20",
-    "name": "Densely Scalloped Seal",
-    "cat": "banners-ribbons",
-    "source": "furniture",
-    "upstream": "seal(20)",
-    "keywords": [
-      "seal",
-      "wax seal",
-      "medallion",
-      "scalloped"
-    ]
-  },
-  {
-    "id": "furn-banner-tails-fold",
-    "name": "Ribbon Banner with Fold",
-    "cat": "banners-ribbons",
-    "source": "furniture",
-    "upstream": "banner(true, true)",
-    "keywords": [
-      "banner",
-      "ribbon",
-      "tails",
-      "fold"
-    ]
-  },
-  {
-    "id": "furn-pennant",
+    "id": "lucide-flag-triangle-right",
     "name": "Pennant Flag",
-    "cat": "banners-ribbons",
-    "source": "furniture",
-    "upstream": "pennant(false)",
+    "cat": "index-tabs-flags",
+    "source": "lucide",
+    "upstream": "flag-triangle-right",
     "keywords": [
-      "pennant",
-      "bunting",
-      "flag",
-      "banner"
+      "report",
+      "timeline",
+      "marker",
+      "pin"
     ]
   },
   {
-    "id": "furn-pennant-notch",
-    "name": "Notched Pennant Bunting",
-    "cat": "banners-ribbons",
-    "source": "furniture",
-    "upstream": "pennant(true)",
+    "id": "lucide-notebook-tabs",
+    "name": "Notebook with Index Tabs",
+    "cat": "index-tabs-flags",
+    "source": "lucide",
+    "upstream": "notebook-tabs",
     "keywords": [
-      "pennant",
-      "bunting",
-      "flag",
-      "notch"
+      "notepad",
+      "notes",
+      "people",
+      "family",
+      "friends",
+      "acquaintances",
+      "contacts",
+      "details",
+      "addresses",
+      "phone numbers",
+      "directory",
+      "listing",
+      "networking",
+      "alphabetical",
+      "a-z",
+      "organizer",
+      "organiser",
+      "planner",
+      "diary",
+      "stationery"
     ]
   },
   {
-    "id": "furn-rosette-6",
-    "name": "Simple Rosette Award",
-    "cat": "banners-ribbons",
-    "source": "furniture",
-    "upstream": "rosette(6)",
+    "id": "lucide-milestone",
+    "name": "Milestone Marker",
+    "cat": "index-tabs-flags",
+    "source": "lucide",
+    "upstream": "milestone",
     "keywords": [
-      "rosette",
-      "award",
-      "ribbon",
-      "medallion"
+      "signpost",
+      "direction",
+      "right",
+      "east",
+      "forward",
+      "version control",
+      "waypoint"
     ]
   },
   {
-    "id": "furn-rosette-10",
-    "name": "Rosette Award Medallion",
-    "cat": "banners-ribbons",
-    "source": "furniture",
-    "upstream": "rosette(10)",
+    "id": "lucide-tag-plus",
+    "name": "Tag Plus",
+    "cat": "index-tabs-flags",
+    "source": "lucide",
+    "upstream": "tag-plus",
     "keywords": [
-      "rosette",
-      "award",
-      "ribbon",
-      "medallion"
-    ]
-  },
-  {
-    "id": "furn-rosette-14",
-    "name": "Fine Rosette Award",
-    "cat": "banners-ribbons",
-    "source": "furniture",
-    "upstream": "rosette(14)",
-    "keywords": [
-      "rosette",
-      "award",
-      "ribbon",
-      "medallion"
-    ]
-  },
-  {
-    "id": "furn-sparkle-accent",
-    "name": "Sparkle Accent",
-    "cat": "banners-ribbons",
-    "source": "furniture",
-    "upstream": "sparkle(6)",
-    "keywords": [
-      "sparkle",
-      "accent",
-      "decoration",
-      "twinkle"
-    ]
-  },
-  {
-    "id": "furn-burst-star",
-    "name": "Starburst Badge",
-    "cat": "banners-ribbons",
-    "source": "furniture",
-    "upstream": "burst(8, false)",
-    "keywords": [
-      "burst",
-      "starburst",
+      "label",
       "badge",
-      "award"
+      "ticket",
+      "mark",
+      "new",
+      "add",
+      "create",
+      "+"
     ]
   },
   {
-    "id": "furn-burst-jagged",
-    "name": "Jagged Impact Burst",
-    "cat": "banners-ribbons",
-    "source": "furniture",
-    "upstream": "burst(12, true)",
+    "id": "lucide-tag-x",
+    "name": "Tag Remove",
+    "cat": "index-tabs-flags",
+    "source": "lucide",
+    "upstream": "tag-x",
     "keywords": [
-      "burst",
-      "impact",
-      "jagged",
-      "explosion"
-    ]
-  },
-  {
-    "id": "furn-seal-10",
-    "name": "Wax Seal Medallion",
-    "cat": "banners-ribbons",
-    "source": "furniture",
-    "upstream": "seal(10)",
-    "keywords": [
-      "seal",
-      "wax seal",
-      "medallion",
-      "award"
-    ]
-  },
-  {
-    "id": "furn-seal-16",
-    "name": "Fine-Scalloped Wax Seal",
-    "cat": "banners-ribbons",
-    "source": "furniture",
-    "upstream": "seal(16)",
-    "keywords": [
-      "seal",
-      "wax seal",
-      "medallion",
-      "scalloped"
-    ]
-  },
-  {
-    "id": "furn-medal-ribbon",
-    "name": "Ribbon Medal",
-    "cat": "banners-ribbons",
-    "source": "furniture",
-    "upstream": "medal(true)",
-    "keywords": [
-      "medal",
-      "ribbon",
-      "award",
-      "prize"
-    ]
-  },
-  {
-    "id": "furn-medal-plain",
-    "name": "Plain Medal Disc",
-    "cat": "banners-ribbons",
-    "source": "furniture",
-    "upstream": "medal(false)",
-    "keywords": [
-      "medal",
-      "disc",
-      "award",
-      "badge"
-    ]
-  },
-  {
-    "id": "furn-tape-torn",
-    "name": "Torn Washi Tape Strip",
-    "cat": "labels-tape",
-    "source": "furniture",
-    "upstream": "tape(true)",
-    "keywords": [
-      "tape",
-      "washi",
       "label",
-      "torn"
+      "badge",
+      "ticket",
+      "mark",
+      "x",
+      "delete",
+      "remove"
     ]
   },
   {
-    "id": "furn-tag-plain",
-    "name": "Luggage Tag",
+    "id": "lucide-ticket",
+    "name": "Event Ticket Stub",
     "cat": "labels-tape",
-    "source": "furniture",
-    "upstream": "tag(false)",
+    "source": "lucide",
+    "upstream": "ticket",
     "keywords": [
-      "tag",
-      "label",
-      "luggage",
-      "price tag"
+      "entry",
+      "pass",
+      "voucher",
+      "event",
+      "concert",
+      "show",
+      "perforated",
+      "dashed"
     ]
   },
   {
-    "id": "furn-tag-hole",
-    "name": "Tag with Grommet",
+    "id": "lucide-ticket-percent",
+    "name": "Discount Coupon",
     "cat": "labels-tape",
-    "source": "furniture",
-    "upstream": "tag(true)",
+    "source": "lucide",
+    "upstream": "ticket-percent",
     "keywords": [
-      "tag",
-      "label",
-      "grommet",
-      "hole"
+      "discount",
+      "reduced",
+      "offer",
+      "voucher",
+      "entry",
+      "pass",
+      "event",
+      "concert",
+      "show",
+      "book",
+      "purchase",
+      "%"
     ]
   },
   {
-    "id": "furn-sticky-note",
+    "id": "lucide-tickets",
+    "name": "Two Tickets",
+    "cat": "labels-tape",
+    "source": "lucide",
+    "upstream": "tickets",
+    "keywords": [
+      "trip",
+      "travel",
+      "pass",
+      "entry",
+      "voucher",
+      "event",
+      "concert",
+      "show",
+      "perforated",
+      "dashed"
+    ]
+  },
+  {
+    "id": "lucide-tickets-plane",
+    "name": "Boarding Pass",
+    "cat": "labels-tape",
+    "source": "lucide",
+    "upstream": "tickets-plane",
+    "keywords": [
+      "plane",
+      "trip",
+      "airplane",
+      "flight",
+      "travel",
+      "fly",
+      "takeoff",
+      "vacation",
+      "passenger",
+      "pass",
+      "check-in",
+      "airport"
+    ]
+  },
+  {
+    "id": "lucide-sticky-note",
     "name": "Sticky Note",
     "cat": "labels-tape",
-    "source": "furniture",
-    "upstream": "stickyNote(null)",
+    "source": "lucide",
+    "upstream": "sticky-note",
     "keywords": [
-      "sticky note",
-      "label",
-      "memo"
+      "post-it",
+      "comment",
+      "annotation",
+      "reaction",
+      "memo",
+      "reminder",
+      "todo",
+      "task",
+      "idea",
+      "brainstorm",
+      "document",
+      "page",
+      "paper",
+      "sheet",
+      "stationary",
+      "office"
     ]
   },
   {
-    "id": "furn-sticky-note-lined",
-    "name": "Lined Sticky Note",
+    "id": "lucide-notepad-text",
+    "name": "Notepad Memo",
     "cat": "labels-tape",
-    "source": "furniture",
-    "upstream": "stickyNote('lined')",
+    "source": "lucide",
+    "upstream": "notepad-text",
     "keywords": [
-      "sticky note",
-      "label",
-      "lined",
-      "memo"
+      "notebook",
+      "notes",
+      "pages",
+      "paper",
+      "stationery",
+      "sketchbook",
+      "organizer",
+      "organiser",
+      "planner",
+      "diary",
+      "journal",
+      "writing",
+      "write",
+      "written",
+      "reading",
+      "high school",
+      "university",
+      "college",
+      "academy",
+      "student",
+      "study",
+      "homework",
+      "research",
+      "lines",
+      "opened"
     ]
   },
   {
-    "id": "furn-sticky-note-torn",
-    "name": "Torn-Edge Sticky Note",
+    "id": "lucide-id-card",
+    "name": "ID Card",
     "cat": "labels-tape",
-    "source": "furniture",
-    "upstream": "stickyNote('torn')",
+    "source": "lucide",
+    "upstream": "id-card",
     "keywords": [
-      "sticky note",
-      "label",
-      "torn",
-      "memo"
+      "card",
+      "badge",
+      "identity",
+      "authentication",
+      "secure"
     ]
   },
   {
-    "id": "furn-speech-bubble-left",
-    "name": "Speech Bubble, Left Tail",
+    "id": "lucide-spool",
+    "name": "Ribbon Spool",
     "cat": "labels-tape",
-    "source": "furniture",
-    "upstream": "speechBubble('left')",
+    "source": "lucide",
+    "upstream": "spool",
     "keywords": [
-      "speech bubble",
-      "callout",
-      "chat",
-      "label"
+      "bobbin",
+      "spindle",
+      "yarn",
+      "thread",
+      "string",
+      "sewing",
+      "needlework"
     ]
   },
   {
-    "id": "furn-speech-bubble-right",
-    "name": "Speech Bubble, Right Tail",
+    "id": "lucide-badge-alert",
+    "name": "Alert Badge",
     "cat": "labels-tape",
-    "source": "furniture",
-    "upstream": "speechBubble('right')",
+    "source": "lucide",
+    "upstream": "badge-alert",
     "keywords": [
-      "speech bubble",
-      "callout",
-      "chat",
-      "label"
+      "check",
+      "verified",
+      "unverified",
+      "security",
+      "safety",
+      "issue"
     ]
   },
   {
-    "id": "furn-frame-square",
-    "name": "Square Frame Label",
+    "id": "lucide-badge-percent",
+    "name": "Percent Off Badge",
     "cat": "labels-tape",
-    "source": "furniture",
-    "upstream": "boxFrame(null)",
+    "source": "lucide",
+    "upstream": "badge-percent",
     "keywords": [
-      "frame",
-      "label",
-      "square",
-      "border"
-    ]
-  },
-  {
-    "id": "furn-frame-round",
-    "name": "Round-Corner Frame",
-    "cat": "labels-tape",
-    "source": "furniture",
-    "upstream": "boxFrame('round')",
-    "keywords": [
-      "frame",
-      "label",
-      "round",
-      "border"
-    ]
-  },
-  {
-    "id": "furn-bracket-left",
-    "name": "Opening Bracket Marker",
-    "cat": "labels-tape",
-    "source": "furniture",
-    "upstream": "bracket('left')",
-    "keywords": [
-      "bracket",
-      "marker",
-      "label"
-    ]
-  },
-  {
-    "id": "furn-bracket-right",
-    "name": "Closing Bracket Marker",
-    "cat": "labels-tape",
-    "source": "furniture",
-    "upstream": "bracket('right')",
-    "keywords": [
-      "bracket",
-      "marker",
-      "label"
-    ]
-  },
-  {
-    "id": "furn-checkbox-empty",
-    "name": "Empty Checkbox",
-    "cat": "labels-tape",
-    "source": "furniture",
-    "upstream": "checkbox(null)",
-    "keywords": [
-      "checkbox",
-      "to-do",
-      "label",
-      "task"
-    ]
-  },
-  {
-    "id": "furn-checkbox-checked",
-    "name": "Checked Checkbox",
-    "cat": "labels-tape",
-    "source": "furniture",
-    "upstream": "checkbox('checked')",
-    "keywords": [
-      "checkbox",
-      "to-do",
-      "done",
-      "task"
-    ]
-  },
-  {
-    "id": "furn-pip-filled",
-    "name": "Solid Pip Dot",
-    "cat": "labels-tape",
-    "source": "furniture",
-    "upstream": "pip(true)",
-    "keywords": [
-      "pip",
-      "dot",
-      "label",
-      "sticker dot"
-    ]
-  },
-  {
-    "id": "furn-pip-open",
-    "name": "Open Pip Ring",
-    "cat": "labels-tape",
-    "source": "furniture",
-    "upstream": "pip(false)",
-    "keywords": [
-      "pip",
-      "ring",
-      "label",
-      "sticker dot"
+      "verified",
+      "unverified",
+      "sale",
+      "discount",
+      "offer",
+      "marketing",
+      "sticker",
+      "price tag"
     ]
   },
   {
@@ -1658,6 +1399,47 @@
       "learning",
       "shapes",
       "geometry"
+    ]
+  },
+  {
+    "id": "lucide-component",
+    "name": "Component Blocks",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "component",
+    "keywords": [
+      "design",
+      "element",
+      "group",
+      "module",
+      "part",
+      "symbol"
+    ]
+  },
+  {
+    "id": "lucide-grid-2x2",
+    "name": "Two by Two Grid",
+    "cat": "boxes-bullets-markers",
+    "source": "lucide",
+    "upstream": "grid-2x2",
+    "keywords": [
+      "table",
+      "rows",
+      "columns",
+      "blocks",
+      "plot",
+      "land",
+      "geometry",
+      "measure",
+      "size",
+      "width",
+      "height",
+      "distance",
+      "surface area",
+      "square meter",
+      "acre",
+      "window",
+      "skylight"
     ]
   },
   {
@@ -2850,6 +2632,590 @@
     ]
   },
   {
+    "id": "lucide-vector-square",
+    "name": "Corner Handles Frame",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "vector-square",
+    "keywords": [
+      "shape",
+      "geometry",
+      "art",
+      "width",
+      "height",
+      "size",
+      "calculate",
+      "measure",
+      "select",
+      "graphics",
+      "box"
+    ]
+  },
+  {
+    "id": "lucide-table",
+    "name": "Table Grid",
+    "cat": "dividers-corners-frames",
+    "source": "lucide",
+    "upstream": "table",
+    "keywords": [
+      "spreadsheet",
+      "grid"
+    ]
+  },
+  {
+    "id": "lucide-sun",
+    "name": "Sun (Outline)",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "sun",
+    "keywords": [
+      "brightness",
+      "weather",
+      "light",
+      "summer",
+      "sun",
+      "sunny"
+    ]
+  },
+  {
+    "id": "lucide-moon",
+    "name": "Moon",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "moon",
+    "keywords": [
+      "dark",
+      "night",
+      "moon",
+      "sky"
+    ]
+  },
+  {
+    "id": "lucide-cloud",
+    "name": "Cloud (Outline)",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "cloud",
+    "keywords": [
+      "weather",
+      "cloud",
+      "sky"
+    ]
+  },
+  {
+    "id": "lucide-cloud-rain",
+    "name": "Rain Cloud (Outline)",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "cloud-rain",
+    "keywords": [
+      "weather",
+      "rainfall",
+      "cloud",
+      "rain"
+    ]
+  },
+  {
+    "id": "lucide-cloud-snow",
+    "name": "Snow Cloud",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "cloud-snow",
+    "keywords": [
+      "weather",
+      "blizzard",
+      "cloud",
+      "snow"
+    ]
+  },
+  {
+    "id": "lucide-cloud-lightning",
+    "name": "Lightning Cloud",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "cloud-lightning",
+    "keywords": [
+      "weather",
+      "bolt",
+      "cloud",
+      "lightning",
+      "storm"
+    ]
+  },
+  {
+    "id": "lucide-cloud-sun",
+    "name": "Sun Behind Cloud (Outline)",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "cloud-sun",
+    "keywords": [
+      "weather",
+      "partly",
+      "cloud",
+      "sun"
+    ]
+  },
+  {
+    "id": "lucide-wind",
+    "name": "Wind",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "wind",
+    "keywords": [
+      "weather",
+      "air",
+      "blow",
+      "wind",
+      "breeze"
+    ]
+  },
+  {
+    "id": "lucide-umbrella",
+    "name": "Umbrella",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "umbrella",
+    "keywords": [
+      "rain",
+      "weather",
+      "umbrella"
+    ]
+  },
+  {
+    "id": "lucide-rainbow",
+    "name": "Rainbow (Outline)",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "rainbow",
+    "keywords": [
+      "colors",
+      "colours",
+      "spectrum",
+      "light",
+      "prism",
+      "arc",
+      "clear",
+      "sunshine",
+      "rainbow",
+      "weather",
+      "colour"
+    ]
+  },
+  {
+    "id": "lucide-thermometer-snowflake",
+    "name": "Cold Thermometer",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "thermometer-snowflake",
+    "keywords": [
+      "temperature",
+      "celsius",
+      "fahrenheit",
+      "weather",
+      "cold",
+      "freeze",
+      "freezing",
+      "thermometer",
+      "snowflake"
+    ]
+  },
+  {
+    "id": "lucide-thermometer",
+    "name": "Thermometer",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "thermometer",
+    "keywords": [
+      "temperature",
+      "celsius",
+      "fahrenheit",
+      "weather",
+      "thermometer"
+    ]
+  },
+  {
+    "id": "lucide-sunrise",
+    "name": "Sunrise",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "sunrise",
+    "keywords": [
+      "weather",
+      "time",
+      "morning",
+      "day",
+      "sunrise",
+      "sun"
+    ]
+  },
+  {
+    "id": "lucide-sunset",
+    "name": "Sunset",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "sunset",
+    "keywords": [
+      "weather",
+      "time",
+      "evening",
+      "night",
+      "sunset",
+      "sun"
+    ]
+  },
+  {
+    "id": "lucide-cloud-drizzle",
+    "name": "Drizzle Cloud",
+    "cat": "weather-sky",
+    "source": "lucide",
+    "upstream": "cloud-drizzle",
+    "keywords": [
+      "weather",
+      "shower"
+    ]
+  },
+  {
+    "id": "lucide-tree-deciduous",
+    "name": "Deciduous Tree (Outline)",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "tree-deciduous",
+    "keywords": [
+      "tree",
+      "forest",
+      "park",
+      "nature",
+      "deciduous",
+      "plant"
+    ]
+  },
+  {
+    "id": "lucide-tree-palm",
+    "name": "Palm Tree",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "tree-palm",
+    "keywords": [
+      "vacation",
+      "leisure",
+      "island",
+      "tree",
+      "palm",
+      "tropical"
+    ]
+  },
+  {
+    "id": "lucide-tree-pine",
+    "name": "Pine Tree",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "tree-pine",
+    "keywords": [
+      "tree",
+      "pine",
+      "forest",
+      "park",
+      "nature",
+      "evergreen"
+    ]
+  },
+  {
+    "id": "lucide-trees",
+    "name": "Trees",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "trees",
+    "keywords": [
+      "tree",
+      "forest",
+      "park",
+      "nature",
+      "trees",
+      "plant"
+    ]
+  },
+  {
+    "id": "lucide-citrus",
+    "name": "Citrus Fruit",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "citrus",
+    "keywords": [
+      "lemon",
+      "orange",
+      "grapefruit",
+      "fruit",
+      "citrus",
+      "plant"
+    ]
+  },
+  {
+    "id": "lucide-flower-2",
+    "name": "Daisy Flower",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "flower-2",
+    "keywords": [
+      "sustainability",
+      "nature",
+      "plant",
+      "flower",
+      "daisy"
+    ]
+  },
+  {
+    "id": "lucide-leaf",
+    "name": "Leaf",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "leaf",
+    "keywords": [
+      "sustainability",
+      "nature",
+      "energy",
+      "plant",
+      "autumn",
+      "leaf"
+    ]
+  },
+  {
+    "id": "lucide-leafy-green",
+    "name": "Leafy Greens",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "leafy-green",
+    "keywords": [
+      "salad",
+      "lettuce",
+      "vegetable",
+      "chard",
+      "cabbage",
+      "bok choy",
+      "leafy green",
+      "plant"
+    ]
+  },
+  {
+    "id": "lucide-sprout",
+    "name": "Sprout",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "sprout",
+    "keywords": [
+      "eco",
+      "green",
+      "growth",
+      "leaf",
+      "nature",
+      "plant",
+      "seed",
+      "spring",
+      "sustainability",
+      "sprout",
+      "seedling"
+    ]
+  },
+  {
+    "id": "lucide-cherry",
+    "name": "Cherries (Outline)",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "cherry",
+    "keywords": [
+      "fruit",
+      "food",
+      "cherry",
+      "plant"
+    ]
+  },
+  {
+    "id": "lucide-clover",
+    "name": "Four-Leaf Clover (Outline)",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "clover",
+    "keywords": [
+      "leaf",
+      "luck",
+      "plant",
+      "clover"
+    ]
+  },
+  {
+    "id": "lucide-shrub",
+    "name": "Shrub",
+    "cat": "botanical",
+    "source": "lucide",
+    "upstream": "shrub",
+    "keywords": [
+      "forest",
+      "undergrowth",
+      "park",
+      "nature",
+      "shrub",
+      "bush",
+      "plant"
+    ]
+  },
+  {
+    "id": "lucide-chef-hat",
+    "name": "Chef Hat",
+    "cat": "food-drink",
+    "source": "lucide",
+    "upstream": "chef-hat",
+    "keywords": [
+      "cooking",
+      "food",
+      "kitchen",
+      "restaurant",
+      "chef hat"
+    ]
+  },
+  {
+    "id": "lucide-utensils",
+    "name": "Fork and Knife (Outline)",
+    "cat": "food-drink",
+    "source": "lucide",
+    "upstream": "utensils",
+    "keywords": [
+      "fork",
+      "knife",
+      "cutlery",
+      "flatware",
+      "tableware",
+      "silverware",
+      "food",
+      "restaurant",
+      "meal",
+      "breakfast",
+      "dinner",
+      "supper",
+      "utensils",
+      "dining"
+    ]
+  },
+  {
+    "id": "lucide-soup",
+    "name": "Bowl of Soup",
+    "cat": "food-drink",
+    "source": "lucide",
+    "upstream": "soup",
+    "keywords": [
+      "food",
+      "dish",
+      "restaurant",
+      "course",
+      "meal",
+      "bowl",
+      "starter",
+      "soup"
+    ]
+  },
+  {
+    "id": "lucide-salad",
+    "name": "Salad Bowl",
+    "cat": "food-drink",
+    "source": "lucide",
+    "upstream": "salad",
+    "keywords": [
+      "food",
+      "vegetarian",
+      "dish",
+      "restaurant",
+      "course",
+      "meal",
+      "side",
+      "vegetables",
+      "health",
+      "salad",
+      "bowl",
+      "healthy"
+    ]
+  },
+  {
+    "id": "lucide-ice-cream-cone",
+    "name": "Ice Cream Cone",
+    "cat": "food-drink",
+    "source": "lucide",
+    "upstream": "ice-cream-cone",
+    "keywords": [
+      "gelato",
+      "food",
+      "ice cream",
+      "cone",
+      "dessert"
+    ]
+  },
+  {
+    "id": "lucide-martini",
+    "name": "Martini Glass",
+    "cat": "food-drink",
+    "source": "lucide",
+    "upstream": "martini",
+    "keywords": [
+      "cocktail",
+      "alcohol",
+      "beverage",
+      "bar",
+      "drink",
+      "glass",
+      "spirit",
+      "party",
+      "celebration",
+      "mixer",
+      "martini"
+    ]
+  },
+  {
+    "id": "lucide-cake",
+    "name": "Cake",
+    "cat": "food-drink",
+    "source": "lucide",
+    "upstream": "cake",
+    "keywords": [
+      "birthday",
+      "birthdate",
+      "celebration",
+      "party",
+      "surprise",
+      "gateaux",
+      "dessert",
+      "fondant",
+      "icing sugar",
+      "sweet",
+      "baking",
+      "cake"
+    ]
+  },
+  {
+    "id": "lucide-sandwich",
+    "name": "Sandwich",
+    "cat": "food-drink",
+    "source": "lucide",
+    "upstream": "sandwich",
+    "keywords": [
+      "food",
+      "snack",
+      "dish",
+      "restaurant",
+      "lunch",
+      "meal",
+      "sandwich"
+    ]
+  },
+  {
+    "id": "lucide-drumstick",
+    "name": "Drumstick",
+    "cat": "food-drink",
+    "source": "lucide",
+    "upstream": "drumstick",
+    "keywords": [
+      "food",
+      "chicken",
+      "meat"
+    ]
+  },
+  {
     "id": "lucide-book",
     "name": "Book",
     "cat": "study-work",
@@ -3630,6 +3996,944 @@
     ]
   },
   {
+    "id": "lucide-activity",
+    "name": "Heartbeat Pulse",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "activity",
+    "keywords": [
+      "pulse",
+      "action",
+      "motion",
+      "movement",
+      "exercise",
+      "fitness",
+      "healthcare",
+      "heart rate monitor",
+      "vital signs",
+      "vitals",
+      "emergency room",
+      "er",
+      "intensive care",
+      "hospital",
+      "defibrillator",
+      "earthquake",
+      "siesmic",
+      "magnitude",
+      "richter scale",
+      "aftershock",
+      "tremor",
+      "shockwave",
+      "audio",
+      "waveform",
+      "synthesizer",
+      "synthesiser",
+      "music",
+      "activity",
+      "heartbeat"
+    ]
+  },
+  {
+    "id": "lucide-bandage",
+    "name": "Bandage",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "bandage",
+    "keywords": [
+      "plaster",
+      "band-aid",
+      "first aid",
+      "medical",
+      "health",
+      "wound",
+      "injury",
+      "care",
+      "treatment",
+      "healing",
+      "protection",
+      "emergency",
+      "aid",
+      "safety",
+      "patch",
+      "bandage"
+    ]
+  },
+  {
+    "id": "lucide-bath",
+    "name": "Bathtub (Outline)",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "bath",
+    "keywords": [
+      "amenities",
+      "services",
+      "bathroom",
+      "shower",
+      "bath",
+      "bathtub",
+      "self-care"
+    ]
+  },
+  {
+    "id": "lucide-bed",
+    "name": "Bed",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "bed",
+    "keywords": [
+      "sleep",
+      "hotel",
+      "furniture",
+      "bed",
+      "rest"
+    ]
+  },
+  {
+    "id": "lucide-bike",
+    "name": "Bicycle",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "bike",
+    "keywords": [
+      "bicycle",
+      "transport",
+      "trip",
+      "bike",
+      "exercise"
+    ]
+  },
+  {
+    "id": "lucide-brain",
+    "name": "Brain",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "brain",
+    "keywords": [
+      "medical",
+      "mind",
+      "mental",
+      "intellect",
+      "cerebral",
+      "consciousness",
+      "genius",
+      "artificial intelligence",
+      "ai",
+      "think",
+      "thought",
+      "insight",
+      "intelligent",
+      "smart",
+      "brain",
+      "mental health"
+    ]
+  },
+  {
+    "id": "lucide-cross",
+    "name": "Medical Cross",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "cross",
+    "keywords": [
+      "healthcare",
+      "first aid",
+      "cross",
+      "medical",
+      "health"
+    ]
+  },
+  {
+    "id": "lucide-dumbbell",
+    "name": "Dumbbell",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "dumbbell",
+    "keywords": [
+      "barbell",
+      "weight",
+      "workout",
+      "gym",
+      "dumbbell",
+      "exercise",
+      "fitness"
+    ]
+  },
+  {
+    "id": "lucide-footprints",
+    "name": "Footprints",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "footprints",
+    "keywords": [
+      "steps",
+      "walking",
+      "foot",
+      "feet",
+      "trail",
+      "shoe",
+      "footprints",
+      "walk"
+    ]
+  },
+  {
+    "id": "lucide-heart-pulse",
+    "name": "Heartbeat",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "heart-pulse",
+    "keywords": [
+      "heartbeat",
+      "pulse",
+      "health",
+      "medical",
+      "blood pressure",
+      "cardiac",
+      "systole",
+      "diastole",
+      "heart"
+    ]
+  },
+  {
+    "id": "lucide-pill",
+    "name": "Pill (Outline)",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "pill",
+    "keywords": [
+      "medicine",
+      "medication",
+      "drug",
+      "prescription",
+      "tablet",
+      "pharmacy",
+      "pill"
+    ]
+  },
+  {
+    "id": "lucide-scale",
+    "name": "Scale",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "scale",
+    "keywords": [
+      "balance",
+      "legal",
+      "license",
+      "right",
+      "rule",
+      "law",
+      "justice",
+      "weight",
+      "measure",
+      "compare",
+      "judge",
+      "fair",
+      "ethics",
+      "decision",
+      "scale"
+    ]
+  },
+  {
+    "id": "lucide-stethoscope",
+    "name": "Stethoscope",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "stethoscope",
+    "keywords": [
+      "phonendoscope",
+      "medical",
+      "heart",
+      "lungs",
+      "sound",
+      "stethoscope",
+      "doctor"
+    ]
+  },
+  {
+    "id": "lucide-syringe",
+    "name": "Syringe",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "syringe",
+    "keywords": [
+      "medicine",
+      "medical",
+      "needle",
+      "pump",
+      "plunger",
+      "nozzle",
+      "blood",
+      "syringe",
+      "injection"
+    ]
+  },
+  {
+    "id": "lucide-weight",
+    "name": "Weight",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "weight",
+    "keywords": [
+      "mass",
+      "heavy",
+      "lead",
+      "metal",
+      "measure",
+      "geometry",
+      "scales",
+      "balance",
+      "weight",
+      "exercise",
+      "fitness"
+    ]
+  },
+  {
+    "id": "lucide-accessibility",
+    "name": "Accessibility",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "accessibility",
+    "keywords": [
+      "disability",
+      "disabled",
+      "dda",
+      "wheelchair",
+      "accessibility"
+    ]
+  },
+  {
+    "id": "lucide-ambulance",
+    "name": "Ambulance",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "ambulance",
+    "keywords": [
+      "ambulance",
+      "emergency",
+      "medical",
+      "vehicle",
+      "siren",
+      "healthcare",
+      "transportation",
+      "rescue",
+      "urgent",
+      "first aid"
+    ]
+  },
+  {
+    "id": "lucide-eye",
+    "name": "Eye",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "eye",
+    "keywords": [
+      "view",
+      "watch",
+      "see",
+      "show",
+      "expose",
+      "reveal",
+      "display",
+      "visible",
+      "visibility",
+      "vision",
+      "preview",
+      "read",
+      "eye",
+      "sight"
+    ]
+  },
+  {
+    "id": "lucide-glasses",
+    "name": "Glasses",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "glasses",
+    "keywords": [
+      "glasses",
+      "spectacles",
+      "vision",
+      "eyewear"
+    ]
+  },
+  {
+    "id": "lucide-hand-heart",
+    "name": "Hand Holding Heart",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "hand-heart",
+    "keywords": [
+      "love",
+      "like",
+      "emotion",
+      "hand",
+      "heart",
+      "care",
+      "self-care"
+    ]
+  },
+  {
+    "id": "lucide-shield-plus",
+    "name": "Medical Shield",
+    "cat": "health-self-care",
+    "source": "lucide",
+    "upstream": "shield-plus",
+    "keywords": [
+      "cybersecurity",
+      "secure",
+      "safety",
+      "protection",
+      "guardian",
+      "armored",
+      "armoured",
+      "defense",
+      "defence",
+      "defender",
+      "block",
+      "threat",
+      "prevention",
+      "antivirus",
+      "vigilance",
+      "vigilant",
+      "detection",
+      "scan",
+      "strength",
+      "strong",
+      "tough",
+      "invincible",
+      "invincibility",
+      "invulnerable",
+      "undamaged",
+      "extra",
+      "added",
+      "professional",
+      "enterprise",
+      "full",
+      "maximum",
+      "upgraded",
+      "ultra",
+      "activate",
+      "enable",
+      "audit",
+      "admin",
+      "verification",
+      "crest",
+      "medic",
+      "+"
+    ]
+  },
+  {
+    "id": "lucide-plane",
+    "name": "Airplane (Outline)",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "plane",
+    "keywords": [
+      "plane",
+      "trip",
+      "airplane",
+      "travel",
+      "flight"
+    ]
+  },
+  {
+    "id": "lucide-car",
+    "name": "Car",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "car",
+    "keywords": [
+      "vehicle",
+      "drive",
+      "trip",
+      "journey",
+      "car",
+      "travel"
+    ]
+  },
+  {
+    "id": "lucide-train-front",
+    "name": "Train (Outline)",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "train-front",
+    "keywords": [
+      "railway",
+      "metro",
+      "subway",
+      "underground",
+      "high-speed",
+      "bullet",
+      "fast",
+      "track",
+      "line",
+      "train",
+      "travel",
+      "rail"
+    ]
+  },
+  {
+    "id": "lucide-bus",
+    "name": "Bus",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "bus",
+    "keywords": [
+      "bus",
+      "vehicle",
+      "transport",
+      "trip",
+      "travel"
+    ]
+  },
+  {
+    "id": "lucide-ship",
+    "name": "Ship (Outline)",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "ship",
+    "keywords": [
+      "boat",
+      "knots",
+      "nautical mile",
+      "maritime",
+      "sailing",
+      "yacht",
+      "cruise",
+      "ocean liner",
+      "tanker",
+      "vessel",
+      "navy",
+      "trip",
+      "releases",
+      "ship",
+      "travel"
+    ]
+  },
+  {
+    "id": "lucide-map",
+    "name": "Map",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "map",
+    "keywords": [
+      "location",
+      "navigation",
+      "travel",
+      "map"
+    ]
+  },
+  {
+    "id": "lucide-tent",
+    "name": "Tent (Outline)",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "tent",
+    "keywords": [
+      "tipi",
+      "teepee",
+      "wigwam",
+      "lodge",
+      "camping",
+      "campsite",
+      "holiday",
+      "retreat",
+      "nomadic",
+      "native american",
+      "indian",
+      "wilderness",
+      "outdoors",
+      "tent"
+    ]
+  },
+  {
+    "id": "lucide-mountain",
+    "name": "Mountain (Outline)",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "mountain",
+    "keywords": [
+      "climb",
+      "hike",
+      "rock",
+      "mountain",
+      "outdoors",
+      "hiking"
+    ]
+  },
+  {
+    "id": "lucide-luggage",
+    "name": "Luggage (Outline)",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "luggage",
+    "keywords": [
+      "baggage",
+      "luggage",
+      "travel",
+      "suitcase"
+    ]
+  },
+  {
+    "id": "lucide-anchor",
+    "name": "Anchor (Outline)",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "anchor",
+    "keywords": [
+      "ship",
+      "anchor",
+      "boat",
+      "nautical"
+    ]
+  },
+  {
+    "id": "lucide-sailboat",
+    "name": "Sailboat (Outline)",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "sailboat",
+    "keywords": [
+      "ship",
+      "boat",
+      "harbor",
+      "harbour",
+      "dock",
+      "sailboat",
+      "sailing"
+    ]
+  },
+  {
+    "id": "lucide-rocket",
+    "name": "Rocket (Outline)",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "rocket",
+    "keywords": [
+      "release",
+      "boost",
+      "launch",
+      "space",
+      "version",
+      "rocket"
+    ]
+  },
+  {
+    "id": "lucide-ferris-wheel",
+    "name": "Ferris Wheel",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "ferris-wheel",
+    "keywords": [
+      "big wheel",
+      "daisy wheel",
+      "observation",
+      "attraction",
+      "entertainment",
+      "amusement park",
+      "theme park",
+      "funfair",
+      "ferris wheel",
+      "carnival",
+      "fair"
+    ]
+  },
+  {
+    "id": "lucide-camera",
+    "name": "Camera",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "camera",
+    "keywords": [
+      "photography",
+      "lens",
+      "focus",
+      "capture",
+      "shot",
+      "visual",
+      "image",
+      "device",
+      "equipment",
+      "photo",
+      "webcam",
+      "video",
+      "camera",
+      "travel"
+    ]
+  },
+  {
+    "id": "lucide-binoculars",
+    "name": "Binoculars",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "binoculars",
+    "keywords": [
+      "field glasses",
+      "lorgnette",
+      "pince-nez",
+      "observation",
+      "sightseeing",
+      "nature",
+      "wildlife",
+      "birdwatching",
+      "scouting",
+      "surveillance",
+      "search",
+      "discovery",
+      "monitoring",
+      "lookout",
+      "viewpoint",
+      "travel",
+      "tourism",
+      "research",
+      "binoculars",
+      "explore",
+      "observe"
+    ]
+  },
+  {
+    "id": "lucide-landmark",
+    "name": "Landmark",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "landmark",
+    "keywords": [
+      "bank",
+      "building",
+      "capitol",
+      "finance",
+      "money",
+      "museum",
+      "art gallery",
+      "hall",
+      "institute",
+      "pediment",
+      "portico",
+      "doric",
+      "columns",
+      "pillars",
+      "classical",
+      "architecture",
+      "government",
+      "institution",
+      "monument",
+      "site",
+      "history",
+      "historic",
+      "library",
+      "temple",
+      "ancient",
+      "structure",
+      "landmark",
+      "travel"
+    ]
+  },
+  {
+    "id": "lucide-castle",
+    "name": "Castle",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "castle",
+    "keywords": [
+      "fortress",
+      "stronghold",
+      "palace",
+      "chateau",
+      "building",
+      "castle",
+      "landmark",
+      "travel"
+    ]
+  },
+  {
+    "id": "lucide-signpost",
+    "name": "Signpost",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "signpost",
+    "keywords": [
+      "navigation",
+      "direction",
+      "arrow",
+      "wayfinding",
+      "guide",
+      "location",
+      "pointer",
+      "route",
+      "indicator",
+      "marker",
+      "bidirectional",
+      "left",
+      "right",
+      "east",
+      "west",
+      "signpost",
+      "travel"
+    ]
+  },
+  {
+    "id": "lucide-route",
+    "name": "Route Path",
+    "cat": "travel-places",
+    "source": "lucide",
+    "upstream": "route",
+    "keywords": [
+      "path",
+      "journey",
+      "planner",
+      "points",
+      "stops",
+      "stations"
+    ]
+  },
+  {
+    "id": "lucide-balloon",
+    "name": "Balloon (Outline)",
+    "cat": "celebration-seasons",
+    "source": "lucide",
+    "upstream": "balloon",
+    "keywords": [
+      "party",
+      "festival",
+      "congratulations",
+      "celebration",
+      "decoration",
+      "colorful",
+      "floating",
+      "fun",
+      "birthday",
+      "event",
+      "entertainment",
+      "balloon"
+    ]
+  },
+  {
+    "id": "lucide-cake-slice",
+    "name": "Cake Slice",
+    "cat": "celebration-seasons",
+    "source": "lucide",
+    "upstream": "cake-slice",
+    "keywords": [
+      "birthday",
+      "birthdate",
+      "celebration",
+      "party",
+      "surprise",
+      "gateaux",
+      "dessert",
+      "candles",
+      "wish",
+      "fondant",
+      "icing sugar",
+      "sweet",
+      "baking",
+      "cake",
+      "slice"
+    ]
+  },
+  {
+    "id": "lucide-candy-cane",
+    "name": "Candy Cane",
+    "cat": "celebration-seasons",
+    "source": "lucide",
+    "upstream": "candy-cane",
+    "keywords": [
+      "sugar",
+      "food",
+      "sweet",
+      "christmas",
+      "xmas",
+      "candy cane",
+      "holiday"
+    ]
+  },
+  {
+    "id": "lucide-gift",
+    "name": "Gift",
+    "cat": "celebration-seasons",
+    "source": "lucide",
+    "upstream": "gift",
+    "keywords": [
+      "present",
+      "box",
+      "birthday",
+      "party",
+      "gift"
+    ]
+  },
+  {
+    "id": "lucide-venetian-mask",
+    "name": "Masquerade Mask",
+    "cat": "celebration-seasons",
+    "source": "lucide",
+    "upstream": "venetian-mask",
+    "keywords": [
+      "mask",
+      "masquerade",
+      "impersonate",
+      "secret",
+      "incognito",
+      "party",
+      "celebration"
+    ]
+  },
+  {
+    "id": "lucide-drum",
+    "name": "Drum",
+    "cat": "celebration-seasons",
+    "source": "lucide",
+    "upstream": "drum",
+    "keywords": [
+      "drummer",
+      "kit",
+      "sticks",
+      "instrument",
+      "beat",
+      "bang",
+      "bass",
+      "backing track",
+      "band",
+      "play",
+      "performance",
+      "concert",
+      "march",
+      "music",
+      "audio",
+      "sound",
+      "noise",
+      "loud",
+      "drum",
+      "celebration"
+    ]
+  },
+  {
+    "id": "lucide-music",
+    "name": "Music Note",
+    "cat": "celebration-seasons",
+    "source": "lucide",
+    "upstream": "music",
+    "keywords": [
+      "note",
+      "quaver",
+      "eighth note",
+      "music",
+      "song"
+    ]
+  },
+  {
+    "id": "lucide-wand-sparkles",
+    "name": "Magic Wand",
+    "cat": "celebration-seasons",
+    "source": "lucide",
+    "upstream": "wand-sparkles",
+    "keywords": [
+      "magic",
+      "wizard",
+      "magician",
+      "wand",
+      "sparkles"
+    ]
+  },
+  {
     "id": "lucide-dollar-sign",
     "name": "Dollar Sign",
     "cat": "money-home",
@@ -4185,6 +5489,71 @@
     ]
   },
   {
+    "id": "lucide-toolbox",
+    "name": "Toolbox",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "toolbox",
+    "keywords": [
+      "toolkit",
+      "tools",
+      "trunk",
+      "chest",
+      "box",
+      "storage",
+      "utility",
+      "utilities",
+      "container",
+      "kit",
+      "set",
+      "repair",
+      "fix",
+      "service",
+      "maintenance",
+      "mechanic",
+      "workshop",
+      "construction",
+      "hardware",
+      "equipment",
+      "gear",
+      "handyman",
+      "engineering",
+      "craft",
+      "diy"
+    ]
+  },
+  {
+    "id": "lucide-hard-hat",
+    "name": "Hard Hat",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "hard-hat",
+    "keywords": [
+      "helmet",
+      "construction",
+      "safety",
+      "savety"
+    ]
+  },
+  {
+    "id": "lucide-anvil",
+    "name": "Anvil",
+    "cat": "money-home",
+    "source": "lucide",
+    "upstream": "anvil",
+    "keywords": [
+      "metal",
+      "iron",
+      "alloy",
+      "materials",
+      "heavy",
+      "weight",
+      "blacksmith",
+      "forge",
+      "acme"
+    ]
+  },
+  {
     "id": "lucide-infinity",
     "name": "Infinity Symbol",
     "cat": "symbols-misc",
@@ -4583,1406 +5952,173 @@
     ]
   },
   {
-    "id": "lucide-sun",
-    "name": "Sun (Outline)",
-    "cat": "weather-sky",
-    "source": "lucide",
-    "upstream": "sun",
+    "id": "twemoji-bookmark",
+    "name": "Bookmark Ribbon",
+    "cat": "index-tabs-flags",
+    "source": "twemoji",
+    "upstream": "1f516",
     "keywords": [
-      "brightness",
-      "weather",
-      "light",
-      "summer",
-      "sun",
-      "sunny"
+      "bookmark",
+      "ribbon",
+      "page marker",
+      "save"
     ]
   },
   {
-    "id": "lucide-moon",
-    "name": "Moon",
-    "cat": "weather-sky",
-    "source": "lucide",
-    "upstream": "moon",
+    "id": "twemoji-bookmark-tabs",
+    "name": "Bookmark Tabs",
+    "cat": "index-tabs-flags",
+    "source": "twemoji",
+    "upstream": "1f4d1",
     "keywords": [
-      "dark",
-      "night",
-      "moon",
-      "sky"
+      "bookmark",
+      "tabs",
+      "file",
+      "index"
     ]
   },
   {
-    "id": "lucide-cloud",
-    "name": "Cloud (Outline)",
-    "cat": "weather-sky",
-    "source": "lucide",
-    "upstream": "cloud",
+    "id": "twemoji-page-curl",
+    "name": "Curled Page Corner",
+    "cat": "index-tabs-flags",
+    "source": "twemoji",
+    "upstream": "1f4c3",
     "keywords": [
-      "weather",
-      "cloud",
-      "sky"
+      "page",
+      "curl",
+      "corner",
+      "document"
     ]
   },
   {
-    "id": "lucide-cloud-rain",
-    "name": "Rain Cloud (Outline)",
-    "cat": "weather-sky",
-    "source": "lucide",
-    "upstream": "cloud-rain",
+    "id": "twemoji-card-index-dividers",
+    "name": "Card Index Dividers",
+    "cat": "index-tabs-flags",
+    "source": "twemoji",
+    "upstream": "1f5c2",
     "keywords": [
-      "weather",
-      "rainfall",
-      "cloud",
-      "rain"
+      "index",
+      "dividers",
+      "cards",
+      "filing",
+      "tabs"
     ]
   },
   {
-    "id": "lucide-cloud-snow",
-    "name": "Snow Cloud",
-    "cat": "weather-sky",
-    "source": "lucide",
-    "upstream": "cloud-snow",
+    "id": "twemoji-triangular-flag",
+    "name": "Triangular Flag on Post",
+    "cat": "index-tabs-flags",
+    "source": "twemoji",
+    "upstream": "1f6a9",
     "keywords": [
-      "weather",
-      "blizzard",
-      "cloud",
-      "snow"
-    ]
-  },
-  {
-    "id": "lucide-cloud-lightning",
-    "name": "Lightning Cloud",
-    "cat": "weather-sky",
-    "source": "lucide",
-    "upstream": "cloud-lightning",
-    "keywords": [
-      "weather",
-      "bolt",
-      "cloud",
-      "lightning",
-      "storm"
-    ]
-  },
-  {
-    "id": "lucide-cloud-sun",
-    "name": "Sun Behind Cloud (Outline)",
-    "cat": "weather-sky",
-    "source": "lucide",
-    "upstream": "cloud-sun",
-    "keywords": [
-      "weather",
-      "partly",
-      "cloud",
-      "sun"
-    ]
-  },
-  {
-    "id": "lucide-wind",
-    "name": "Wind",
-    "cat": "weather-sky",
-    "source": "lucide",
-    "upstream": "wind",
-    "keywords": [
-      "weather",
-      "air",
-      "blow",
-      "wind",
-      "breeze"
-    ]
-  },
-  {
-    "id": "lucide-umbrella",
-    "name": "Umbrella",
-    "cat": "weather-sky",
-    "source": "lucide",
-    "upstream": "umbrella",
-    "keywords": [
-      "rain",
-      "weather",
-      "umbrella"
-    ]
-  },
-  {
-    "id": "lucide-rainbow",
-    "name": "Rainbow (Outline)",
-    "cat": "weather-sky",
-    "source": "lucide",
-    "upstream": "rainbow",
-    "keywords": [
-      "colors",
-      "colours",
-      "spectrum",
-      "light",
-      "prism",
-      "arc",
-      "clear",
-      "sunshine",
-      "rainbow",
-      "weather",
-      "colour"
-    ]
-  },
-  {
-    "id": "lucide-thermometer-snowflake",
-    "name": "Cold Thermometer",
-    "cat": "weather-sky",
-    "source": "lucide",
-    "upstream": "thermometer-snowflake",
-    "keywords": [
-      "temperature",
-      "celsius",
-      "fahrenheit",
-      "weather",
-      "cold",
-      "freeze",
-      "freezing",
-      "thermometer",
-      "snowflake"
-    ]
-  },
-  {
-    "id": "lucide-thermometer",
-    "name": "Thermometer",
-    "cat": "weather-sky",
-    "source": "lucide",
-    "upstream": "thermometer",
-    "keywords": [
-      "temperature",
-      "celsius",
-      "fahrenheit",
-      "weather",
-      "thermometer"
-    ]
-  },
-  {
-    "id": "lucide-sunrise",
-    "name": "Sunrise",
-    "cat": "weather-sky",
-    "source": "lucide",
-    "upstream": "sunrise",
-    "keywords": [
-      "weather",
-      "time",
-      "morning",
-      "day",
-      "sunrise",
-      "sun"
-    ]
-  },
-  {
-    "id": "lucide-sunset",
-    "name": "Sunset",
-    "cat": "weather-sky",
-    "source": "lucide",
-    "upstream": "sunset",
-    "keywords": [
-      "weather",
-      "time",
-      "evening",
-      "night",
-      "sunset",
-      "sun"
-    ]
-  },
-  {
-    "id": "lucide-tree-deciduous",
-    "name": "Deciduous Tree (Outline)",
-    "cat": "botanical",
-    "source": "lucide",
-    "upstream": "tree-deciduous",
-    "keywords": [
-      "tree",
-      "forest",
-      "park",
-      "nature",
-      "deciduous",
-      "plant"
-    ]
-  },
-  {
-    "id": "lucide-tree-palm",
-    "name": "Palm Tree",
-    "cat": "botanical",
-    "source": "lucide",
-    "upstream": "tree-palm",
-    "keywords": [
-      "vacation",
-      "leisure",
-      "island",
-      "tree",
-      "palm",
-      "tropical"
-    ]
-  },
-  {
-    "id": "lucide-tree-pine",
-    "name": "Pine Tree",
-    "cat": "botanical",
-    "source": "lucide",
-    "upstream": "tree-pine",
-    "keywords": [
-      "tree",
-      "pine",
-      "forest",
-      "park",
-      "nature",
-      "evergreen"
-    ]
-  },
-  {
-    "id": "lucide-trees",
-    "name": "Trees",
-    "cat": "botanical",
-    "source": "lucide",
-    "upstream": "trees",
-    "keywords": [
-      "tree",
-      "forest",
-      "park",
-      "nature",
-      "trees",
-      "plant"
-    ]
-  },
-  {
-    "id": "lucide-citrus",
-    "name": "Citrus Fruit",
-    "cat": "botanical",
-    "source": "lucide",
-    "upstream": "citrus",
-    "keywords": [
-      "lemon",
-      "orange",
-      "grapefruit",
-      "fruit",
-      "citrus",
-      "plant"
-    ]
-  },
-  {
-    "id": "lucide-flower-2",
-    "name": "Daisy Flower",
-    "cat": "botanical",
-    "source": "lucide",
-    "upstream": "flower-2",
-    "keywords": [
-      "sustainability",
-      "nature",
-      "plant",
-      "flower",
-      "daisy"
-    ]
-  },
-  {
-    "id": "lucide-leaf",
-    "name": "Leaf",
-    "cat": "botanical",
-    "source": "lucide",
-    "upstream": "leaf",
-    "keywords": [
-      "sustainability",
-      "nature",
-      "energy",
-      "plant",
-      "autumn",
-      "leaf"
-    ]
-  },
-  {
-    "id": "lucide-leafy-green",
-    "name": "Leafy Greens",
-    "cat": "botanical",
-    "source": "lucide",
-    "upstream": "leafy-green",
-    "keywords": [
-      "salad",
-      "lettuce",
-      "vegetable",
-      "chard",
-      "cabbage",
-      "bok choy",
-      "leafy green",
-      "plant"
-    ]
-  },
-  {
-    "id": "lucide-sprout",
-    "name": "Sprout",
-    "cat": "botanical",
-    "source": "lucide",
-    "upstream": "sprout",
-    "keywords": [
-      "eco",
-      "green",
-      "growth",
-      "leaf",
-      "nature",
-      "plant",
-      "seed",
-      "spring",
-      "sustainability",
-      "sprout",
-      "seedling"
-    ]
-  },
-  {
-    "id": "lucide-cherry",
-    "name": "Cherries (Outline)",
-    "cat": "botanical",
-    "source": "lucide",
-    "upstream": "cherry",
-    "keywords": [
-      "fruit",
-      "food",
-      "cherry",
-      "plant"
-    ]
-  },
-  {
-    "id": "lucide-clover",
-    "name": "Four-Leaf Clover (Outline)",
-    "cat": "botanical",
-    "source": "lucide",
-    "upstream": "clover",
-    "keywords": [
-      "leaf",
-      "luck",
-      "plant",
-      "clover"
-    ]
-  },
-  {
-    "id": "lucide-shrub",
-    "name": "Shrub",
-    "cat": "botanical",
-    "source": "lucide",
-    "upstream": "shrub",
-    "keywords": [
-      "forest",
-      "undergrowth",
-      "park",
-      "nature",
-      "shrub",
-      "bush",
-      "plant"
-    ]
-  },
-  {
-    "id": "lucide-chef-hat",
-    "name": "Chef Hat",
-    "cat": "food-drink",
-    "source": "lucide",
-    "upstream": "chef-hat",
-    "keywords": [
-      "cooking",
-      "food",
-      "kitchen",
-      "restaurant",
-      "chef hat"
-    ]
-  },
-  {
-    "id": "lucide-utensils",
-    "name": "Fork and Knife (Outline)",
-    "cat": "food-drink",
-    "source": "lucide",
-    "upstream": "utensils",
-    "keywords": [
-      "fork",
-      "knife",
-      "cutlery",
-      "flatware",
-      "tableware",
-      "silverware",
-      "food",
-      "restaurant",
-      "meal",
-      "breakfast",
-      "dinner",
-      "supper",
-      "utensils",
-      "dining"
-    ]
-  },
-  {
-    "id": "lucide-soup",
-    "name": "Bowl of Soup",
-    "cat": "food-drink",
-    "source": "lucide",
-    "upstream": "soup",
-    "keywords": [
-      "food",
-      "dish",
-      "restaurant",
-      "course",
-      "meal",
-      "bowl",
-      "starter",
-      "soup"
-    ]
-  },
-  {
-    "id": "lucide-salad",
-    "name": "Salad Bowl",
-    "cat": "food-drink",
-    "source": "lucide",
-    "upstream": "salad",
-    "keywords": [
-      "food",
-      "vegetarian",
-      "dish",
-      "restaurant",
-      "course",
-      "meal",
-      "side",
-      "vegetables",
-      "health",
-      "salad",
-      "bowl",
-      "healthy"
-    ]
-  },
-  {
-    "id": "lucide-ice-cream-cone",
-    "name": "Ice Cream Cone",
-    "cat": "food-drink",
-    "source": "lucide",
-    "upstream": "ice-cream-cone",
-    "keywords": [
-      "gelato",
-      "food",
-      "ice cream",
-      "cone",
-      "dessert"
-    ]
-  },
-  {
-    "id": "lucide-martini",
-    "name": "Martini Glass",
-    "cat": "food-drink",
-    "source": "lucide",
-    "upstream": "martini",
-    "keywords": [
-      "cocktail",
-      "alcohol",
-      "beverage",
-      "bar",
-      "drink",
-      "glass",
-      "spirit",
-      "party",
-      "celebration",
-      "mixer",
-      "martini"
-    ]
-  },
-  {
-    "id": "lucide-cake",
-    "name": "Cake",
-    "cat": "food-drink",
-    "source": "lucide",
-    "upstream": "cake",
-    "keywords": [
-      "birthday",
-      "birthdate",
-      "celebration",
-      "party",
-      "surprise",
-      "gateaux",
-      "dessert",
-      "fondant",
-      "icing sugar",
-      "sweet",
-      "baking",
-      "cake"
-    ]
-  },
-  {
-    "id": "lucide-sandwich",
-    "name": "Sandwich",
-    "cat": "food-drink",
-    "source": "lucide",
-    "upstream": "sandwich",
-    "keywords": [
-      "food",
-      "snack",
-      "dish",
-      "restaurant",
-      "lunch",
-      "meal",
-      "sandwich"
-    ]
-  },
-  {
-    "id": "lucide-activity",
-    "name": "Heartbeat Pulse",
-    "cat": "health-self-care",
-    "source": "lucide",
-    "upstream": "activity",
-    "keywords": [
-      "pulse",
-      "action",
-      "motion",
-      "movement",
-      "exercise",
-      "fitness",
-      "healthcare",
-      "heart rate monitor",
-      "vital signs",
-      "vitals",
-      "emergency room",
-      "er",
-      "intensive care",
-      "hospital",
-      "defibrillator",
-      "earthquake",
-      "siesmic",
-      "magnitude",
-      "richter scale",
-      "aftershock",
-      "tremor",
-      "shockwave",
-      "audio",
-      "waveform",
-      "synthesizer",
-      "synthesiser",
-      "music",
-      "activity",
-      "heartbeat"
-    ]
-  },
-  {
-    "id": "lucide-bandage",
-    "name": "Bandage",
-    "cat": "health-self-care",
-    "source": "lucide",
-    "upstream": "bandage",
-    "keywords": [
-      "plaster",
-      "band-aid",
-      "first aid",
-      "medical",
-      "health",
-      "wound",
-      "injury",
-      "care",
-      "treatment",
-      "healing",
-      "protection",
-      "emergency",
-      "aid",
-      "safety",
-      "patch",
-      "bandage"
-    ]
-  },
-  {
-    "id": "lucide-bath",
-    "name": "Bathtub (Outline)",
-    "cat": "health-self-care",
-    "source": "lucide",
-    "upstream": "bath",
-    "keywords": [
-      "amenities",
-      "services",
-      "bathroom",
-      "shower",
-      "bath",
-      "bathtub",
-      "self-care"
-    ]
-  },
-  {
-    "id": "lucide-bed",
-    "name": "Bed",
-    "cat": "health-self-care",
-    "source": "lucide",
-    "upstream": "bed",
-    "keywords": [
-      "sleep",
-      "hotel",
-      "furniture",
-      "bed",
-      "rest"
-    ]
-  },
-  {
-    "id": "lucide-bike",
-    "name": "Bicycle",
-    "cat": "health-self-care",
-    "source": "lucide",
-    "upstream": "bike",
-    "keywords": [
-      "bicycle",
-      "transport",
-      "trip",
-      "bike",
-      "exercise"
-    ]
-  },
-  {
-    "id": "lucide-brain",
-    "name": "Brain",
-    "cat": "health-self-care",
-    "source": "lucide",
-    "upstream": "brain",
-    "keywords": [
-      "medical",
-      "mind",
-      "mental",
-      "intellect",
-      "cerebral",
-      "consciousness",
-      "genius",
-      "artificial intelligence",
-      "ai",
-      "think",
-      "thought",
-      "insight",
-      "intelligent",
-      "smart",
-      "brain",
-      "mental health"
-    ]
-  },
-  {
-    "id": "lucide-cross",
-    "name": "Medical Cross",
-    "cat": "health-self-care",
-    "source": "lucide",
-    "upstream": "cross",
-    "keywords": [
-      "healthcare",
-      "first aid",
-      "cross",
-      "medical",
-      "health"
-    ]
-  },
-  {
-    "id": "lucide-dumbbell",
-    "name": "Dumbbell",
-    "cat": "health-self-care",
-    "source": "lucide",
-    "upstream": "dumbbell",
-    "keywords": [
-      "barbell",
-      "weight",
-      "workout",
-      "gym",
-      "dumbbell",
-      "exercise",
-      "fitness"
-    ]
-  },
-  {
-    "id": "lucide-footprints",
-    "name": "Footprints",
-    "cat": "health-self-care",
-    "source": "lucide",
-    "upstream": "footprints",
-    "keywords": [
-      "steps",
-      "walking",
-      "foot",
-      "feet",
-      "trail",
-      "shoe",
-      "footprints",
-      "walk"
-    ]
-  },
-  {
-    "id": "lucide-heart-pulse",
-    "name": "Heartbeat",
-    "cat": "health-self-care",
-    "source": "lucide",
-    "upstream": "heart-pulse",
-    "keywords": [
-      "heartbeat",
-      "pulse",
-      "health",
-      "medical",
-      "blood pressure",
-      "cardiac",
-      "systole",
-      "diastole",
-      "heart"
-    ]
-  },
-  {
-    "id": "lucide-pill",
-    "name": "Pill (Outline)",
-    "cat": "health-self-care",
-    "source": "lucide",
-    "upstream": "pill",
-    "keywords": [
-      "medicine",
-      "medication",
-      "drug",
-      "prescription",
-      "tablet",
-      "pharmacy",
-      "pill"
-    ]
-  },
-  {
-    "id": "lucide-scale",
-    "name": "Scale",
-    "cat": "health-self-care",
-    "source": "lucide",
-    "upstream": "scale",
-    "keywords": [
-      "balance",
-      "legal",
-      "license",
-      "right",
-      "rule",
-      "law",
-      "justice",
-      "weight",
-      "measure",
-      "compare",
-      "judge",
-      "fair",
-      "ethics",
-      "decision",
-      "scale"
-    ]
-  },
-  {
-    "id": "lucide-stethoscope",
-    "name": "Stethoscope",
-    "cat": "health-self-care",
-    "source": "lucide",
-    "upstream": "stethoscope",
-    "keywords": [
-      "phonendoscope",
-      "medical",
-      "heart",
-      "lungs",
-      "sound",
-      "stethoscope",
-      "doctor"
-    ]
-  },
-  {
-    "id": "lucide-syringe",
-    "name": "Syringe",
-    "cat": "health-self-care",
-    "source": "lucide",
-    "upstream": "syringe",
-    "keywords": [
-      "medicine",
-      "medical",
-      "needle",
-      "pump",
-      "plunger",
-      "nozzle",
-      "blood",
-      "syringe",
-      "injection"
-    ]
-  },
-  {
-    "id": "lucide-weight",
-    "name": "Weight",
-    "cat": "health-self-care",
-    "source": "lucide",
-    "upstream": "weight",
-    "keywords": [
-      "mass",
-      "heavy",
-      "lead",
-      "metal",
-      "measure",
-      "geometry",
-      "scales",
-      "balance",
-      "weight",
-      "exercise",
-      "fitness"
-    ]
-  },
-  {
-    "id": "lucide-accessibility",
-    "name": "Accessibility",
-    "cat": "health-self-care",
-    "source": "lucide",
-    "upstream": "accessibility",
-    "keywords": [
-      "disability",
-      "disabled",
-      "dda",
-      "wheelchair",
-      "accessibility"
-    ]
-  },
-  {
-    "id": "lucide-ambulance",
-    "name": "Ambulance",
-    "cat": "health-self-care",
-    "source": "lucide",
-    "upstream": "ambulance",
-    "keywords": [
-      "ambulance",
-      "emergency",
-      "medical",
-      "vehicle",
-      "siren",
-      "healthcare",
-      "transportation",
-      "rescue",
-      "urgent",
-      "first aid"
-    ]
-  },
-  {
-    "id": "lucide-eye",
-    "name": "Eye",
-    "cat": "health-self-care",
-    "source": "lucide",
-    "upstream": "eye",
-    "keywords": [
-      "view",
-      "watch",
-      "see",
-      "show",
-      "expose",
-      "reveal",
-      "display",
-      "visible",
-      "visibility",
-      "vision",
-      "preview",
-      "read",
-      "eye",
-      "sight"
-    ]
-  },
-  {
-    "id": "lucide-glasses",
-    "name": "Glasses",
-    "cat": "health-self-care",
-    "source": "lucide",
-    "upstream": "glasses",
-    "keywords": [
-      "glasses",
-      "spectacles",
-      "vision",
-      "eyewear"
-    ]
-  },
-  {
-    "id": "lucide-hand-heart",
-    "name": "Hand Holding Heart",
-    "cat": "health-self-care",
-    "source": "lucide",
-    "upstream": "hand-heart",
-    "keywords": [
-      "love",
-      "like",
-      "emotion",
-      "hand",
-      "heart",
-      "care",
-      "self-care"
-    ]
-  },
-  {
-    "id": "lucide-plane",
-    "name": "Airplane (Outline)",
-    "cat": "travel-places",
-    "source": "lucide",
-    "upstream": "plane",
-    "keywords": [
-      "plane",
-      "trip",
-      "airplane",
-      "travel",
-      "flight"
-    ]
-  },
-  {
-    "id": "lucide-car",
-    "name": "Car",
-    "cat": "travel-places",
-    "source": "lucide",
-    "upstream": "car",
-    "keywords": [
-      "vehicle",
-      "drive",
-      "trip",
-      "journey",
-      "car",
-      "travel"
-    ]
-  },
-  {
-    "id": "lucide-train-front",
-    "name": "Train (Outline)",
-    "cat": "travel-places",
-    "source": "lucide",
-    "upstream": "train-front",
-    "keywords": [
-      "railway",
-      "metro",
-      "subway",
-      "underground",
-      "high-speed",
-      "bullet",
-      "fast",
-      "track",
-      "line",
-      "train",
-      "travel",
-      "rail"
-    ]
-  },
-  {
-    "id": "lucide-bus",
-    "name": "Bus",
-    "cat": "travel-places",
-    "source": "lucide",
-    "upstream": "bus",
-    "keywords": [
-      "bus",
-      "vehicle",
-      "transport",
-      "trip",
-      "travel"
-    ]
-  },
-  {
-    "id": "lucide-ship",
-    "name": "Ship (Outline)",
-    "cat": "travel-places",
-    "source": "lucide",
-    "upstream": "ship",
-    "keywords": [
-      "boat",
-      "knots",
-      "nautical mile",
-      "maritime",
-      "sailing",
-      "yacht",
-      "cruise",
-      "ocean liner",
-      "tanker",
-      "vessel",
-      "navy",
-      "trip",
-      "releases",
-      "ship",
-      "travel"
-    ]
-  },
-  {
-    "id": "lucide-map",
-    "name": "Map",
-    "cat": "travel-places",
-    "source": "lucide",
-    "upstream": "map",
-    "keywords": [
-      "location",
-      "navigation",
-      "travel",
-      "map"
-    ]
-  },
-  {
-    "id": "lucide-tent",
-    "name": "Tent (Outline)",
-    "cat": "travel-places",
-    "source": "lucide",
-    "upstream": "tent",
-    "keywords": [
-      "tipi",
-      "teepee",
-      "wigwam",
-      "lodge",
-      "camping",
-      "campsite",
-      "holiday",
-      "retreat",
-      "nomadic",
-      "native american",
-      "indian",
-      "wilderness",
-      "outdoors",
-      "tent"
-    ]
-  },
-  {
-    "id": "lucide-mountain",
-    "name": "Mountain (Outline)",
-    "cat": "travel-places",
-    "source": "lucide",
-    "upstream": "mountain",
-    "keywords": [
-      "climb",
-      "hike",
-      "rock",
-      "mountain",
-      "outdoors",
-      "hiking"
-    ]
-  },
-  {
-    "id": "lucide-luggage",
-    "name": "Luggage (Outline)",
-    "cat": "travel-places",
-    "source": "lucide",
-    "upstream": "luggage",
-    "keywords": [
-      "baggage",
-      "luggage",
-      "travel",
-      "suitcase"
-    ]
-  },
-  {
-    "id": "lucide-anchor",
-    "name": "Anchor (Outline)",
-    "cat": "travel-places",
-    "source": "lucide",
-    "upstream": "anchor",
-    "keywords": [
-      "ship",
-      "anchor",
-      "boat",
-      "nautical"
-    ]
-  },
-  {
-    "id": "lucide-sailboat",
-    "name": "Sailboat (Outline)",
-    "cat": "travel-places",
-    "source": "lucide",
-    "upstream": "sailboat",
-    "keywords": [
-      "ship",
-      "boat",
-      "harbor",
-      "harbour",
-      "dock",
-      "sailboat",
-      "sailing"
-    ]
-  },
-  {
-    "id": "lucide-rocket",
-    "name": "Rocket (Outline)",
-    "cat": "travel-places",
-    "source": "lucide",
-    "upstream": "rocket",
-    "keywords": [
-      "release",
-      "boost",
-      "launch",
-      "space",
-      "version",
-      "rocket"
-    ]
-  },
-  {
-    "id": "lucide-ferris-wheel",
-    "name": "Ferris Wheel",
-    "cat": "travel-places",
-    "source": "lucide",
-    "upstream": "ferris-wheel",
-    "keywords": [
-      "big wheel",
-      "daisy wheel",
-      "observation",
-      "attraction",
-      "entertainment",
-      "amusement park",
-      "theme park",
-      "funfair",
-      "ferris wheel",
-      "carnival",
-      "fair"
-    ]
-  },
-  {
-    "id": "lucide-camera",
-    "name": "Camera",
-    "cat": "travel-places",
-    "source": "lucide",
-    "upstream": "camera",
-    "keywords": [
-      "photography",
-      "lens",
-      "focus",
-      "capture",
-      "shot",
-      "visual",
-      "image",
-      "device",
-      "equipment",
-      "photo",
-      "webcam",
-      "video",
-      "camera",
-      "travel"
-    ]
-  },
-  {
-    "id": "lucide-binoculars",
-    "name": "Binoculars",
-    "cat": "travel-places",
-    "source": "lucide",
-    "upstream": "binoculars",
-    "keywords": [
-      "field glasses",
-      "lorgnette",
-      "pince-nez",
-      "observation",
-      "sightseeing",
-      "nature",
-      "wildlife",
-      "birdwatching",
-      "scouting",
-      "surveillance",
-      "search",
-      "discovery",
-      "monitoring",
-      "lookout",
-      "viewpoint",
-      "travel",
-      "tourism",
-      "research",
-      "binoculars",
-      "explore",
-      "observe"
-    ]
-  },
-  {
-    "id": "lucide-landmark",
-    "name": "Landmark",
-    "cat": "travel-places",
-    "source": "lucide",
-    "upstream": "landmark",
-    "keywords": [
-      "bank",
-      "building",
-      "capitol",
-      "finance",
-      "money",
-      "museum",
-      "art gallery",
-      "hall",
-      "institute",
-      "pediment",
-      "portico",
-      "doric",
-      "columns",
-      "pillars",
-      "classical",
-      "architecture",
-      "government",
-      "institution",
-      "monument",
-      "site",
-      "history",
-      "historic",
-      "library",
-      "temple",
-      "ancient",
-      "structure",
-      "landmark",
-      "travel"
-    ]
-  },
-  {
-    "id": "lucide-castle",
-    "name": "Castle",
-    "cat": "travel-places",
-    "source": "lucide",
-    "upstream": "castle",
-    "keywords": [
-      "fortress",
-      "stronghold",
-      "palace",
-      "chateau",
-      "building",
-      "castle",
-      "landmark",
-      "travel"
-    ]
-  },
-  {
-    "id": "lucide-signpost",
-    "name": "Signpost",
-    "cat": "travel-places",
-    "source": "lucide",
-    "upstream": "signpost",
-    "keywords": [
-      "navigation",
-      "direction",
-      "arrow",
-      "wayfinding",
-      "guide",
-      "location",
-      "pointer",
-      "route",
-      "indicator",
+      "flag",
       "marker",
-      "bidirectional",
-      "left",
-      "right",
-      "east",
-      "west",
-      "signpost",
-      "travel"
+      "post",
+      "signal"
     ]
   },
   {
-    "id": "lucide-balloon",
-    "name": "Balloon (Outline)",
-    "cat": "celebration-seasons",
-    "source": "lucide",
-    "upstream": "balloon",
+    "id": "twemoji-black-flag",
+    "name": "Waving Black Flag",
+    "cat": "index-tabs-flags",
+    "source": "twemoji",
+    "upstream": "1f3f4",
     "keywords": [
-      "party",
-      "festival",
-      "congratulations",
-      "celebration",
-      "decoration",
-      "colorful",
-      "floating",
-      "fun",
-      "birthday",
-      "event",
-      "entertainment",
-      "balloon"
+      "flag",
+      "waving",
+      "black",
+      "marker"
     ]
   },
   {
-    "id": "lucide-cake-slice",
-    "name": "Cake Slice",
-    "cat": "celebration-seasons",
-    "source": "lucide",
-    "upstream": "cake-slice",
+    "id": "twemoji-label",
+    "name": "Label Tag",
+    "cat": "labels-tape",
+    "source": "twemoji",
+    "upstream": "1f3f7",
     "keywords": [
-      "birthday",
-      "birthdate",
-      "celebration",
-      "party",
-      "surprise",
-      "gateaux",
-      "dessert",
-      "candles",
-      "wish",
-      "fondant",
-      "icing sugar",
-      "sweet",
-      "baking",
-      "cake",
-      "slice"
+      "label",
+      "tag",
+      "price",
+      "sale"
     ]
   },
   {
-    "id": "lucide-candy-cane",
-    "name": "Candy Cane",
-    "cat": "celebration-seasons",
-    "source": "lucide",
-    "upstream": "candy-cane",
+    "id": "twemoji-reminder-ribbon",
+    "name": "Reminder Ribbon",
+    "cat": "labels-tape",
+    "source": "twemoji",
+    "upstream": "1f397",
     "keywords": [
-      "sugar",
-      "food",
-      "sweet",
-      "christmas",
-      "xmas",
-      "candy cane",
-      "holiday"
+      "ribbon",
+      "reminder",
+      "awareness",
+      "bow"
     ]
   },
   {
-    "id": "lucide-gift",
-    "name": "Gift",
-    "cat": "celebration-seasons",
-    "source": "lucide",
-    "upstream": "gift",
+    "id": "twemoji-ribbon",
+    "name": "Bow Ribbon",
+    "cat": "labels-tape",
+    "source": "twemoji",
+    "upstream": "1f380",
     "keywords": [
-      "present",
-      "box",
-      "birthday",
-      "party",
-      "gift"
+      "ribbon",
+      "bow",
+      "gift",
+      "decoration"
     ]
   },
   {
-    "id": "lucide-venetian-mask",
-    "name": "Masquerade Mask",
-    "cat": "celebration-seasons",
-    "source": "lucide",
-    "upstream": "venetian-mask",
+    "id": "twemoji-pushpin",
+    "name": "Pushpin",
+    "cat": "labels-tape",
+    "source": "twemoji",
+    "upstream": "1f4cc",
     "keywords": [
-      "mask",
-      "masquerade",
-      "impersonate",
-      "secret",
-      "incognito",
-      "party",
-      "celebration"
+      "pushpin",
+      "pin",
+      "marker",
+      "board"
     ]
   },
   {
-    "id": "lucide-drum",
-    "name": "Drum",
-    "cat": "celebration-seasons",
-    "source": "lucide",
-    "upstream": "drum",
+    "id": "twemoji-paperclip",
+    "name": "Silver Paperclip",
+    "cat": "labels-tape",
+    "source": "twemoji",
+    "upstream": "1f4ce",
     "keywords": [
-      "drummer",
-      "kit",
-      "sticks",
-      "instrument",
-      "beat",
-      "bang",
-      "bass",
-      "backing track",
-      "band",
-      "play",
-      "performance",
-      "concert",
-      "march",
-      "music",
-      "audio",
-      "sound",
-      "noise",
-      "loud",
-      "drum",
-      "celebration"
+      "paperclip",
+      "clip",
+      "office",
+      "attach"
     ]
   },
   {
-    "id": "lucide-music",
-    "name": "Music Note",
-    "cat": "celebration-seasons",
-    "source": "lucide",
-    "upstream": "music",
+    "id": "twemoji-file-folder",
+    "name": "Blue File Folder",
+    "cat": "labels-tape",
+    "source": "twemoji",
+    "upstream": "1f4c1",
     "keywords": [
-      "note",
-      "quaver",
-      "eighth note",
-      "music",
-      "song"
+      "folder",
+      "file",
+      "storage",
+      "directory"
     ]
   },
   {
-    "id": "lucide-wand-sparkles",
-    "name": "Magic Wand",
-    "cat": "celebration-seasons",
-    "source": "lucide",
-    "upstream": "wand-sparkles",
+    "id": "twemoji-safety-pin",
+    "name": "Safety Pin",
+    "cat": "labels-tape",
+    "source": "twemoji",
+    "upstream": "1f9f7",
     "keywords": [
-      "magic",
-      "wizard",
-      "magician",
-      "wand",
-      "sparkles"
+      "safety pin",
+      "pin",
+      "fasten",
+      "craft"
     ]
   },
   {
@@ -6140,6 +6276,19 @@
     ]
   },
   {
+    "id": "twemoji-cyclone",
+    "name": "Cyclone Swirl",
+    "cat": "weather-sky",
+    "source": "twemoji",
+    "upstream": "1f300",
+    "keywords": [
+      "cyclone",
+      "swirl",
+      "weather",
+      "storm"
+    ]
+  },
+  {
     "id": "twemoji-seedling",
     "name": "Seedling",
     "cat": "botanical",
@@ -6263,6 +6412,19 @@
       "flower",
       "plant",
       "summer"
+    ]
+  },
+  {
+    "id": "twemoji-chestnut",
+    "name": "Chestnut",
+    "cat": "botanical",
+    "source": "twemoji",
+    "upstream": "1f330",
+    "keywords": [
+      "chestnut",
+      "nut",
+      "autumn",
+      "plant"
     ]
   },
   {
@@ -7015,6 +7177,19 @@
       "salt",
       "seasoning",
       "food"
+    ]
+  },
+  {
+    "id": "twemoji-cooking",
+    "name": "Frying Pan Egg",
+    "cat": "food-drink",
+    "source": "twemoji",
+    "upstream": "1f373",
+    "keywords": [
+      "cooking",
+      "egg",
+      "frying pan",
+      "breakfast"
     ]
   },
   {
@@ -7788,6 +7963,45 @@
     ]
   },
   {
+    "id": "twemoji-gem-stone",
+    "name": "Gem Stone",
+    "cat": "celebration-seasons",
+    "source": "twemoji",
+    "upstream": "1f48e",
+    "keywords": [
+      "gem",
+      "diamond",
+      "treasure",
+      "prize"
+    ]
+  },
+  {
+    "id": "twemoji-money-bag",
+    "name": "Money Bag",
+    "cat": "money-home",
+    "source": "twemoji",
+    "upstream": "1f4b0",
+    "keywords": [
+      "money",
+      "bag",
+      "cash",
+      "savings"
+    ]
+  },
+  {
+    "id": "twemoji-chart-increasing",
+    "name": "Rising Chart",
+    "cat": "money-home",
+    "source": "twemoji",
+    "upstream": "1f4c8",
+    "keywords": [
+      "chart",
+      "growth",
+      "increase",
+      "stocks"
+    ]
+  },
+  {
     "id": "twemoji-warning",
     "name": "Warning Sign",
     "cat": "symbols-misc",
@@ -7833,6 +8047,19 @@
       "wheelchair",
       "accessibility",
       "symbol"
+    ]
+  },
+  {
+    "id": "twemoji-balance-scale",
+    "name": "Balance Scale",
+    "cat": "symbols-misc",
+    "source": "twemoji",
+    "upstream": "2696",
+    "keywords": [
+      "scale",
+      "balance",
+      "justice",
+      "law"
     ]
   }
 ]

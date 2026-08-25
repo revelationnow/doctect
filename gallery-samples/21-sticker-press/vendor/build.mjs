@@ -142,6 +142,40 @@ const TWEMOJI_MAX_BYTES = 1500;
 // the path segment fetched from each source's base URL above (no
 // extension): for Lucide, its icon slug; for Twemoji, its codepoint.
 const WANTED = [
+    // Index tabs & flags (15)
+    { id: 'lucide-bookmark-check', source: 'lucide', upstream: 'bookmark-check' },
+    { id: 'lucide-bookmark-plus', source: 'lucide', upstream: 'bookmark-plus' },
+    { id: 'lucide-folder-bookmark', source: 'lucide', upstream: 'folder-bookmark' },
+    { id: 'lucide-book-marked', source: 'lucide', upstream: 'book-marked' },
+    { id: 'lucide-flag-triangle-right', source: 'lucide', upstream: 'flag-triangle-right' },
+    { id: 'lucide-notebook-tabs', source: 'lucide', upstream: 'notebook-tabs' },
+    { id: 'lucide-milestone', source: 'lucide', upstream: 'milestone' },
+    { id: 'lucide-tag-plus', source: 'lucide', upstream: 'tag-plus' },
+    { id: 'lucide-tag-x', source: 'lucide', upstream: 'tag-x' },
+    { id: 'twemoji-bookmark', source: 'twemoji', upstream: '1f516' },
+    { id: 'twemoji-bookmark-tabs', source: 'twemoji', upstream: '1f4d1' },
+    { id: 'twemoji-page-curl', source: 'twemoji', upstream: '1f4c3' },
+    { id: 'twemoji-card-index-dividers', source: 'twemoji', upstream: '1f5c2' },
+    { id: 'twemoji-triangular-flag', source: 'twemoji', upstream: '1f6a9' },
+    { id: 'twemoji-black-flag', source: 'twemoji', upstream: '1f3f4' },
+    // Labels & tape (17)
+    { id: 'lucide-ticket', source: 'lucide', upstream: 'ticket' },
+    { id: 'lucide-ticket-percent', source: 'lucide', upstream: 'ticket-percent' },
+    { id: 'lucide-tickets', source: 'lucide', upstream: 'tickets' },
+    { id: 'lucide-tickets-plane', source: 'lucide', upstream: 'tickets-plane' },
+    { id: 'lucide-sticky-note', source: 'lucide', upstream: 'sticky-note' },
+    { id: 'lucide-notepad-text', source: 'lucide', upstream: 'notepad-text' },
+    { id: 'lucide-id-card', source: 'lucide', upstream: 'id-card' },
+    { id: 'lucide-spool', source: 'lucide', upstream: 'spool' },
+    { id: 'lucide-badge-alert', source: 'lucide', upstream: 'badge-alert' },
+    { id: 'lucide-badge-percent', source: 'lucide', upstream: 'badge-percent' },
+    { id: 'twemoji-label', source: 'twemoji', upstream: '1f3f7' },
+    { id: 'twemoji-reminder-ribbon', source: 'twemoji', upstream: '1f397' },
+    { id: 'twemoji-ribbon', source: 'twemoji', upstream: '1f380' },
+    { id: 'twemoji-pushpin', source: 'twemoji', upstream: '1f4cc' },
+    { id: 'twemoji-paperclip', source: 'twemoji', upstream: '1f4ce' },
+    { id: 'twemoji-file-folder', source: 'twemoji', upstream: '1f4c1' },
+    { id: 'twemoji-safety-pin', source: 'twemoji', upstream: '1f9f7' },
     // Arrows & pointers (36)
     { id: 'lucide-arrow-big-up', source: 'lucide', upstream: 'arrow-big-up' },
     { id: 'lucide-arrow-big-down', source: 'lucide', upstream: 'arrow-big-down' },
@@ -179,7 +213,7 @@ const WANTED = [
     { id: 'lucide-rotate-cw', source: 'lucide', upstream: 'rotate-cw' },
     { id: 'lucide-expand', source: 'lucide', upstream: 'expand' },
     { id: 'lucide-shrink', source: 'lucide', upstream: 'shrink' },
-    // Boxes, bullets, markers (31)
+    // Boxes, bullets, markers (33)
     { id: 'lucide-box', source: 'lucide', upstream: 'box' },
     { id: 'lucide-package', source: 'lucide', upstream: 'package' },
     { id: 'lucide-archive', source: 'lucide', upstream: 'archive' },
@@ -211,6 +245,8 @@ const WANTED = [
     { id: 'lucide-pin', source: 'lucide', upstream: 'pin' },
     { id: 'lucide-map-pin', source: 'lucide', upstream: 'map-pin' },
     { id: 'lucide-shapes', source: 'lucide', upstream: 'shapes' },
+    { id: 'lucide-component', source: 'lucide', upstream: 'component' },
+    { id: 'lucide-grid-2x2', source: 'lucide', upstream: 'grid-2x2' },
     // Stars, sparkles, awards (27)
     { id: 'lucide-star', source: 'lucide', upstream: 'star' },
     { id: 'lucide-vote', source: 'lucide', upstream: 'vote' },
@@ -239,7 +275,7 @@ const WANTED = [
     { id: 'lucide-circle-star', source: 'lucide', upstream: 'circle-star' },
     { id: 'lucide-spotlight', source: 'lucide', upstream: 'spotlight' },
     { id: 'lucide-circle-gauge', source: 'lucide', upstream: 'circle-gauge' },
-    // Dividers, corners, frames (25)
+    // Dividers, corners, frames (27)
     { id: 'lucide-separator-horizontal', source: 'lucide', upstream: 'separator-horizontal' },
     { id: 'lucide-separator-vertical', source: 'lucide', upstream: 'separator-vertical' },
     { id: 'lucide-minus', source: 'lucide', upstream: 'minus' },
@@ -265,7 +301,9 @@ const WANTED = [
     { id: 'lucide-ruler-dimension-line', source: 'lucide', upstream: 'ruler-dimension-line' },
     { id: 'lucide-square-slash', source: 'lucide', upstream: 'square-slash' },
     { id: 'lucide-square-dashed-bottom', source: 'lucide', upstream: 'square-dashed-bottom' },
-    // Weather & sky (26)
+    { id: 'lucide-vector-square', source: 'lucide', upstream: 'vector-square' },
+    { id: 'lucide-table', source: 'lucide', upstream: 'table' },
+    // Weather & sky (28)
     { id: 'lucide-sun', source: 'lucide', upstream: 'sun' },
     { id: 'lucide-moon', source: 'lucide', upstream: 'moon' },
     { id: 'lucide-cloud', source: 'lucide', upstream: 'cloud' },
@@ -280,6 +318,7 @@ const WANTED = [
     { id: 'lucide-thermometer', source: 'lucide', upstream: 'thermometer' },
     { id: 'lucide-sunrise', source: 'lucide', upstream: 'sunrise' },
     { id: 'lucide-sunset', source: 'lucide', upstream: 'sunset' },
+    { id: 'lucide-cloud-drizzle', source: 'lucide', upstream: 'cloud-drizzle' },
     { id: 'twemoji-sun', source: 'twemoji', upstream: '2600' },
     { id: 'twemoji-cloud', source: 'twemoji', upstream: '2601' },
     { id: 'twemoji-cloud-rain', source: 'twemoji', upstream: '1f327' },
@@ -292,7 +331,8 @@ const WANTED = [
     { id: 'twemoji-high-voltage', source: 'twemoji', upstream: '26a1' },
     { id: 'twemoji-comet', source: 'twemoji', upstream: '2604' },
     { id: 'twemoji-sun-behind-cloud', source: 'twemoji', upstream: '26c5' },
-    // Botanical (22)
+    { id: 'twemoji-cyclone', source: 'twemoji', upstream: '1f300' },
+    // Botanical (23)
     { id: 'lucide-tree-deciduous', source: 'lucide', upstream: 'tree-deciduous' },
     { id: 'lucide-tree-palm', source: 'lucide', upstream: 'tree-palm' },
     { id: 'lucide-tree-pine', source: 'lucide', upstream: 'tree-pine' },
@@ -315,6 +355,7 @@ const WANTED = [
     { id: 'twemoji-four-leaf-clover', source: 'twemoji', upstream: '1f340' },
     { id: 'twemoji-deciduous-tree', source: 'twemoji', upstream: '1f333' },
     { id: 'twemoji-sunflower', source: 'twemoji', upstream: '1f33b' },
+    { id: 'twemoji-chestnut', source: 'twemoji', upstream: '1f330' },
     // Animals (34)
     { id: 'twemoji-monkey-face', source: 'twemoji', upstream: '1f435' },
     { id: 'twemoji-cow-face', source: 'twemoji', upstream: '1f42e' },
@@ -350,7 +391,7 @@ const WANTED = [
     { id: 'twemoji-camel', source: 'twemoji', upstream: '1f42a' },
     { id: 'twemoji-two-hump-camel', source: 'twemoji', upstream: '1f42b' },
     { id: 'twemoji-paw-prints', source: 'twemoji', upstream: '1f43e' },
-    // Food & drink (35)
+    // Food & drink (37)
     { id: 'lucide-chef-hat', source: 'lucide', upstream: 'chef-hat' },
     { id: 'lucide-utensils', source: 'lucide', upstream: 'utensils' },
     { id: 'lucide-soup', source: 'lucide', upstream: 'soup' },
@@ -359,6 +400,7 @@ const WANTED = [
     { id: 'lucide-martini', source: 'lucide', upstream: 'martini' },
     { id: 'lucide-cake', source: 'lucide', upstream: 'cake' },
     { id: 'lucide-sandwich', source: 'lucide', upstream: 'sandwich' },
+    { id: 'lucide-drumstick', source: 'lucide', upstream: 'drumstick' },
     { id: 'twemoji-watermelon', source: 'twemoji', upstream: '1f349' },
     { id: 'twemoji-lemon', source: 'twemoji', upstream: '1f34b' },
     { id: 'twemoji-banana', source: 'twemoji', upstream: '1f34c' },
@@ -386,6 +428,7 @@ const WANTED = [
     { id: 'twemoji-bowl-with-spoon', source: 'twemoji', upstream: '1f963' },
     { id: 'twemoji-butter', source: 'twemoji', upstream: '1f9c8' },
     { id: 'twemoji-salt', source: 'twemoji', upstream: '1f9c2' },
+    { id: 'twemoji-cooking', source: 'twemoji', upstream: '1f373' },
     // Faces & moods (24)
     { id: 'twemoji-grinning-face', source: 'twemoji', upstream: '1f600' },
     { id: 'twemoji-grinning-smiling-eyes', source: 'twemoji', upstream: '1f604' },
@@ -455,7 +498,7 @@ const WANTED = [
     { id: 'lucide-timer', source: 'lucide', upstream: 'timer' },
     { id: 'lucide-lightbulb', source: 'lucide', upstream: 'lightbulb' },
     { id: 'lucide-puzzle', source: 'lucide', upstream: 'puzzle' },
-    // Health & self-care (29)
+    // Health & self-care (30)
     { id: 'lucide-activity', source: 'lucide', upstream: 'activity' },
     { id: 'lucide-bandage', source: 'lucide', upstream: 'bandage' },
     { id: 'lucide-bath', source: 'lucide', upstream: 'bath' },
@@ -476,6 +519,7 @@ const WANTED = [
     { id: 'lucide-eye', source: 'lucide', upstream: 'eye' },
     { id: 'lucide-glasses', source: 'lucide', upstream: 'glasses' },
     { id: 'lucide-hand-heart', source: 'lucide', upstream: 'hand-heart' },
+    { id: 'lucide-shield-plus', source: 'lucide', upstream: 'shield-plus' },
     { id: 'twemoji-pill', source: 'twemoji', upstream: '1f48a' },
     { id: 'twemoji-hospital', source: 'twemoji', upstream: '1f3e5' },
     { id: 'twemoji-adhesive-bandage', source: 'twemoji', upstream: '1fa79' },
@@ -485,7 +529,7 @@ const WANTED = [
     { id: 'twemoji-zzz', source: 'twemoji', upstream: '1f4a4' },
     { id: 'twemoji-lotion-bottle', source: 'twemoji', upstream: '1f9f4' },
     { id: 'twemoji-petri-dish', source: 'twemoji', upstream: '1f9eb' },
-    // Travel & places (30)
+    // Travel & places (31)
     { id: 'lucide-plane', source: 'lucide', upstream: 'plane' },
     { id: 'lucide-car', source: 'lucide', upstream: 'car' },
     { id: 'lucide-train-front', source: 'lucide', upstream: 'train-front' },
@@ -504,6 +548,7 @@ const WANTED = [
     { id: 'lucide-landmark', source: 'lucide', upstream: 'landmark' },
     { id: 'lucide-castle', source: 'lucide', upstream: 'castle' },
     { id: 'lucide-signpost', source: 'lucide', upstream: 'signpost' },
+    { id: 'lucide-route', source: 'lucide', upstream: 'route' },
     { id: 'twemoji-globe-africa', source: 'twemoji', upstream: '1f30d' },
     { id: 'twemoji-compass', source: 'twemoji', upstream: '1f9ed' },
     { id: 'twemoji-mountain', source: 'twemoji', upstream: '26f0' },
@@ -516,7 +561,7 @@ const WANTED = [
     { id: 'twemoji-luggage', source: 'twemoji', upstream: '1f9f3' },
     { id: 'twemoji-beach-umbrella', source: 'twemoji', upstream: '1f3d6' },
     { id: 'twemoji-train', source: 'twemoji', upstream: '1f686' },
-    // Celebration & seasons (26)
+    // Celebration & seasons (27)
     { id: 'lucide-balloon', source: 'lucide', upstream: 'balloon' },
     { id: 'lucide-cake-slice', source: 'lucide', upstream: 'cake-slice' },
     { id: 'lucide-candy-cane', source: 'lucide', upstream: 'candy-cane' },
@@ -543,7 +588,8 @@ const WANTED = [
     { id: 'twemoji-trophy', source: 'twemoji', upstream: '1f3c6' },
     { id: 'twemoji-1st-place-medal', source: 'twemoji', upstream: '1f947' },
     { id: 'twemoji-military-medal', source: 'twemoji', upstream: '1f396' },
-    // Money & home (33)
+    { id: 'twemoji-gem-stone', source: 'twemoji', upstream: '1f48e' },
+    // Money & home (38)
     { id: 'lucide-dollar-sign', source: 'lucide', upstream: 'dollar-sign' },
     { id: 'lucide-credit-card', source: 'lucide', upstream: 'credit-card' },
     { id: 'lucide-wallet', source: 'lucide', upstream: 'wallet' },
@@ -577,7 +623,12 @@ const WANTED = [
     { id: 'lucide-bell', source: 'lucide', upstream: 'bell' },
     { id: 'lucide-blinds', source: 'lucide', upstream: 'blinds' },
     { id: 'lucide-warehouse', source: 'lucide', upstream: 'warehouse' },
-    // Symbols & misc (29)
+    { id: 'lucide-toolbox', source: 'lucide', upstream: 'toolbox' },
+    { id: 'lucide-hard-hat', source: 'lucide', upstream: 'hard-hat' },
+    { id: 'lucide-anvil', source: 'lucide', upstream: 'anvil' },
+    { id: 'twemoji-money-bag', source: 'twemoji', upstream: '1f4b0' },
+    { id: 'twemoji-chart-increasing', source: 'twemoji', upstream: '1f4c8' },
+    // Symbols & misc (30)
     { id: 'lucide-infinity', source: 'lucide', upstream: 'infinity' },
     { id: 'lucide-hash', source: 'lucide', upstream: 'hash' },
     { id: 'lucide-at-sign', source: 'lucide', upstream: 'at-sign' },
@@ -607,6 +658,8 @@ const WANTED = [
     { id: 'twemoji-no-entry', source: 'twemoji', upstream: '26d4' },
     { id: 'twemoji-radioactive', source: 'twemoji', upstream: '2622' },
     { id: 'twemoji-wheelchair', source: 'twemoji', upstream: '267f' },
+    { id: 'twemoji-balance-scale', source: 'twemoji', upstream: '2696' },
+
 ];
 
 // --- Fetch helpers -----------------------------------------------------------
