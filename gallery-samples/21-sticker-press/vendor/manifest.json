@@ -641,10 +641,10 @@
       "licence": "MIT"
     },
     {
-      "id": "lucide-badge",
+      "id": "lucide-circle-x",
       "source": "lucide",
-      "upstream": "icons/badge.svg",
-      "bytes": 334,
+      "upstream": "icons/circle-x.svg",
+      "bytes": 428,
       "licence": "ISC"
     },
     {
@@ -1096,10 +1096,10 @@
       "licence": "ISC"
     },
     {
-      "id": "lucide-sun",
+      "id": "lucide-tornado",
       "source": "lucide",
-      "upstream": "icons/sun.svg",
-      "bytes": 1172,
+      "upstream": "icons/tornado.svg",
+      "bytes": 646,
       "licence": "ISC"
     },
     {
@@ -1117,10 +1117,10 @@
       "licence": "ISC"
     },
     {
-      "id": "lucide-cloud-rain",
+      "id": "lucide-eclipse",
       "source": "lucide",
-      "upstream": "icons/cloud-rain.svg",
-      "bytes": 578,
+      "upstream": "icons/eclipse.svg",
+      "bytes": 324,
       "licence": "ISC"
     },
     {
@@ -1138,10 +1138,10 @@
       "licence": "ISC"
     },
     {
-      "id": "lucide-cloud-sun",
+      "id": "lucide-haze",
       "source": "lucide",
-      "upstream": "icons/cloud-sun.svg",
-      "bytes": 848,
+      "upstream": "icons/haze.svg",
+      "bytes": 1024,
       "licence": "ISC"
     },
     {
@@ -1159,10 +1159,10 @@
       "licence": "ISC"
     },
     {
-      "id": "lucide-rainbow",
+      "id": "lucide-orbit",
       "source": "lucide",
-      "upstream": "icons/rainbow.svg",
-      "bytes": 454,
+      "upstream": "icons/orbit.svg",
+      "bytes": 737,
       "licence": "ISC"
     },
     {
@@ -1208,10 +1208,10 @@
       "licence": "CC-BY-4.0"
     },
     {
-      "id": "twemoji-cloud",
+      "id": "twemoji-night-with-stars",
       "source": "twemoji",
-      "upstream": "assets/svg/2601.svg",
-      "bytes": 749,
+      "upstream": "assets/svg/1f303.svg",
+      "bytes": 1063,
       "licence": "CC-BY-4.0"
     },
     {
@@ -2629,10 +2629,10 @@
       "licence": "CC-BY-4.0"
     },
     {
-      "id": "lucide-plane",
+      "id": "lucide-truck",
       "source": "lucide",
-      "upstream": "icons/plane.svg",
-      "bytes": 372,
+      "upstream": "icons/truck.svg",
+      "bytes": 788,
       "licence": "ISC"
     },
     {
@@ -2643,10 +2643,10 @@
       "licence": "ISC"
     },
     {
-      "id": "lucide-train-front",
+      "id": "lucide-pyramid",
       "source": "lucide",
-      "upstream": "icons/train-front.svg",
-      "bytes": 838,
+      "upstream": "icons/pyramid.svg",
+      "bytes": 401,
       "licence": "ISC"
     },
     {
@@ -2657,10 +2657,10 @@
       "licence": "ISC"
     },
     {
-      "id": "lucide-ship",
+      "id": "lucide-circle-parking",
       "source": "lucide",
-      "upstream": "icons/ship.svg",
-      "bytes": 858,
+      "upstream": "icons/circle-parking.svg",
+      "bytes": 328,
       "licence": "ISC"
     },
     {
@@ -2685,10 +2685,10 @@
       "licence": "ISC"
     },
     {
-      "id": "lucide-luggage",
+      "id": "lucide-fuel",
       "source": "lucide",
-      "upstream": "icons/luggage.svg",
-      "bytes": 761,
+      "upstream": "icons/fuel.svg",
+      "bytes": 624,
       "licence": "ISC"
     },
     {
@@ -2699,17 +2699,17 @@
       "licence": "ISC"
     },
     {
-      "id": "lucide-sailboat",
+      "id": "lucide-tower-control",
       "source": "lucide",
-      "upstream": "icons/sailboat.svg",
-      "bytes": 547,
+      "upstream": "icons/tower-control.svg",
+      "bytes": 939,
       "licence": "ISC"
     },
     {
-      "id": "lucide-rocket",
+      "id": "lucide-cable-car",
       "source": "lucide",
-      "upstream": "icons/rocket.svg",
-      "bytes": 756,
+      "upstream": "icons/cable-car.svg",
+      "bytes": 1029,
       "licence": "ISC"
     },
     {
@@ -2776,24 +2776,24 @@
       "licence": "CC-BY-4.0"
     },
     {
-      "id": "twemoji-mountain",
+      "id": "twemoji-torii-gate",
       "source": "twemoji",
-      "upstream": "assets/svg/26f0.svg",
-      "bytes": 1189,
+      "upstream": "assets/svg/26e9.svg",
+      "bytes": 958,
       "licence": "CC-BY-4.0"
     },
     {
-      "id": "twemoji-tent",
+      "id": "twemoji-auto-rickshaw",
       "source": "twemoji",
-      "upstream": "assets/svg/26fa.svg",
-      "bytes": 827,
+      "upstream": "assets/svg/1f6fa.svg",
+      "bytes": 1311,
       "licence": "CC-BY-4.0"
     },
     {
-      "id": "twemoji-anchor",
+      "id": "twemoji-statue-of-liberty",
       "source": "twemoji",
-      "upstream": "assets/svg/2693.svg",
-      "bytes": 515,
+      "upstream": "assets/svg/1f5fd.svg",
+      "bytes": 1402,
       "licence": "CC-BY-4.0"
     },
     {

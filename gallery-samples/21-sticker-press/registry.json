@@ -1250,18 +1250,26 @@
     ]
   },
   {
-    "id": "lucide-badge",
-    "name": "Badge",
+    "id": "lucide-circle-x",
+    "name": "X in Circle",
     "cat": "boxes-bullets-markers",
     "source": "lucide",
-    "upstream": "badge",
+    "upstream": "circle-x",
     "keywords": [
-      "check",
-      "verified",
-      "unverified",
-      "badge",
-      "marker",
-      "label"
+      "cancel",
+      "close",
+      "delete",
+      "remove",
+      "times",
+      "clear",
+      "error",
+      "incorrect",
+      "wrong",
+      "mistake",
+      "failure",
+      "linter",
+      "multiply",
+      "multiplication"
     ]
   },
   {
@@ -2663,18 +2671,16 @@
     ]
   },
   {
-    "id": "lucide-sun",
-    "name": "Sun (Outline)",
+    "id": "lucide-tornado",
+    "name": "Tornado",
     "cat": "weather-sky",
     "source": "lucide",
-    "upstream": "sun",
+    "upstream": "tornado",
     "keywords": [
-      "brightness",
       "weather",
-      "light",
-      "summer",
-      "sun",
-      "sunny"
+      "wind",
+      "storm",
+      "hurricane"
     ]
   },
   {
@@ -2703,16 +2709,19 @@
     ]
   },
   {
-    "id": "lucide-cloud-rain",
-    "name": "Rain Cloud (Outline)",
+    "id": "lucide-eclipse",
+    "name": "Eclipse",
     "cat": "weather-sky",
     "source": "lucide",
-    "upstream": "cloud-rain",
+    "upstream": "eclipse",
     "keywords": [
-      "weather",
-      "rainfall",
-      "cloud",
-      "rain"
+      "lunar",
+      "solar",
+      "crescent moon",
+      "sun",
+      "space",
+      "night",
+      "day"
     ]
   },
   {
@@ -2743,16 +2752,14 @@
     ]
   },
   {
-    "id": "lucide-cloud-sun",
-    "name": "Sun Behind Cloud (Outline)",
+    "id": "lucide-haze",
+    "name": "Haze",
     "cat": "weather-sky",
     "source": "lucide",
-    "upstream": "cloud-sun",
+    "upstream": "haze",
     "keywords": [
-      "weather",
-      "partly",
-      "cloud",
-      "sun"
+      "mist",
+      "fog"
     ]
   },
   {
@@ -2782,23 +2789,17 @@
     ]
   },
   {
-    "id": "lucide-rainbow",
-    "name": "Rainbow (Outline)",
+    "id": "lucide-orbit",
+    "name": "Orbit",
     "cat": "weather-sky",
     "source": "lucide",
-    "upstream": "rainbow",
+    "upstream": "orbit",
     "keywords": [
-      "colors",
-      "colours",
-      "spectrum",
-      "light",
-      "prism",
-      "arc",
-      "clear",
-      "sunshine",
-      "rainbow",
-      "weather",
-      "colour"
+      "planet",
+      "space",
+      "physics",
+      "satellites",
+      "moons"
     ]
   },
   {
@@ -4422,17 +4423,17 @@
     ]
   },
   {
-    "id": "lucide-plane",
-    "name": "Airplane (Outline)",
+    "id": "lucide-truck",
+    "name": "Truck",
     "cat": "travel-places",
     "source": "lucide",
-    "upstream": "plane",
+    "upstream": "truck",
     "keywords": [
-      "plane",
-      "trip",
-      "airplane",
-      "travel",
-      "flight"
+      "delivery",
+      "van",
+      "shipping",
+      "haulage",
+      "lorry"
     ]
   },
   {
@@ -4451,24 +4452,22 @@
     ]
   },
   {
-    "id": "lucide-train-front",
-    "name": "Train (Outline)",
+    "id": "lucide-pyramid",
+    "name": "Pyramid",
     "cat": "travel-places",
     "source": "lucide",
-    "upstream": "train-front",
+    "upstream": "pyramid",
     "keywords": [
-      "railway",
-      "metro",
-      "subway",
-      "underground",
-      "high-speed",
-      "bullet",
-      "fast",
-      "track",
-      "line",
-      "train",
-      "travel",
-      "rail"
+      "prism",
+      "triangle",
+      "triangular",
+      "hierarchy",
+      "structure",
+      "geometry",
+      "ancient",
+      "egyptian",
+      "landmark",
+      "tourism"
     ]
   },
   {
@@ -4486,27 +4485,14 @@
     ]
   },
   {
-    "id": "lucide-ship",
-    "name": "Ship (Outline)",
+    "id": "lucide-circle-parking",
+    "name": "Parking Sign",
     "cat": "travel-places",
     "source": "lucide",
-    "upstream": "ship",
+    "upstream": "circle-parking",
     "keywords": [
-      "boat",
-      "knots",
-      "nautical mile",
-      "maritime",
-      "sailing",
-      "yacht",
-      "cruise",
-      "ocean liner",
-      "tanker",
-      "vessel",
-      "navy",
-      "trip",
-      "releases",
-      "ship",
-      "travel"
+      "parking lot",
+      "car park"
     ]
   },
   {
@@ -4561,16 +4547,16 @@
     ]
   },
   {
-    "id": "lucide-luggage",
-    "name": "Luggage (Outline)",
+    "id": "lucide-fuel",
+    "name": "Fuel Pump",
     "cat": "travel-places",
     "source": "lucide",
-    "upstream": "luggage",
+    "upstream": "fuel",
     "keywords": [
-      "baggage",
-      "luggage",
-      "travel",
-      "suitcase"
+      "filling-station",
+      "gas",
+      "petrol",
+      "tank"
     ]
   },
   {
@@ -4587,34 +4573,30 @@
     ]
   },
   {
-    "id": "lucide-sailboat",
-    "name": "Sailboat (Outline)",
+    "id": "lucide-tower-control",
+    "name": "Control Tower",
     "cat": "travel-places",
     "source": "lucide",
-    "upstream": "sailboat",
+    "upstream": "tower-control",
     "keywords": [
-      "ship",
-      "boat",
-      "harbor",
-      "harbour",
-      "dock",
-      "sailboat",
-      "sailing"
+      "airport",
+      "travel",
+      "tower",
+      "transportation"
     ]
   },
   {
-    "id": "lucide-rocket",
-    "name": "Rocket (Outline)",
+    "id": "lucide-cable-car",
+    "name": "Cable Car",
     "cat": "travel-places",
     "source": "lucide",
-    "upstream": "rocket",
+    "upstream": "cable-car",
     "keywords": [
-      "release",
-      "boost",
-      "launch",
-      "space",
-      "version",
-      "rocket"
+      "ski lift",
+      "winter holiday",
+      "alpine",
+      "resort",
+      "mountains"
     ]
   },
   {
@@ -6135,16 +6117,16 @@
     ]
   },
   {
-    "id": "twemoji-cloud",
-    "name": "Cloud",
+    "id": "twemoji-night-with-stars",
+    "name": "Night with Stars",
     "cat": "weather-sky",
     "source": "twemoji",
-    "upstream": "2601",
+    "upstream": "1f303",
     "keywords": [
-      "cloud",
-      "weather",
+      "night",
+      "stars",
       "sky",
-      "overcast"
+      "evening"
     ]
   },
   {
@@ -7624,39 +7606,44 @@
     ]
   },
   {
-    "id": "twemoji-mountain",
-    "name": "Mountain",
+    "id": "twemoji-torii-gate",
+    "name": "Torii Gate",
     "cat": "travel-places",
     "source": "twemoji",
-    "upstream": "26f0",
+    "upstream": "26e9",
     "keywords": [
-      "mountain",
-      "outdoors",
-      "hiking"
+      "torii",
+      "shrine",
+      "shinto",
+      "japan",
+      "gate"
     ]
   },
   {
-    "id": "twemoji-tent",
-    "name": "Tent",
+    "id": "twemoji-auto-rickshaw",
+    "name": "Auto Rickshaw",
     "cat": "travel-places",
     "source": "twemoji",
-    "upstream": "26fa",
+    "upstream": "1f6fa",
     "keywords": [
-      "tent",
-      "camping",
-      "outdoors"
+      "auto rickshaw",
+      "tuk tuk",
+      "vehicle",
+      "transport",
+      "travel"
     ]
   },
   {
-    "id": "twemoji-anchor",
-    "name": "Anchor",
+    "id": "twemoji-statue-of-liberty",
+    "name": "Statue of Liberty",
     "cat": "travel-places",
     "source": "twemoji",
-    "upstream": "2693",
+    "upstream": "1f5fd",
     "keywords": [
-      "anchor",
-      "boat",
-      "nautical"
+      "statue of liberty",
+      "landmark",
+      "monument",
+      "new york"
     ]
   },
   {
