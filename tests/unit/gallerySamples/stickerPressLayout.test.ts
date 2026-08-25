@@ -493,7 +493,7 @@ describe('sticker press navigation chrome — credits', () => {
         const page = scope.buildCreditsPage().paper_pro;
         const text = page.elements.map((e: any) => e.text).join('\n');
         expect(text).toContain('ISC License');
-        expect(text).toContain('Lucide Icons and Contributors');
+        expect(text).toContain('Lucide Contributors');
         expect(text).toContain('Cole Bemis');
         expect(text).toContain('MIT License');
         expect(text).toContain('CC-BY 4.0');
@@ -527,7 +527,7 @@ describe('sticker press navigation chrome — credits', () => {
         expect(licences.size).toBeGreaterThan(0);
 
         const REQUIRED_SUBSTRINGS: Record<string, string[]> = {
-            ISC: ['ISC License', 'Lucide Icons and Contributors'],
+            ISC: ['ISC License', 'Lucide Contributors'],
             MIT: ['MIT License', 'Cole Bemis'],
             'CC-BY-4.0': ['CC-BY 4.0', 'Twitter, Inc'],
         };

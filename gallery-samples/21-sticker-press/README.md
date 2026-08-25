@@ -114,10 +114,11 @@ over from the original plan (which guessed roughly 6 keyword-index pages and a B
 of two open icon sets, and this product's actual work is the curation, the six-colourway system,
 the two lookups, and the four-device layout engine around them — not the pictures themselves.
 
-- **Lucide** (lucide.dev) — 330 stickers. Licensed **ISC** (288 of the 330), Copyright (c) 2026
-  Lucide Icons and Contributors. The remaining 42 are Lucide icons derived from the Feather icon
-  set and carry Feather's original **MIT License**, Copyright (c) 2013–present Cole Bemis. Lucide
-  stickers appear in six colourways (Outline, Amber, Green, Blue, Red, Ink) at two sizes each.
+- **Lucide** (lucide.dev) — 330 stickers. Licensed **ISC** (288 of the 330); copyright for Lucide
+  itself is held by Lucide Contributors 2025, with portions held by Cole Bemis 2013-2023 as part
+  of Feather. The remaining 42 are Lucide icons derived from the Feather icon set and carry
+  Feather's original **MIT License**, Copyright (c) 2013-2023 Cole Bemis. Lucide stickers appear
+  in six colourways (Outline, Amber, Green, Blue, Red, Ink) at two sizes each.
 - **Twemoji** (github.com/jdecked/twemoji) — 170 stickers, graphics licensed **CC-BY 4.0**
   (Creative Commons Attribution 4.0 International) by Twitter, Inc and other contributors, as a
   collective work with no individual artist credited per graphic. Twemoji is never recoloured — it

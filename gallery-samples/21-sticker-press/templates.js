@@ -3,17 +3,13 @@
 
 const DEVICES = [
     { id: 'paper_pro', name: 'Paper Pro', width: 509, height: 679,
-      structural: [48, 32, 20], wideStructural: [[192, 24], [128, 16], [80, 10]],
-      pictorial: [48, 24], rail: 'full', palette: 'colour' },
+      pictorial: [48, 24], rail: 'full' },
     { id: 'move', name: 'Paper Pro Move', width: 260, height: 463,
-      structural: [36, 24, 16], wideStructural: [[144, 18], [96, 12], [60, 8]],
-      pictorial: [36, 18], rail: 'reduced', palette: 'colour' },
+      pictorial: [36, 18], rail: 'reduced' },
     { id: 'note_air', name: 'Boox Note Air 5C', width: 446, height: 595,
-      structural: [42, 28, 18], wideStructural: [[168, 21], [112, 14], [70, 9]],
-      pictorial: [42, 21], rail: 'full', palette: 'colour' },
+      pictorial: [42, 21], rail: 'full' },
     { id: 'pure', name: 'Paper Pure', width: 447, height: 596,
-      structural: [42, 28, 18], wideStructural: [[168, 21], [112, 14], [70, 9]],
-      pictorial: [42, 21], rail: 'full', palette: 'ink' },
+      pictorial: [42, 21], rail: 'full' },
 ];
 
 // Section 2: sticker artwork, inlined from vendor/ and registry.json.
@@ -1622,8 +1618,8 @@ const creditsParagraphs = () => {
     const twemojiCount = total - lucideCount;
     return [
         `Every one of the ${total} stickers in this book is drawn from two open icon sets — nothing here is original artwork.`,
-        `LUCIDE (${lucideCount} icons) — lucide.dev. ISC License. Copyright (c) 2026 Lucide Icons and Contributors. Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided the above copyright notice and this permission notice appear in all copies. THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.`,
-        `Several Lucide icons are derived from the Feather icon set: MIT License. Copyright (c) 2013-present Cole Bemis. Permission is hereby granted, free of charge, to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies, subject to including the above copyright notice and this permission notice in all copies.`,
+        `LUCIDE (${lucideCount} icons) — lucide.dev. ISC License. Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2023 as part of Feather (MIT). All other copyright (c) for Lucide are held by Lucide Contributors 2025. Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided the above copyright notice and this permission notice appear in all copies. THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.`,
+        `Several Lucide icons are derived from the Feather icon set: MIT License. Copyright (c) 2013-2023 Cole Bemis. Permission is hereby granted, free of charge, to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies, subject to including the above copyright notice and this permission notice in all copies.`,
         `TWEMOJI (${twemojiCount} graphics) — github.com/jdecked/twemoji. Graphics licensed CC-BY 4.0 (Creative Commons Attribution 4.0 International) by Twitter, Inc and other contributors. This is a collective work — no individual artist is credited for a specific graphic.`,
     ];
 };

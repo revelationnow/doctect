@@ -15,7 +15,7 @@ describe('sticker press vendor', () => {
     it('carries both halves of the Lucide licence', () => {
         const t = readFileSync(`${DIR}/LICENSE-lucide`, 'utf8');
         expect(t).toContain('ISC License');
-        expect(t).toContain('Lucide Icons and Contributors');
+        expect(t).toContain('Lucide Contributors');
         expect(t).toContain('Cole Bemis');           // the Feather-derived MIT half
         expect(t).toContain('MIT License');
     });
