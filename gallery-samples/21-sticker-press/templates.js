@@ -1618,8 +1618,8 @@ const creditsParagraphs = () => {
     const twemojiCount = total - lucideCount;
     return [
         `Every one of the ${total} stickers in this book is drawn from two open icon sets — nothing here is original artwork.`,
-        `LUCIDE (${lucideCount} icons) — lucide.dev. ISC License. Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2023 as part of Feather (MIT). All other copyright (c) for Lucide are held by Lucide Contributors 2025. Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided the above copyright notice and this permission notice appear in all copies. THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.`,
-        `Several Lucide icons are derived from the Feather icon set: MIT License. Copyright (c) 2013-2023 Cole Bemis. Permission is hereby granted, free of charge, to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies, subject to including the above copyright notice and this permission notice in all copies.`,
+        `LUCIDE (${lucideCount} icons) — lucide.dev. ISC License. Copyright (c) 2026 Lucide Icons and Contributors. Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided the above copyright notice and this permission notice appear in all copies. THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.`,
+        `Several Lucide icons are derived from the Feather icon set: MIT License. Copyright (c) 2013-present Cole Bemis. Permission is hereby granted, free of charge, to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies, subject to including the above copyright notice and this permission notice in all copies.`,
         `TWEMOJI (${twemojiCount} graphics) — github.com/jdecked/twemoji. Graphics licensed CC-BY 4.0 (Creative Commons Attribution 4.0 International) by Twitter, Inc and other contributors. This is a collective work — no individual artist is credited for a specific graphic.`,
     ];
 };

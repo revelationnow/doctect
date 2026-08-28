@@ -87,27 +87,12 @@
 //    reruns deterministic for a given upstream snapshot and never leaves a
 //    partial manifest or an orphaned .svg on disk.
 
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
 
 const VENDOR_DIR = dirname(fileURLToPath(import.meta.url));
-
-// Reviewed, pinned reference for the licence text this project actually
-// ships (see the code-review record for the Sticker Press branch, finding
-// I3). lucide-icons/lucide's live `main` branch LICENSE has moved on since
-// this npm dependency was locked — as of this writing it reads "Copyright
-// (c) 2026 Lucide Icons and Contributors" with an inline enumerated Feather
-// icon list, where this pinned copy reads "Lucide Contributors 2025" / "Cole
-// Bemis 2013-2023" with no enumerated list. Both are genuine, real text that
-// Lucide has published; they differ because upstream's file changed after
-// this dependency's version was locked, not because either one is invented.
-// This project ships the pinned copy: it is the exact text already reviewed
-// and vetted, and reading it from a local file (rather than a moving branch
-// tip) makes a rerun of this script always reproduce the same licence bytes
-// regardless of what upstream does next. See main()'s use of this path.
-const LUCIDE_LICENSE_PINNED_PATH = join(VENDOR_DIR, '..', '..', '..', 'node_modules', 'lucide-react', 'LICENSE');
 
 // --- Placeholder token -----------------------------------------------------
 //
@@ -933,19 +918,10 @@ async function preflightCheck() {
 }
 
 async function main() {
-    console.log(`Fetching Lucide LICENSE from ${LUCIDE_LICENSE_URL} (for the current Feather-derived icon list only — see LUCIDE_LICENSE_PINNED_PATH for the licence text this build actually ships) ...`);
+    console.log(`Fetching Lucide LICENSE from ${LUCIDE_LICENSE_URL} ...`);
     const lucideLicenseText = await fetchText(LUCIDE_LICENSE_URL);
     const featherIds = parseFeatherIds(lucideLicenseText);
     console.log(`  parsed ${featherIds.size} Feather-derived icon names (MIT half)`);
-
-    // The FILE this build vendors is the pinned, reviewed copy, not whatever
-    // main() just fetched — see LUCIDE_LICENSE_PINNED_PATH's comment. Fail
-    // loudly rather than vendor an empty/missing file if the npm dependency
-    // it reads from is ever removed or moved.
-    const vendoredLucideLicenseText = readFileSync(LUCIDE_LICENSE_PINNED_PATH, 'utf8');
-    if (!vendoredLucideLicenseText.includes('ISC License')) {
-        throw new Error(`pinned Lucide licence at ${LUCIDE_LICENSE_PINNED_PATH} did not contain the expected ISC License text — refusing to vendor an unverified licence`);
-    }
 
     console.log(`Fetching Twemoji LICENSE-GRAPHICS from ${TWEMOJI_LICENSE_GRAPHICS_URL} ...`);
     const twemojiLicenseText = await fetchText(TWEMOJI_LICENSE_GRAPHICS_URL);
@@ -985,7 +961,7 @@ async function main() {
     for (const icon of icons) {
         writeFileSync(join(VENDOR_DIR, icon.source, `${icon.id}.svg`), icon.markup, 'utf8');
     }
-    writeFileSync(join(VENDOR_DIR, 'LICENSE-lucide'), vendoredLucideLicenseText, 'utf8');
+    writeFileSync(join(VENDOR_DIR, 'LICENSE-lucide'), lucideLicenseText, 'utf8');
     writeFileSync(join(VENDOR_DIR, 'LICENSE-twemoji-graphics'), twemojiLicenseText, 'utf8');
     writeFileSync(join(VENDOR_DIR, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
 

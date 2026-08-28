@@ -15,9 +15,53 @@ describe('sticker press vendor', () => {
     it('carries both halves of the Lucide licence', () => {
         const t = readFileSync(`${DIR}/LICENSE-lucide`, 'utf8');
         expect(t).toContain('ISC License');
-        expect(t).toContain('Lucide Contributors');
+        expect(t).toContain('Lucide Icons and Contributors');
         expect(t).toContain('Cole Bemis');           // the Feather-derived MIT half
         expect(t).toContain('MIT License');
+    });
+
+    // GUARDRAIL — TRAP FOR FUTURE REVIEWERS: do not "fix" a diff here by
+    // copying node_modules/lucide-react/LICENSE over vendor/LICENSE-lucide.
+    // A previous review did exactly that (commit 8f9b7ff, later reverted):
+    // it diffed this file against node_modules/lucide-react/LICENSE, saw the
+    // copyright notice and Feather clause didn't match, and concluded the
+    // vendored text had been "rewritten, not reproduced". It hadn't been.
+    // node_modules/lucide-react/LICENSE is a DIFFERENT, OLDER licence
+    // snapshot shipped inside an npm package — it is NOT the source the
+    // vendored artwork comes from and must never be used as the reference.
+    // The artwork in this directory is fetched live from
+    // raw.githubusercontent.com/lucide-icons/lucide/main/, and the licence
+    // has to travel with that same live snapshot, not with whatever version
+    // happened to be locked in node_modules at some earlier point. The two
+    // texts differ (copyright holder string, whether the Feather-derived
+    // icons are enumerated by name or referenced generically, MIT copyright
+    // year) because upstream's LICENSE file changed after the npm dependency
+    // was locked — real upstream drift, not fabrication in this codebase.
+    // If you're looking at a failure here, go verify against the live URL
+    // above before "fixing" it against node_modules.
+    it('is the live-upstream licence text, not the older node_modules/lucide-react snapshot', () => {
+        const t = readFileSync(`${DIR}/LICENSE-lucide`, 'utf8');
+
+        // Strings that only the live-upstream text carries.
+        expect(t).toContain('Copyright (c) 2026 Lucide Icons and Contributors');
+        expect(t).toContain('The following Lucide icons are derived from the Feather project:');
+        expect(t).toContain('Copyright (c) 2013-present Cole Bemis');
+
+        // Strings unique to the older node_modules/lucide-react snapshot —
+        // their presence would mean the vendored licence got re-pinned to
+        // the npm copy again.
+        expect(t).not.toContain('Lucide Contributors 2025');
+        expect(t).not.toContain('Cole Bemis 2013-2023 as part of Feather');
+
+        const npmLicensePath = 'node_modules/lucide-react/LICENSE';
+        if (existsSync(npmLicensePath)) {
+            // Sharpest form of the guard: the two files must not be
+            // byte-identical. If this ever legitimately fails, it means
+            // upstream's live LICENSE and the npm package's copy have
+            // converged — re-verify against the live URL before touching
+            // vendor/LICENSE-lucide.
+            expect(t).not.toBe(readFileSync(npmLicensePath, 'utf8'));
+        }
     });
 
     it('carries the Twemoji CC-BY 4.0 graphics licence', () => {

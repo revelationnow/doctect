@@ -456,11 +456,11 @@ describe('The Sticker Press product guards', () => {
         expect(licences.size).toBeGreaterThan(0);
 
         // Lucide's licence has two halves that must BOTH appear: ISC for
-        // "Lucide Contributors" plus MIT for "Cole Bemis", which covers its
-        // Feather-derived icons. Twemoji needs CC-BY 4.0 attribution to
-        // "Twitter, Inc and other contributors".
+        // "Lucide Icons and Contributors" plus MIT for "Cole Bemis", which
+        // covers its Feather-derived icons. Twemoji needs CC-BY 4.0
+        // attribution to "Twitter, Inc and other contributors".
         const REQUIRED_SUBSTRINGS: Record<string, string[]> = {
-            ISC: ['ISC License', 'Lucide Contributors'],
+            ISC: ['ISC License', 'Lucide Icons and Contributors'],
             MIT: ['MIT License', 'Cole Bemis'],
             'CC-BY-4.0': ['CC-BY 4.0', 'Twitter, Inc'],
         };
