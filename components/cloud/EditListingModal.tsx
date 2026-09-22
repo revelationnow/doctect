@@ -74,9 +74,18 @@ export function EditListingModal({ projectId, onClose, onSaved }: EditListingMod
                 if (cancelled) return;
                 // A preview published before migration 016 has no recorded source page,
                 // so it cannot be pre-checked. Those listings open unchecked instead.
+                //
+                // A recorded nodeId is also only usable if the page still exists in the CURRENT
+                // published commit -- previews rendered from an earlier commit (e.g. after the
+                // published pointer was moved to a newer head) can reference pages that are gone.
+                // Such a stale id renders on no checkbox yet still fills the MAX_PREVIEWS cap,
+                // soft-locking the picker so no new page can be ticked. Drop those here, which
+                // also routes the listing to the legacy "current previews" fallback when NONE of
+                // the stored ids survive, so the picker opens empty and re-pickable.
+                const livePageIds = new Set(computePageOrder(commit.state as AppState));
                 const initialSelection = listing.previews
                     .map(p => p.nodeId)
-                    .filter((id): id is string => !!id);
+                    .filter((id): id is string => !!id && livePageIds.has(id));
                 setLoad({
                     status: 'ready',
                     listing,

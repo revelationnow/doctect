@@ -59,6 +59,35 @@ describe('EditListingModal', () => {
         expect(boxes.map(b => b.checked)).toEqual([false, true, false]);
     });
 
+    it('drops preview node ids missing from the current commit, so the picker is re-pickable', async () => {
+        // Both previews point at pages that no longer exist in the loaded commit (computePageOrder
+        // returns p1/p2/p3). They must not be pre-selected -- an off-list id renders on no checkbox
+        // yet still fills the selection cap, soft-locking the picker.
+        vi.spyOn(cloudApi, 'galleryDetail').mockResolvedValue(
+            listing([{ id: 't1', nodeId: 'gone-1' }, { id: 't2', nodeId: 'gone-2' }]));
+        renderModal();
+
+        const boxes = await screen.findAllByRole('checkbox') as HTMLInputElement[];
+        expect(boxes.map(b => b.checked)).toEqual([false, false, false]);
+        // With no stored id surviving, the listing falls back to showing its current previews.
+        expect(screen.getByText(/current previews/i)).toBeTruthy();
+        // The cap is free, so a fresh page can be ticked.
+        fireEvent.click(boxes[0]);
+        expect((screen.getAllByRole('checkbox')[0] as HTMLInputElement).checked).toBe(true);
+    });
+
+    it('keeps live preview ids selected while dropping stale ones', async () => {
+        vi.spyOn(cloudApi, 'galleryDetail').mockResolvedValue(
+            listing([{ id: 't1', nodeId: 'p2' }, { id: 't2', nodeId: 'gone' }]));
+        renderModal();
+
+        const boxes = await screen.findAllByRole('checkbox') as HTMLInputElement[];
+        // p2 survives and stays ticked; the stale 'gone' id is ignored.
+        expect(boxes.map(b => b.checked)).toEqual([false, true, false]);
+        // A live id survived, so this is not the legacy fallback.
+        expect(screen.queryByText(/current previews/i)).toBeNull();
+    });
+
     it('saves tags without re-rendering previews when the selection is untouched', async () => {
         vi.spyOn(cloudApi, 'galleryDetail').mockResolvedValue(
             listing([{ id: 't1', nodeId: 'p2' }]));
