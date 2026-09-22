@@ -14,7 +14,7 @@ export function GalleryDetailBody({ detail }: { detail: UseGalleryDetailResult }
     const navigate = useNavigate();
     const {
         project, importError, busy, mrs, isOwner, session, fromPath,
-        openInEditor, fork, downloadAllVariants, report,
+        openInEditor, fork, forkVersion, downloadAllVariants, report,
         showHistory, setShowHistory, onCloneHistoryVersion,
         reviews, myReview, saveReview, deleteMyReview, reportReview,
     } = detail;
@@ -125,6 +125,9 @@ export function GalleryDetailBody({ detail }: { detail: UseGalleryDetailResult }
                     cloudProjectId={project.id}
                     mode="clone"
                     onClone={onCloneHistoryVersion}
+                    // Only offer per-version fork to a viewer who can actually fork (signed in with
+                    // a username) -- same gate as the primary Fork button above.
+                    onForkVersion={session?.user?.username ? forkVersion : undefined}
                     onClose={() => setShowHistory(false)}
                 />
             )}

@@ -19,6 +19,7 @@ export interface UseGalleryDetailResult {
     session: ReturnType<typeof useSession>['data'];
     openInEditor: () => Promise<void>;
     fork: () => Promise<void>;
+    forkVersion: (commitId: string) => Promise<void>;
     downloadAllVariants: () => Promise<void>;
     report: () => Promise<void>;
     onCloneHistoryVersion: (args: { state: unknown; commitId: string }) => Promise<void>;
@@ -81,6 +82,26 @@ export function useGalleryDetail(id: string | undefined): UseGalleryDetailResult
             }
             setImportError(IMPORT_STAGE_ERROR_MESSAGE);
             setBusy(null);
+        }
+    };
+
+    // Forks a specific historical version (vs. `fork`, which takes the source's default). Throws
+    // on failure so the HistoryModal that invokes it can surface an inline error; navigates away
+    // on success like the primary fork.
+    const forkVersion = async (commitId: string) => {
+        if (!id) return;
+        setBusy('fork');
+        setImportError(null);
+        try {
+            await stageForkImport(id, commitId);
+            navigate('/app');
+        } catch (e) {
+            setBusy(null);
+            if (e instanceof ApiError && e.code === 'USERNAME_REQUIRED') {
+                navigate('/welcome', { state: { from: location.pathname } });
+                return;
+            }
+            throw e;
         }
     };
 
@@ -162,7 +183,7 @@ export function useGalleryDetail(id: string | undefined): UseGalleryDetailResult
     return {
         project, error, importError, busy, mrs, isOwner, showHistory, setShowHistory,
         fromPath: location.pathname, session,
-        openInEditor, fork, downloadAllVariants, report, onCloneHistoryVersion,
+        openInEditor, fork, forkVersion, downloadAllVariants, report, onCloneHistoryVersion,
         reviews, myReview, saveReview, deleteMyReview, reportReview,
     };
 }

@@ -146,4 +146,63 @@ describe('fork', () => {
         expect(res.status).toBe(400);
         expect(res.body.code).toBe('INVALID_IDEMPOTENCY_KEY');
     });
+
+    it('forks a specific published version, and hides unpublished ones from non-owners', async () => {
+        const created = await request(app).post('/api/projects').set('Cookie', ownerCookie)
+            .send({ name: 'Versioned', state: minimalState('v1') });
+        const projectId = created.body.project.id;
+        const h1 = created.body.commit.id;
+        await request(app).post(`/api/projects/${projectId}/publish`).set('Cookie', ownerCookie)
+            .set('If-Match', `"${h1}"`).send({ description: '', tags: [], thumbnails: [PNG_1X1] });
+        const v2 = await request(app).post(`/api/projects/${projectId}/commits`).set('Cookie', ownerCookie)
+            .set('If-Match', `"${h1}"`).send({ state: minimalState('v2'), message: 'v2' });
+        const h2 = v2.body.commit.id;
+
+        // v1 is published, so a stranger can fork that exact version.
+        const forkV1 = await request(app).post(`/api/projects/${projectId}/fork`).set('Cookie', forkerCookie)
+            .send({ commitId: h1 });
+        expect(forkV1.status).toBe(201);
+        expect(forkV1.body.project.forkedFromCommitId).toBe(h1);
+        const stateV1 = await request(app)
+            .get(`/api/projects/${forkV1.body.project.id}/commits/${forkV1.body.project.headCommitId}`).set('Cookie', forkerCookie);
+        expect(stateV1.body.commit.state.nodes.root.title).toBe('v1');
+
+        // h2 exists but is not published -> hidden from a non-owner forker.
+        const forkHidden = await request(app).post(`/api/projects/${projectId}/fork`).set('Cookie', forkerCookie)
+            .send({ commitId: h2 });
+        expect(forkHidden.status).toBe(404);
+        expect(forkHidden.body.code).toBe('FORK_VERSION_NOT_FOUND');
+
+        // The owner may fork their own unpublished commit.
+        const ownerFork = await request(app).post(`/api/projects/${projectId}/fork`).set('Cookie', ownerCookie)
+            .send({ commitId: h2 });
+        expect(ownerFork.status).toBe(201);
+        const ownerState = await request(app)
+            .get(`/api/projects/${ownerFork.body.project.id}/commits/${ownerFork.body.project.headCommitId}`).set('Cookie', ownerCookie);
+        expect(ownerState.body.commit.state.nodes.root.title).toBe('v2');
+
+        // Once h2 is published, the stranger can fork it too.
+        await request(app).post(`/api/projects/${projectId}/publish`).set('Cookie', ownerCookie)
+            .set('If-Match', `"${h2}"`).send({ description: '', tags: [], thumbnails: [PNG_1X1] });
+        const forkV2 = await request(app).post(`/api/projects/${projectId}/fork`).set('Cookie', forkerCookie)
+            .send({ commitId: h2 });
+        expect(forkV2.status).toBe(201);
+        expect(forkV2.body.project.forkedFromCommitId).toBe(h2);
+    });
+
+    it('refuses a commitId that belongs to a different project', async () => {
+        const other = await createPublishedSource('Foreign version source');
+        const foreignCommit = (await request(app).get(`/api/gallery/${other}`)).body.project.headCommitId;
+        const res = await request(app).post(`/api/projects/${publicId}/fork`).set('Cookie', forkerCookie)
+            .send({ commitId: foreignCommit });
+        expect(res.status).toBe(404);
+        expect(res.body.code).toBe('FORK_VERSION_NOT_FOUND');
+    });
+
+    it('rejects a malformed commitId', async () => {
+        const res = await request(app).post(`/api/projects/${publicId}/fork`).set('Cookie', forkerCookie)
+            .send({ commitId: '' });
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('INVALID_COMMIT_ID');
+    });
 });

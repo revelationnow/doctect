@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { X, RotateCcw, ExternalLink } from 'lucide-react';
+import { X, RotateCcw, ExternalLink, GitFork } from 'lucide-react';
 import { cloudApi, CommitMeta, ApiError } from '../../services/cloudApi';
 import { loadProjectState } from '../../services/loadProjectState';
 import { IMPORT_STAGE_ERROR_MESSAGE } from '../../services/importProject';
@@ -9,15 +9,24 @@ type HistoryModalProps =
     { cloudProjectId: string; onClose: () => void } &
     (
         | { mode?: 'restore'; onRestore: (state: AppState) => void }
-        | { mode: 'clone'; onClone: (args: { state: unknown; commitId: string }) => Promise<void> }
+        | {
+            mode: 'clone';
+            onClone: (args: { state: unknown; commitId: string }) => Promise<void>;
+            // Present only when the viewer may fork (signed in with a username). Forks that
+            // specific version server-side (lineage + fork count), vs. onClone's local import.
+            onForkVersion?: (commitId: string) => Promise<void>;
+        }
     );
+
+type RowAction = 'restore' | 'clone' | 'fork';
 
 export function HistoryModal(props: HistoryModalProps) {
     const { cloudProjectId, onClose } = props;
     const isClone = props.mode === 'clone';
     const [commits, setCommits] = useState<CommitMeta[] | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [busyId, setBusyId] = useState<string | null>(null);
+    // Compound so two actions can share one row without both showing "Loading…".
+    const [busyKey, setBusyKey] = useState<string | null>(null);
     const busyRef = useRef(false);
 
     useEffect(() => {
@@ -41,31 +50,40 @@ export function HistoryModal(props: HistoryModalProps) {
         if (!busyRef.current) onClose();
     };
 
-    const select = async (commitId: string) => {
+    const select = async (commitId: string, action: RowAction) => {
         // Restoring overwrites whatever's currently open in the editor, so it gets a confirm
-        // dialog; cloning always creates a brand-new local project and touches nothing the
-        // viewer already has open, so it doesn't need one.
-        if (props.mode !== 'clone' && !window.confirm('Replace the current editor contents with this version? (Unsaved local changes will be lost — your cloud history is untouched.)')) return;
+        // dialog; cloning and forking always create a brand-new project and touch nothing the
+        // viewer already has open, so they don't need one.
+        if (action === 'restore' && !window.confirm('Replace the current editor contents with this version? (Unsaved local changes will be lost — your cloud history is untouched.)')) return;
         busyRef.current = true;
-        setBusyId(commitId); setError(null);
+        setBusyKey(`${action}#${commitId}`); setError(null);
         try {
+            // Forking is resolved server-side by commit id -- no need to fetch the state here.
+            if (action === 'fork') {
+                if (props.mode === 'clone' && props.onForkVersion) await props.onForkVersion(commitId);
+                return; // navigates away on success
+            }
             const commit = await cloudApi.getCommit(cloudProjectId, commitId);
-            if (props.mode === 'clone') {
+            if (action === 'clone' && props.mode === 'clone') {
                 try {
                     await props.onClone({ state: commit.state, commitId });
                 } catch {
                     setError(IMPORT_STAGE_ERROR_MESSAGE);
                 }
-            } else {
+            } else if (props.mode !== 'clone') {
                 const loaded = loadProjectState(commit.state);
                 props.onRestore(loaded.state);
                 if (loaded.warnings.length > 0) window.alert(loaded.warnings.join('\n'));
             }
         } catch (e) {
-            setError(e instanceof ApiError ? e.message : (props.mode === 'clone' ? 'Could not open this version' : 'Restore failed'));
+            setError(
+                e instanceof ApiError ? e.message
+                : action === 'fork' ? 'Could not fork this version'
+                : action === 'clone' ? 'Could not open this version'
+                : 'Restore failed');
         } finally {
             busyRef.current = false;
-            setBusyId(null);
+            setBusyKey(null);
         }
     };
 
@@ -77,7 +95,7 @@ export function HistoryModal(props: HistoryModalProps) {
                     <button
                         type="button"
                         aria-label="Close version history"
-                        disabled={busyId !== null}
+                        disabled={busyKey !== null}
                         onClick={close}
                         className="text-slate-400 hover:text-slate-700 disabled:cursor-wait disabled:opacity-50"
                     >
@@ -95,11 +113,20 @@ export function HistoryModal(props: HistoryModalProps) {
                                 </div>
                                 <div className="text-[10px] text-slate-400">{new Date(c.createdAt).toLocaleString()}</div>
                             </div>
-                            <button disabled={busyId !== null} onClick={() => select(c.id)}
-                                className="flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-800 disabled:opacity-50 flex-shrink-0">
-                                {isClone ? <ExternalLink size={11} /> : <RotateCcw size={11} />}
-                                {' '}{busyId === c.id ? 'Loading…' : (isClone ? 'Open in editor' : 'Restore')}
-                            </button>
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                                <button disabled={busyKey !== null} onClick={() => select(c.id, isClone ? 'clone' : 'restore')}
+                                    className="flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-800 disabled:opacity-50">
+                                    {isClone ? <ExternalLink size={11} /> : <RotateCcw size={11} />}
+                                    {' '}{busyKey === `${isClone ? 'clone' : 'restore'}#${c.id}` ? 'Loading…' : (isClone ? 'Open in editor' : 'Restore')}
+                                </button>
+                                {isClone && props.onForkVersion && (
+                                    <button disabled={busyKey !== null} onClick={() => select(c.id, 'fork')}
+                                        className="flex items-center gap-1 text-[11px] text-slate-600 hover:text-slate-900 disabled:opacity-50">
+                                        <GitFork size={11} />
+                                        {' '}{busyKey === `fork#${c.id}` ? 'Forking…' : 'Fork'}
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     ))}
                     {commits?.length === 0 && <div className="text-xs text-slate-400 p-2">No versions yet.</div>}

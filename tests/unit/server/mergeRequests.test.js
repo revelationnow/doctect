@@ -269,8 +269,10 @@ describe('merge and close', () => {
         const head = await request(app)
             .get(`/api/projects/${up.body.project.id}/commits/${merged.body.commit.id}`).set('Cookie', ownerCookie);
         expect(head.body.commit.state.generator).toEqual(provenance);
+        // Merging into a still-published project advances the public version, so the gallery now
+        // serves the merge commit -- generator provenance and all.
         const galleryState = await request(app).get(`/api/gallery/${up.body.project.id}/state`);
-        expect(galleryState.body.state.generator).toBeUndefined();
+        expect(galleryState.body.state.generator).toEqual(provenance);
     });
 
     it('rejects when the target head changes after diff computation', async () => {

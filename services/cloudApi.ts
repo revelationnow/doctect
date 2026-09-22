@@ -293,13 +293,17 @@ export const cloudApi = {
 
     // Forks a public project into a new private project owned by the caller, seeded from
     // its head commit. Server endpoint implemented in Task 19 (Phase 4).
-    fork: (projectId: string, idempotencyKey?: string) =>
-        api<{ project: CloudProject }>(`/api/projects/${projectId}/fork`, {
+    // `commitId` forks a specific version instead of the source's default (its published commit
+    // for a public project). The server accepts only a published commit from a non-owner.
+    fork: (projectId: string, idempotencyKey?: string, commitId?: string) => {
+        const body: { idempotencyKey?: string; commitId?: string } = {};
+        if (idempotencyKey !== undefined) body.idempotencyKey = idempotencyKey;
+        if (commitId !== undefined) body.commitId = commitId;
+        return api<{ project: CloudProject }>(`/api/projects/${projectId}/fork`, {
             method: 'POST',
-            ...(idempotencyKey !== undefined
-                ? { body: JSON.stringify({ idempotencyKey }) }
-                : {}),
-        }),
+            ...(Object.keys(body).length > 0 ? { body: JSON.stringify(body) } : {}),
+        });
+    },
 
     createMergeRequest: (args: { sourceProjectId: string; title: string; description?: string }) =>
         api<{ mergeRequest: MergeRequestDto }>('/api/merge-requests', { method: 'POST', body: JSON.stringify(args) }),

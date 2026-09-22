@@ -250,6 +250,24 @@ router.post('/api/merge-requests/:id/merge', requireAuth, loadMrForParticipant, 
             userId: req.user.id,
             encoded
         }, txQuery);
+        // A merge into a still-published project advances the PUBLIC version too, not just the
+        // private head. Without this the gallery (state, detail, download, fork) stays pinned to
+        // the pre-merge published_commit_id, so a merged change is visible only to the owner in
+        // their editor until they separately re-run Publish. Mirrors the two writes publish does
+        // (projects.js): move published_commit_id + published_at and record the publication row.
+        // Listing metadata (published_name/description/tags) and thumbnails are deliberately left
+        // as-is -- a merge changes content, not the listing copy. Guarded on the current row so a
+        // target unpublished before the merge keeps today's head-only behavior.
+        if (target.visibility === 'public' && target.published_commit_id) {
+            await txQuery(
+                `UPDATE projects SET published_commit_id = $1, published_at = CURRENT_TIMESTAMP WHERE id = $2`,
+                [commit.id, target.id]);
+            await txQuery(
+                `INSERT INTO project_publications (project_id, commit_id)
+                 VALUES ($1, $2) ON CONFLICT (project_id, commit_id) DO NOTHING`,
+                [target.id, commit.id]);
+        }
+
         const updated = await txQuery(
             `UPDATE merge_requests SET status = 'merged', resolved_by = $1, resolved_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
             [req.user.id, mr.id]);

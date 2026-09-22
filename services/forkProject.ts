@@ -89,9 +89,12 @@ const clearAttempt = (attempt: ForkAttempt): void => {
   persistAttempts(attempts);
 };
 
-export async function stageForkImport(sourceProjectId: string): Promise<string> {
-  const attempt = attemptForSource(sourceProjectId);
-  const response = await cloudApi.fork(sourceProjectId, attempt.idempotencyKey);
+export async function stageForkImport(sourceProjectId: string, commitId?: string): Promise<string> {
+  // A version fork is a distinct fork target from the default, so its retry/idempotency identity
+  // is keyed on both ids -- otherwise forking two versions of one project would dedupe together.
+  const attemptSource = commitId ? `${sourceProjectId}:${commitId}` : sourceProjectId;
+  const attempt = attemptForSource(attemptSource);
+  const response = await cloudApi.fork(sourceProjectId, attempt.idempotencyKey, commitId);
   const project = response.project;
   if (!nonEmptyString(project?.id)
     || typeof project.name !== 'string'
@@ -107,7 +110,7 @@ export async function stageForkImport(sourceProjectId: string): Promise<string> 
       cloud: { projectId: project.id, lastSyncedCommitId: commit.id },
     },
     {
-      sourceKey: `gallery-fork:${sourceProjectId}:${attempt.idempotencyKey}`,
+      sourceKey: `gallery-fork:${attemptSource}:${attempt.idempotencyKey}`,
       replaceRetainedForkAttempt: true,
     },
   );

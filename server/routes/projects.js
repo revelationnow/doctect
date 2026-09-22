@@ -551,10 +551,23 @@ const forkIdempotencyKeyFromRequest = (req, res) => {
     return { key };
 };
 
+const forkCommitIdFromRequest = (req, res) => {
+    if (!Object.hasOwn(req.body || {}, 'commitId')) return { commitId: null };
+    const commitId = req.body.commitId;
+    if (typeof commitId !== 'string' || commitId.length === 0 || commitId.length > 200) {
+        res.status(400).json({ error: 'commitId must be a non-empty string.', code: 'INVALID_COMMIT_ID' });
+        return null;
+    }
+    return { commitId };
+};
+
 router.post('/api/projects/:id/fork', requireAuth, requireUsername, userWriteLimiter, async (req, res) => {
     const parsedKey = forkIdempotencyKeyFromRequest(req, res);
     if (!parsedKey) return;
     const idempotencyKey = parsedKey.key;
+    const parsedCommit = forkCommitIdFromRequest(req, res);
+    if (!parsedCommit) return;
+    const requestedCommitId = parsedCommit.commitId;
     let forked;
     try {
         forked = await withTransaction(async txQuery => {
@@ -576,7 +589,22 @@ router.post('/api/projects/:id/fork', requireAuth, requireUsername, userWriteLim
             const src = sources[0];
             const isOwner = src?.owner_id === req.user.id;
             if (!src || (!isOwner && src.visibility !== 'public')) return { status: 'missing' };
-            const sourceCommitId = src.visibility === 'public' ? src.published_commit_id : src.head_commit_id;
+            let sourceCommitId;
+            if (requestedCommitId) {
+                // Fork a specific historical version. A non-owner may only fork a *published*
+                // version -- the same project_publications gate the public history and commit
+                // routes use; the owner may fork any commit of their own project.
+                const publicFilter = isOwner
+                    ? ''
+                    : ' AND EXISTS (SELECT 1 FROM project_publications pp WHERE pp.project_id = commits.project_id AND pp.commit_id = commits.id)';
+                const versionRows = await txQuery(
+                    `SELECT id FROM commits WHERE id = $1 AND project_id = $2${publicFilter}`,
+                    [requestedCommitId, src.id]);
+                if (!versionRows[0]) return { status: 'version-missing' };
+                sourceCommitId = requestedCommitId;
+            } else {
+                sourceCommitId = src.visibility === 'public' ? src.published_commit_id : src.head_commit_id;
+            }
             if (!sourceCommitId) return { status: 'empty' };
             const headRows = await txQuery('SELECT state_json, state_gzip, state_bytes FROM commits WHERE id = $1', [sourceCommitId]);
             if (!headRows[0]) return { status: 'commit-missing' };
@@ -618,6 +646,7 @@ router.post('/api/projects/:id/fork', requireAuth, requireUsername, userWriteLim
         throw e;
     }
     if (forked.status === 'missing') return res.status(404).json({ error: 'Project not found' });
+    if (forked.status === 'version-missing') return res.status(404).json({ error: 'Requested version not found or not published', code: 'FORK_VERSION_NOT_FOUND' });
     if (forked.status === 'empty') return res.status(400).json({ error: 'Source project has no content' });
     if (forked.status === 'commit-missing') return res.status(404).json({ error: 'Source commit not found' });
     res.status(forked.status === 'existing' ? 200 : 201)

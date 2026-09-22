@@ -87,7 +87,7 @@ describe('stageForkImport', () => {
 
     expect(cloudMocks.fork).toHaveBeenCalledTimes(2);
     expect(firstKey).toMatch(/^fork_[0-9a-f-]{36}$/);
-    expect(cloudMocks.fork.mock.calls[1]).toEqual(['source-1', firstKey]);
+    expect(cloudMocks.fork.mock.calls[1]).toEqual(['source-1', firstKey, undefined]);
     expect(window.sessionStorage.length).toBe(0);
   });
 
@@ -113,7 +113,7 @@ describe('stageForkImport', () => {
     await expect(reloaded.stageForkImport('source-1')).resolves.toBe('staged-import');
 
     expect(cloudMocks.fork).toHaveBeenCalledTimes(2);
-    expect(cloudMocks.fork.mock.calls[1]).toEqual(['source-1', firstKey]);
+    expect(cloudMocks.fork.mock.calls[1]).toEqual(['source-1', firstKey, undefined]);
     expect(cloudMocks.getCommit).toHaveBeenCalledTimes(2);
     expect(cloudMocks.getCommit.mock.calls[0]).toEqual([
       'account-a-fork-of-source-1',
@@ -164,7 +164,7 @@ describe('stageForkImport', () => {
     await expect(reloaded.stageForkImport('source-1')).resolves.toBe('reconciled-import');
 
     expect(cloudMocks.fork).toHaveBeenCalledTimes(2);
-    expect(cloudMocks.fork.mock.calls[1]).toEqual(['source-1', firstKey]);
+    expect(cloudMocks.fork.mock.calls[1]).toEqual(['source-1', firstKey, undefined]);
     expect(cloudMocks.getCommit).toHaveBeenCalledTimes(2);
     expect(stageImport).toHaveBeenCalledTimes(2);
     expect(stageImport.mock.calls[1]).toEqual([
@@ -203,7 +203,7 @@ describe('stageForkImport', () => {
     const signedIn = await loadSubject();
     await expect(signedIn.stageForkImport('source-1')).resolves.toBe('staged-import');
 
-    expect(cloudMocks.fork.mock.calls[1]).toEqual(['source-1', firstKey]);
+    expect(cloudMocks.fork.mock.calls[1]).toEqual(['source-1', firstKey, undefined]);
     expect(cloudMocks.getCommit).toHaveBeenCalledWith(
       'fork-of-source-1',
       'head-of-source-1',
@@ -280,8 +280,8 @@ describe('stageForkImport', () => {
     await reloaded.stageForkImport('source-a');
     await reloaded.stageForkImport('source-b');
 
-    expect(cloudMocks.fork.mock.calls[2]).toEqual(['source-a', sourceAKey]);
-    expect(cloudMocks.fork.mock.calls[3]).toEqual(['source-b', sourceBKey]);
+    expect(cloudMocks.fork.mock.calls[2]).toEqual(['source-a', sourceAKey, undefined]);
+    expect(cloudMocks.fork.mock.calls[3]).toEqual(['source-b', sourceBKey, undefined]);
   });
 
   it('gives concurrent calls for one source the same server key', async () => {

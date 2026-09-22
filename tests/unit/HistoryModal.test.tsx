@@ -161,6 +161,20 @@ describe('HistoryModal', () => {
             expect(screen.queryByRole('button', { name: 'Restore' })).not.toBeInTheDocument();
         });
 
+        it('offers a Fork action per version only when onForkVersion is given, and forks by commit id', async () => {
+            const bare = render(<HistoryModal cloudProjectId="proj-1" mode="clone" onClone={vi.fn()} onClose={vi.fn()} />);
+            await screen.findAllByRole('button', { name: 'Open in editor' });
+            expect(screen.queryByRole('button', { name: 'Fork' })).not.toBeInTheDocument();
+            bare.unmount();
+
+            const onForkVersion = vi.fn(() => Promise.resolve());
+            render(<HistoryModal cloudProjectId="proj-1" mode="clone" onClone={vi.fn()} onForkVersion={onForkVersion} onClose={vi.fn()} />);
+            const forkButtons = await screen.findAllByRole('button', { name: 'Fork' });
+            expect(forkButtons).toHaveLength(2);
+            fireEvent.click(forkButtons[0]);
+            await waitFor(() => expect(onForkVersion).toHaveBeenCalledWith(expect.any(String)));
+        });
+
         it('does not show a confirm dialog before cloning', async () => {
             const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
             const onClone = vi.fn();

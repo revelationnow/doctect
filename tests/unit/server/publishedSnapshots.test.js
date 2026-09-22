@@ -95,4 +95,30 @@ describe('published project snapshots', () => {
         const historyAfterRepublish = await request(app).get(`/api/projects/${projectId}/commits`).set('Cookie', visitorCookie);
         expect(historyAfterRepublish.body.commits.map(commit => commit.id)).toEqual([h4, h2, h1]);
     });
+
+    it('advances the public version when a merge lands on a published project', async () => {
+        const created = await request(app).post('/api/projects').set('Cookie', ownerCookie)
+            .send({ name: 'Merge target', state: minimalState('published base') });
+        const targetId = created.body.project.id;
+        const baseHead = created.body.commit.id;
+        expect((await publish(targetId, ownerCookie, baseHead, 'base')).status).toBe(200);
+
+        const fork = await request(app).post(`/api/projects/${targetId}/fork`).set('Cookie', visitorCookie);
+        const forkId = fork.body.project.id;
+        await save(forkId, visitorCookie, fork.body.project.headCommitId, 'merged change');
+        const mr = await request(app).post('/api/merge-requests').set('Cookie', visitorCookie)
+            .send({ sourceProjectId: forkId, title: 'Propose merged change' });
+
+        const merged = await request(app).post(`/api/merge-requests/${mr.body.mergeRequest.id}/merge`).set('Cookie', ownerCookie);
+        expect(merged.status).toBe(200);
+
+        // Gallery state, detail, and a fresh fork all see the merged version without any
+        // separate republish -- signed out, as any visitor would.
+        const galleryState = await request(app).get(`/api/gallery/${targetId}/state`);
+        expect(galleryState.body.state.nodes.root.title).toBe('merged change');
+        const galleryDetail = await request(app).get(`/api/gallery/${targetId}`);
+        expect(galleryDetail.body.project.headCommitId).toBe(merged.body.commit.id);
+        const refork = await request(app).post(`/api/projects/${targetId}/fork`).set('Cookie', visitorCookie);
+        expect(refork.body.project.forkedFromCommitId).toBe(merged.body.commit.id);
+    });
 });
