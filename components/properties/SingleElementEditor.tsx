@@ -942,6 +942,7 @@ export const SingleElementEditor: React.FC<SingleElementEditorProps> = ({
                         <select className="w-full text-xs border rounded bg-white py-1" value={element.patternType || 'lines-h'} onChange={e => onUpdate({ patternType: e.target.value as any })}>
                             <option value="lines-h">Horizontal Lines</option>
                             <option value="lines-v">Vertical Lines</option>
+                            <option value="grid">Grid</option>
                             <option value="dots">Dots</option>
                         </select>
                         <div className="grid grid-cols-2 gap-2">

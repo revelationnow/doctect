@@ -128,7 +128,7 @@ async function expandLayersPanel(t) {
 // on the pattern-type <select> that appears once fill type is Pattern) --
 // avoids depending on DOM position/index, which would silently break if the
 // Appearance section's layout ever changes. patternType is one of
-// 'lines-h' | 'lines-v' | 'dots' -- the three the dropdown actually offers
+// 'lines-h' | 'lines-v' | 'grid' | 'dots' -- the four the dropdown actually offers
 // (see the tutorial's own NOTE on the 4th, script-only 'lines-d').
 //
 // Also fills Gap/Weight explicitly (SmartInput label + its sibling input

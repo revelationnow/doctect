@@ -13,10 +13,11 @@ export interface PatternBackgroundOptions {
   renderScale?: number;
 }
 
-const PATTERN_ANGLES: Partial<Record<PatternType, string>> = {
-  'lines-h': '180deg',
-  'lines-v': '90deg',
-  'lines-d': '135deg',
+const PATTERN_ANGLES: Partial<Record<PatternType, string[]>> = {
+  'lines-h': ['180deg'],
+  'lines-v': ['90deg'],
+  'lines-d': ['135deg'],
+  grid: ['180deg', '90deg'],
 };
 
 const safeScale = (value: number | undefined) => (
@@ -33,12 +34,14 @@ export function buildPatternBackgroundStyle({
   const scale = safeScale(renderScale);
   const resolvedSpacing = Number(spacing) || 10;
   const sourceWeight = Number(weight) || 1;
-  const angle = type ? PATTERN_ANGLES[type] : undefined;
+  const angles = type ? PATTERN_ANGLES[type] : undefined;
 
-  if (angle) {
+  if (angles) {
     const effectiveWeight = Math.max(sourceWeight, MIN_SCREEN_LINE_PX / scale);
     return {
-      backgroundImage: `repeating-linear-gradient(${angle}, ${color}, ${color} ${effectiveWeight}px, transparent ${effectiveWeight}px, transparent ${resolvedSpacing}px)`,
+      backgroundImage: angles
+        .map(angle => `repeating-linear-gradient(${angle}, ${color}, ${color} ${effectiveWeight}px, transparent ${effectiveWeight}px, transparent ${resolvedSpacing}px)`)
+        .join(', '),
     };
   }
 

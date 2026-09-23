@@ -27,7 +27,7 @@ const stateFor = (elements: TemplateElement[], selectedElementIds: string[]): Ap
     selectedElementIds, scale: 1, tool: 'select', showJsonModal: false,
     sidebarWidth: 240, propertiesPanelWidth: 300, snapToGrid: false, showGrid: false,
     showNodeSelector: false, nodeSelectorMode: 'grid_source', editingElementId: null,
-    clipboard: [], schemaVersion: 11,
+    clipboard: [], schemaVersion: 12,
 });
 
 const callbacks = () => ({

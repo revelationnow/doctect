@@ -31,12 +31,12 @@ Select a rectangle and open **Element Properties → Appearance** — this secti
 
 [**Fill**](/docs/reference/fill-and-stroke) is a color swatch, a small **✕** next to it that clears the fill back to none, and a dropdown: **Solid Color** or **Pattern**.
 
-Switch it to [Pattern](/docs/reference/pattern-fills) and two more controls appear: a dropdown offering **Horizontal Lines**, **Vertical Lines**, or **Dots**, and two number fields beside it, **Gap** and **Weight**. Gap sets the distance between repeats; Weight sets line thickness for the two line patterns, or dot diameter for Dots.
+Switch it to [Pattern](/docs/reference/pattern-fills) and two more controls appear: a dropdown offering **Horizontal Lines**, **Vertical Lines**, **Grid**, or **Dots**, and two number fields beside it, **Gap** and **Weight**. Gap sets the distance between repeats (for Grid, both the row and column spacing); Weight sets line thickness for the line and grid patterns, or dot diameter for Dots.
 
-![Three rectangles showing the three pattern fills side by side: horizontal lines, vertical lines, and dots](/docs-assets/editor/pattern-fills.png "Horizontal Lines, Vertical Lines, and Dots — the three pattern fills this dropdown can select")
+![Three rectangles showing three pattern fills side by side: horizontal lines, vertical lines, and dots](/docs-assets/editor/pattern-fills.png "Horizontal Lines, Vertical Lines, and Dots — three of the four pattern fills this dropdown can select")
 
 > [!NOTE]
-> The underlying file format also defines a fourth, diagonal line pattern. It renders correctly wherever a project script sets it, but this dropdown doesn't currently offer it as a click-to-pick option — only the three above are reachable from the panel.
+> The underlying file format also defines a diagonal line pattern. It renders correctly wherever a project script sets it, but this dropdown doesn't currently offer it as a click-to-pick option — only the four above are reachable from the panel.
 
 > [!TIP]
 > Dots with a generous Gap makes a convincing bullet-journal dot grid — and unlike drawing that same grid as hundreds, or thousands, of individual dot elements, it's one rectangle with a pattern fill. The exported PDF stores one small repeating instruction instead of one draw command per dot, so the file stays small no matter how fine the grid looks on the page.

@@ -358,7 +358,7 @@ describe('initial migration preparation', () => {
 
   it('preserves ordered complete project wrappers and migrates state content', async () => {
     const first = legacyProject('project-a', 9);
-    const second = secondProject(11);
+    const second = secondProject(12);
     const source = sourceFrom({
       ...validLegacyValues(),
       [LEGACY_KEYS.projects]: JSON.stringify([first, second]),
@@ -435,7 +435,7 @@ describe('initial migration preparation', () => {
   });
 
   it('preserves preset order and uses accumulated IDs for duplicate detection', async () => {
-    const presets = [legacyCustomPreset('preset-b', 5), legacyCustomPreset('preset-a', 11)];
+    const presets = [legacyCustomPreset('preset-b', 5), legacyCustomPreset('preset-a', 12)];
     const prepared = await prepareInitialCopy(sourceFrom({
       ...validLegacyValues(),
       [LEGACY_KEYS.customPresets]: JSON.stringify(presets),
@@ -604,24 +604,24 @@ describe('initial migration preparation', () => {
     ['duplicate project IDs', LEGACY_KEYS.projects, JSON.stringify([
       legacyProject('same'), legacyProject('same'),
     ])],
-    ['empty project ID', LEGACY_KEYS.projects, JSON.stringify([legacyProject('', 11)])],
+    ['empty project ID', LEGACY_KEYS.projects, JSON.stringify([legacyProject('', 12)])],
     ['malformed project state', LEGACY_KEYS.projects, JSON.stringify([
-      legacyProject('bad', 11, { initialState: null }),
+      legacyProject('bad', 12, { initialState: null }),
     ])],
     ['inherited project root', LEGACY_KEYS.projects, JSON.stringify([
-      legacyProject('project-a', 11, {
+      legacyProject('project-a', 12, {
         initialState: { ...currentState(), nodes: {}, rootId: '__proto__' },
       }),
     ])],
     ['unresolved active project', LEGACY_KEYS.activeProject, 'missing'],
     ['empty preset ID', LEGACY_KEYS.customPresets, JSON.stringify([
-      legacyCustomPreset('', 11),
+      legacyCustomPreset('', 12),
     ])],
     ['malformed preset state', LEGACY_KEYS.customPresets, JSON.stringify([
-      legacyCustomPreset('bad', 11, { initialState: null }),
+      legacyCustomPreset('bad', 12, { initialState: null }),
     ])],
     ['future project schema', LEGACY_KEYS.projects, JSON.stringify([
-      legacyProject('future', 11, {
+      legacyProject('future', 12, {
         initialState: { ...currentState(), schemaVersion: CURRENT_SCHEMA_VERSION + 1 },
       }),
     ])],

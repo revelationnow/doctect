@@ -13,7 +13,7 @@ export interface AppNode {
 export type ElementType = 'rect' | 'ellipse' | 'text' | 'triangle' | 'grid' | 'line' | 'svg';
 export type TextOverflow = 'clip' | 'ellipsis' | 'shrink' | 'visible';
 export type FillType = 'solid' | 'pattern';
-export type PatternType = 'lines-h' | 'lines-v' | 'lines-d' | 'dots';
+export type PatternType = 'lines-h' | 'lines-v' | 'lines-d' | 'grid' | 'dots';
 
 export interface TraversalStep {
   sliceStart?: number;

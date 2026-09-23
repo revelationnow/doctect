@@ -37,7 +37,7 @@ const cloudResults = vi.hoisted(() => ({
 const closeModalProps = vi.hoisted(() => ({ current: undefined as any }));
 
 const generatedProject = {
-  schemaVersion: 11 as const,
+  schemaVersion: 12 as const,
   rootId: 'generated-root',
   activeVariantId: 'generated-variant',
   nodes: {

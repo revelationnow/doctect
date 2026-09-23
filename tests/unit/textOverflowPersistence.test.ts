@@ -110,7 +110,7 @@ describe('text overflow v10 persistence fixture', () => {
     expect(allApplicableSettings(snapshot)).toEqual(expected);
     expect(allApplicableSettings(loaded)).toEqual(expected);
     expect(allApplicableSettings(decoded)).toEqual(expected);
-    expect(loaded.schemaVersion).toBe(11);
+    expect(loaded.schemaVersion).toBe(12);
     expectCanonicalTextPadding(loaded);
     expect(snapshot.variants).not.toBe(fixture.variants);
     expect(loaded.variants).not.toBe(jsonRoundTrip.variants);
@@ -128,7 +128,7 @@ describe('text overflow v10 persistence fixture', () => {
 
     const loaded = loadProjectState(JSON.parse(JSON.stringify(current))).state;
 
-    expect(loaded.schemaVersion).toBe(11);
+    expect(loaded.schemaVersion).toBe(12);
     expect(element(loaded, 'text-clip-nowrap')).toMatchObject({
       textOverflow: 'clip', textWrap: false,
       textPadding: { top: 0, right: 0, bottom: 0, left: 0 },
@@ -159,7 +159,7 @@ describe('text overflow v10 persistence fixture', () => {
 
     const loaded = loadProjectState(legacy).state;
 
-    expect(loaded.schemaVersion).toBe(11);
+    expect(loaded.schemaVersion).toBe(12);
     allElements(loaded).filter(item => item.type === 'text').forEach(item => {
       expect(item).toMatchObject({
         textOverflow: 'visible', textWrap: true,
@@ -174,7 +174,7 @@ describe('text overflow v10 persistence fixture', () => {
     });
   });
 
-  it('normalizes generated output as new content before creating an independent v11 app state', () => {
+  it('normalizes generated output as new content before creating an independent v12 app state', () => {
     const template = clone(fixture.variants.parity.templates['parity-page']) as any;
     const missingText = clone(element(fixture, 'text-clip-nowrap'));
     delete missingText.textOverflow;
@@ -195,7 +195,7 @@ describe('text overflow v10 persistence fixture', () => {
 
     expect(validation.ok).toBe(true);
     if (validation.ok === false) throw new Error(validation.message);
-    expect(validation.project.schemaVersion).toBe(11);
+    expect(validation.project.schemaVersion).toBe(12);
     expect(element(validation.project, 'text-clip-nowrap')).toMatchObject({
       textOverflow: 'clip', textWrap: true,
       textPadding: { top: 0, right: 0, bottom: 0, left: 0 },
@@ -214,7 +214,7 @@ describe('text overflow v10 persistence fixture', () => {
       { formatVersion: 1, templateScript: 'return templates;', hierarchyScript: 'return hierarchy;' },
       '2026-07-18T12:00:00.000Z',
     );
-    expect(generated.schemaVersion).toBe(11);
+    expect(generated.schemaVersion).toBe(12);
     expectCanonicalTextPadding(generated);
     expect(allApplicableSettings(generated)).toEqual(allApplicableSettings(validation.project));
     expect(generated.variants).not.toBe(validation.project.variants);
@@ -242,7 +242,7 @@ describe('text overflow v10 persistence fixture', () => {
 
     const preset = loadPreset(undeclared);
 
-    expect(preset.schemaVersion).toBe(11);
+    expect(preset.schemaVersion).toBe(12);
     expect(element(preset, 'text-clip-nowrap')).toMatchObject({
       textOverflow: 'clip', textWrap: true,
       textPadding: { top: 0, right: 0, bottom: 0, left: 0 },
@@ -259,7 +259,7 @@ describe('text overflow v10 persistence fixture', () => {
     element(custom, 'grid-clip').textOverflow = 'visible';
     element(custom, 'grid-clip').textWrap = true;
     const loadedCustom = loadProjectState(custom).state;
-    expect(loadedCustom.schemaVersion).toBe(11);
+    expect(loadedCustom.schemaVersion).toBe(12);
     expect(element(loadedCustom, 'text-clip-nowrap')).toMatchObject({
       textOverflow: 'ellipsis', textWrap: false,
       textPadding: { top: 0, right: 0, bottom: 0, left: 0 },

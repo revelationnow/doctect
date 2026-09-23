@@ -25,7 +25,7 @@ const copyMigrationStateWork = (state: any, mode: MigrationMode): Work<any> =>
 /**
  * Current schema version. Increment this when making breaking changes.
  */
-export const CURRENT_SCHEMA_VERSION = 11;
+export const CURRENT_SCHEMA_VERSION = 12;
 
 /**
  * Migration v0 → v1
@@ -179,6 +179,11 @@ function* migrateWithModeWork(state: any, mode: MigrationMode): Work<AppState> {
     if (version < 11) {
         migratedState = yield* migrateV10ToV11Work(migratedState, mode);
         version = 11;
+    }
+
+    if (version < 12) {
+        migratedState = migrateV11ToV12(migratedState);
+        version = 12;
     }
 
     console.log(`[Migration] Migration complete. Now at v${CURRENT_SCHEMA_VERSION}`);
@@ -456,6 +461,20 @@ function* migrateV10ToV11Work(state: any, mode: MigrationMode): Work<any> {
     yield* migrateTemplates(migrated.templates);
 
     migrated.schemaVersion = 11;
+    return migrated;
+}
+
+/**
+ * Migration v11 → v12
+ *
+ * Adds the 'grid' pattern type. Existing pattern fills are left untouched; the
+ * bump exists so older app versions refuse documents that may use 'grid'
+ * instead of rendering them as an empty fill and saving that back.
+ */
+function migrateV11ToV12(state: any): any {
+    console.log('[Migration] Applying v11 → v12: Adding grid pattern type');
+    const migrated = JSON.parse(JSON.stringify(state));
+    migrated.schemaVersion = 12;
     return migrated;
 }
 

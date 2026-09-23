@@ -4,6 +4,40 @@ This document tracks changes to the AppState JSON schema used by the project.
 
 ---
 
+## Version 12
+**Date:** 2026-09-23
+
+### Changes
+- Added `'grid'` to `PatternType`: a square grid of horizontal and vertical lines
+- The grid reuses `patternSpacing` for both directions and `patternWeight` for line width
+- Available from the pattern dropdown in Element Properties → Appearance
+
+### Migration Notes
+- The sequential v11 → v12 migration only bumps `schemaVersion`; no element data changes.
+- The bump exists so older app versions refuse documents that may contain `'grid'` (future-version
+  guard) instead of rendering the fill as empty and saving that back.
+- Unknown `patternType` values are still tolerated and render nothing, as before. The validator does
+  not enforce the enum, because migrated legacy projects are validated at the current version.
+- Merge requests between a v11 fork and a v12 upstream are refused until the fork is re-saved.
+- No server database or SQL migration is required.
+
+---
+
+## Version 11
+**Date:** 2026-07-18
+
+### Changes
+- Added optional `textPadding` (`{ top, right, bottom, left }`, non-negative numbers) to text elements
+
+### Migration Notes
+- The sequential v10 → v11 migration assigns zero padding to every text element, overwriting any
+  experimental v10 value, so migrated documents render identically.
+- Exact-current loads normalize malformed sides to 0 while preserving valid decimals.
+- `validateAppState` rejects malformed `textPadding` on text elements only when `schemaVersion >= 11`.
+- No server database or SQL migration is required.
+
+---
+
 ## Version 10
 **Date:** 2026-07-18
 

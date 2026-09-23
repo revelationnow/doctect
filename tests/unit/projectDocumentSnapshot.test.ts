@@ -45,7 +45,7 @@ const makeState = (): AppState => ({
     nodeSelectorMode: 'grid_source',
     editingElementId: null,
     clipboard: [],
-    schemaVersion: 11,
+    schemaVersion: 12,
     generator: {
         formatVersion: 1,
         templateScript: 'return originalTemplates;',
@@ -144,7 +144,7 @@ describe('project document snapshots', () => {
             rootId: 'root',
             variants: snapshot.variants,
             activeVariantId: 'original',
-            schemaVersion: 11,
+            schemaVersion: 12,
             generator: before.generator,
             selectedNodeId: 'root',
             selectedNodeIds: ['root'],

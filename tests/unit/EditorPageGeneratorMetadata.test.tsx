@@ -46,7 +46,7 @@ const state = {
     rootId: 'root',
     variants: { default: { id: 'default', name: 'Default', templates: { page: { id: 'page', name: 'Page', width: 500, height: 700, elements: [] } } } },
     activeVariantId: 'default',
-    schemaVersion: 11,
+    schemaVersion: 12,
 };
 
 const stateWithOverflow = () => ({
@@ -124,7 +124,7 @@ describe('EditorPage generator metadata loads', () => {
         expect(screen.getByRole('alert')).toHaveTextContent('Saved generator was detached');
         const rendered = JSON.parse(screen.getByTestId('project-state').textContent || '{}');
         expect(rendered.generator).toBeUndefined();
-        expect(rendered.schemaVersion).toBe(11);
+        expect(rendered.schemaVersion).toBe(12);
         expect(projectElement(rendered, 'valid-text')).toMatchObject({
             textOverflow: 'shrink', textWrap: false,
             textPadding: { top: 0, right: 0, bottom: 0, left: 0 },

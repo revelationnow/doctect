@@ -85,7 +85,7 @@ describe('JsonModal generator metadata imports', () => {
 
         expect(props.onSave).toHaveBeenCalledOnce();
         const saved = props.onSave.mock.calls[0][0];
-        expect(saved.schemaVersion).toBe(11);
+        expect(saved.schemaVersion).toBe(12);
         expect(savedElement(saved, 'valid-text')).toMatchObject({
             textOverflow: 'ellipsis', textWrap: false,
             textPadding: { top: 0, right: 0, bottom: 0, left: 0 },

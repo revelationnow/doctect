@@ -32,7 +32,7 @@ describe('loadProjectState', () => {
   it('migrates and preserves valid generator source byte-exactly', () => {
     const result = loadProjectState({ ...validV8State(), generator: source });
 
-    expect(result.state.schemaVersion).toBe(11);
+    expect(result.state.schemaVersion).toBe(12);
     expect(result.state.generator).toEqual(source);
     expect(result.state.generator?.templateScript).toBe(source.templateScript);
     expect(result.warnings).toEqual([]);
@@ -45,7 +45,7 @@ describe('loadProjectState', () => {
     });
 
     expect(result.state.rootId).toBe('root');
-    expect(result.state.schemaVersion).toBe(11);
+    expect(result.state.schemaVersion).toBe(12);
     expect(result.state.generator).toBeUndefined();
     expect(result.warnings).toEqual([
       'Saved generator was detached: Hierarchy script must be text.',
@@ -60,7 +60,7 @@ describe('loadProjectState', () => {
     result.state.nodes.root.title = 'Edited after load';
 
     expect(raw).toEqual(original);
-    expect(result.state.schemaVersion).toBe(11);
+    expect(result.state.schemaVersion).toBe(12);
     expect(result.state.generator).toEqual(source);
   });
 
@@ -70,7 +70,7 @@ describe('loadProjectState', () => {
       { type: 'grid', textOverflow: 'visible' },
     ]);
     const result = loadProjectState(raw);
-    expect(result.state.schemaVersion).toBe(11);
+    expect(result.state.schemaVersion).toBe(12);
     expect(result.state.variants.default.templates.page.elements).toMatchObject([
       {
         textOverflow: 'clip', textWrap: true,

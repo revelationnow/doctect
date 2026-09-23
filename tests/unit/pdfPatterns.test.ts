@@ -133,6 +133,35 @@ describe('PDF pattern fills', () => {
     expect(stream.match(/^q$/gm) || []).toHaveLength((stream.match(/^Q$/gm) || []).length);
   });
 
+  it('draws a square grid as clipped horizontal and vertical strokes', async () => {
+    const pdf = await pdfText('grid');
+    const segments = parsePaintedLines(patternContentStream(pdf));
+    const bounds = { x: 40, y: 50, w: 180, h: 120 };
+    const horizontal = segments.filter(segment => Math.abs(segment.y1 - segment.y2) < PDF_TOLERANCE);
+    const vertical = segments.filter(segment => Math.abs(segment.x1 - segment.x2) < PDF_TOLERANCE);
+
+    expect(horizontal.length + vertical.length).toBe(segments.length);
+    expect(horizontal).toHaveLength(Math.floor(bounds.h / PATTERN_SPACING) + 1);
+    expect(vertical).toHaveLength(Math.floor(bounds.w / PATTERN_SPACING) + 1);
+
+    for (const line of horizontal) {
+      expect(line.x1).toBeCloseTo(bounds.x, 6);
+      expect(line.x2).toBeCloseTo(bounds.x + bounds.w, 6);
+    }
+    for (const line of vertical) {
+      expect(Math.min(line.y1, line.y2)).toBeCloseTo(bounds.y, 6);
+      expect(Math.max(line.y1, line.y2)).toBeCloseTo(bounds.y + bounds.h, 6);
+    }
+    expect(horizontal[0].y1 - bounds.y).toBeCloseTo(PATTERN_WEIGHT / 2, 6);
+    expect(vertical[0].x1 - bounds.x).toBeCloseTo(PATTERN_WEIGHT / 2, 6);
+    for (let index = 1; index < horizontal.length; index += 1) {
+      expect(horizontal[index].y1 - horizontal[index - 1].y1).toBeCloseTo(PATTERN_SPACING, 6);
+    }
+    for (let index = 1; index < vertical.length; index += 1) {
+      expect(vertical[index].x1 - vertical[index - 1].x1).toBeCloseTo(PATTERN_SPACING, 6);
+    }
+  });
+
   it.each(['lines-h', 'lines-v'] as const)('keeps %s line patterns rendering', async patternType => {
     const pdf = await pdfText(patternType);
     expect(pdf).toContain('1. 0. 0. RG');

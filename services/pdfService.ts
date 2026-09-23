@@ -622,17 +622,19 @@ const drawPattern = (doc: jsPDF, type: string, x: number, y: number, w: number, 
     // Adding halfW makes jsPDF line cover same pixels as CSS gradient.
     const halfW = lw / 2;
 
-    if (type === 'lines-h') {
+    if (type === 'lines-h' || type === 'grid') {
         for (let i = 0; i <= h; i += step) {
             const ly = y + i + halfW;
             doc.line(x, ly, x + w, ly);
         }
-    } else if (type === 'lines-v') {
+    }
+    if (type === 'lines-v' || type === 'grid') {
         for (let i = 0; i <= w; i += step) {
             const lx = x + i + halfW;
             doc.line(lx, y, lx, y + h);
         }
-    } else if (type === 'lines-d') {
+    }
+    if (type === 'lines-d') {
         const diagonalStep = step * Math.SQRT2;
         const maxOffset = w + h;
         for (let offset = halfW * Math.SQRT2; offset <= maxOffset; offset += diagonalStep) {

@@ -149,7 +149,7 @@ const readyStore = async (
 };
 
 const projectNamed = (name: string): WorkspaceProject =>
-  legacyProject('project-a', 11, { name }) as WorkspaceProject;
+  legacyProject('project-a', 12, { name }) as WorkspaceProject;
 
 const trustedProjectNamed = (source: WorkspaceProject, name: string): WorkspaceProject => {
   const project = { ...source, name };
@@ -216,7 +216,7 @@ describe('old-tab drift lifecycle', () => {
     });
     const changedValues = validLegacyValues({
       [LEGACY_KEYS.projects]: JSON.stringify([
-        legacyProject('project-a', 11, { name: 'Old tab edit' }),
+        legacyProject('project-a', 12, { name: 'Old tab edit' }),
       ]),
     });
     harness.replace(changedValues);
@@ -349,12 +349,12 @@ describe('old-tab drift lifecycle', () => {
     const { onAuthorityLost } = await readyStore(harness);
     const first = validLegacyValues({
       [LEGACY_KEYS.projects]: JSON.stringify([
-        legacyProject('project-a', 11, { name: 'First observed drift' }),
+        legacyProject('project-a', 12, { name: 'First observed drift' }),
       ]),
     });
     const latest = validLegacyValues({
       [LEGACY_KEYS.projects]: JSON.stringify([
-        legacyProject('project-a', 11, { name: 'Latest observed drift' }),
+        legacyProject('project-a', 12, { name: 'Latest observed drift' }),
       ]),
     });
     armed = true;
@@ -449,7 +449,7 @@ describe('old-tab drift lifecycle', () => {
     const storage = memoryStorage(validLegacyValues());
     const concurrentValues = validLegacyValues({
       [LEGACY_KEYS.projects]: JSON.stringify([
-        legacyProject('project-a', 11, { name: 'Concurrent latest drift' }),
+        legacyProject('project-a', 12, { name: 'Concurrent latest drift' }),
       ]),
     });
     let armed = false;
@@ -490,7 +490,7 @@ describe('old-tab drift lifecycle', () => {
     };
     harness.replace(validLegacyValues({
       [LEGACY_KEYS.projects]: JSON.stringify([
-        legacyProject('project-a', 11, { name: 'Older sampled drift' }),
+        legacyProject('project-a', 12, { name: 'Older sampled drift' }),
       ]),
     }));
     armed = true;

@@ -217,7 +217,7 @@ describe('strict project-state preparation', () => {
   beforeEach(() => vi.spyOn(console, 'log').mockImplementation(() => {}));
   afterEach(() => vi.restoreAllMocks());
 
-  it.each(Array.from({ length: 12 }, (_, version) => [version]))(
+  it.each(Array.from({ length: 13 }, (_, version) => [version]))(
     'prepares supported historical schema v%s without mutating it',
     version => {
       const input = historicalState(version);

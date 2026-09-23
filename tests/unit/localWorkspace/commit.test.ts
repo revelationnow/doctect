@@ -237,7 +237,7 @@ const putRaw = async (
 const projectNamed = (
   name: string,
   id = 'project-a',
-): WorkspaceProject => legacyProject(id, 11, { name }) as WorkspaceProject;
+): WorkspaceProject => legacyProject(id, 12, { name }) as WorkspaceProject;
 
 const trustedProjectNamed = (
   source: WorkspaceProject,
@@ -257,7 +257,7 @@ const blankProject = (id = 'blank-project'): WorkspaceProject => ({
 const presetNamed = (
   id: string,
   title = id,
-): WorkspaceCustomPreset => legacyCustomPreset(id, 11, { title }) as WorkspaceCustomPreset;
+): WorkspaceCustomPreset => legacyCustomPreset(id, 12, { title }) as WorkspaceCustomPreset;
 
 const pendingImport = (
   id: string,
@@ -771,7 +771,7 @@ describe('project save queues', () => {
     const invalid = trustedProjectNamed(snapshot.projects[0], 'Future schema');
     invalid.initialState = {
       ...invalid.initialState,
-      schemaVersion: 12,
+      schemaVersion: 13,
     } as WorkspaceProject['initialState'];
     useQueueTimers();
     let settled = false;

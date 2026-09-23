@@ -31,6 +31,26 @@ describe('buildPatternBackgroundStyle', () => {
     expect(8 * scale).toBe(MIN_SCREEN_LINE_PX);
   });
 
+  it('layers horizontal and vertical lines for a square grid', () => {
+    const style = buildPatternBackgroundStyle({
+      type: 'grid', color: '#123456', spacing: 24, weight: 2, renderScale: 1,
+    });
+    expect(style.backgroundImage).toBe(
+      'repeating-linear-gradient(180deg, #123456, #123456 2px, transparent 2px, transparent 24px), '
+      + 'repeating-linear-gradient(90deg, #123456, #123456 2px, transparent 2px, transparent 24px)',
+    );
+  });
+
+  it('clamps both grid directions to one screen pixel', () => {
+    const style = buildPatternBackgroundStyle({
+      type: 'grid', color: '#334155', spacing: 24, weight: 1, renderScale: 0.125,
+    });
+    expect(style.backgroundImage).toBe(
+      'repeating-linear-gradient(180deg, #334155, #334155 8px, transparent 8px, transparent 24px), '
+      + 'repeating-linear-gradient(90deg, #334155, #334155 8px, transparent 8px, transparent 24px)',
+    );
+  });
+
   it('clamps dots to 1.5 screen pixels with a 0.5 screen pixel feather', () => {
     const scale = 0.125;
     const style = buildPatternBackgroundStyle({

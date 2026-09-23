@@ -73,7 +73,7 @@ export const legacySnapshot = (
 };
 
 export const historicalState = (version: number): AppState => {
-  if (!Number.isInteger(version) || version < 0 || version > 11) {
+  if (!Number.isInteger(version) || version < 0 || version > 12) {
     throw new Error(`Unsupported fixture schema version: ${version}`);
   }
 
@@ -138,7 +138,7 @@ export const historicalState = (version: number): AppState => {
   } as unknown as AppState);
 };
 
-export const currentState = (): AppState => clone(historicalState(11));
+export const currentState = (): AppState => clone(historicalState(12));
 
 export const workspaceSnapshot = (
   overrides: Partial<WorkspaceSnapshot> = {},
@@ -253,7 +253,7 @@ export const changingStorage = (
 
 export const legacyProject = (
   id = 'project-a',
-  version = 11,
+  version = 12,
   overrides: Record<string, unknown> = {},
 ) => clone({
   id,
@@ -265,7 +265,7 @@ export const legacyProject = (
   ...overrides,
 });
 
-export const secondProject = (version = 11) => {
+export const secondProject = (version = 12) => {
   const initialState = historicalState(version);
   initialState.nodes.root.title = 'Second project 😀';
   return legacyProject('project-b', version, {
@@ -278,7 +278,7 @@ export const secondProject = (version = 11) => {
 
 export const legacyCustomPreset = (
   id = 'preset-a',
-  version = 11,
+  version = 12,
   overrides: Record<string, unknown> = {},
 ) => clone({
   id,
@@ -292,7 +292,7 @@ export const legacyCustomPreset = (
 });
 
 export const legacyPendingImport = (
-  version = 11,
+  version = 12,
   overrides: Record<string, unknown> = {},
 ) => clone({
   name: 'Imported 😀',

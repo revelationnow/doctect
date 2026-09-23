@@ -17,7 +17,7 @@ const elements = () => [
 const page = () => ({ id: 'page', name: 'Page', width: 500, height: 700, layers, elements: elements() });
 const variants = () => ({ default: { id: 'default', name: 'Default', templates: { page: page() } } });
 
-describe('schema v11 presets', () => {
+describe('schema v12 presets', () => {
   it('exposes only pure preset loading, factories, and presentation contracts', () => {
     expect(presets).not.toHaveProperty('saveCustomPreset');
     expect(presets).not.toHaveProperty('deleteCustomPreset');
@@ -28,10 +28,10 @@ describe('schema v11 presets', () => {
     ['blank', createBlankProject],
     ['notebook', createNotebookProject],
     ['planner', createPlannerProject],
-  ])('%s project is v11 without generator metadata', (_name, createProject) => {
+  ])('%s project is v12 without generator metadata', (_name, createProject) => {
     const state = createProject();
 
-    expect(state.schemaVersion).toBe(11);
+    expect(state.schemaVersion).toBe(12);
     expect(state.generator).toBeUndefined();
   });
 
@@ -63,7 +63,7 @@ describe('schema v11 presets', () => {
     const state = loadPreset(source);
     const output = state.variants.default.templates.page.elements;
 
-    expect(state.schemaVersion).toBe(11);
+    expect(state.schemaVersion).toBe(12);
     expect(output[0]).toMatchObject({
       type: 'text', textOverflow: 'clip', textWrap: true,
       textPadding: { top: 0, right: 0, bottom: 0, left: 0 },
@@ -82,7 +82,7 @@ describe('schema v11 presets', () => {
     const state = loadPreset(source);
     const output = state.variants.default.templates.page.elements;
 
-    expect(state.schemaVersion).toBe(11);
+    expect(state.schemaVersion).toBe(12);
     expect(output[0]).toMatchObject({
       type: 'text', textOverflow: 'clip', textWrap: true,
       textPadding: { top: 0, right: 0, bottom: 0, left: 0 },
@@ -118,7 +118,7 @@ describe('schema v11 presets', () => {
     const state = loadPreset(source);
     const output = state.variants.default.templates.page.elements;
 
-    expect(state.schemaVersion).toBe(11);
+    expect(state.schemaVersion).toBe(12);
     expect(output[0]).toMatchObject({
       type: 'text', textOverflow: 'visible', textWrap: true,
       textPadding: { top: 0, right: 0, bottom: 0, left: 0 },

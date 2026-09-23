@@ -256,7 +256,7 @@ All base properties + optional:
   borderRadius: 0,                    // corner radius
   borderStyle: "solid",               // "solid" | "dashed" | "dotted" | "double" | "none"
   fillType: "solid",                  // "solid" | "pattern"
-  patternType: "lines-h",             // "lines-h" | "lines-v" | "lines-d" | "dots"
+  patternType: "lines-h",             // "lines-h" | "lines-v" | "lines-d" | "grid" | "dots"
   patternSpacing: 5,                  // spacing between pattern elements
   patternWeight: 1,                   // pattern line width or dot size
 

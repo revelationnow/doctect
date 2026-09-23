@@ -354,13 +354,13 @@ describe('private project preparation worker client', () => {
       data: {
         type: 'project-preparation-failed',
         requestId: 1,
-        message: 'Cannot load future schema version 12.',
+        message: 'Cannot load future schema version 13.',
       },
     }));
 
     await expect(prepareProjectInModuleWorker(project(), () => worker)).rejects.toMatchObject({
       code: 'validation',
-      message: 'Cannot load future schema version 12.',
+      message: 'Cannot load future schema version 13.',
     });
     expect(worker.terminate).toHaveBeenCalledOnce();
   });

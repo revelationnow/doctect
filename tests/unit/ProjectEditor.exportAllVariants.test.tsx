@@ -61,7 +61,7 @@ const initialState = (variants: Record<string, Variant>): AppState => ({
     nodeSelectorMode: 'grid_source',
     editingElementId: null,
     clipboard: [],
-    schemaVersion: 11,
+    schemaVersion: 12,
 });
 
 const renderEditor = (variants: Record<string, Variant>) => render(

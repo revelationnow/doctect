@@ -70,14 +70,14 @@ The element `type` values are the seven from [the element types](/docs/editor/el
 
 | Panel section | Fields |
 | --- | --- |
-| [Fills and patterns](/docs/editor/elements-and-properties#fills-and-patterns) | `fill` (hex color; `''` = none), `fillType` (`'solid'`, `'pattern'`), `patternType` (`'lines-h'`, `'lines-v'`, `'lines-d'`, `'dots'`), `patternSpacing` (gap), `patternWeight` (line width or dot size) |
+| [Fills and patterns](/docs/editor/elements-and-properties#fills-and-patterns) | `fill` (hex color; `''` = none), `fillType` (`'solid'`, `'pattern'`), `patternType` (`'lines-h'`, `'lines-v'`, `'lines-d'`, `'grid'`, `'dots'`), `patternSpacing` (gap), `patternWeight` (line width or dot size) |
 | [Strokes and borders](/docs/editor/elements-and-properties#strokes-and-borders) | `stroke` (hex; `''` = none), `strokeWidth`, `borderStyle` (`'solid'`, `'dashed'`, `'dotted'`, `'double'`, `'none'`), `borderRadius`, `borderSides` (`{ top, right, bottom, left }`, each an optional `{ width, color, style }`) |
 | [Typography](/docs/editor/elements-and-properties#typography) | `text`, `fontSize`, `fontFamily` (kebab-case id: `'work-sans'`, `'montserrat'`, ...), `fontWeight` (`'normal'`, `'bold'`), `fontStyle` (`'normal'`, `'italic'`), `textDecoration` (`'none'`, `'underline'`, `'line-through'`), `textColor`, `align` (`'left'`, `'center'`, `'right'`), `verticalAlign` (`'top'`, `'middle'`, `'bottom'`), `autoWidth`, `textOverflow` (`'clip'`, `'ellipsis'`, `'shrink'`, `'visible'`), `textWrap`, `textPadding` (`{ top, right, bottom, left }`) |
 | [Rotation, opacity, stacking](/docs/editor/elements-and-properties#rotation-opacity-stacking) | `rotation`, `transformOrigin`, `opacity` (0–1), `zIndex`, `layerId` |
 | Type-specific | `flip` on lines (`false` = `\`, `true` = `/`), `svgContent` on svg elements (raw markup — see [SVG artwork](/docs/editor/variants-svg-json-export#svg-artwork)), `gridConfig` on grids (next section) |
 
 > [!TIP]
-> Two values in that table are script-only unlocks. The panel's pattern dropdown offers three patterns, but `patternType: 'lines-d'` — diagonal lines — renders everywhere once a script sets it. Same for `textDecoration: 'line-through'`: no button sets strikethrough, but the field works.
+> Two values in that table are script-only unlocks. The panel's pattern dropdown offers four patterns, but `patternType: 'lines-d'` — diagonal lines — renders everywhere once a script sets it. Same for `textDecoration: 'line-through'`: no button sets strikethrough, but the field works.
 
 Here is most of that table exercised in one template — a daily page with a dot-grid writing area (one rect, one pattern — not hundreds of dot elements), a header card whose accent is a single per-side border, a data-bound headline that truncates instead of overflowing, and a decorative line:
 

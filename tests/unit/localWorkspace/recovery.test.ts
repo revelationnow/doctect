@@ -351,7 +351,7 @@ describe('recovery bundle exports', () => {
     const original = validLegacyValues();
     const current = validLegacyValues({
       [LEGACY_KEYS.projects]: JSON.stringify([
-        legacyProject('project-a', 11, { name: 'Changed current source' }),
+        legacyProject('project-a', 12, { name: 'Changed current source' }),
       ]),
       [LEGACY_KEYS.activeProject]: '',
     });
@@ -417,7 +417,7 @@ describe('explicit recover legacy as copies', () => {
     });
     const current = validLegacyValues({
       [LEGACY_KEYS.projects]: JSON.stringify([
-        legacyProject('project-a', 11, { name: 'Guarded recovery source' }),
+        legacyProject('project-a', 12, { name: 'Guarded recovery source' }),
         secondProject(),
       ]),
       [LEGACY_KEYS.activeProject]: 'project-a',
@@ -561,25 +561,25 @@ describe('explicit recover legacy as copies', () => {
 
   it('copies only changed and new records, ignores deletions, strips cloud, and preserves target authority', async () => {
     const originalProjects = [
-      legacyProject('project-a', 11, { name: 'Original A' }),
-      legacyProject('deleted-by-old-tab', 11, { name: 'Must remain durable' }),
-      legacyProject('unchanged', 11, { name: 'Unchanged' }),
+      legacyProject('project-a', 12, { name: 'Original A' }),
+      legacyProject('deleted-by-old-tab', 12, { name: 'Must remain durable' }),
+      legacyProject('unchanged', 12, { name: 'Unchanged' }),
     ];
     const originalPresets = [
       legacyCustomPreset('preset-a'),
-      legacyCustomPreset('preset-deleted', 11, { title: 'Must remain' }),
+      legacyCustomPreset('preset-deleted', 12, { title: 'Must remain' }),
     ];
     const original = validLegacyValues({
       [LEGACY_KEYS.projects]: JSON.stringify(originalProjects),
       [LEGACY_KEYS.activeProject]: 'project-a',
       [LEGACY_KEYS.customPresets]: JSON.stringify(originalPresets),
     });
-    const changedProject = legacyProject('project-a', 11, {
+    const changedProject = legacyProject('project-a', 12, {
       name: 'Changed A',
       revision: 19,
       retainedWrapperField: { source: 'changed-old-tab' },
     });
-    const newProject = legacyProject('new-from-old-tab', 11, { name: 'New C' });
+    const newProject = legacyProject('new-from-old-tab', 12, { name: 'New C' });
     const current = validLegacyValues({
       [LEGACY_KEYS.projects]: JSON.stringify([
         changedProject,
@@ -589,9 +589,9 @@ describe('explicit recover legacy as copies', () => {
       [LEGACY_KEYS.activeProject]: 'new-from-old-tab',
       [LEGACY_KEYS.customPresets]: JSON.stringify([
         originalPresets[0],
-        legacyCustomPreset('preset-new', 11, { title: 'New preset' }),
+        legacyCustomPreset('preset-new', 12, { title: 'New preset' }),
       ]),
-      [LEGACY_KEYS.pendingImport]: JSON.stringify(legacyPendingImport(11, {
+      [LEGACY_KEYS.pendingImport]: JSON.stringify(legacyPendingImport(12, {
         name: 'Changed pending import',
       })),
     });
@@ -657,17 +657,17 @@ describe('explicit recover legacy as copies', () => {
   it('appends recovered presets and imports after gapped persisted positions', async () => {
     const original = validLegacyValues({
       [LEGACY_KEYS.customPresets]: JSON.stringify([
-        legacyCustomPreset('preset-a', 11, { title: 'Original A' }),
-        legacyCustomPreset('preset-b', 11, { title: 'Original B' }),
+        legacyCustomPreset('preset-a', 12, { title: 'Original A' }),
+        legacyCustomPreset('preset-b', 12, { title: 'Original B' }),
       ]),
     });
     const current = validLegacyValues({
       [LEGACY_KEYS.customPresets]: JSON.stringify([
-        legacyCustomPreset('preset-a', 11, { title: 'Original A' }),
-        legacyCustomPreset('preset-b', 11, { title: 'Changed B' }),
-        legacyCustomPreset('preset-c', 11, { title: 'New C' }),
+        legacyCustomPreset('preset-a', 12, { title: 'Original A' }),
+        legacyCustomPreset('preset-b', 12, { title: 'Changed B' }),
+        legacyCustomPreset('preset-c', 12, { title: 'New C' }),
       ]),
-      [LEGACY_KEYS.pendingImport]: JSON.stringify(legacyPendingImport(11, {
+      [LEGACY_KEYS.pendingImport]: JSON.stringify(legacyPendingImport(12, {
         name: 'Changed pending import',
       })),
     });
@@ -727,32 +727,32 @@ describe('explicit recover legacy as copies', () => {
       [LEGACY_KEYS.projects]: JSON.stringify([
         legacyProject('project-a'),
         legacyProject('project-b'),
-        legacyProject('proj_recovered_same-uuid', 11, { name: 'Project ID collision' }),
+        legacyProject('proj_recovered_same-uuid', 12, { name: 'Project ID collision' }),
       ]),
       [LEGACY_KEYS.activeProject]: 'project-a',
       [LEGACY_KEYS.customPresets]: JSON.stringify([
         legacyCustomPreset('preset-a'),
         legacyCustomPreset('preset-b'),
-        legacyCustomPreset('preset_recovered_same-uuid', 11, {
+        legacyCustomPreset('preset_recovered_same-uuid', 12, {
           title: 'Preset ID collision',
         }),
       ]),
     });
     const current = validLegacyValues({
       [LEGACY_KEYS.projects]: JSON.stringify([
-        legacyProject('project-a', 11, { name: 'Changed A' }),
-        legacyProject('project-b', 11, { name: 'Changed B' }),
-        legacyProject('proj_recovered_same-uuid', 11, { name: 'Project ID collision' }),
+        legacyProject('project-a', 12, { name: 'Changed A' }),
+        legacyProject('project-b', 12, { name: 'Changed B' }),
+        legacyProject('proj_recovered_same-uuid', 12, { name: 'Project ID collision' }),
       ]),
       [LEGACY_KEYS.activeProject]: 'project-a',
       [LEGACY_KEYS.customPresets]: JSON.stringify([
-        legacyCustomPreset('preset-a', 11, { title: 'Changed A' }),
-        legacyCustomPreset('preset-b', 11, { title: 'Changed B' }),
-        legacyCustomPreset('preset_recovered_same-uuid', 11, {
+        legacyCustomPreset('preset-a', 12, { title: 'Changed A' }),
+        legacyCustomPreset('preset-b', 12, { title: 'Changed B' }),
+        legacyCustomPreset('preset_recovered_same-uuid', 12, {
           title: 'Preset ID collision',
         }),
       ]),
-      [LEGACY_KEYS.pendingImport]: JSON.stringify(legacyPendingImport(11, {
+      [LEGACY_KEYS.pendingImport]: JSON.stringify(legacyPendingImport(12, {
         name: 'Changed import',
       })),
     });
@@ -826,15 +826,15 @@ describe('explicit recover legacy as copies', () => {
     });
     const current = validLegacyValues({
       [LEGACY_KEYS.projects]: JSON.stringify([
-        legacyProject('project-a', 11, { name: 'Changed A' }),
-        legacyProject(currentProjectId, 11, { name: 'Current source-only project' }),
+        legacyProject('project-a', 12, { name: 'Changed A' }),
+        legacyProject(currentProjectId, 12, { name: 'Current source-only project' }),
       ]),
       [LEGACY_KEYS.activeProject]: 'project-a',
       [LEGACY_KEYS.customPresets]: JSON.stringify([
-        legacyCustomPreset('preset-a', 11, { title: 'Changed A' }),
-        legacyCustomPreset(currentPresetId, 11, { title: 'Current source-only preset' }),
+        legacyCustomPreset('preset-a', 12, { title: 'Changed A' }),
+        legacyCustomPreset(currentPresetId, 12, { title: 'Current source-only preset' }),
       ]),
-      [LEGACY_KEYS.pendingImport]: JSON.stringify(legacyPendingImport(11, {
+      [LEGACY_KEYS.pendingImport]: JSON.stringify(legacyPendingImport(12, {
         name: 'Changed pending import',
       })),
     });
@@ -930,7 +930,7 @@ describe('explicit recover legacy as copies', () => {
   it('rejects inherited-root recovery input before opening a recovery write', async () => {
     const harness = createHarness();
     const { store } = await readyStore(harness);
-    const inheritedRoot = legacyProject('project-a', 11, {
+    const inheritedRoot = legacyProject('project-a', 12, {
       initialState: { ...currentState(), nodes: {}, rootId: 'toString' },
     });
     const recovery = await observeDrift(harness, store, validLegacyValues({
@@ -952,7 +952,7 @@ describe('explicit recover legacy as copies', () => {
   it('does not advertise copy recovery after legacy changes behind the persisted marker', async () => {
     const changedAgain = validLegacyValues({
       [LEGACY_KEYS.projects]: JSON.stringify([
-        legacyProject('project-a', 11, { name: 'Changed again' }),
+        legacyProject('project-a', 12, { name: 'Changed again' }),
       ]),
     });
     let changeAfterMarker = false;
@@ -993,7 +993,7 @@ describe('explicit recover legacy as copies', () => {
 
     harness.replace(validLegacyValues({
       [LEGACY_KEYS.projects]: JSON.stringify([
-        legacyProject('project-a', 11, { name: 'Changed again' }),
+        legacyProject('project-a', 12, { name: 'Changed again' }),
       ]),
     }));
     await expect(store.commit({
@@ -1122,7 +1122,7 @@ describe('explicit recover legacy as copies', () => {
     const { store } = await readyStore(harness, onAuthorityLost);
     const accepted = validLegacyValues({
       [LEGACY_KEYS.projects]: JSON.stringify([
-        legacyProject('project-a', 11, { name: 'Accepted recovery source' }),
+        legacyProject('project-a', 12, { name: 'Accepted recovery source' }),
       ]),
     });
     const recovery = await observeDrift(harness, store, accepted);
@@ -1135,7 +1135,7 @@ describe('explicit recover legacy as copies', () => {
     await hashStarted.promise;
     const intermediate = validLegacyValues({
       [LEGACY_KEYS.projects]: JSON.stringify([
-        legacyProject('project-a', 11, { name: 'Concurrent intermediate source' }),
+        legacyProject('project-a', 12, { name: 'Concurrent intermediate source' }),
       ]),
     });
     harness.replace(intermediate);
@@ -1233,7 +1233,7 @@ describe('explicit recover legacy as copies', () => {
     const { store } = await readyStore(harness);
     const accepted = validLegacyValues({
       [LEGACY_KEYS.projects]: JSON.stringify([
-        legacyProject('project-a', 11, { name: 'First recovery source' }),
+        legacyProject('project-a', 12, { name: 'First recovery source' }),
       ]),
     });
     const firstRecovery = await observeDrift(harness, store, accepted);
@@ -1245,7 +1245,7 @@ describe('explicit recover legacy as copies', () => {
     await hashStarted.promise;
     const latest = validLegacyValues({
       [LEGACY_KEYS.projects]: JSON.stringify([
-        legacyProject('project-a', 11, { name: 'Late recovery source' }),
+        legacyProject('project-a', 12, { name: 'Late recovery source' }),
       ]),
     });
 
@@ -1374,7 +1374,7 @@ describe('explicit recover legacy as copies', () => {
     const { store } = await readyStore(harness, recurrentLost);
     const first = validLegacyValues({
       [LEGACY_KEYS.projects]: JSON.stringify([
-        legacyProject('project-a', 11, { name: 'First drift' }),
+        legacyProject('project-a', 12, { name: 'First drift' }),
       ]),
     });
     const firstRecovery = await observeDrift(harness, store, first);
@@ -1385,7 +1385,7 @@ describe('explicit recover legacy as copies', () => {
     });
     const second = validLegacyValues({
       [LEGACY_KEYS.projects]: JSON.stringify([
-        legacyProject('project-a', 11, { name: 'Second drift' }),
+        legacyProject('project-a', 12, { name: 'Second drift' }),
       ]),
     });
     harness.replace(second);

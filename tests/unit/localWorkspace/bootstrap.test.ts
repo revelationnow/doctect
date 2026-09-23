@@ -1939,14 +1939,14 @@ describe('existing target decision table', () => {
     const harness = createHarness({ storage });
     await seedCopy(harness, { state: 'verified' });
     storage.seed(LEGACY_KEYS.projects, JSON.stringify([
-      legacyProject('project-a', 11, { name: 'First bootstrap drift' }),
+      legacyProject('project-a', 12, { name: 'First bootstrap drift' }),
     ]));
     harness.environment.crypto = crypto;
     const bootstrap = createLocalWorkspaceStore(harness.environment).bootstrap();
     await sourceHashStarted.promise;
 
     storage.seed(LEGACY_KEYS.projects, JSON.stringify([
-      legacyProject('project-a', 11, { name: 'Latest bootstrap drift' }),
+      legacyProject('project-a', 12, { name: 'Latest bootstrap drift' }),
     ]));
     harness.dispatchStorage(LEGACY_KEYS.projects);
     releaseSourceHash.resolve();

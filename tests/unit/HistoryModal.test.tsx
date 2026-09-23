@@ -95,7 +95,7 @@ describe('HistoryModal', () => {
             render(<HistoryModal cloudProjectId="proj-1" onRestore={onRestore} onClose={vi.fn()} />);
             fireEvent.click((await screen.findAllByRole('button', { name: 'Restore' }))[0]);
             await waitFor(() => expect(onRestore).toHaveBeenCalledWith(expect.objectContaining({
-                schemaVersion: 11,
+                schemaVersion: 12,
                 generator,
             })));
             expect(onRestore.mock.calls[0][0].generator).toEqual(generator);
@@ -132,7 +132,7 @@ describe('HistoryModal', () => {
 
             await waitFor(() => expect(onRestore).toHaveBeenCalledOnce());
             const restored = onRestore.mock.calls[0][0];
-            expect(restored.schemaVersion).toBe(11);
+            expect(restored.schemaVersion).toBe(12);
             expect(overflowElement(restored, 'valid-text')).toMatchObject({
                 textOverflow: 'visible', textWrap: false,
                 textPadding: { top: 0, right: 0, bottom: 0, left: 0 },

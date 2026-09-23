@@ -16,7 +16,7 @@ const trackEvent = vi.hoisted(() => vi.fn());
 const lastCreateResult = vi.hoisted(() => ({ current: undefined as boolean | undefined }));
 
 const generatedProject = {
-    schemaVersion: 11 as const,
+    schemaVersion: 12 as const,
     rootId: 'generated-root',
     activeVariantId: 'generated-variant',
     nodes: {
@@ -136,7 +136,7 @@ describe('EditorPage generated project creation', () => {
             revision: 0,
             initialState: {
                 rootId: 'generated-root',
-                schemaVersion: 11,
+                schemaVersion: 12,
                 generator: {
                     formatVersion: 1,
                     templateScript: 'template source',

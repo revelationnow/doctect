@@ -53,7 +53,7 @@ describe('validateGeneratedProject', () => {
             project: {
                 rootId: 'root',
                 activeVariantId: 'default',
-                schemaVersion: 11,
+                schemaVersion: 12,
                 nodes: { root: { data: {}, children: [] } },
             },
             summary: {
@@ -97,7 +97,7 @@ describe('validateGeneratedProject', () => {
         ]);
         expect(page.elements[2]).not.toHaveProperty('textPadding');
         expect(page.elements[3]).not.toHaveProperty('textPadding');
-        expect(validation.project.schemaVersion).toBe(11);
+        expect(validation.project.schemaVersion).toBe(12);
         expect(raw).toEqual(before);
     });
 
@@ -153,7 +153,7 @@ describe('validateGeneratedProject', () => {
         ]);
         expect(page.elements[2]).not.toHaveProperty('textPadding');
         expect(page.elements[3]).not.toHaveProperty('textPadding');
-        expect(validation.project.schemaVersion).toBe(11);
+        expect(validation.project.schemaVersion).toBe(12);
         expect(raw).toEqual(before);
     });
 
