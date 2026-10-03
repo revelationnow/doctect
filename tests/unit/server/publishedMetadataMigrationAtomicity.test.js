@@ -81,6 +81,7 @@ beforeAll(async () => {
         name TEXT NOT NULL,
         description TEXT NOT NULL DEFAULT '',
         tags TEXT NOT NULL DEFAULT '[]',
+        visibility TEXT NOT NULL DEFAULT 'private',
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         published_commit_id TEXT,
         forked_from_project_id TEXT
@@ -94,6 +95,17 @@ beforeAll(async () => {
         mime TEXT NOT NULL,
         image BLOB NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+    // Same for 008_reviews: 018_gallery_index backfills project_stats from it.
+    await query(`CREATE TABLE reviews (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        rating INTEGER NOT NULL,
+        body TEXT,
+        created_at TIMESTAMP NOT NULL,
+        updated_at TIMESTAMP NOT NULL,
+        UNIQUE (project_id, user_id)
     )`);
     await query(
         'INSERT INTO projects (id, name, description, tags, published_commit_id) VALUES ($1, $2, $3, $4, $5)',

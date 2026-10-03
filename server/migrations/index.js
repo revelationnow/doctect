@@ -550,4 +550,133 @@ export const migrations = [
                 WHERE fork_idempotency_key IS NOT NULL
         `
     },
+    {
+        id: '018_gallery_index',
+        // Derived, rebuildable side tables for gallery browsing. Nothing here alters a
+        // project's content or its published_* columns: project_tags/project_formats/
+        // project_facets are filled by server/galleryIndex.js (publish, listing edit, and
+        // the startup sweep that backfills existing projects), project_stats is backfilled
+        // below and then kept current by triggers on reviews. No REFERENCES clauses, same
+        // reason as 008_reviews; every gallery query joins back to projects, so a row left
+        // behind by an unpublish is never shown.
+        pg: [
+            `CREATE TABLE IF NOT EXISTS project_tags (
+                project_id TEXT NOT NULL,
+                tag TEXT NOT NULL,
+                label TEXT NOT NULL,
+                PRIMARY KEY (project_id, tag)
+            )`,
+            `CREATE INDEX IF NOT EXISTS idx_project_tags_tag ON project_tags(tag)`,
+            `CREATE TABLE IF NOT EXISTS project_formats (
+                project_id TEXT NOT NULL,
+                format TEXT NOT NULL,
+                PRIMARY KEY (project_id, format)
+            )`,
+            `CREATE INDEX IF NOT EXISTS idx_project_formats_format ON project_formats(format)`,
+            `CREATE TABLE IF NOT EXISTS project_facets (
+                project_id TEXT PRIMARY KEY,
+                index_version INTEGER NOT NULL,
+                category TEXT NOT NULL,
+                page_count INTEGER,
+                search_text TEXT NOT NULL DEFAULT '',
+                search_vector TSVECTOR
+            )`,
+            `CREATE INDEX IF NOT EXISTS idx_project_facets_category ON project_facets(category)`,
+            `CREATE INDEX IF NOT EXISTS idx_project_facets_search ON project_facets USING GIN (search_vector)`,
+            `CREATE TABLE IF NOT EXISTS project_stats (
+                project_id TEXT PRIMARY KEY,
+                rating_sum INTEGER NOT NULL DEFAULT 0,
+                rating_count INTEGER NOT NULL DEFAULT 0
+            )`,
+            `INSERT INTO project_stats (project_id, rating_sum, rating_count)
+             SELECT project_id, SUM(rating), COUNT(*) FROM reviews GROUP BY project_id
+             ON CONFLICT (project_id) DO UPDATE
+                 SET rating_sum = EXCLUDED.rating_sum, rating_count = EXCLUDED.rating_count`,
+            // Recomputes from reviews rather than adding deltas, so the cache can never drift.
+            `CREATE OR REPLACE FUNCTION refresh_project_stats()
+             RETURNS trigger AS $$
+             DECLARE pid TEXT;
+             BEGIN
+                 pid := CASE WHEN TG_OP = 'DELETE' THEN OLD.project_id ELSE NEW.project_id END;
+                 INSERT INTO project_stats (project_id, rating_sum, rating_count)
+                 SELECT pid, COALESCE(SUM(rating), 0), COUNT(*) FROM reviews WHERE project_id = pid
+                 ON CONFLICT (project_id) DO UPDATE
+                     SET rating_sum = EXCLUDED.rating_sum, rating_count = EXCLUDED.rating_count;
+                 RETURN NULL;
+             END;
+             $$ LANGUAGE plpgsql`,
+            `DROP TRIGGER IF EXISTS reviews_refresh_stats ON reviews`,
+            `CREATE TRIGGER reviews_refresh_stats AFTER INSERT OR UPDATE OR DELETE ON reviews FOR EACH ROW EXECUTE FUNCTION refresh_project_stats()`,
+            `CREATE TABLE IF NOT EXISTS download_events (
+                project_id TEXT NOT NULL,
+                viewer_key TEXT NOT NULL,
+                day TEXT NOT NULL,
+                PRIMARY KEY (project_id, viewer_key, day)
+            )`,
+            `CREATE INDEX IF NOT EXISTS idx_download_events_day ON download_events(day)`,
+            `CREATE INDEX IF NOT EXISTS idx_projects_published_at ON projects(published_at DESC)
+                WHERE visibility = 'public' AND published_commit_id IS NOT NULL`,
+        ],
+        sqlite: [
+            `CREATE TABLE IF NOT EXISTS project_tags (
+                project_id TEXT NOT NULL,
+                tag TEXT NOT NULL,
+                label TEXT NOT NULL,
+                PRIMARY KEY (project_id, tag)
+            )`,
+            `CREATE INDEX IF NOT EXISTS idx_project_tags_tag ON project_tags(tag)`,
+            `CREATE TABLE IF NOT EXISTS project_formats (
+                project_id TEXT NOT NULL,
+                format TEXT NOT NULL,
+                PRIMARY KEY (project_id, format)
+            )`,
+            `CREATE INDEX IF NOT EXISTS idx_project_formats_format ON project_formats(format)`,
+            // No search_vector: SQLite search falls back to LIKE over search_text.
+            `CREATE TABLE IF NOT EXISTS project_facets (
+                project_id TEXT PRIMARY KEY,
+                index_version INTEGER NOT NULL,
+                category TEXT NOT NULL,
+                page_count INTEGER,
+                search_text TEXT NOT NULL DEFAULT ''
+            )`,
+            `CREATE INDEX IF NOT EXISTS idx_project_facets_category ON project_facets(category)`,
+            `CREATE TABLE IF NOT EXISTS project_stats (
+                project_id TEXT PRIMARY KEY,
+                rating_sum INTEGER NOT NULL DEFAULT 0,
+                rating_count INTEGER NOT NULL DEFAULT 0
+            )`,
+            `INSERT OR REPLACE INTO project_stats (project_id, rating_sum, rating_count)
+             SELECT project_id, SUM(rating), COUNT(*) FROM reviews GROUP BY project_id`,
+            // An upsert, not INSERT OR REPLACE: the reviews route writes with its own
+            // ON CONFLICT upsert, and SQLite lets the outer statement's conflict policy
+            // override an OR REPLACE inside a trigger body.
+            `CREATE TRIGGER IF NOT EXISTS reviews_stats_insert AFTER INSERT ON reviews BEGIN
+                 INSERT INTO project_stats (project_id, rating_sum, rating_count)
+                 SELECT NEW.project_id, COALESCE(SUM(rating), 0), COUNT(*) FROM reviews WHERE project_id = NEW.project_id
+                 ON CONFLICT (project_id) DO UPDATE
+                     SET rating_sum = excluded.rating_sum, rating_count = excluded.rating_count;
+             END`,
+            `CREATE TRIGGER IF NOT EXISTS reviews_stats_update AFTER UPDATE ON reviews BEGIN
+                 INSERT INTO project_stats (project_id, rating_sum, rating_count)
+                 SELECT NEW.project_id, COALESCE(SUM(rating), 0), COUNT(*) FROM reviews WHERE project_id = NEW.project_id
+                 ON CONFLICT (project_id) DO UPDATE
+                     SET rating_sum = excluded.rating_sum, rating_count = excluded.rating_count;
+             END`,
+            `CREATE TRIGGER IF NOT EXISTS reviews_stats_delete AFTER DELETE ON reviews BEGIN
+                 INSERT INTO project_stats (project_id, rating_sum, rating_count)
+                 SELECT OLD.project_id, COALESCE(SUM(rating), 0), COUNT(*) FROM reviews WHERE project_id = OLD.project_id
+                 ON CONFLICT (project_id) DO UPDATE
+                     SET rating_sum = excluded.rating_sum, rating_count = excluded.rating_count;
+             END`,
+            `CREATE TABLE IF NOT EXISTS download_events (
+                project_id TEXT NOT NULL,
+                viewer_key TEXT NOT NULL,
+                day TEXT NOT NULL,
+                PRIMARY KEY (project_id, viewer_key, day)
+            )`,
+            `CREATE INDEX IF NOT EXISTS idx_download_events_day ON download_events(day)`,
+            `CREATE INDEX IF NOT EXISTS idx_projects_published_at ON projects(published_at DESC)
+                WHERE visibility = 'public' AND published_commit_id IS NOT NULL`,
+        ],
+    },
 ];

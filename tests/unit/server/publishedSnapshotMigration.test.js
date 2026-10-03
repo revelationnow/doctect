@@ -93,6 +93,17 @@ beforeAll(async () => {
         image BLOB NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
+    // Same for 008_reviews: 018_gallery_index backfills project_stats from it.
+    await query(`CREATE TABLE reviews (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        rating INTEGER NOT NULL,
+        body TEXT,
+        created_at TIMESTAMP NOT NULL,
+        updated_at TIMESTAMP NOT NULL,
+        UNIQUE (project_id, user_id)
+    )`);
     await query('INSERT INTO projects (id, name, description, tags, visibility, head_commit_id) VALUES ($1, $2, $3, $4, $5, $6)',
         ['public-project', 'Public name', 'Public description', '["public"]', 'public', 'public-head']);
     await query('INSERT INTO projects (id, name, description, tags, visibility, head_commit_id) VALUES ($1, $2, $3, $4, $5, $6)',

@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { strictOptionalAuth } from '../middleware/guards.js';
 import { query } from '../db.js';
 import { isSignupOpen } from '../signupCap.js';
-import { thumbnailIdsByProject } from './gallery.js';
+import { cardFields, cardFrom, toCards } from './gallery.js';
 
 const router = Router();
 
@@ -20,29 +20,16 @@ router.get('/api/users/:username', async (req, res) => {
     const users = await query('SELECT id, username, "createdAt" FROM "user" WHERE username = $1', [uname]);
     if (!users[0]) return res.status(404).json({ error: 'User not found' });
     const rows = await query(
-        `SELECT p.id, p.published_name AS name, p.published_description AS description,
-                p.published_tags AS tags, p.fork_count, p.download_count, p.published_at AS updated_at,
-                (SELECT t.id FROM thumbnails t WHERE t.project_id = p.id ORDER BY t.position LIMIT 1) AS thumbnail_id,
-                (SELECT AVG(rv.rating) FROM reviews rv WHERE rv.project_id = p.id) AS rating_avg,
-                (SELECT COUNT(*) FROM reviews rv WHERE rv.project_id = p.id) AS rating_count
-         FROM projects p WHERE p.owner_id = $1 AND p.visibility = 'public' AND p.published_commit_id IS NOT NULL
+        `SELECT ${cardFields} FROM ${cardFrom}
+         WHERE p.owner_id = $1 AND p.visibility = 'public' AND p.published_commit_id IS NOT NULL
          ORDER BY p.published_at DESC LIMIT 100`,
         [users[0].id]);
-    // Same batched pattern as GET /api/gallery: cards are GalleryItem-shaped, so
-    // they must carry the full ordered preview list, not just the first id.
-    const thumbs = await thumbnailIdsByProject(rows.map(r => r.id));
     res.json({
         // Public, unauthenticated endpoint — anyone can call this for any known/guessed
         // username. Deliberately excludes the account's real `name` field (see /api/me above).
         user: { username: users[0].username, createdAt: users[0].createdAt },
-        projects: rows.map(r => ({
-            id: r.id, name: r.name, description: r.description, tags: JSON.parse(r.tags || '[]'),
-            author: users[0].username, forkCount: r.fork_count, downloadCount: r.download_count,
-            updatedAt: r.updated_at, thumbnailId: r.thumbnail_id,
-            thumbnailIds: thumbs.get(r.id) ?? [],
-            ratingAvg: r.rating_avg == null ? null : Math.round(Number(r.rating_avg) * 10) / 10,
-            ratingCount: Number(r.rating_count ?? 0)
-        }))
+        // Same select + DTO builder as GET /api/gallery: cards are GalleryItem-shaped everywhere.
+        projects: await toCards(rows),
     });
 });
 

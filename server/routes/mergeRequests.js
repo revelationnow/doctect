@@ -9,6 +9,7 @@ import { validateAppState } from '../validateAppState.js';
 import { decodeStateRow, encodeState } from '../stateCodec.js';
 import { assertGlobalCeiling, sendLimitError } from '../middleware/limits.js';
 import { lockProjectRows } from '../projectLocks.js';
+import { reindexProject } from '../galleryIndex.js';
 
 const router = Router();
 
@@ -266,6 +267,8 @@ router.post('/api/merge-requests/:id/merge', requireAuth, loadMrForParticipant, 
                 `INSERT INTO project_publications (project_id, commit_id)
                  VALUES ($1, $2) ON CONFLICT (project_id, commit_id) DO NOTHING`,
                 [target.id, commit.id]);
+            // Page formats and count come from the published state, which just changed.
+            await reindexProject(target.id, txQuery);
         }
 
         const updated = await txQuery(

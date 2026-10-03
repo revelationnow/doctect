@@ -7,6 +7,7 @@ import { encodeState, decodeStateRow } from '../stateCodec.js';
 import { assertStorageAllowance, assertProjectAllowance, assertPublishAllowance, sendLimitError, userWriteLimiter, userStorageQuotaBytes } from '../middleware/limits.js';
 import { lockProjectRows } from '../projectLocks.js';
 import { publicationTag } from '../../shared/publicationTag.js';
+import { deleteGalleryIndex, reindexProject } from '../galleryIndex.js';
 
 const router = Router();
 
@@ -203,6 +204,7 @@ router.delete('/api/projects/:id', requireAuth, loadProject(true), async (req, r
         await txQuery('DELETE FROM project_publications WHERE project_id = $1', [project.id]);
         await txQuery('DELETE FROM thumbnails WHERE project_id = $1', [project.id]);
         await txQuery('DELETE FROM reviews WHERE project_id = $1', [project.id]);
+        await deleteGalleryIndex(project.id, txQuery);
         await txQuery('DELETE FROM commits WHERE project_id = $1', [project.id]);
         await txQuery('DELETE FROM projects WHERE id = $1', [project.id]);
         return true;
@@ -419,6 +421,7 @@ router.post('/api/projects/:id/publish', requireAuth, requireUsername, loadProje
             );
 
             await replaceThumbnails(current[0].id, listing.previews, txQuery);
+            await reindexProject(current[0].id, txQuery);
             const thumbnailRows = await txQuery('SELECT id FROM thumbnails WHERE project_id = $1 ORDER BY position', [current[0].id]);
             return { row: updated[0], thumbnailIds: thumbnailRows.map(item => item.id) };
         });
@@ -516,6 +519,7 @@ router.patch('/api/projects/:id/publication', requireAuth, userWriteLimiter, loa
         if (!rows[0]) return null;
 
         if (listing.previews) await replaceThumbnails(current.id, listing.previews, txQuery);
+        await reindexProject(current.id, txQuery);
         const thumbnailRows = await txQuery(
             'SELECT id FROM thumbnails WHERE project_id = $1 ORDER BY position', [current.id]);
         return { row: rows[0], thumbnailIds: thumbnailRows.map(item => item.id) };

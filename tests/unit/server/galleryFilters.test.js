@@ -80,9 +80,9 @@ describe('limit param', () => {
     });
 });
 
-describe('GET /api/gallery/tags', () => {
+describe('GET /api/gallery/facets', () => {
     it('returns public tag counts', async () => {
-        const res = await request(app).get('/api/gallery/tags');
+        const res = await request(app).get('/api/gallery/facets');
         expect(res.status).toBe(200);
         const plan = res.body.tags.find(t => t.tag === 'gf-plan');
         const planner = res.body.tags.find(t => t.tag === 'gf-planner');
@@ -91,7 +91,7 @@ describe('GET /api/gallery/tags', () => {
     });
 
     it('does not fall through to the :id detail route', async () => {
-        const res = await request(app).get('/api/gallery/tags');
+        const res = await request(app).get('/api/gallery/facets');
         expect(res.body.tags).toBeDefined(); // not { error: 'Project not found' }
     });
 });
