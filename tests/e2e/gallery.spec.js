@@ -450,7 +450,7 @@ test.describe('Gallery', () => {
             thumbnails: [PNG_1X1], previewNodeIds: ['root'],
         });
         const recentlyUpdated = async () => (await (await page.request.get(
-            `${API_BASE}/api/gallery?q=${encodeURIComponent(searchName)}`)).json()).items.map(p => p.id);
+            `${API_BASE}/api/gallery?q=${encodeURIComponent(searchName)}&sort=recent`)).json()).items.map(p => p.id);
         // Control for the ordering assertion after the edit: B genuinely outranks A right now.
         expect(await recentlyUpdated()).toEqual([other.id, project.id]);
 

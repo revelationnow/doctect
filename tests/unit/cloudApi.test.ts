@@ -148,23 +148,32 @@ describe('gallery v2 api methods', () => {
         Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(body) } as Response);
     afterEach(() => vi.unstubAllGlobals());
 
-    it('gallery() serializes tag, limit and rating sort', async () => {
-        const fetchMock = vi.fn().mockReturnValue(okJson({ items: [], page: 0, hasMore: false }));
+    it('gallery() serializes filters, repeated tags, limit and sort', async () => {
+        const fetchMock = vi.fn().mockReturnValue(okJson({ items: [], page: 0, hasMore: false, total: 0, sort: 'rating' }));
         vi.stubGlobal('fetch', fetchMock);
-        await cloudApi.gallery({ q: 'x', sort: 'rating', tag: 'planner', limit: 8, page: 2 });
-        const url = fetchMock.mock.calls[0][0] as string;
-        expect(url).toContain('/api/gallery?');
-        expect(url).toContain('q=x');
-        expect(url).toContain('sort=rating');
-        expect(url).toContain('tag=planner');
-        expect(url).toContain('limit=8');
-        expect(url).toContain('page=2');
+        await cloudApi.gallery({
+            q: 'x', sort: 'rating', tags: ['planner', 'weekly'], category: 'planners', format: 'a5',
+            minRating: 4, limit: 8, page: 2,
+        });
+        const url = new URL(fetchMock.mock.calls[0][0] as string, 'http://x');
+        expect(url.pathname).toBe('/api/gallery');
+        expect(url.searchParams.get('q')).toBe('x');
+        expect(url.searchParams.get('sort')).toBe('rating');
+        expect(url.searchParams.getAll('tag')).toEqual(['planner', 'weekly']);
+        expect(url.searchParams.get('category')).toBe('planners');
+        expect(url.searchParams.get('format')).toBe('a5');
+        expect(url.searchParams.get('rating')).toBe('4');
+        expect(url.searchParams.get('limit')).toBe('8');
+        expect(url.searchParams.get('page')).toBe('2');
     });
 
-    it('galleryTags() unwraps the tags array', async () => {
-        vi.stubGlobal('fetch', vi.fn().mockReturnValue(okJson({ tags: [{ tag: 'planner', count: 3 }] })));
-        const tags = await cloudApi.galleryTags();
-        expect(tags).toEqual([{ tag: 'planner', count: 3 }]);
+    it('galleryFacets() and galleryHome() hit their endpoints', async () => {
+        const fetchMock = vi.fn().mockReturnValue(okJson({}));
+        vi.stubGlobal('fetch', fetchMock);
+        await cloudApi.galleryFacets();
+        await cloudApi.galleryHome();
+        expect(fetchMock.mock.calls[0][0]).toMatch(/\/api\/gallery\/facets$/);
+        expect(fetchMock.mock.calls[1][0]).toMatch(/\/api\/gallery\/home$/);
     });
 
     it('listReviews() returns reviews and myReview', async () => {

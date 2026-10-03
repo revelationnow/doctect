@@ -40,6 +40,7 @@ const item: GalleryItem = {
     forkCount: 0, downloadCount: 0, updatedAt: '2026-01-01', thumbnailId: null,
     thumbnailIds: [],
     ratingAvg: null, ratingCount: 0,
+    category: null, formats: [], pageCount: null,
 };
 const detail: GalleryDetail = {
     ...item, ownerId: 'owner-1', headCommitId: 'commit-1', thumbnailIds: [], previews: [], forkedFrom: null,
@@ -49,18 +50,17 @@ describe('gallery card click opens an overlay modal; direct hits still get the f
     beforeEach(() => {
         vi.restoreAllMocks();
         mockUseSession.mockReturnValue({ data: null });
-        vi.spyOn(cloudApi, 'gallery').mockResolvedValue({ items: [item], page: 0, hasMore: false });
-        vi.spyOn(cloudApi, 'galleryTags').mockResolvedValue([]);
+        vi.spyOn(cloudApi, 'gallery').mockResolvedValue({ items: [item], page: 0, hasMore: false, total: 1, sort: 'trending' });
+        vi.spyOn(cloudApi, 'galleryHome').mockResolvedValue({ spotlight: null, trending: [item], newest: [], categories: [] });
+        vi.spyOn(cloudApi, 'galleryFacets').mockResolvedValue({ total: 1, categories: [], formats: [], tags: [] });
         vi.spyOn(cloudApi, 'galleryDetail').mockResolvedValue(detail);
         vi.spyOn(cloudApi, 'listIncomingMrs').mockResolvedValue([]);
     });
 
     it('clicking a card shows the modal without unmounting the grid behind it', async () => {
         render(<MemoryRouter initialEntries={['/gallery']}><TestAppRoutes /></MemoryRouter>);
-        // The one-item catalog shows the project in the daily spotlight AND as a card
-        // in the leftover grid. Only the card is a link, and the spotlight has its own
-        // "Open in editor" button, so target the card by role and scope the modal
-        // assertion with within().
+        // The landing shows the project as a card in the Trending row. Scope the modal
+        // assertion with within(): the page behind it keeps its own controls.
         fireEvent.click(await screen.findByRole('link', { name: /cool planner/i }));
         const modal = await screen.findByTestId('modal-backdrop');
         expect(await within(modal).findByRole('button', { name: /open in editor/i })).toBeInTheDocument();

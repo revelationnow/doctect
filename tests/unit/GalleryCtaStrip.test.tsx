@@ -9,12 +9,13 @@ const item = (id: string, thumb: string | null): GalleryItem => ({
     id, name: id, description: '', tags: [], author: 'a',
     forkCount: 0, downloadCount: 0, updatedAt: '2026-01-01',
     thumbnailId: thumb, thumbnailIds: thumb ? [thumb] : [], ratingAvg: null, ratingCount: 0,
+    category: null, formats: [], pageCount: null,
 });
 
 describe('GalleryCtaStrip', () => {
     it('renders a thumbnail per project with one', async () => {
         vi.spyOn(cloudApi, 'gallery').mockResolvedValue({
-            items: [item('a', 't1'), item('b', 't2'), item('c', null)], page: 0, hasMore: false,
+            items: [item('a', 't1'), item('b', 't2'), item('c', null)], page: 0, hasMore: false, total: 3, sort: 'trending',
         });
         render(<GalleryCtaStrip />);
         await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(2));

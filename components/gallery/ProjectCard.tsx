@@ -5,6 +5,15 @@ import { GalleryItem } from '../../services/cloudApi';
 import { GalleryLink } from './GalleryLink';
 import { RollingPreview } from './RollingPreview';
 import { StarRating } from './StarRating';
+import { galleryHref } from './galleryParams';
+import { formatShortLabel } from '../../shared/galleryFacets.js';
+
+// "A5 · 10.3″ e-ink · 120 pages" — the facts that decide whether a project fits a device.
+export function cardFacts(item: Pick<GalleryItem, 'formats' | 'pageCount'>): string {
+    const parts = item.formats.filter(f => f !== 'custom').map(formatShortLabel);
+    if (item.pageCount) parts.push(`${item.pageCount} ${item.pageCount === 1 ? 'page' : 'pages'}`);
+    return parts.join(' · ');
+}
 
 export function ProjectCard({ item, showAuthor = true }: { item: GalleryItem; showAuthor?: boolean }) {
     const navigate = useNavigate();
@@ -19,6 +28,7 @@ export function ProjectCard({ item, showAuthor = true }: { item: GalleryItem; sh
             <div className="p-3 flex flex-col gap-1 flex-1">
                 <div className="text-sm font-semibold text-slate-800 truncate">{item.name}</div>
                 {showAuthor && <div className="text-xs text-slate-500">by {item.author}</div>}
+                {cardFacts(item) && <div className="text-[11px] text-slate-400 truncate">{cardFacts(item)}</div>}
                 {item.description && <div className="text-xs text-slate-500 line-clamp-2">{item.description}</div>}
                 {item.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-1">
@@ -28,7 +38,7 @@ export function ProjectCard({ item, showAuthor = true }: { item: GalleryItem; sh
                                     // Filter by tag instead of following the surrounding card link.
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    navigate(`/gallery?tag=${encodeURIComponent(t)}`);
+                                    navigate(galleryHref({ tag: t }));
                                 }}
                                 className="text-[10px] bg-slate-100 text-slate-600 rounded-full px-2 py-0.5 hover:bg-blue-100 hover:text-blue-700 transition-colors">
                                 {t}

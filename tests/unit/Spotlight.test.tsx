@@ -15,6 +15,7 @@ const item: GalleryItem = {
     id: 'p1', name: 'Novel Story Studio', description: 'Plot and draft a novel.', tags: ['writing'],
     author: 'doctect', forkCount: 0, downloadCount: 5, updatedAt: '2026-01-01',
     thumbnailId: 't1', thumbnailIds: ['t1', 't2'], ratingAvg: 5, ratingCount: 3,
+    category: null, formats: [], pageCount: null,
 };
 
 const renderIt = () => render(

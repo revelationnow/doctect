@@ -2,8 +2,8 @@
 title: Browsing the Gallery Without an Account
 difficulty: beginner
 time: 8 min
-summary: Search, tags, and curated rows; open any public project in your editor, download every variant, or clone a past version — no sign-in needed.
-keywords: gallery, browse, anonymous, search, tags, open in editor, download, zip, version history, clone
+summary: Search, filters, and curated rows; open any public project in your editor, download every variant, or clone a past version — no sign-in needed.
+keywords: gallery, browse, anonymous, search, tags, categories, filters, sort, trending, device, page size, open in editor, download, zip, version history, clone
 prerequisites: getting-started/first-project-from-preset
 ---
 
@@ -13,26 +13,47 @@ Signing up is covered later in this track. For now, stay logged out on purpose �
 
 ## The gallery in one look
 
-Click **Gallery** in the header (it's there on the landing page, the docs, and this same top bar across the app), or go straight to `/gallery`. The default view has three layers:
+Click **Gallery** in the header (it's there on the landing page, the docs, and this same top bar across the app), or go straight to `/gallery`. Two things sit at the top of every gallery view, and stay pinned there as you scroll:
 
-![The gallery landing view, signed out: hero banner with tag chips, and the Top rated row of project cards](/docs-assets/gallery/gallery-home.png "No account, no prompt — the full gallery, with curated rows below the hero")
+- **A search box.**
+- **A row of filter controls**: a **category** menu, a **size or device** menu, a **4+ stars** toggle, a **sort** menu, and a **grid / list** switch on the right.
 
-- **A hero banner** — "Discover planner & notebook templates" — with a row of [**tag chips**](/docs/reference/gallery-tags) underneath. Each chip is a real tag someone attached to a published project, with a count of how many projects carry it. Click one and you jump straight to a filtered view of that tag.
-- **A search box**, pinned above the hero, that stays with you as you scroll.
-- **Three curated rows**, each holding up to eight cards: **Top rated** (star icon), **Popular** (flame), and **Recently updated** (clock). Each row's header carries a **See all →** link (top right) that expands it into a full, pageable grid.
+![The gallery landing view, signed out: search and filter controls pinned at the top, the spotlight, and the curated rows of project cards](/docs-assets/gallery/gallery-home.png "No account, no prompt — the full gallery, with curated rows under the search and filter controls")
 
-Each card shows the project's preview image, name, author, a line of its description, up to three of its tags, and — once anyone has rated it — a star score, plus small fork and download counts along the bottom. The tags on a card are themselves clickable: they filter the gallery rather than opening the project.
+Below them, the landing view is a set of curated rows:
 
-## Search, tags, and shareable filters
+- **In the spotlight** — one project picked from the best rated, changing once a day, with its own **Open in editor** button.
+- **Trending** — projects people are opening and forking right now. New projects get a fair shot here, and old favourites gradually make room.
+- **New** — the most recently published.
+- **One row per category** — Planners, Trackers & habits, Journals & writing, Learning & study, Work & money, Home & hobbies, Games & play. The gallery works out each project's category by itself from its tags and name, so nobody has to file anything.
 
-Type into the search box and the gallery switches from curated rows to a single filtered grid. Search doesn't just match project names — it matches **names, descriptions, and tags**, so "planner" finds projects that never use the word in their title but tagged themselves with it.
+Each row holds up to eight cards, and its **See all →** link opens the full, pageable list behind it. At the bottom, **Browse all projects** opens everything, and a cloud of the most-used [**tag chips**](/docs/reference/gallery-tags) shows how many projects carry each tag.
 
-Here's the part worth noticing: every filter you apply is written into the page's address. Type "notebook" and the URL becomes `/gallery?q=notebook`. Click the "minimal" tag chip and it's `/gallery?tag=minimal`. Click **See all →** on the Top rated row and it's `/gallery?sort=rating`. These compose — a search within a tag, sorted by rating, pages deep — and the URL keeps up.
+Each card shows the project's preview image, name and author. Under those sit its page size or device and its page count ("A5 · 10.3″ e-ink · 120 pages"), a line of its description, and up to three of its tags. Once anyone has rated it, a star score appears too, plus small fork and download counts along the bottom. The tags on a card are themselves clickable: they filter the gallery rather than opening the project.
+
+## Search, filters, and shareable links
+
+Type into the search box, or touch any filter, and the curated rows give way to a single grid of results. Above the grid you'll see how many projects match and a removable chip for each filter in force. **Clear all** takes you back to the curated rows.
+
+Search matches **names, tags, and descriptions**, and it's forgiving: words can come in any order, and a partial word counts, so "plan wee" finds a "Weekly Planner". The best matches come first — a project with your words in its name ranks above one that only mentions them in its description.
+
+The filters narrow things down, and they combine:
+
+| Control | What it does |
+| --- | --- |
+| **Category** | One of the categories from the landing rows, with a count of how many projects it holds. |
+| **Size or device** | The page size the project was built for: A4, A5, US Letter, a reMarkable, a Kindle Scribe, a 10.3″ Boox or Supernote, and so on. Projects that ship several editions appear under each of them. Devices that share a screen size share one entry, because a file made for one fits all of them. |
+| **4+ stars** | Only projects averaging four stars or more. |
+| **Tags** | Click any tag chip — on a card, a project page, or the landing — to filter by it. Click a second one later and you get projects carrying **both**. |
+
+The **sort** menu orders the results: **Trending** (the default), **Newest**, **Top rated**, **Most downloaded**, and **Best match** while you're searching. **Top rated** is fair to newcomers *and* resistant to flukes: a project with a single five-star review won't outrank one with a hundred reviews averaging 4.8. The **grid / list** switch shows the same results either as cards or as a compact table with category, size, rating, downloads, and dates side by side. Long result lists page with **Previous / Next**, and say which page you're on out of how many.
+
+Here's the part worth noticing: everything you pick is written into the page's address. Type "notebook" and the URL becomes `/gallery?q=notebook`. Pick the A5 size and it's `/gallery?q=notebook&format=a5`. Click **See all →** on the Games row and it's `/gallery?category=games`. These compose — a search within a category, two tags, sorted by rating, pages deep — and the URL keeps up.
 
 > [!TIP]
-> Because filters live in the URL, a filtered view is a link like any other. Bookmark `/gallery?tag=notebook`, or send it to someone, and they land on exactly the grid you were looking at — signed out, no setup. This is also why the browser back button behaves sensibly here: each tag, sort, or page change is a step it can retrace (typed searches update the address in place rather than piling up a history entry per keystroke).
+> Because filters live in the URL, a filtered view is a link like any other. Bookmark `/gallery?format=a5&tag=weekly`, or send it to someone, and they land on exactly the grid you were looking at — signed out, no setup. This is also why the browser back button behaves sensibly here: each filter, sort, or page change is a step it can retrace (typed searches update the address in place rather than piling up a history entry per keystroke).
 
-In the filtered grid you get a few extra controls the curated view doesn't need: a **sort dropdown** (Newest, Popular, Top rated), the active tag shown as a removable chip with an **×**, **Previous / Next** paging at the bottom, and an **← All projects** link that clears everything and returns to the curated rows.
+If nothing matches, the gallery says so and offers a one-click button to drop each filter in turn, so you can see which one was too strict.
 
 ## A project page
 
@@ -51,6 +72,7 @@ A project page collects everything its owner chose to publish:
 | **Title and author** | The author's name links to their public profile and their other published work. |
 | **Rating and reviews** | The star average, count, and written reviews are visible to everyone — signed out included. Writing one is where "Sign in to review" appears. |
 | **Description and tags** | The owner's pitch, plus clickable tags that jump back to a filtered gallery. |
+| **Category, size, and page count** | The category and page sizes the gallery worked out from the project itself, each a link to everything else that shares it. |
 | **Fork and download counts** | Small live tallies of how often this project has been forked and downloaded. |
 | **Report** | A quiet link at the bottom of the actions. It asks for a reason and sends the project to the moderators — also available signed out. |
 
@@ -83,4 +105,4 @@ Every row has its own **Open in editor**. Click one on an older version and that
 
 ## Where the line actually is
 
-You've now used everything the gallery offers an anonymous visitor: curated rows, search that reads names, descriptions, and tags, shareable filtered URLs, overlay and standalone project pages, no-strings copies via **Open in editor**, zipped PDFs of every variant, and clones of any published version. The only things that asked you to sign in were the ones that *say* something to other people — rating, reviewing, forking, publishing your own work. Those are what the rest of this track is about, starting with creating an account and saving your first project to the cloud.
+You've now used everything the gallery offers an anonymous visitor: curated rows, search that reads names, descriptions, and tags, filters by category, device, rating, and tag, shareable filtered URLs, overlay and standalone project pages, no-strings copies via **Open in editor**, zipped PDFs of every variant, and clones of any published version. The only things that asked you to sign in were the ones that *say* something to other people — rating, reviewing, forking, publishing your own work. Those are what the rest of this track is about, starting with creating an account and saving your first project to the cloud.

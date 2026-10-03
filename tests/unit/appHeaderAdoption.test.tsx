@@ -20,11 +20,9 @@ vi.mock('../../services/cloudApi', async (importOriginal) => {
         ...mod,
         cloudApi: {
             ...mod.cloudApi,
-            gallery: vi.fn(async () => ({ items: [], page: 0, hasMore: false })),
-            // The real galleryAll closes over the unmocked module object, so spreading
-            // it would hit the real fetch -- mock it explicitly.
-            galleryAll: vi.fn(async () => []),
-            galleryTags: vi.fn(async () => []),
+            gallery: vi.fn(async () => ({ items: [], page: 0, hasMore: false, total: 0, sort: 'trending' })),
+            galleryHome: vi.fn(async () => ({ spotlight: null, trending: [], newest: [], categories: [] })),
+            galleryFacets: vi.fn(async () => ({ total: 0, categories: [], formats: [], tags: [] })),
         },
     };
 });

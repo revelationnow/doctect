@@ -31,7 +31,7 @@ Later cloud saves and MR merges do not alter public content. The gallery remains
 
 ### Editing a Published Listing
 
-`PATCH /api/projects/:id/publication` (`components/cloud/EditListingModal.tsx`) is metadata-only: it writes `published_tags`/`tags`, `published_description`/`description` (both mirrored the same way `publish` does), `updated_at`, and — only when the caller sends a new set — the `thumbnails` rows. It deliberately never touches `published_commit_id`, `published_name`, or `published_at`. That last omission is load-bearing rather than incidental: `published_at` is what `GET /api/gallery` orders its default *Recently updated* listing by, so a tag fix that re-ranked the project would be free promotion. 409 `NOT_PUBLISHED` if the project isn't currently public, re-checked under the row lock inside the transaction.
+`PATCH /api/projects/:id/publication` (`components/cloud/EditListingModal.tsx`) is metadata-only: it writes `published_tags`/`tags`, `published_description`/`description` (both mirrored the same way `publish` does), `updated_at`, and — only when the caller sends a new set — the `thumbnails` rows. It deliberately never touches `published_commit_id`, `published_name`, or `published_at`. That last omission is load-bearing rather than incidental: `published_at` drives the gallery's *Newest* sort and the age decay in *Trending*, so a tag fix that re-ranked the project would be free promotion. The route does reindex the project's derived gallery rows (tags, category, search text) in the same transaction. 409 `NOT_PUBLISHED` if the project isn't currently public, re-checked under the row lock inside the transaction.
 
 Two omissions are meaningful on the wire, both meaning "keep what is published": an omitted `description` preserves the published one, and an omitted `thumbnails` preserves the published previews (`previewNodeIds` without `thumbnails` is a 400 — accepting it would answer 200 to a request the route silently ignored). Only `tags` is mandatory. `parsePreviewSet` is shared with the publish route so the two cannot drift on the count, the magic-byte check, or the 300 KB ceiling.
 
@@ -43,7 +43,16 @@ Be precise about what that buys, because it is *not* "pdfjs off `/gallery`". `Ap
 
 The gallery is designed to be useful to anonymous visitors:
 
-- **`/gallery`** (`GalleryPage.tsx`) — paginated (24 per page), free-text search over name/description, and a **Recent** / **Popular** (`fork_count + download_count`) sort — all served by `GET /api/gallery`, which requires no authentication.
+- **`/gallery`** (`GalleryPage.tsx`) — two modes behind one control row. Unfiltered, it renders the curated landing from `GET /api/gallery/home` (spotlight, Trending, New, one row per category — every row a bounded query, so the landing never loads the catalog). Any URL param (`q`, `tag` (repeatable, ANDed), `category`, `format`, `rating`, `sort`, `view`) switches to results from `GET /api/gallery`: paginated (24 per page) with a `total`, server-sorted by `relevance` (default while searching), `trending`, `recent`, `rating` or `popular`. Filter counts come from `GET /api/gallery/facets`. None of these require authentication.
+
+### The gallery index
+
+Search and filtering read derived side tables (migration `018`), never the project itself: `project_tags` (normalized tag + the author's spelling), `project_formats` (page-size groups per variant), `project_facets` (category, page count, search text; plus a weighted `tsvector` with a GIN index on Postgres) and `project_stats` (rating sum/count). `server/galleryIndex.js` rebuilds a project's rows from its **published** commit and `published_*` columns inside the publish, listing-edit and merge transactions; the derivation rules live in `shared/galleryFacets.js`. At boot, `reindexStale()` (not awaited) backfills every published project without a row and rebuilds any row whose `index_version` is older than `INDEX_VERSION` — so changing a rule is a version bump, and no project, commit or listing column is ever rewritten. Until the sweep reaches a project it is still listed, just absent from search and the category/format/tag filters.
+
+- **Search**: Postgres uses `to_tsquery('english', 'w1:* & w2:*')` (prefix-matched words; operators stripped) ranked by `ts_rank` with name > tags > description weights. SQLite falls back to one `LIKE` per word over `search_text`, ranking name hits first.
+- **Ratings**: `project_stats` is maintained by an `AFTER INSERT/UPDATE/DELETE` trigger on `reviews` that recomputes the row from `reviews` (never deltas). The SQLite triggers use an upsert, not `INSERT OR REPLACE`: the review route's own `ON CONFLICT` upsert overrides an `OR REPLACE` inside a trigger body.
+- **Sorts**: `trending` = `(forks·3 + downloads + 1) / (age_hours + 2)^1.5`; `rating` = Bayesian average with 5 phantom reviews at the site-wide mean, unrated last; `popular` = `fork_count + download_count`.
+- **Downloads** count once per viewer per project per UTC day (`download_events`, keyed by user id or a hash of the IP; rows older than yesterday are pruned on each counted download).
 - **`/gallery/:id`** (`GalleryDetailPage.tsx`) — full public detail from the pinned publication. **Open in editor** and PDF/ZIP download fetch that same published commit (`GET /api/gallery/:id/state`) — never a newer private head.
 - **`/u/:username`** (`ProfilePage.tsx`) — a public profile listing a user's published projects (`GET /api/users/:username`).
 
@@ -110,9 +119,11 @@ Two independent edits that happen to produce byte-identical results are *not* fl
 | `POST /api/projects/:id/unpublish` | owner | Make private again |
 | `POST /api/projects/:id/fork` | required | Fork a public project into a new private one |
 | `GET /api/thumbnails/:thumbId` | none | Serve a stored thumbnail image |
-| `GET /api/gallery` | none | Paginated/searchable/sortable public listing |
+| `GET /api/gallery` | none | Paginated/searchable/filterable/sortable public listing with `total` |
+| `GET /api/gallery/home` | none | Bounded landing rows: spotlight, trending, newest, per-category |
+| `GET /api/gallery/facets` | none | Category, format and top-tag counts over the published catalog |
 | `GET /api/gallery/:id` | none | Public project detail + lineage |
-| `GET /api/gallery/:id/state` | none | Full published state for open/PDF (increments downloads) |
+| `GET /api/gallery/:id/state` | optional | Full published state for open/PDF (counts one download per viewer per day) |
 | `POST /api/gallery/:id/report` | optional | Report a project |
 | `POST /api/merge-requests` | required | Open an MR from one of your forks |
 | `GET /api/projects/:id/merge-requests` | owner | Incoming MRs targeting your project |
@@ -281,7 +292,7 @@ Change `OWNER_EMAILS` and redeploy. Startup reconciliation grants owner to confi
 
 ## Known Limitations / Follow-ups
 
-- Session-suspension and platform-audit trigger behavior is executed against SQLite, and exact PostgreSQL statements for migrations `012`, `013`, and `014` are contract-tested. Repository has no live PostgreSQL test harness, so PostgreSQL trigger execution, audit backfill, and owner reconciliation require the staging runbook before production approval.
+- Session-suspension and platform-audit trigger behavior is executed against SQLite, and exact PostgreSQL statements for migrations `012`, `013`, and `014` are contract-tested. Repository has no live PostgreSQL test harness, so PostgreSQL trigger execution, audit backfill, and owner reconciliation require the staging runbook before production approval. The same applies to the gallery index (`018`): CI exercises it only on SQLite. Its Postgres-only paths (`tsvector`/`to_tsquery`/`ts_rank` search, the `project_stats` trigger function, the per-category `ROW_NUMBER` home query) were smoke-tested once by hand against Postgres 16 with SSL when it landed, not by an automated suite.
 
 - **Email verification** is not wired up — it needs an actual email provider chosen and configured first; better-auth supports `emailVerification` natively once one exists.
 - **Thumbnails are stored as database blobs** (Postgres `bytea` / SQLite `BLOB`), not object storage. Fine at launch scale; the `/api/thumbnails/:id` indirection means moving to something like GCS later requires no client-side changes.

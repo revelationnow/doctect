@@ -10,6 +10,7 @@ const item: GalleryItem = {
     forkCount: 2, downloadCount: 9, updatedAt: '2026-01-01', thumbnailId: null,
     thumbnailIds: [],
     ratingAvg: 4.5, ratingCount: 3,
+    category: 'planners', formats: ['a5'], pageCount: 120,
 };
 
 function LocationProbe() {
@@ -33,6 +34,13 @@ describe('ProjectCard', () => {
         expect(screen.getByText('by maker')).toBeInTheDocument();
         expect(screen.getByText(/4\.5/)).toBeInTheDocument();
         expect(screen.getByText(/\(3\)/)).toBeInTheDocument();
+    });
+
+    it('shows page size/device and page count, hiding the uninformative custom size', () => {
+        renderCard();
+        expect(screen.getByText('A5 · 120 pages')).toBeInTheDocument();
+        renderCard({ ...item, formats: ['custom'], pageCount: 1 });
+        expect(screen.getByText('1 page')).toBeInTheDocument();
     });
 
     it('caps tag chips at 3', () => {

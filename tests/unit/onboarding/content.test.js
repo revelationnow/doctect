@@ -365,7 +365,7 @@ describe('countable claims still agree with the repo', () => {
     // Shipped as "Two migrations are database triggers" while three do. That note is
     // also the nearest-commentary FALLBACK for every unannotated file under
     // server/migrations/, so it is the most-shown sentence in the module.
-    it('exactly three migrations install database triggers', () => {
+    it('exactly four migrations install database triggers', () => {
         const src = readRepo('server/migrations/index.js');
         const ids = [...src.matchAll(/id:\s*'(\d{3}_[a-z0-9_]+)'/g)];
         const withTriggers = ids.filter(([, ], i) => {
@@ -377,9 +377,9 @@ describe('countable claims still agree with the repo', () => {
             'server/migrations/index.js changed which migrations CREATE TRIGGER. Update the '
             + '"server/migrations" and "server/migrations/index.js" annotations in '
             + 'onboarding/src/content/code-map.mjs, plus the migrations deep dive.'
-        ).toEqual(['011_account_moderation', '012_session_suspension_guard', '014_platform_audit_actions']);
+        ).toEqual(['011_account_moderation', '012_session_suspension_guard', '014_platform_audit_actions', '018_gallery_index']);
         const note = CODE_MAP.annotations.find(a => a.path === 'server/migrations').note;
-        expect(note, 'the note must still say how many install triggers').toContain('Three');
+        expect(note, 'the note must still say how many install triggers').toContain('Four');
     });
 
     // Shipped enumerating FOUR classes and closing "Everything else coexists" while

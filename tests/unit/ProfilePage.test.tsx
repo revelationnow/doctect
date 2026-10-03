@@ -23,6 +23,7 @@ const serverPayload = {
         updatedAt: '2026-08-01 00:00:00', thumbnailId: 'thumb-1',
         thumbnailIds: ['thumb-1', 'thumb-2'],
         ratingAvg: null, ratingCount: 0,
+        category: null, formats: [], pageCount: null,
     }],
 };
 

@@ -32,6 +32,7 @@ const listing = (previews: GalleryPreview[]): GalleryDetail => ({
     author: 'someone', ownerId: 'user-1', forkCount: 0, downloadCount: 0,
     updatedAt: '2026-05-01 09:00:00', headCommitId: 'commit-1', thumbnailIds: previews.map(p => p.id),
     previews, forkedFrom: null, ratingAvg: null, ratingCount: 0,
+    category: null, formats: [], pageCount: null,
 });
 
 const renderModal = () => {

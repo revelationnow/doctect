@@ -30,7 +30,7 @@ const detail = (isOwner: boolean): any => ({
     project: {
         id: 'p1', name: 'Planner', description: '', tags: [], author: 'me', ownerId: 'u1',
         forkCount: 0, downloadCount: 0, updatedAt: '', headCommitId: 'c1',
-        thumbnailIds: [], previews: [], forkedFrom: null, ratingAvg: null, ratingCount: 0,
+        thumbnailIds: [], previews: [], forkedFrom: null, ratingAvg: null, ratingCount: 0, category: null, formats: [], pageCount: null,
     },
     busy: null, mrs: [], isOwner, session: { user: { id: 'u1', username: 'me' } }, fromPath: '/gallery',
     openInEditor: vi.fn(), fork: vi.fn(), downloadAllVariants: vi.fn(), report: vi.fn(),

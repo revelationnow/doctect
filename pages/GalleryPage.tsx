@@ -1,13 +1,16 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, X, ArrowLeft } from 'lucide-react';
-import { cloudApi, GalleryItem, GalleryTag } from '../services/cloudApi';
+import { Search, X } from 'lucide-react';
+import { cloudApi, GalleryFacets, GalleryHome as GalleryHomeData, GalleryItem, GallerySort } from '../services/cloudApi';
 import { AppHeader } from '../components/AppHeader';
 import { ProjectCard } from '../components/gallery/ProjectCard';
-import { GalleryExplainer } from '../components/gallery/GalleryExplainer';
-import { Spotlight } from '../components/gallery/Spotlight';
 import { GalleryDirectory } from '../components/gallery/GalleryDirectory';
-import { groupCatalog, pickSpotlight, dateKey } from '../components/gallery/sections';
+import { GalleryFilters } from '../components/gallery/GalleryFilters';
+import { GalleryHome } from '../components/gallery/GalleryHome';
+import { isBrowsing, readParams, toQuery } from '../components/gallery/galleryParams';
+import { categoryLabel, formatLabel } from '../shared/galleryFacets.js';
+
+const PAGE_SIZE = 24;
 
 function SkeletonGrid({ count }: { count: number }) {
     return (
@@ -25,21 +28,25 @@ function SkeletonGrid({ count }: { count: number }) {
     );
 }
 
+interface Results { items: GalleryItem[]; total: number; hasMore: boolean; sort: GallerySort; }
+
 export function GalleryPage() {
     const [searchParams, setSearchParams] = useSearchParams();
-    const qParam = searchParams.get('q') ?? '';
-    const tagParam = searchParams.get('tag') ?? '';
-    const sortParam = searchParams.get('sort') ?? '';
-    const page = Math.max(0, parseInt(searchParams.get('page') ?? '0', 10) || 0);
-    const isFiltered = !!(qParam || tagParam || sortParam);
-    const viewParam = searchParams.get('view') ?? '';
-    const isDirectory = !isFiltered && viewParam === 'all';
+    const params = readParams(searchParams);
+    const browsing = isBrowsing(searchParams);
+    // Stable key for the results fetch: the URL minus the layout toggle, which changes
+    // how results look but not which results they are.
+    const resultsKey = (() => {
+        const sp = new URLSearchParams(searchParams);
+        sp.delete('view');
+        sp.sort();
+        return sp.toString();
+    })();
 
-    const [qInput, setQInput] = useState(qParam);
-    const [tags, setTags] = useState<GalleryTag[]>([]);
-    const [items, setItems] = useState<GalleryItem[] | null>(null);   // grid mode; null = loading
-    const [hasMore, setHasMore] = useState(false);
-    const [catalog, setCatalog] = useState<GalleryItem[] | null>(null);   // sections mode; null = loading
+    const [qInput, setQInput] = useState(params.q);
+    const [facets, setFacets] = useState<GalleryFacets | null>(null);
+    const [home, setHome] = useState<GalleryHomeData | null>(null);
+    const [results, setResults] = useState<Results | null>(null);   // null = loading
     const [error, setError] = useState<string | null>(null);
 
     const setParam = (key: string, value: string | null) => {
@@ -50,11 +57,22 @@ export function GalleryPage() {
             return next;
         });
     };
+    const removeTag = (tag: string) => {
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            const rest = next.getAll('tag').filter(t => t !== tag);
+            next.delete('tag');
+            rest.forEach(t => next.append('tag', t));
+            next.delete('page');
+            return next;
+        });
+    };
+    const clearFilters = () => { setQInput(''); setSearchParams({}); };
 
     // Debounce the search box into ?q= so filtered views stay shareable/bookmarkable.
     useEffect(() => {
         const t = setTimeout(() => {
-            if (qInput === qParam) return;
+            if (qInput === params.q) return;
             setSearchParams(prev => {
                 const next = new URLSearchParams(prev);
                 if (qInput) next.set('q', qInput); else next.delete('q');
@@ -64,154 +82,115 @@ export function GalleryPage() {
         }, 250);
         return () => clearTimeout(t);
     }, [qInput]); // eslint-disable-line react-hooks/exhaustive-deps
-    useEffect(() => { setQInput(qParam); }, [qParam]);
+    useEffect(() => { setQInput(params.q); }, [params.q]);
 
     useEffect(() => {
-        cloudApi.galleryTags().then(setTags).catch(() => {});
+        cloudApi.galleryFacets().then(setFacets).catch(() => {});
     }, []);
 
-    // Sections mode: one sweep of the whole (small) catalog, grouped client-side.
     useEffect(() => {
-        if (isFiltered) return;
-        setCatalog(null);
-        cloudApi.galleryAll()
-            .then(items => { setCatalog(items); setError(null); })
+        if (browsing || home) return;
+        cloudApi.galleryHome()
+            .then(h => { setHome(h); setError(null); })
             .catch(() => setError('Could not load the gallery.'));
-    }, [isFiltered]);
+    }, [browsing]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Grid mode: one filtered, paginated fetch.
     useEffect(() => {
-        if (!isFiltered) return;
-        setItems(null);
-        const sort = sortParam === 'popular' || sortParam === 'rating' ? sortParam : 'recent';
-        cloudApi.gallery({ q: qParam || undefined, tag: tagParam || undefined, sort, page })
-            .then(res => { setItems(res.items); setHasMore(res.hasMore); setError(null); })
-            .catch(() => setError('Could not load the gallery.'));
-    }, [isFiltered, qParam, tagParam, sortParam, page]);
+        if (!browsing) return;
+        let stale = false;
+        setResults(null);
+        cloudApi.gallery(toQuery(params))
+            .then(res => { if (!stale) { setResults(res); setError(null); } })
+            .catch(() => { if (!stale) setError('Could not load the gallery.'); });
+        return () => { stale = true; };
+    }, [browsing, resultsKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const clearFilters = () => { setQInput(''); setSearchParams({}); };
-    const grouped = useMemo(() => catalog ? groupCatalog(catalog) : null, [catalog]);
-    const spotlight = useMemo(() => catalog ? pickSpotlight(catalog, dateKey(new Date())) : null, [catalog]);
-    const galleryEmpty = catalog !== null && catalog.length === 0;
+    const chips: { label: string; onRemove: () => void }[] = [
+        ...(params.q ? [{ label: `“${params.q}”`, onRemove: () => { setQInput(''); setParam('q', null); } }] : []),
+        ...(params.category ? [{ label: categoryLabel(params.category), onRemove: () => setParam('category', null) }] : []),
+        ...(params.format ? [{ label: formatLabel(params.format), onRemove: () => setParam('format', null) }] : []),
+        ...params.tags.map(t => ({ label: `#${t}`, onRemove: () => removeTag(t) })),
+        ...(params.minRating ? [{ label: `${params.minRating}★ and up`, onRemove: () => setParam('rating', null) }] : []),
+    ];
+    const activeSort: GallerySort = params.sort || results?.sort || (params.q ? 'relevance' : 'trending');
+    const pageCount = results ? Math.max(1, Math.ceil(results.total / PAGE_SIZE)) : 1;
+    const galleryEmpty = facets !== null && facets.total === 0;
 
     return (
         // h-screen + overflow-y-auto: index.html sets body{overflow:hidden}, so each page owns its scrolling
         <div className="h-screen overflow-y-auto bg-slate-50">
             <AppHeader />
-            <div className="bg-white border-b flex items-center px-6 py-3 gap-4 sticky top-14 z-10">
-                <div className="flex-1 max-w-md relative">
-                    <Search size={14} className="absolute left-2.5 top-2.5 text-slate-400" />
-                    <input value={qInput} onChange={e => setQInput(e.target.value)}
-                        placeholder="Search planners and notebooks…"
-                        className="w-full border rounded-lg pl-8 pr-3 py-1.5 text-sm" />
+            <div className="bg-white border-b px-4 sm:px-6 py-3 sticky top-14 z-10">
+                <div className="max-w-6xl mx-auto flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
+                    <div className="md:w-80 relative shrink-0">
+                        <Search size={14} className="absolute left-2.5 top-2.5 text-slate-400" />
+                        <input value={qInput} onChange={e => setQInput(e.target.value)}
+                            aria-label="Search the gallery"
+                            placeholder="Search planners and notebooks…"
+                            className="w-full border rounded-lg pl-8 pr-3 py-1.5 text-sm" />
+                    </div>
+                    <div className="flex-1">
+                        <GalleryFilters params={params} facets={facets} activeSort={activeSort} onChange={setParam} />
+                    </div>
                 </div>
-                {!isFiltered && !isDirectory && (
-                    <button onClick={() => setParam('view', 'all')}
-                        className="text-xs text-blue-600 hover:underline whitespace-nowrap">
-                        All projects
-                    </button>
-                )}
-                {isFiltered && (
-                    <select value={sortParam || 'recent'} onChange={e => setParam('sort', e.target.value)}
-                        className="border rounded-lg px-2 py-1.5 text-sm">
-                        <option value="recent">Newest</option>
-                        <option value="popular">Popular</option>
-                        <option value="rating">Top rated</option>
-                    </select>
-                )}
             </div>
 
-            <main className="max-w-6xl mx-auto p-6">
+            <main className="max-w-6xl mx-auto p-4 sm:p-6">
                 {error && <div className="text-sm text-red-600">{error}</div>}
 
-                {!isFiltered ? (
-                    catalog === null && !error ? <SkeletonGrid count={8} />
-                    : galleryEmpty
+                {!browsing ? (
+                    galleryEmpty
                         ? <div className="text-sm text-slate-400 text-center py-16">Nothing here yet. Publish the first project!</div>
-                        : isDirectory && catalog ? (
-                            <>
-                                <div className="flex items-center gap-3 mb-4">
-                                    <button onClick={() => setParam('view', null)}
-                                        className="flex items-center gap-1 text-xs text-slate-600 hover:text-blue-600">
-                                        <ArrowLeft size={12} /> Gallery
-                                    </button>
-                                    <h1 className="text-sm font-semibold text-slate-700">All projects ({catalog.length})</h1>
-                                </div>
-                                <GalleryDirectory items={catalog} />
-                            </>
-                        ) : <>
-                            <GalleryExplainer />
-                            {spotlight && <Spotlight item={spotlight} />}
-                            {grouped?.strips.map(({ def, items: stripItems }) => (
-                                <section key={def.key} className="mt-8 first:mt-2">
-                                    <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-3">
-                                        <span aria-hidden>{def.emoji}</span> {def.title}
-                                    </h2>
-                                    <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1">
-                                        {stripItems.map(i => <div key={i.id} className="w-44 shrink-0"><ProjectCard item={i} /></div>)}
-                                    </div>
-                                </section>
-                            ))}
-                            {grouped && grouped.leftover.length > 0 && (
-                                <section className="mt-8">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <h2 className="text-sm font-semibold text-slate-700">More to explore</h2>
-                                        <button onClick={() => setParam('view', 'all')}
-                                            className="text-xs text-blue-600 hover:underline">See all →</button>
-                                    </div>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                        {grouped.leftover.map(i => <ProjectCard key={i.id} item={i} />)}
-                                    </div>
-                                </section>
-                            )}
-                            {catalog && catalog.length > 0 && (
-                                <button onClick={() => setParam('view', 'all')}
-                                    className="block w-full mt-10 border rounded-xl bg-white hover:border-blue-300 hover:text-blue-700 text-sm text-slate-700 font-medium py-3 text-center transition-colors">
-                                    Browse all {catalog.length} projects →
-                                </button>
-                            )}
-                            {tags.length > 0 && (
-                                <div className="flex flex-wrap gap-2 mt-6 pt-6 border-t">
-                                    {tags.map(t => (
-                                        <button key={t.tag} onClick={() => setParam('tag', t.tag)}
-                                            className="text-xs bg-slate-100 text-slate-600 hover:bg-blue-100 hover:text-blue-700 rounded-full px-3 py-1 transition-colors">
-                                            {t.tag} <span className="text-slate-400">({t.count})</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </>
+                        : home === null ? (!error && <SkeletonGrid count={8} />)
+                        : <GalleryHome home={home} facets={facets} />
                 ) : (
                     <>
-                        <div className="flex items-center gap-3 mb-4">
-                            <button onClick={clearFilters} className="flex items-center gap-1 text-xs text-slate-600 hover:text-blue-600">
-                                <ArrowLeft size={12} /> Gallery
-                            </button>
-                            {tagParam && (
-                                <span className="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 rounded-full px-3 py-1">
-                                    {tagParam}
-                                    <button onClick={() => setParam('tag', null)} aria-label="Remove tag filter" className="hover:text-blue-900">
+                        <div className="flex flex-wrap items-center gap-2 mb-4 min-h-7">
+                            <span className="text-sm font-semibold text-slate-700" aria-live="polite">
+                                {results === null ? 'Loading…' : `${results.total} ${results.total === 1 ? 'project' : 'projects'}`}
+                            </span>
+                            {chips.map(c => (
+                                <span key={c.label} className="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 rounded-full px-3 py-1">
+                                    {c.label}
+                                    <button onClick={c.onRemove} aria-label={`Remove filter ${c.label}`} className="hover:text-blue-900">
                                         <X size={12} />
                                     </button>
                                 </span>
-                            )}
+                            ))}
+                            <button onClick={clearFilters} className="text-xs text-slate-500 hover:text-blue-600 ml-1">
+                                {chips.length ? 'Clear all' : 'Back to gallery'}
+                            </button>
                         </div>
-                        {items === null ? (
-                            <SkeletonGrid count={8} />
-                        ) : items.length === 0 ? (
+                        {results === null ? (
+                            !error && <SkeletonGrid count={8} />
+                        ) : results.items.length === 0 ? (
                             <div className="text-center py-16">
-                                <div className="text-sm text-slate-400">No projects match.</div>
-                                <button onClick={clearFilters} className="text-xs text-blue-600 hover:underline mt-2">Clear filters</button>
+                                <div className="text-sm text-slate-500">No projects match.</div>
+                                {chips.length > 0 && (
+                                    <div className="flex flex-wrap justify-center gap-2 mt-3">
+                                        {chips.map(c => (
+                                            <button key={c.label} onClick={c.onRemove} className="text-xs border rounded-full px-3 py-1 bg-white hover:border-blue-300 hover:text-blue-700">
+                                                Remove {c.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                                <button onClick={clearFilters} className="text-xs text-blue-600 hover:underline mt-3">Clear filters</button>
                             </div>
+                        ) : params.view === 'list' ? (
+                            <GalleryDirectory items={results.items} />
                         ) : (
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {items.map(item => <ProjectCard key={item.id} item={item} />)}
+                                {results.items.map(item => <ProjectCard key={item.id} item={item} />)}
                             </div>
                         )}
-                        <div className="flex justify-center gap-2 mt-6">
-                            {page > 0 && <button onClick={() => setParam('page', String(page - 1))} className="text-xs px-3 py-1.5 border rounded">Previous</button>}
-                            {hasMore && <button onClick={() => setParam('page', String(page + 1))} className="text-xs px-3 py-1.5 border rounded">Next</button>}
-                        </div>
+                        {results && (params.page > 0 || results.hasMore) && (
+                            <div className="flex justify-center items-center gap-3 mt-6 text-xs text-slate-500">
+                                {params.page > 0 && <button onClick={() => setParam('page', String(params.page - 1))} className="px-3 py-1.5 border rounded bg-white">Previous</button>}
+                                <span>Page {params.page + 1} of {pageCount}</span>
+                                {results.hasMore && <button onClick={() => setParam('page', String(params.page + 1))} className="px-3 py-1.5 border rounded bg-white">Next</button>}
+                            </div>
+                        )}
                     </>
                 )}
             </main>

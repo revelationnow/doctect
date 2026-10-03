@@ -148,6 +148,10 @@ export interface GalleryItem {
     forkCount: number; downloadCount: number; updatedAt: string; thumbnailId: string | null;
     thumbnailIds: string[];
     ratingAvg: number | null; ratingCount: number;
+    // Derived by the server from the published project (shared/galleryFacets.js). `category`
+    // and `pageCount` are null until a project published before the index existed is reached
+    // by the startup sweep; `formats` is then empty.
+    category: string | null; formats: string[]; pageCount: number | null;
 }
 // `nodeId` is null for every preview published before the source page was recorded,
 // so it cannot be relied on to identify the page an existing image came from.
@@ -159,7 +163,20 @@ export interface GalleryDetail extends Omit<GalleryItem, 'thumbnailId'> {
 }
 
 export interface ReviewDto { id: string; rating: number; body: string; author: string; createdAt: string; updatedAt: string; }
-export interface GalleryTag { tag: string; count: number; }
+export type GallerySort = 'relevance' | 'trending' | 'recent' | 'rating' | 'popular';
+export interface GalleryQuery {
+    q?: string; tags?: string[]; category?: string; format?: string; minRating?: number;
+    sort?: GallerySort; page?: number; limit?: number;
+}
+export interface GalleryFacet { key: string; label: string; count: number; }
+export interface GalleryTag { tag: string; label: string; count: number; }
+export interface GalleryFacets { total: number; categories: GalleryFacet[]; formats: GalleryFacet[]; tags: GalleryTag[]; }
+export interface GalleryHome {
+    spotlight: GalleryItem | null;
+    trending: GalleryItem[];
+    newest: GalleryItem[];
+    categories: { key: string; label: string; emoji: string; items: GalleryItem[] }[];
+}
 
 export interface MergeRequestDto {
     id: string; sourceProjectId: string; sourceProjectName: string; sourceCommitId: string;
@@ -252,27 +269,20 @@ export const cloudApi = {
     unpublish: (projectId: string) =>
         api<{ project: CloudProject }>(`/api/projects/${projectId}/unpublish`, { method: 'POST' }),
 
-    gallery: (params: { q?: string; sort?: 'recent' | 'popular' | 'rating'; page?: number; tag?: string; limit?: number } = {}) => {
+    gallery: (params: GalleryQuery = {}) => {
         const qs = new URLSearchParams();
         if (params.q) qs.set('q', params.q);
+        for (const t of params.tags ?? []) qs.append('tag', t);
+        if (params.category) qs.set('category', params.category);
+        if (params.format) qs.set('format', params.format);
+        if (params.minRating) qs.set('rating', String(params.minRating));
         if (params.sort) qs.set('sort', params.sort);
         if (params.page) qs.set('page', String(params.page));
-        if (params.tag) qs.set('tag', params.tag);
         if (params.limit) qs.set('limit', String(params.limit));
-        return api<{ items: GalleryItem[]; page: number; hasMore: boolean }>(`/api/gallery?${qs}`);
+        return api<{ items: GalleryItem[]; page: number; hasMore: boolean; total: number; sort: GallerySort }>(`/api/gallery?${qs}`);
     },
-    // Sections view fetches the whole (small) catalog in one sweep and groups it
-    // client-side. The cap is a guard for the small-catalog era, not a feature —
-    // see the discoverability spec.
-    galleryAll: async (maxPages = 5): Promise<GalleryItem[]> => {
-        const all: GalleryItem[] = [];
-        for (let page = 0; page < maxPages; page++) {
-            const res = await cloudApi.gallery({ sort: 'recent', page });
-            all.push(...res.items);
-            if (!res.hasMore) break;
-        }
-        return all;
-    },
+    galleryHome: () => api<GalleryHome>('/api/gallery/home'),
+    galleryFacets: () => api<GalleryFacets>('/api/gallery/facets'),
     galleryDetail: async (id: string) =>
         (await api<{ project: GalleryDetail }>(`/api/gallery/${id}`)).project,
     galleryState: (id: string) =>
@@ -280,8 +290,6 @@ export const cloudApi = {
     report: (id: string, reason: string) =>
         api<{ success: boolean }>(`/api/gallery/${id}/report`, { method: 'POST', body: JSON.stringify({ reason }) }),
 
-    galleryTags: async () =>
-        (await api<{ tags: GalleryTag[] }>('/api/gallery/tags')).tags,
     listReviews: (projectId: string) =>
         api<{ reviews: ReviewDto[]; myReview: ReviewDto | null }>(`/api/gallery/${projectId}/reviews`),
     putReview: (projectId: string, args: { rating: number; body?: string }) =>

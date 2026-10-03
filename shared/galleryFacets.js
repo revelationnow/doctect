@@ -54,18 +54,18 @@ export function categorize(tags, name) {
 // for "reMarkable 2" that hid an identical Boox file would be wrong. Every PAGE_PRESETS entry
 // in constants/editor.ts must land in a group here (tests/unit/galleryFacets.test.ts).
 export const PAGE_FORMATS = [
-    { key: 'a4', label: 'A4', sizes: [[595.28, 841.89]] },
-    { key: 'letter', label: 'US Letter', sizes: [[612, 792]] },
-    { key: 'legal', label: 'US Legal', sizes: [[612, 1008]] },
-    { key: 'a5', label: 'A5', sizes: [[419.53, 595.28]] },
-    { key: 'rm_pp', label: 'reMarkable Paper Pro', sizes: [[509, 679]] },
-    { key: 'eink_10_3', label: '10.3″ e-ink (reMarkable 2, Boox, Supernote)', sizes: [[445, 592]] },
-    { key: 'kindle_scribe', label: 'Kindle Scribe', sizes: [[432, 576]] },
-    { key: 'eink_13_3', label: '13.3″ e-ink (Boox Tab X / Note Max)', sizes: [[574, 765]] },
-    { key: 'eink_7_8', label: '7.8″ e-ink (Supernote Nomad, Boox Nova)', sizes: [[336, 448]] },
-    { key: 'rm_pp_move', label: 'reMarkable Paper Pro Move', sizes: [[462.55, 260.18]] },
+    { key: 'a4', label: 'A4', short: 'A4', sizes: [[595.28, 841.89]] },
+    { key: 'letter', label: 'US Letter', short: 'Letter', sizes: [[612, 792]] },
+    { key: 'legal', label: 'US Legal', short: 'Legal', sizes: [[612, 1008]] },
+    { key: 'a5', label: 'A5', short: 'A5', sizes: [[419.53, 595.28]] },
+    { key: 'rm_pp', label: 'reMarkable Paper Pro', short: 'rM Paper Pro', sizes: [[509, 679]] },
+    { key: 'eink_10_3', label: '10.3″ e-ink (reMarkable 2, Boox, Supernote)', short: '10.3″ e-ink', sizes: [[445, 592]] },
+    { key: 'kindle_scribe', label: 'Kindle Scribe', short: 'Kindle Scribe', sizes: [[432, 576]] },
+    { key: 'eink_13_3', label: '13.3″ e-ink (Boox Tab X / Note Max)', short: '13.3″ e-ink', sizes: [[574, 765]] },
+    { key: 'eink_7_8', label: '7.8″ e-ink (Supernote Nomad, Boox Nova)', short: '7.8″ e-ink', sizes: [[336, 448]] },
+    { key: 'rm_pp_move', label: 'reMarkable Paper Pro Move', short: 'rM Move', sizes: [[462.55, 260.18]] },
 ];
-export const CUSTOM_FORMAT = { key: 'custom', label: 'Custom size' };
+export const CUSTOM_FORMAT = { key: 'custom', label: 'Custom size', short: 'Custom size' };
 export const ALL_FORMATS = [...PAGE_FORMATS, CUSTOM_FORMAT];
 
 const SIZE_TOLERANCE = 1.5;
@@ -84,6 +84,7 @@ export function formatForSize(width, height) {
 
 export const categoryLabel = key => ALL_CATEGORIES.find(c => c.key === key)?.label ?? key;
 export const formatLabel = key => ALL_FORMATS.find(f => f.key === key)?.label ?? key;
+export const formatShortLabel = key => ALL_FORMATS.find(f => f.key === key)?.short ?? key;
 
 const MAX_WALK = 100000;
 

@@ -9,6 +9,8 @@ import { GalleryLink } from './GalleryLink';
 import { ProjectDescription } from './ProjectDescription';
 import { StarRating } from './StarRating';
 import { ReviewsSection } from './ReviewsSection';
+import { galleryHref } from './galleryParams';
+import { categoryLabel, formatLabel } from '../../shared/galleryFacets.js';
 
 export function GalleryDetailBody({ detail }: { detail: UseGalleryDetailResult }) {
     const navigate = useNavigate();
@@ -43,12 +45,25 @@ export function GalleryDetailBody({ detail }: { detail: UseGalleryDetailResult }
                 <ProjectDescription text={project.description} />
                 <div className="flex flex-wrap gap-1 mt-3">
                     {project.tags.map(t => (
-                        <button key={t} type="button" onClick={() => navigate(`/gallery?tag=${encodeURIComponent(t)}`)}
+                        <button key={t} type="button" onClick={() => navigate(galleryHref({ tag: t }))}
                             className="text-[10px] bg-slate-200 text-slate-600 rounded-full px-2 py-0.5 hover:bg-blue-100 hover:text-blue-700 transition-colors">
                             {t}
                         </button>
                     ))}
                 </div>
+                {(project.category || project.formats.length > 0 || project.pageCount) && (
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-3 text-xs text-slate-500">
+                        {project.category && (
+                            <Link to={galleryHref({ category: project.category })} className="text-blue-600 hover:underline">
+                                {categoryLabel(project.category)}
+                            </Link>
+                        )}
+                        {project.formats.filter(f => f !== 'custom').map(f => (
+                            <Link key={f} to={galleryHref({ format: f })} className="text-blue-600 hover:underline">{formatLabel(f)}</Link>
+                        ))}
+                        {project.pageCount && <span>{project.pageCount} {project.pageCount === 1 ? 'page' : 'pages'}</span>}
+                    </div>
+                )}
                 <div className="flex gap-4 mt-4 text-xs text-slate-500">
                     <span className="flex items-center gap-1"><GitFork size={12} /> {project.forkCount} forks</span>
                     <span className="flex items-center gap-1"><Download size={12} /> {project.downloadCount} downloads</span>

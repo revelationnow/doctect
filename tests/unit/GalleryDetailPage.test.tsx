@@ -26,6 +26,7 @@ const detail: GalleryDetail = {
     forkCount: 0, downloadCount: 0, updatedAt: '2026-01-01', ownerId: 'owner-1',
     headCommitId: 'commit-1', thumbnailIds: [], previews: [], forkedFrom: null,
     ratingAvg: null, ratingCount: 0,
+    category: null, formats: [], pageCount: null,
 };
 
 const generator = {
