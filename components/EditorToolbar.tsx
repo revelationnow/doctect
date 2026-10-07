@@ -2,10 +2,18 @@ import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { MousePointer2, Hand, Type, Square, Circle, Triangle, Minus, Grid3X3, Magnet, GripVertical, ZoomOut, ZoomIn, Wand2, Save, Eye, AlignLeft, AlignCenter, AlignRight, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, AlignHorizontalSpaceAround, AlignVerticalSpaceAround, FileImage, ChevronDown } from 'lucide-react';
 import clsx from 'clsx';
 import { AppState, AppNode } from '../types';
+import type { EditorScalarPreferencePatch } from '../services/document/contracts';
 
-interface EditorToolbarProps {
+export interface ToolbarActions {
+    onToolChange(tool: AppState['tool']): void;
+    onPreferencesChange(patch: EditorScalarPreferencePatch): void;
+    onPreviewNodeChange(nodeId: string): void;
+    onAlign(type: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom' | 'dist-h' | 'dist-v'): void;
+}
+
+type EditorToolbarProps = ({ setState: React.Dispatch<React.SetStateAction<AppState>>; actions?: never }
+    | { actions: ToolbarActions; setState?: never }) & {
     state: AppState;
-    setState: React.Dispatch<React.SetStateAction<AppState>>;
     onOpenScriptGen?: () => void;
     onSavePreset?: () => void;
     onImportSvg?: (file: File) => void;
@@ -18,7 +26,9 @@ const ToolButton: React.FC<{ active?: boolean, icon: any, onClick: () => void, t
     </button>
 );
 
-export const EditorToolbar: React.FC<EditorToolbarProps> = ({ state, setState, onOpenScriptGen, onSavePreset, onImportSvg, onInsertSvgPlaceholder }) => {
+export const EditorToolbar: React.FC<EditorToolbarProps> = ({ state, setState, actions, onOpenScriptGen, onSavePreset, onImportSvg, onInsertSvgPlaceholder }) => {
+    const setTool = (tool: AppState['tool']) => actions ? actions.onToolChange(tool) : setState(s => ({ ...s, tool }));
+    const preferences = (patch: EditorScalarPreferencePatch) => actions ? actions.onPreferencesChange(patch) : setState(s => ({ ...s, ...patch }));
     const svgInputRef = useRef<HTMLInputElement>(null);
     const [svgMenuOpen, setSvgMenuOpen] = useState(false);
     const svgMenuRef = useRef<HTMLDivElement>(null);
@@ -53,6 +63,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({ state, setState, o
     }, [state.viewMode, state.templatePreviewNodeId, state.selectedTemplateId, state.nodes, state.rootId, nodesForCurrentTemplate]);
 
     const handleAlign = (type: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom' | 'dist-h' | 'dist-v') => {
+        if (actions) { actions.onAlign(type); return; }
         const { selectedElementIds, selectedTemplateId, activeVariantId, variants } = state;
         if (selectedElementIds.length < 2) return;
 
@@ -174,15 +185,15 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({ state, setState, o
     return (
         <div className="min-h-[40px] py-1 bg-slate-50 border-b flex flex-wrap items-center justify-center gap-4 shadow-sm z-10 flex-shrink-0 px-4">
             <div className="flex bg-white border border-slate-200 p-0.5 rounded gap-0.5 shadow-sm">
-                <ToolButton active={state.tool === 'select'} icon={MousePointer2} onClick={() => setState(s => ({ ...s, tool: 'select' }))} title="Select Tool (V)" />
-                <ToolButton active={state.tool === 'hand'} icon={Hand} onClick={() => setState(s => ({ ...s, tool: 'hand' }))} title="Pan Tool (H)" />
+                <ToolButton active={state.tool === 'select'} icon={MousePointer2} onClick={() => setTool('select')} title="Select Tool (V)" />
+                <ToolButton active={state.tool === 'hand'} icon={Hand} onClick={() => setTool('hand')} title="Pan Tool (H)" />
                 <div className="w-px bg-slate-200 mx-1"></div>
-                <ToolButton active={state.tool === 'text'} icon={Type} onClick={() => setState(s => ({ ...s, tool: 'text' }))} title="Text Box (T)" />
-                <ToolButton active={state.tool === 'rect'} icon={Square} onClick={() => setState(s => ({ ...s, tool: 'rect' }))} title="Rectangle (R)" />
-                <ToolButton active={state.tool === 'ellipse'} icon={Circle} onClick={() => setState(s => ({ ...s, tool: 'ellipse' }))} title="Circle/Ellipse (E)" />
-                <ToolButton active={state.tool === 'triangle'} icon={Triangle} onClick={() => setState(s => ({ ...s, tool: 'triangle' }))} title="Triangle (Y)" />
-                <ToolButton active={state.tool === 'line'} icon={Minus} onClick={() => setState(s => ({ ...s, tool: 'line' }))} title="Line (L)" />
-                <ToolButton active={state.tool === 'grid'} icon={Grid3X3} onClick={() => setState(s => ({ ...s, tool: 'grid' }))} title="Data Grid (G)" />
+                <ToolButton active={state.tool === 'text'} icon={Type} onClick={() => setTool('text')} title="Text Box (T)" />
+                <ToolButton active={state.tool === 'rect'} icon={Square} onClick={() => setTool('rect')} title="Rectangle (R)" />
+                <ToolButton active={state.tool === 'ellipse'} icon={Circle} onClick={() => setTool('ellipse')} title="Circle/Ellipse (E)" />
+                <ToolButton active={state.tool === 'triangle'} icon={Triangle} onClick={() => setTool('triangle')} title="Triangle (Y)" />
+                <ToolButton active={state.tool === 'line'} icon={Minus} onClick={() => setTool('line')} title="Line (L)" />
+                <ToolButton active={state.tool === 'grid'} icon={Grid3X3} onClick={() => setTool('grid')} title="Data Grid (G)" />
                 {onImportSvg && (
                     <>
                         <div className="w-px bg-slate-200 mx-1"></div>
@@ -252,14 +263,14 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({ state, setState, o
 
             <div className="h-6 w-px bg-slate-300 mx-1"></div>
             <div className="flex bg-white border border-slate-200 p-0.5 rounded gap-0.5 shadow-sm">
-                <ToolButton active={state.snapToGrid} icon={Magnet} onClick={() => setState(s => ({ ...s, snapToGrid: !s.snapToGrid, showGrid: !s.snapToGrid ? true : s.showGrid }))} title="Snap to Grid" />
-                <ToolButton active={state.showGrid} icon={GripVertical} onClick={() => setState(s => ({ ...s, showGrid: !s.showGrid }))} title="Show Grid" />
+                <ToolButton active={state.snapToGrid} icon={Magnet} onClick={() => actions ? preferences({ snapToGrid: !state.snapToGrid, showGrid: !state.snapToGrid ? true : state.showGrid }) : setState(s => ({ ...s, snapToGrid: !s.snapToGrid, showGrid: !s.snapToGrid ? true : s.showGrid }))} title="Snap to Grid" />
+                <ToolButton active={state.showGrid} icon={GripVertical} onClick={() => actions ? preferences({ showGrid: !state.showGrid }) : setState(s => ({ ...s, showGrid: !s.showGrid }))} title="Show Grid" />
             </div>
             <div className="h-6 w-px bg-slate-300 mx-1"></div>
             <div className="flex items-center gap-1">
-                <button className="p-1 hover:bg-white rounded text-slate-600" onClick={() => setState(s => ({ ...s, scale: Math.max(0.2, s.scale - 0.1) }))}><ZoomOut size={16} /></button>
+                <button className="p-1 hover:bg-white rounded text-slate-600" onClick={() => actions ? preferences({ scale: Math.max(0.2, state.scale - 0.1) }) : setState(s => ({ ...s, scale: Math.max(0.2, s.scale - 0.1) }))}><ZoomOut size={16} /></button>
                 <span className="text-xs font-mono text-slate-500 w-10 text-center">{Math.round(state.scale * 100)}%</span>
-                <button className="p-1 hover:bg-white rounded text-slate-600" onClick={() => setState(s => ({ ...s, scale: Math.min(10, s.scale + 0.1) }))}><ZoomIn size={16} /></button>
+                <button className="p-1 hover:bg-white rounded text-slate-600" onClick={() => actions ? preferences({ scale: Math.min(10, state.scale + 0.1) }) : setState(s => ({ ...s, scale: Math.min(10, s.scale + 0.1) }))}><ZoomIn size={16} /></button>
             </div>
 
             {/* Template Preview Node Selector - only visible in template mode */}
@@ -272,7 +283,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({ state, setState, o
                         <select
                             className="text-xs border-0 bg-transparent text-slate-700 font-medium focus:outline-none max-w-[150px] truncate"
                             value={effectivePreviewNodeId}
-                            onChange={(e) => setState(s => ({ ...s, templatePreviewNodeId: e.target.value }))}
+                            onChange={(e) => actions ? actions.onPreviewNodeChange(e.target.value) : setState(s => ({ ...s, templatePreviewNodeId: e.target.value }))}
                         >
                             {nodesForCurrentTemplate.length > 0 ? (
                                 nodesForCurrentTemplate.map(node => (

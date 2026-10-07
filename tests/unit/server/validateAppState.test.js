@@ -4,8 +4,12 @@ import {
     MAX_STATE_BYTES,
     validateAppState,
 } from '../../../server/validateAppState.js';
-import { validateAppState as validateSharedAppState } from '../../../shared/validateAppState.js';
+import { validateAppState as validateSharedAppState, validateAppStateWork,
+    validateAppNode, validateAppNodeWork, validatePageTemplate, validatePageTemplateWork } from '../../../shared/validateAppState.js';
 import { MAX_STATE_BYTES as SHARED_MAX_STATE_BYTES } from '../../../shared/projectLimits.js';
+import { runSync } from '../../../shared/cooperativeWork.js';
+import { makeWorkHarness } from '../../helpers/normalizationWorkHarness';
+import { plainJsonBytesWork } from '../../../shared/jsonWork.js';
 
 const goodState = () => ({
     nodes: { root: { id: 'root', parentId: null, type: 'page', title: 'Root', data: {}, children: [] } },
@@ -23,6 +27,90 @@ const validGenerator = () => ({
 });
 
 describe('validateAppState', () => {
+    it('steps through template elements under the shared validator', async () => {
+        const state = goodState(); state.schemaVersion = 11;
+        state.variants.default.templates.page.elements = Array.from({ length: 5000 }, () => ({ type: 'text' }));
+        const before = structuredClone(state), h = makeWorkHarness();
+        expect(await h.runtime.run(validateAppStateWork(state, 'plain'))).toEqual({ ok: true });
+        expect(h.runtime.snapshot().yields).toBeGreaterThan(0); expect(state).toEqual(before);
+        state.variants.default.templates.page.elements[4999].textWrap = 'invalid';
+        expect(await h.runtime.run(validateAppStateWork(state, 'plain'))).toEqual(validateSharedAppState(state));
+    });
+
+    it('steps through standalone node children without adding membership or sparse-array rules', async () => {
+        const node = goodState().nodes.root;
+        node.children = Array(5000).fill('missing-node'); delete node.children[5];
+        const h = makeWorkHarness();
+        expect(await h.runtime.run(validateAppNodeWork('root', node))).toEqual({ ok: true });
+        expect(h.runtime.snapshot().yields).toBeGreaterThan(0);
+        node.children[4999] = 3;
+        expect(await h.runtime.run(validateAppNodeWork('root', node))).toEqual(validateAppNode('root', node));
+    });
+
+    it('steps through long node-id comparisons', async () => {
+        const id = 'x'.repeat(4096), node = { ...goodState().nodes.root, id };
+        const h = makeWorkHarness();
+        expect(await h.runtime.run(validateAppNodeWork(id, node))).toEqual({ ok: true });
+        expect(h.runtime.snapshot().comparedCodeUnits).toBe(8192);
+        expect(h.runtime.snapshot().yields).toBeGreaterThan(0);
+    });
+
+    it('yields inside standalone template validation, without canonicalizing legacy elements', async () => {
+        const template = goodState().variants.default.templates.page;
+        template.elements = Array.from({ length: 5000 }, () => null);
+        const h = makeWorkHarness();
+        expect(await h.runtime.run(validatePageTemplateWork('v', 'p', template, 11))).toEqual({ ok: true });
+        expect(h.runtime.snapshot().yields).toBeGreaterThan(0);
+        template.elements[4999] = { layerId: 4 };
+        expect(await h.runtime.run(validatePageTemplateWork('v', 'p', template, 11)))
+            .toEqual(validatePageTemplate('v', 'p', template, 11));
+    });
+
+    it.each([
+        state => { state.nodes.root.children = [3]; state.variants = {}; },
+        state => { state.generator = { formatVersion: 2 }; state.nodes.root.children = [3]; },
+        state => { state.rootId = 'missing'; state.generator = {}; },
+        state => { state.variants.default.name = 3; },
+        state => { state.variants.default.templates.page.width = -1; },
+        state => { state.schemaVersion = 11; state.variants.default.templates.page.elements = [{ type: 'text', textPadding: { top: -1 } }]; },
+    ])('preserves validation error order %#', async change => {
+        const state = goodState(); change(state);
+        expect(await makeWorkHarness().runtime.run(validateAppStateWork(state, 'plain'))).toEqual(validateSharedAppState(state));
+    });
+
+    it('does not invoke accessor roots even through the Work entrypoint', () => {
+        const get = vi.fn(() => goodState().nodes);
+        const state = Object.defineProperty(goodState(), 'nodes', { get, enumerable: true });
+        expect(runSync(validateAppStateWork(state, 'plain'))).toEqual({ ok: false, error: 'nodes must be an object' });
+        expect(get).not.toHaveBeenCalled();
+    });
+
+    it.each(['undefined', 'nonfinite', 'getter', 'toJSON'])('retains native compatibility serialization for %s', kind => {
+        const state = goodState();
+        if (kind === 'undefined') state.extension = undefined;
+        if (kind === 'nonfinite') state.extension = Infinity;
+        if (kind === 'getter') Object.defineProperty(state, 'extension', { enumerable: true, get: () => 1 });
+        if (kind === 'toJSON') state.toJSON = () => ({ serialized: 'custom' });
+        expect(validateSharedAppState(state)).toEqual({ ok: true });
+        expect(runSync(validateAppStateWork(state))).toEqual({ ok: true });
+    });
+
+    it('counts plain JSON bytes without assembling a full string', async () => {
+        const value = { z: '😀\ud800', rows: [undefined, , -0, NaN], omitted: undefined };
+        const expected = new TextEncoder().encode(JSON.stringify(value)).length;
+        expect(await makeWorkHarness().runtime.run(plainJsonBytesWork(value))).toBe(expected);
+    });
+
+    it.each(['state', 'node', 'template'])('propagates cancellation through %s validation', async kind => {
+        const state = goodState(); state.nodes.root.children = Array(5000).fill('root');
+        state.variants.default.templates.page.elements = Array(5000).fill(null);
+        const h = makeWorkHarness(); h.observe(() => h.cancel());
+        const program = kind === 'state' ? validateAppStateWork(state, 'plain')
+            : kind === 'node' ? validateAppNodeWork('root', state.nodes.root)
+            : validatePageTemplateWork('default', 'page', state.variants.default.templates.page, 11);
+        await expect(h.runtime.run(program)).rejects.toMatchObject({ name: 'AbortError' });
+    });
+
     it('keeps the server path as a compatibility re-export of the shared implementation', () => {
         expect(validateAppState).toBe(validateSharedAppState);
         expect(MAX_STATE_BYTES).toBe(SHARED_MAX_STATE_BYTES);

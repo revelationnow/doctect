@@ -10,6 +10,18 @@ export interface RecoverySourcePresentation {
 export const RECOVERY_SOURCE_PRESENTATION: Readonly<
   Record<RecoverySource, RecoverySourcePresentation>
 > = {
+  'normalized-active': {
+    title: 'Current saved projects',
+    explanation: 'Independently verified projects in the incremental local workspace.',
+    actionLabel: 'Download current saved projects',
+    filename: 'doctect-normalized-projects.json',
+  },
+  'normalization-source': {
+    title: 'Projects retained during the local update',
+    explanation: 'Unchanged source retained before the incremental workspace was created. It is not a current saved version.',
+    actionLabel: 'Download retained update source',
+    filename: 'doctect-normalization-source.json',
+  },
   'indexeddb-workspace': {
     title: 'Projects saved by this editor',
     explanation: 'Project set stored by the current Doctect editor.',

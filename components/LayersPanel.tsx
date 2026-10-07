@@ -6,6 +6,14 @@ import {
 } from 'lucide-react';
 import { Layer, PageTemplate, TemplateElement } from '../types';
 import { addLayer, getElementLabel, moveElementsToLayer, moveLayerToIndex, removeLayerFromTemplate } from '../services/layers';
+import type { LayerEditAction } from '../services/document/editOperations';
+
+export interface LayerPanelActions {
+    readonly sequence?: readonly Layer[];
+    moveElements(ids: readonly string[], position: number): void;
+    setCollapsed(position: number, value: boolean): void;
+    edit(action: LayerEditAction): void;
+}
 
 const LAYER_COLORS = ['#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#a855f7', ''];
 
@@ -21,13 +29,17 @@ interface LayersPanelProps {
     onUpdateElements: (elements: TemplateElement[], saveHistory?: boolean) => void;
     onSelectElements: (ids: string[]) => void;
     onSetActiveLayer: (layerId: string) => void;
+    layerActions?: LayerPanelActions;
 }
 
 export const LayersPanel: React.FC<LayersPanelProps> = ({
     template, selectedElementIds, activeLayerId,
-    onUpdateTemplate, onUpdateElements, onSelectElements, onSetActiveLayer,
+    onUpdateTemplate, onUpdateElements, onSelectElements, onSetActiveLayer, layerActions,
 }) => {
-    const layers = [...(template.layers ?? [])].sort((a, b) => b.order - a.order); // frontmost first
+    const layers = (template.layers ?? []).flatMap((layer, position) =>
+        layerActions && (!layer || typeof layer !== 'object' || Array.isArray(layer)) ? [] : [{ ...layer, position }])
+        .sort((a, b) => b.order - a.order); // frontmost first; retain original occurrence positions
+    const rowKey = (layer: Layer & { position: number }) => layerActions ? String(layer.position) : layer.id;
     const [renamingId, setRenamingId] = useState<string | null>(null);
     const [renameValue, setRenameValue] = useState('');
     const [colorPickerId, setColorPickerId] = useState<string | null>(null);
@@ -46,8 +58,19 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
     }, [colorPickerId]);
 
     const rowAnchorRef = React.useRef<string | null>(null);
+    React.useLayoutEffect(() => {
+        if (!layerActions) return;
+        setRenamingId(null); setRenameValue(''); setColorPickerId(null);
+        setDragLayerId(null); setDragElementId(null); rowAnchorRef.current = null;
+    }, [layerActions?.sequence]);
 
     const updateLayer = (id: string, updates: Partial<Layer>) => {
+        if (layerActions) {
+            const position = Number(id);
+            if (Object.hasOwn(updates, 'collapsed')) layerActions.setCollapsed(position, updates.collapsed!);
+            else layerActions.edit({ type: 'update', position, patch: updates });
+            return;
+        }
         onUpdateTemplate({ layers: (template.layers ?? []).map(l => (l.id === id ? { ...l, ...updates } : l)) });
     };
 
@@ -90,12 +113,14 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
     };
 
     const handleAdd = () => {
+        if (layerActions) { layerActions.edit({ type: 'add' }); return; }
         const { layers: next, newLayer } = addLayer(template.layers ?? []);
         onUpdateTemplate({ layers: next });
         onSetActiveLayer(newLayer.id);
     };
 
     const handleDelete = (id: string) => {
+        if (layerActions) { layerActions.edit({ type: 'delete', position: Number(id) }); return; }
         const next = removeLayerFromTemplate(template, id);
         if (next === template) return;
         onUpdateTemplate({ layers: next.layers });
@@ -104,6 +129,10 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
 
     const handleDropOnLayer = (targetId: string) => {
         if (!dragLayerId || dragLayerId === targetId) { setDragLayerId(null); return; }
+        if (layerActions) {
+            layerActions.edit({ type: 'move', position: Number(dragLayerId), targetPosition: Number(targetId) });
+            setDragLayerId(null); return;
+        }
         const asc = [...(template.layers ?? [])].sort((a, b) => a.order - b.order);
         const targetIndex = asc.findIndex(l => l.id === targetId);
         onUpdateTemplate({ layers: moveLayerToIndex(template.layers ?? [], dragLayerId, targetIndex) });
@@ -134,29 +163,33 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
                         className="text-xs border border-slate-200 rounded py-1 max-w-[110px]"
                         onChange={e => {
                             if (!e.target.value) return;
-                            onUpdateElements(moveElementsToLayer(template.elements, selectedElementIds, e.target.value), true);
+                            if (layerActions) {
+                                const target = layers.find(layer => layer.id === e.target.value);
+                                if (target) layerActions.moveElements(selectedElementIds, target.position);
+                            } else onUpdateElements(moveElementsToLayer(template.elements, selectedElementIds, e.target.value), true);
                         }}>
                         <option value="">Move to…</option>
-                        {layers.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                        {layers.filter(l => !layerActions || typeof l.id === 'string').map(l => <option key={rowKey(l)} value={l.id}>{l.name}</option>)}
                     </select>
                 )}
             </div>
             <div className="overflow-y-auto">
                 {layers.map(layer => (
-                    <React.Fragment key={layer.id}>
-                    <div data-testid={`layer-row-${layer.id}`}
+                    <React.Fragment key={rowKey(layer)}>
+                    <div data-testid={`layer-row-${layer.id}`} data-layer-position={layer.position}
                         draggable
-                        onDragStart={() => setDragLayerId(layer.id)}
+                        onDragStart={() => setDragLayerId(rowKey(layer))}
                         onDragEnd={() => { setDragElementId(null); setDragLayerId(null); }}
                         onDragOver={e => e.preventDefault()}
                         onDrop={() => {
                             // Only retag when an element drag was actually in progress (no layer
                             // reorder underway) — an aborted element drag must not hijack a reorder.
                             if (dragElementId && !dragLayerId) {
-                                onUpdateElements(moveElementsToLayer(template.elements, [dragElementId], layer.id), true);
+                                if (layerActions) layerActions.moveElements([dragElementId], layer.position);
+                                else onUpdateElements(moveElementsToLayer(template.elements, [dragElementId], layer.id), true);
                                 setDragElementId(null);
                             } else {
-                                handleDropOnLayer(layer.id);
+                                handleDropOnLayer(rowKey(layer));
                             }
                         }}
                         className={clsx('group flex items-center gap-1 px-2 py-1.5 border-b border-slate-50 text-sm',
@@ -165,34 +198,34 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
                             <GripVertical size={12} />
                         </span>
                         <button title="Collapse layer" className="text-slate-400"
-                            onClick={() => updateLayer(layer.id, { collapsed: !layer.collapsed })}>
+                            onClick={() => updateLayer(rowKey(layer), { collapsed: !layer.collapsed })}>
                             {layer.collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
                         </button>
                         <button title="Toggle visibility" className="text-slate-500"
-                            onClick={() => updateLayer(layer.id, { visible: !layer.visible })}>
+                            onClick={() => updateLayer(rowKey(layer), { visible: !layer.visible })}>
                             {layer.visible ? <Eye size={13} /> : <EyeOff size={13} className="text-slate-300" />}
                         </button>
                         <button title="Toggle lock" className="text-slate-500"
-                            onClick={() => updateLayer(layer.id, { locked: !layer.locked })}>
+                            onClick={() => updateLayer(rowKey(layer), { locked: !layer.locked })}>
                             {layer.locked ? <Lock size={13} /> : <Unlock size={13} className="text-slate-300" />}
                         </button>
                         <span className="relative" data-color-popover>
                             <button title="Layer color"
                                 className="w-3 h-3 rounded-full border border-slate-300"
                                 style={{ backgroundColor: layer.color || 'transparent' }}
-                                onClick={() => setColorPickerId(colorPickerId === layer.id ? null : layer.id)} />
-                            {colorPickerId === layer.id && (
+                                onClick={() => setColorPickerId(colorPickerId === rowKey(layer) ? null : rowKey(layer))} />
+                            {colorPickerId === rowKey(layer) && (
                                 <span className="absolute left-0 top-4 z-40 flex gap-1 bg-white border border-slate-200 rounded p-1 shadow">
                                     {LAYER_COLORS.map(c => (
                                         <button key={c || 'none'} data-testid={`layer-color-swatch-${c || 'none'}`}
                                             className="w-3.5 h-3.5 rounded-full border border-slate-300"
                                             style={{ backgroundColor: c || 'transparent' }}
-                                            onClick={() => { updateLayer(layer.id, { color: c || undefined }); setColorPickerId(null); }} />
+                                            onClick={() => { updateLayer(rowKey(layer), { color: c || undefined }); setColorPickerId(null); }} />
                                     ))}
                                 </span>
                             )}
                         </span>
-                        {renamingId === layer.id ? (
+                        {renamingId === rowKey(layer) ? (
                             <input autoFocus value={renameValue}
                                 className="flex-1 min-w-0 px-1 py-0.5 text-sm border border-blue-300 rounded"
                                 onChange={e => setRenameValue(e.target.value)}
@@ -201,14 +234,14 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
                         ) : (
                             <span data-testid="layer-name"
                                 className={clsx('flex-1 min-w-0 truncate cursor-default', !layer.visible && 'text-slate-400')}
-                                onClick={() => onSetActiveLayer(layer.id)}
-                                onDoubleClick={() => { setRenamingId(layer.id); setRenameValue(layer.name); }}>
+                                onClick={() => { if (!layerActions || typeof layer.id === 'string') onSetActiveLayer(layer.id); }}
+                                onDoubleClick={() => { setRenamingId(rowKey(layer)); setRenameValue(layer.name); }}>
                                 {layer.name}
                             </span>
                         )}
                         <button title="Delete layer" disabled={(template.layers ?? []).length <= 1}
                             className="p-0.5 text-slate-300 hover:text-red-500 disabled:opacity-30 disabled:hover:text-slate-300"
-                            onClick={() => handleDelete(layer.id)}>
+                            onClick={() => handleDelete(rowKey(layer))}>
                             <Trash2 size={12} />
                         </button>
                     </div>

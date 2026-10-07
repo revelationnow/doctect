@@ -1,4 +1,6 @@
 import type { PageTemplate, TemplateElement, TextPadding } from '../types';
+import { effect, primitive, runSync, type Work } from '../shared/cooperativeWork.js';
+import { copyEnumerableWork, enumerableEntriesWork } from '../shared/jsonWork.js';
 
 export const TEXT_PADDING_SIDES = ['top', 'right', 'bottom', 'left'] as const;
 export type TextPaddingSide = typeof TEXT_PADDING_SIDES[number];
@@ -54,34 +56,67 @@ export function resolveTextContentBox(
 }
 
 export function normalizeTextPaddingElement<T extends Record<string, any>>(element: T): T {
-  if (element.type !== 'text') return element;
-  return { ...element, textPadding: normalizeTextPaddingValue(element.textPadding) };
+  return runSync(normalizeTextPaddingElementWork(element));
+}
+
+export function* normalizeTextPaddingElementWork<T extends Record<string, any>>(element: T): Work<T> {
+  if (!(yield* effect(1, () => element.type === 'text'))) return element;
+  const result = yield* copyEnumerableWork(element);
+  return yield* effect(1, () => Object.assign(result, { textPadding: normalizeTextPaddingValue(element.textPadding) }));
 }
 
 export function normalizeTextPaddingTemplate<T extends PageTemplate>(template: T): T {
-  return {
-    ...template,
-    elements: template.elements.map(element => normalizeTextPaddingElement(element)),
-  };
+  return runSync(normalizeTextPaddingTemplateWork(template));
+}
+
+export function* normalizeTextPaddingTemplateWork<T extends PageTemplate>(template: T): Work<T> {
+  const result = yield* copyEnumerableWork(template);
+  const source = template.elements;
+  if (!Array.isArray(source)) throw new TypeError('Expected template elements array');
+  const length = source.length;
+  const elements: TemplateElement[] = new Array(length);
+  for (let index = 0; index < length; index++) {
+    const present = yield* effect(1, () => index in source);
+    if (present) elements[index] = yield* normalizeTextPaddingElementWork(source[index]);
+  }
+  return yield* effect(1, () => { result.elements = elements; return result; });
 }
 
 export function normalizeTextPaddingTemplates<T extends Record<string, PageTemplate>>(templates: T): T {
-  return Object.fromEntries(
-    Object.entries(templates).map(([id, template]) => [id, normalizeTextPaddingTemplate(template)]),
-  ) as T;
+  return runSync(normalizeTextPaddingTemplatesWork(templates));
+}
+
+export function* normalizeTextPaddingTemplatesWork<T extends Record<string, PageTemplate>>(templates: T): Work<T> {
+  const result = {} as T;
+  const entries = yield* enumerableEntriesWork(templates);
+  for (const [id, template] of entries) {
+    const value = yield* normalizeTextPaddingTemplateWork(template);
+    yield* effect(1, () => Object.defineProperty(result, id, { value, enumerable: true, writable: true, configurable: true }));
+  }
+  return result;
 }
 
 export function normalizeProjectTextPadding<T extends Record<string, any>>(state: T): T {
-  const normalized: Record<string, any> = structuredClone(state);
+  return runSync(normalizeProjectTextPaddingWork(state));
+}
+
+export function* normalizeProjectTextPaddingWork<T extends Record<string, any>>(state: T): Work<T> {
+  return yield* normalizeOwnedProjectTextPaddingWork(yield* primitive('clone', () => structuredClone(state)));
+}
+
+export function* normalizeOwnedProjectTextPaddingWork<T extends Record<string, any>>(state: T): Work<T> {
+  const normalized: Record<string, any> = state;
   if (normalized.variants && typeof normalized.variants === 'object') {
-    Object.values(normalized.variants).forEach((variant: any) => {
+    const entries = yield* enumerableEntriesWork<any>(normalized.variants);
+    for (const [, variant] of entries) {
+      yield* effect(1, () => {});
       if (variant?.templates && typeof variant.templates === 'object') {
-        variant.templates = normalizeTextPaddingTemplates(variant.templates);
+        variant.templates = yield* normalizeTextPaddingTemplatesWork(variant.templates);
       }
-    });
+    }
   }
   if (normalized.templates && typeof normalized.templates === 'object') {
-    normalized.templates = normalizeTextPaddingTemplates(normalized.templates);
+    normalized.templates = yield* normalizeTextPaddingTemplatesWork(normalized.templates);
   }
   return normalized as T;
 }

@@ -36,7 +36,7 @@ const workspaceStore = vi.hoisted(() => {
       bootstrap: vi.fn((...args: Parameters<LocalWorkspaceStore['bootstrap']>) =>
         requireStore().bootstrap(...args)),
       commit: vi.fn((...args: Parameters<LocalWorkspaceStore['commit']>) =>
-        requireStore().commit(...args)),
+        requireStore().commit(...args)) as LocalWorkspaceStore['commit'] & ReturnType<typeof vi.fn<LocalWorkspaceStore['commit']>>,
       exportRecoveryBundle: vi.fn((...args: Parameters<LocalWorkspaceStore['exportRecoveryBundle']>) =>
         requireStore().exportRecoveryBundle(...args)),
     } satisfies LocalWorkspaceStore,

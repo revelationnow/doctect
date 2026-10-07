@@ -1,8 +1,11 @@
 import {
   openDB,
+  unwrap,
   type IDBPDatabase,
   type IDBPTransaction,
 } from 'idb';
+import { effect, primitive, runSync, type Ownership, type Work, type WorkRuntime } from '../../shared/cooperativeWork.js';
+import { canonicalWork, equalFrameWork, rawValueWeightWork, utf8LengthWork, type Frame } from '../../shared/jsonWork.js';
 import {
   INDEXED_DB_UPGRADE_BLOCKED_MESSAGE,
   WorkspaceStoreError,
@@ -15,6 +18,7 @@ import {
 import { canonicalStringify, sha256Hex } from './canonical';
 import type { FaultInjector } from './faults';
 import type { PreparedLineageRepair } from './lineageRepair';
+import { NORMALIZED_DB_VERSION, NORMALIZED_STORE_NAMES, type NormalizedWorkspaceDatabase } from './normalized/schema';
 import type {
   PreparedInitialCopy,
   WorkspaceRecordCandidates,
@@ -27,10 +31,10 @@ import {
 import {
   WORKSPACE_DB_NAME,
   WORKSPACE_DB_VERSION,
+  HISTORICAL_WORKSPACE_FORMAT_VERSION,
   WORKSPACE_MIGRATION_ID,
   type HistoricalStoredProjectV1,
   type LegacyBackupRecord,
-  type LocalWorkspaceDatabase,
   type MigrationLedger,
   type ProjectLineage,
   type RecoveryMarker,
@@ -39,6 +43,7 @@ import {
   type StoredPreset,
   type StoredProject,
   type StoredWorkspace,
+  type StoredWorkspaceRecord,
   sameProjectLineage,
   storedProjectLineage,
 } from './schema';
@@ -53,9 +58,10 @@ const STORE_NAMES = [
 ] as const;
 
 type StoreName = typeof STORE_NAMES[number];
+type ReadTransaction = IDBPTransaction<NormalizedWorkspaceDatabase, readonly StoreName[], 'readonly'>;
 type WriteTransaction = IDBPTransaction<
-  LocalWorkspaceDatabase,
-  readonly StoreName[],
+  NormalizedWorkspaceDatabase,
+  readonly (StoreName | 'normalizationLedger')[],
   'readwrite'
 >;
 
@@ -123,18 +129,18 @@ export interface IndexedDbAdapter {
   open(): Promise<void>;
   close(): void;
   describeSchema(): Promise<IndexedDbSchemaDescription>;
-  inspect(): Promise<IndexedDbInspection>;
-  writeInitialCopy(prepared: PreparedInitialCopy): Promise<InitialCopyResult>;
+  inspect(work?: WorkRuntime): Promise<IndexedDbInspection>;
+  writeInitialCopy(prepared: PreparedInitialCopy, work?: WorkRuntime): Promise<InitialCopyResult>;
   replaceCopiedInitialCopy(
     prepared: PreparedInitialCopy,
     expectedLedger: MigrationLedger,
   ): Promise<void>;
-  repairHistoricalLineage(prepared: PreparedLineageRepair): Promise<void>;
-  readWorkspaceRecords(): Promise<WorkspaceRecordCandidates>;
-  readLegacyBackup(id: string): Promise<LegacyBackupRecord | undefined>;
-  readMigrationLedger(): Promise<unknown>;
-  markVerified(expected: VerificationExpectation): Promise<MigrationLedger>;
-  markLegacyDrift(expected: LegacyDriftExpectation): Promise<MigrationLedger>;
+  repairHistoricalLineage(prepared: PreparedLineageRepair, work?: WorkRuntime): Promise<void>;
+  readWorkspaceRecords(work?: WorkRuntime): Promise<WorkspaceRecordCandidates>;
+  readLegacyBackup(id: string, work?: WorkRuntime): Promise<LegacyBackupRecord | undefined>;
+  readMigrationLedger(work?: WorkRuntime): Promise<unknown>;
+  markVerified(expected: VerificationExpectation, work?: WorkRuntime): Promise<MigrationLedger>;
+  markLegacyDrift(expected: LegacyDriftExpectation, work?: WorkRuntime): Promise<MigrationLedger>;
   recoverLegacyAsCopies(prepared: PreparedLegacyRecovery): Promise<MigrationLedger>;
   saveProject(project: WorkspaceProject, expectedLineage: ProjectLineage): Promise<StoredProject>;
   saveWorkspace(workspace: StoredWorkspace, expectedRevision: number): Promise<StoredWorkspace>;
@@ -169,7 +175,7 @@ const recognizedLedger = (value: unknown): value is MigrationLedger => {
   if (value === null || typeof value !== 'object') return false;
   const candidate = value as Partial<MigrationLedger>;
   return candidate.id === WORKSPACE_MIGRATION_ID
-    && candidate.indexedDbVersion === WORKSPACE_DB_VERSION
+    && candidate.indexedDbVersion === HISTORICAL_WORKSPACE_FORMAT_VERSION
     && candidate.persistenceRolloutEpoch === 1
     && (
       candidate.state === 'copied'
@@ -280,6 +286,7 @@ const abortTransaction = async (
   transaction: WriteTransaction | undefined,
   requests: Promise<unknown>[],
   error: unknown,
+  work?: WorkRuntime,
 ): Promise<never> => {
   if (transaction) {
     try {
@@ -289,6 +296,7 @@ const abortTransaction = async (
     }
     await Promise.allSettled([...requests, transaction.done]);
   }
+  work?.assertCurrent();
   throw mappedError(error);
 };
 
@@ -303,11 +311,14 @@ const requireVerifiedAuthority: (
 };
 
 const requireWorkspaceRevision = (
-  workspace: StoredWorkspace | undefined,
+  workspace: StoredWorkspaceRecord | undefined,
   expectedRevision: number,
 ): StoredWorkspace => {
   if (!workspace || workspace.revision !== expectedRevision) {
     throw conflict('Workspace revision changed.');
+  }
+  if ('kind' in workspace) {
+    throw conflict('Normalized workspace is not historical editing authority.');
   }
   return workspace;
 };
@@ -323,7 +334,7 @@ export const createIndexedDbAdapter = (
   environment: IndexedDbAdapterEnvironment,
   requestedVersion = WORKSPACE_DB_VERSION,
 ): IndexedDbAdapter => {
-  let database: IDBPDatabase<LocalWorkspaceDatabase> | undefined;
+  let database: IDBPDatabase<NormalizedWorkspaceDatabase> | undefined;
   let opening: Promise<void> | undefined;
   let openingGeneration: number | undefined;
   let openGeneration = 0;
@@ -331,7 +342,7 @@ export const createIndexedDbAdapter = (
 
   const reportAuthorityLoss = (
     error: WorkspaceStoreError,
-    connection?: IDBPDatabase<LocalWorkspaceDatabase>,
+    connection?: IDBPDatabase<NormalizedWorkspaceDatabase>,
   ): void => {
     if (authorityError) return;
     authorityError = error;
@@ -344,21 +355,31 @@ export const createIndexedDbAdapter = (
   const openConnection = async (generation: number): Promise<void> => {
     if (authorityError) throw authorityError;
 
-    let openedConnection: IDBPDatabase<LocalWorkspaceDatabase> | undefined;
+    let openedConnection: IDBPDatabase<NormalizedWorkspaceDatabase> | undefined;
     let blockedError: WorkspaceStoreError | undefined;
     let rejectBlocked!: (error: WorkspaceStoreError) => void;
     const blocked = new Promise<never>((_resolve, reject) => {
       rejectBlocked = reject;
     });
 
-    let underlyingOpen: Promise<IDBPDatabase<LocalWorkspaceDatabase>>;
+    let underlyingOpen: Promise<IDBPDatabase<NormalizedWorkspaceDatabase>>;
     try {
       underlyingOpen = openWithFactory(environment.indexedDB, () =>
-        openDB<LocalWorkspaceDatabase>(WORKSPACE_DB_NAME, requestedVersion, {
+        openDB<NormalizedWorkspaceDatabase>(WORKSPACE_DB_NAME, requestedVersion, {
           upgrade(upgradeDatabase) {
             for (const storeName of STORE_NAMES) {
               if (!upgradeDatabase.objectStoreNames.contains(storeName)) {
                 upgradeDatabase.createObjectStore(storeName, { keyPath: 'id' });
+              }
+            }
+            if (requestedVersion === NORMALIZED_DB_VERSION) {
+              const normalized = upgradeDatabase;
+              for (const storeName of NORMALIZED_STORE_NAMES) {
+                if (!normalized.objectStoreNames.contains(storeName)) {
+                  normalized.createObjectStore(storeName, {
+                    keyPath: storeName === 'normalizationLedger' ? 'id' : 'key',
+                  });
+                }
               }
             }
           },
@@ -427,12 +448,26 @@ export const createIndexedDbAdapter = (
     return opening;
   };
 
-  const getDatabase = async (): Promise<IDBPDatabase<LocalWorkspaceDatabase>> => {
+  const getDatabase = async (): Promise<IDBPDatabase<NormalizedWorkspaceDatabase>> => {
     if (authorityError) throw authorityError;
     await open();
     if (authorityError) throw authorityError;
     if (!database) throw new WorkspaceStoreError('IndexedDB is unavailable.', 'unavailable');
     return database;
+  };
+
+  const prerequisiteTransaction = (
+    activeDatabase: IDBPDatabase<NormalizedWorkspaceDatabase>,
+    stores: readonly StoreName[],
+  ): WriteTransaction => activeDatabase.transaction(
+    activeDatabase.version === NORMALIZED_DB_VERSION ? [...stores, 'normalizationLedger'] : stores,
+    'readwrite',
+  );
+  const requireUnreservedNormalization = async (transaction: WriteTransaction): Promise<void> => {
+    if (transaction.objectStoreNames.contains('normalizationLedger')
+      && await transaction.objectStore('normalizationLedger').count() !== 0) {
+      throw conflict('Normalization has already reserved historical source authority.');
+    }
   };
 
   const describeSchema = async (): Promise<IndexedDbSchemaDescription> => {
@@ -452,11 +487,151 @@ export const createIndexedDbAdapter = (
     }
   };
 
-  const inspect = async (): Promise<IndexedDbInspection> => {
-    const activeDatabase = await getDatabase();
+  const collectHistoricalRows = (
+    transaction: ReadTransaction,
+    stores: readonly StoreName[],
+    work: WorkRuntime,
+    currentWorkspaceOnly: boolean,
+  ): Promise<IndexedDbInspection> => {
+    const native = unwrap(transaction);
+    const rows: Record<StoreName, unknown[]> = {
+      projects: [], workspace: [], presets: [], pendingImports: [], migrationLedger: [], legacyBackup: [],
+    };
+    return new Promise((resolve, reject) => {
+      let index = 0, settled = false;
+      const cleanup = () => native.removeEventListener('abort', onAbort);
+      const fail = (error: unknown) => {
+        if (settled) return;
+        settled = true; cleanup();
+        try { native.abort(); } catch { /* Already completed/aborted. */ }
+        reject(error);
+      };
+      const onAbort = () => fail(native.error ?? new DOMException('Historical read aborted.', 'AbortError'));
+      const nextStore = () => {
+        try {
+          work.assertCurrent();
+          if (index === stores.length) {
+            settled = true; cleanup(); resolve(rows as IndexedDbInspection);
+            return;
+          }
+          const name = stores[index++];
+          work.note('visits'); work.note('primitiveExceptions');
+          const request = native.objectStore(name).openCursor(currentWorkspaceOnly && name === 'workspace' ? 'current' : undefined);
+          request.addEventListener('error', () => fail(request.error), { once: true });
+          request.addEventListener('success', () => {
+            try {
+              work.assertCurrent();
+              const cursor = request.result;
+              if (!cursor) {
+                work.note('eofChecks');
+                nextStore();
+                return;
+              }
+              work.note('visits'); work.note('primitiveExceptions');
+              const row: unknown = cursor.value;
+              work.note(name === 'migrationLedger' || name === 'legacyBackup' ? 'metadataRows' : 'candidateRows');
+              if (name === 'legacyBackup' && row !== null && typeof row === 'object'
+                && Reflect.get(row, 'kind') === 'normalization-source') {
+                throw new WorkspaceStoreError('Normalized source requires private recovery access.', 'authority-lost');
+              }
+              rows[name].push(row);
+              work.assertCurrent();
+              work.note('visits'); work.note('primitiveExceptions');
+              cursor.continue();
+            } catch (error) { fail(error); }
+          });
+        } catch (error) { fail(error); }
+      };
+      native.addEventListener('abort', onAbort, { once: true });
+      nextStore();
+    });
+  };
+
+  function* measureHistoricalRow(row: unknown, metric: 'candidateBytes' | 'metadataBytes', work: WorkRuntime): Work<void> {
+    const weight = yield* rawValueWeightWork(row);
+    yield* effect(1, () => {
+      work.note(metric, weight.bytes);
+      work.note('unmeasuredValues', weight.unmeasuredValues);
+    });
+  }
+
+  function* measureHistoricalRows(rows: IndexedDbInspection, stores: readonly StoreName[], work: WorkRuntime): Work<void> {
+    for (const store of stores) {
+      yield* effect(1, () => {});
+      for (const row of rows[store]) {
+        yield* measureHistoricalRow(row, store === 'migrationLedger' || store === 'legacyBackup' ? 'metadataBytes' : 'candidateBytes', work);
+      }
+    }
+  }
+
+  // At most two ledger images per prerequisite transaction. Record references
+  // during IDB callbacks; traverse only after commit/abort has fully settled.
+  const createTransactionAccounting = (work: WorkRuntime) => {
+    let rows: Map<unknown, { reads: number; operations: number; measured: boolean }> | undefined = new Map();
+    let ownership: Ownership | undefined;
+    let preserveFailure = false, measurementFailed = false, finished = false;
+    const track = (value: unknown, reads: number, operations: number) => {
+      if (value === undefined) return;
+      ownership ??= work.own(0);
+      const entry = rows!.get(value) ?? { reads: 0, operations: 0, measured: false };
+      entry.reads += reads; entry.operations += operations; rows!.set(value, entry);
+    };
+    const finish = async () => {
+      work.assertCurrent();
+      if (!rows || finished) return;
+      try { await work.run((function* () {
+        for (const [value, entry] of rows!) {
+          if (entry.measured) continue;
+          const weight = yield* rawValueWeightWork(value);
+          yield* effect(1, () => {
+            ownership!.grow(weight.bytes);
+            work.note('metadataBytes', entry.reads * weight.bytes);
+            work.note('markerWorkBytes', entry.operations * weight.bytes);
+            work.note('unmeasuredValues', weight.unmeasuredValues);
+            entry.measured = true;
+          });
+        }
+      })()); }
+      catch (error) { measurementFailed = true; throw error; }
+      finished = true;
+      work.assertCurrent();
+    };
+    return {
+      read: (value: unknown) => track(value, 1, 1),
+      operation: (value: unknown, count = 1) => track(value, 0, count),
+      failed: () => { preserveFailure = true; },
+      finish,
+      async close() {
+        try {
+          if (!work.stopped() && !measurementFailed) await finish();
+          work.assertCurrent();
+        } catch (error) {
+          if (!preserveFailure || work.stopped()) throw error;
+        } finally {
+          if (rows) for (const entry of rows.values()) if (!entry.measured) work.note('unmeasuredValues');
+          rows = undefined;
+          ownership?.release(); ownership = undefined;
+        }
+      },
+    };
+  };
+
+  const inspect = async (work?: WorkRuntime): Promise<IndexedDbInspection> => {
+    work?.assertCurrent();
+    const activeDatabase = work ? await work.wait(getDatabase) : await getDatabase();
+    work?.assertCurrent();
     let transaction;
     try {
       transaction = activeDatabase.transaction(STORE_NAMES, 'readonly');
+      if (work) {
+        const rows = await collectHistoricalRows(transaction, STORE_NAMES, work, false);
+        work.assertCurrent();
+        await transaction.done;
+        work.assertCurrent();
+        await work.run(measureHistoricalRows(rows, STORE_NAMES, work));
+        work.assertCurrent();
+        return rows;
+      }
       const requests = STORE_NAMES.map(storeName =>
         transaction.objectStore(storeName).getAll());
       const [
@@ -468,6 +643,14 @@ export const createIndexedDbAdapter = (
         legacyBackup,
       ] = await Promise.all(requests);
       await transaction.done;
+      // The historical facade cannot reinterpret the separately discriminated
+      // normalization archive as a legacy-localStorage backup.
+      for (const candidate of legacyBackup) {
+        if (candidate !== null && typeof candidate === 'object'
+          && Reflect.get(candidate, 'kind') === 'normalization-source') {
+          throw new WorkspaceStoreError('Normalized source requires private recovery access.', 'authority-lost');
+        }
+      }
       return {
         projects,
         workspace: workspace as StoredWorkspace[],
@@ -477,7 +660,13 @@ export const createIndexedDbAdapter = (
         legacyBackup: legacyBackup as LegacyBackupRecord[],
       };
     } catch (error) {
-      if (transaction) await transaction.done.catch(() => {});
+      if (transaction) {
+        if (work) {
+          try { transaction.abort(); } catch { /* Already completed/aborted. */ }
+        }
+        await transaction.done.catch(() => {});
+      }
+      work?.assertCurrent();
       throw mappedError(error);
     }
   };
@@ -486,67 +675,148 @@ export const createIndexedDbAdapter = (
     transaction: WriteTransaction,
     prepared: PreparedInitialCopy,
     requests: Promise<unknown>[],
-  ): void => {
-    const projects = transaction.objectStore('projects');
-    for (const project of prepared.projects) requests.push(projects.add(project));
-    environment.fault?.('copy.after-projects');
-
-    requests.push(transaction.objectStore('workspace').add(prepared.workspace));
-    environment.fault?.('copy.after-workspace');
-
-    const presets = transaction.objectStore('presets');
-    for (const preset of prepared.presets) requests.push(presets.add(preset));
-    environment.fault?.('copy.after-presets');
-
-    const pendingImports = transaction.objectStore('pendingImports');
-    for (const pending of prepared.pendingImports) {
-      requests.push(pendingImports.add(pending));
+    work?: WorkRuntime,
+    accounting?: ReturnType<typeof createTransactionAccounting>,
+  ): void | Promise<void> => {
+    const groups = [
+      { store: 'projects', rows: () => prepared.projects, after: 'copy.after-projects' },
+      { store: 'workspace', rows: () => [prepared.workspace], after: 'copy.after-workspace' },
+      { store: 'presets', rows: () => prepared.presets, after: 'copy.after-presets' },
+      { store: 'pendingImports', rows: () => prepared.pendingImports, after: 'copy.after-pending-imports' },
+      { store: 'legacyBackup', rows: () => [prepared.backup], after: 'copy.after-backup' },
+      { store: 'migrationLedger', rows: () => [prepared.ledger], after: 'copy.after-ledger' },
+    ] as const;
+    if (!work) {
+      for (const group of groups) {
+        const store = transaction.objectStore(group.store);
+        for (const row of group.rows()) requests.push(store.add(row));
+        environment.fault?.(group.after);
+      }
+      environment.fault?.('copy.before-complete');
+      return;
     }
-    environment.fault?.('copy.after-pending-imports');
-
-    requests.push(transaction.objectStore('legacyBackup').add(prepared.backup));
-    environment.fault?.('copy.after-backup');
-
-    requests.push(transaction.objectStore('migrationLedger').add(prepared.ledger));
-    environment.fault?.('copy.after-ledger');
-    environment.fault?.('copy.before-complete');
+    const native = unwrap(transaction);
+    const completion = new Promise<void>((resolve, reject) => {
+      let groupIndex = 0, rowIndex = 0, settled = false;
+      let rows: readonly unknown[] | undefined;
+      const cleanup = () => native.removeEventListener('abort', onAbort);
+      const fail = (error: unknown) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        // Abort in the request callback, before the transaction can auto-commit.
+        try { native.abort(); } catch { /* Already aborted/completed. */ }
+        reject(error);
+      };
+      const onAbort = () => fail(native.error ?? new DOMException('Copy transaction aborted.', 'AbortError'));
+      const next = () => {
+        try {
+          work.assertCurrent();
+          // Only six fixed groups; input-sized iteration happens one request
+          // success at a time. Never run/yield/hash/observe inside this tx.
+          while (groupIndex < groups.length) {
+            const group = groups[groupIndex];
+            rows ??= group.rows();
+            if (rowIndex < rows.length) {
+              work.assertCurrent();
+              work.note('visits');
+              work.note('primitiveExceptions');
+              work.note('writes'); // Write attempts, not durable commits.
+              const row = rows[rowIndex++];
+              if (group.store === 'migrationLedger') accounting?.operation(row);
+              const request = native.objectStore(group.store).add(row);
+              request.addEventListener('success', () => {
+                try { work.assertCurrent(); next(); } catch (error) { fail(error); }
+              }, { once: true });
+              request.addEventListener('error', () => fail(request.error), { once: true });
+              return;
+            }
+            environment.fault?.(group.after);
+            work.assertCurrent();
+            groupIndex += 1;
+            rowIndex = 0;
+            rows = undefined;
+          }
+          environment.fault?.('copy.before-complete');
+          work.assertCurrent();
+          settled = true;
+          cleanup();
+          resolve();
+        } catch (error) { fail(error); }
+      };
+      native.addEventListener('abort', onAbort, { once: true });
+      next();
+    });
+    requests.push(completion);
+    return completion;
   };
 
   const writeInitialCopy = async (
     prepared: PreparedInitialCopy,
+    work?: WorkRuntime,
   ): Promise<InitialCopyResult> => {
-    const activeDatabase = await getDatabase();
+    work?.assertCurrent();
+    const activeDatabase = work ? await work.wait(getDatabase) : await getDatabase();
+    work?.assertCurrent();
     try {
       environment.fault?.('copy.before-transaction');
+      work?.assertCurrent();
     } catch (error) {
+      work?.assertCurrent();
       throw mappedError(error);
     }
 
     let transaction: WriteTransaction | undefined;
     const requests: Promise<unknown>[] = [];
+    const accounting = work ? createTransactionAccounting(work) : undefined;
+    // Fixed native reservation check; its approved helper/prefix stay intact.
+    work?.note('visits');
+    work?.note('primitiveExceptions');
     try {
-      transaction = activeDatabase.transaction(STORE_NAMES, 'readwrite');
+      transaction = prerequisiteTransaction(activeDatabase, STORE_NAMES);
+      await requireUnreservedNormalization(transaction);
+      work?.assertCurrent();
+      work?.note('visits', STORE_NAMES.length + 1);
+      work?.note('primitiveExceptions', STORE_NAMES.length + 1);
       const ledgerRequest = transaction.objectStore('migrationLedger').get(WORKSPACE_MIGRATION_ID);
       const countRequests = STORE_NAMES.map(storeName =>
         transaction.objectStore(storeName).count());
       const [ledger, ...counts] = await Promise.all([ledgerRequest, ...countRequests]);
+      accounting?.read(ledger);
+      work?.assertCurrent();
+      if (ledger !== undefined) work?.note('metadataRows');
 
       if (recognizedLedger(ledger)) {
         await transaction.done;
+        work?.assertCurrent();
+        if (accounting) await accounting.finish();
+        work?.assertCurrent();
         return { status: 'existing-ledger' };
       }
       if (counts.some(count => count !== 0)) {
         await transaction.done;
+        work?.assertCurrent();
+        if (accounting) await accounting.finish();
+        work?.assertCurrent();
         return { status: 'orphaned-target' };
       }
 
-      enqueuePreparedCopy(transaction, prepared, requests);
+      const queued = enqueuePreparedCopy(transaction, prepared, requests, work, accounting);
+      if (queued) await queued;
+      work?.assertCurrent();
 
       await Promise.all(requests);
       await transaction.done;
+      work?.assertCurrent();
+      if (accounting) await accounting.finish();
+      work?.assertCurrent();
+      work?.notify('durable');
       return { status: 'copied' };
     } catch (error) {
-      return abortTransaction(transaction, requests, error);
+      accounting?.failed();
+      return await abortTransaction(transaction, requests, error, work);
+    } finally {
+      if (accounting) await accounting.close();
     }
   };
 
@@ -588,30 +858,184 @@ export const createIndexedDbAdapter = (
     }
   };
 
+  // Historical CAS uses whole-record canonical depth semantics. This is the
+  // approved synchronous one-record comparison exception, never a dataset pass.
+  const sameRepairRecord = (current: unknown, expected: unknown, work: WorkRuntime, measureProject = false): boolean => {
+    work.assertCurrent();
+    work.note('visits');
+    work.note('primitiveExceptions');
+    let bytes = 0, complete = false;
+    const observed: Frame = measureProject ? emit => canonicalWork(current, function* (fragment) {
+      // Reuse the already-required comparison stream, without another record
+      // traversal or retaining a second workspace graph just for accounting.
+      bytes += yield* utf8LengthWork(fragment);
+      yield* emit(fragment);
+    }) : emit => canonicalWork(current, emit);
+    try {
+      const equal = runSync(equalFrameWork(observed, emit => canonicalWork(expected, emit)));
+      complete = equal;
+      work.assertCurrent();
+      return equal;
+    } finally {
+      if (measureProject) {
+        work.note('candidateBytes', bytes);
+        // A stopped/malformed/mismatching stream cannot certify full row size.
+        if (!complete) work.note('unmeasuredValues');
+      }
+    }
+  };
+
+  const enqueueLineageRepair = (
+    transaction: WriteTransaction,
+    prepared: PreparedLineageRepair,
+    expectedIndex: Map<string, unknown>,
+    requests: Promise<unknown>[],
+    work: WorkRuntime,
+    accounting?: ReturnType<typeof createTransactionAccounting>,
+  ): Promise<void> => {
+    const native = unwrap(transaction);
+    const completion = new Promise<void>((resolve, reject) => {
+      let settled = false, replacementIndex = 0;
+      const cleanup = () => native.removeEventListener('abort', onAbort);
+      const fail = (error: unknown) => {
+        if (settled) return;
+        settled = true; cleanup();
+        try { native.abort(); } catch { /* Already aborted/completed. */ }
+        reject(error);
+      };
+      const onAbort = () => fail(native.error ?? new DOMException('Lineage transaction aborted.', 'AbortError'));
+      const nextWrite = () => {
+        try {
+          work.assertCurrent();
+          const isProject = replacementIndex < prepared.replacementProjects.length;
+          work.note('visits'); work.note('primitiveExceptions'); work.note('writes');
+          if (!isProject) accounting?.operation(prepared.ledger);
+          const request = isProject
+            ? native.objectStore('projects').put(prepared.replacementProjects[replacementIndex++])
+            : native.objectStore('migrationLedger').put(prepared.ledger);
+          request.addEventListener('error', () => fail(request.error), { once: true });
+          request.addEventListener('success', () => {
+            try {
+              work.assertCurrent();
+              if (isProject) nextWrite();
+              else { settled = true; cleanup(); resolve(); }
+            } catch (error) { fail(error); }
+          }, { once: true });
+          environment.fault?.(isProject ? 'lineage-repair.after-project-write' : 'lineage-repair.after-ledger-write');
+          work.assertCurrent();
+          if (!isProject) {
+            environment.fault?.('lineage-repair.before-complete');
+            work.assertCurrent();
+          }
+        } catch (error) { fail(error); }
+      };
+      native.addEventListener('abort', onAbort, { once: true });
+      try {
+        work.assertCurrent();
+        work.note('visits'); work.note('primitiveExceptions');
+        const request = native.objectStore('projects').openCursor();
+        request.addEventListener('error', () => fail(request.error), { once: true });
+        request.addEventListener('success', () => {
+          try {
+            work.assertCurrent();
+            const cursor = request.result;
+            if (!cursor) {
+              work.note('eofChecks');
+              if (expectedIndex.size !== 0) throw conflict('Historical project key set changed before lineage repair.');
+              nextWrite();
+              return;
+            }
+            work.note('candidateRows');
+            work.note('visits'); work.note('primitiveExceptions');
+            const id = String(cursor.primaryKey);
+            if (!expectedIndex.has(id) || cursor.primaryKey !== id) {
+              throw conflict('Historical project key set changed before lineage repair.');
+            }
+            if (!sameRepairRecord(cursor.value, expectedIndex.get(id), work, true)) {
+              throw conflict(`Historical project ${id} changed before lineage repair.`);
+            }
+            expectedIndex.delete(id);
+            work.assertCurrent();
+            work.note('visits'); work.note('primitiveExceptions');
+            cursor.continue();
+          } catch (error) { fail(error); }
+        });
+      } catch (error) { fail(error); }
+    });
+    requests.push(completion);
+    return completion;
+  };
+
   const repairHistoricalLineage = async (
     prepared: PreparedLineageRepair,
+    work?: WorkRuntime,
   ): Promise<void> => {
-    const activeDatabase = await getDatabase();
+    work?.assertCurrent();
+    const indexOwnership = work?.own(0);
+    let expectedIndex = work ? new Map<string, unknown>() : undefined;
+    let activeDatabase: IDBPDatabase<NormalizedWorkspaceDatabase>;
     try {
-      environment.fault?.('lineage-repair.before-transaction');
+      if (work && expectedIndex) {
+        const index = expectedIndex;
+        await work.run((function* () {
+          for (const expected of prepared.expectedProjects) {
+            const keyBytes = yield* utf8LengthWork(expected.id);
+            yield* primitive('scalar', () => {
+              if (index.has(expected.id)) throw conflict('Historical project key set changed before lineage repair.');
+              index.set(expected.id, expected.record);
+              // Two reference slots plus key text; payload is borrowed from prepared.
+              // Keep this conservative reservation until the transaction settles.
+              indexOwnership!.grow(16 + keyBytes);
+            });
+          }
+        })());
+      }
+      activeDatabase = work ? await work.wait(getDatabase) : await getDatabase();
+      work?.assertCurrent();
+      try {
+        environment.fault?.('lineage-repair.before-transaction');
+        work?.assertCurrent();
+      } catch (error) {
+        work?.assertCurrent();
+        throw mappedError(error);
+      }
     } catch (error) {
-      throw mappedError(error);
+      expectedIndex = undefined;
+      indexOwnership?.release();
+      throw error;
     }
 
     let transaction: WriteTransaction | undefined;
     const requests: Promise<unknown>[] = [];
+    const accounting = work ? createTransactionAccounting(work) : undefined;
+    work?.note('visits'); work?.note('primitiveExceptions');
     try {
-      const repairTransaction = activeDatabase.transaction(
-        ['projects', 'migrationLedger'],
-        'readwrite',
-      );
+      const repairTransaction = prerequisiteTransaction(activeDatabase, ['projects', 'migrationLedger']);
       transaction = repairTransaction as WriteTransaction;
+      await requireUnreservedNormalization(transaction);
+      work?.assertCurrent();
       const projectStore = repairTransaction.objectStore('projects');
       const ledgerStore = repairTransaction.objectStore('migrationLedger');
+      work?.note('visits'); work?.note('primitiveExceptions');
       const currentLedger = await ledgerStore.get(WORKSPACE_MIGRATION_ID);
-      if (canonicalStringify(currentLedger)
-        !== canonicalStringify(prepared.expectedLedger)) {
+      accounting?.read(currentLedger);
+      work?.assertCurrent();
+      if (currentLedger !== undefined) work?.note('metadataRows');
+      work?.note('markerCasRows');
+      if (work ? !sameRepairRecord(currentLedger, prepared.expectedLedger, work)
+        : canonicalStringify(currentLedger) !== canonicalStringify(prepared.expectedLedger)) {
         throw conflict('Historical migration ledger changed before lineage repair.');
+      }
+
+      if (work && expectedIndex) {
+        await enqueueLineageRepair(transaction, prepared, expectedIndex, requests, work, accounting);
+        work.assertCurrent();
+        await repairTransaction.done;
+        work.assertCurrent();
+        if (accounting) await accounting.finish();
+        work.assertCurrent();
+        work.notify('durable');
+        return;
       }
 
       const actualKeys = (await projectStore.getAllKeys()).map(String).sort();
@@ -636,16 +1060,31 @@ export const createIndexedDbAdapter = (
       await Promise.all(requests);
       await repairTransaction.done;
     } catch (error) {
-      return abortTransaction(transaction, requests, error);
+      accounting?.failed();
+      return await abortTransaction(transaction, requests, error, work);
+    } finally {
+      try { if (accounting) await accounting.close(); }
+      finally { expectedIndex = undefined; indexOwnership?.release(); }
     }
   };
 
-  const readWorkspaceRecords = async (): Promise<WorkspaceRecordCandidates> => {
-    const activeDatabase = await getDatabase();
+  const readWorkspaceRecords = async (work?: WorkRuntime): Promise<WorkspaceRecordCandidates> => {
+    work?.assertCurrent();
+    const activeDatabase = work ? await work.wait(getDatabase) : await getDatabase();
+    work?.assertCurrent();
     const storeNames = ['projects', 'workspace', 'presets', 'pendingImports'] as const;
     let transaction;
     try {
       transaction = activeDatabase.transaction(storeNames, 'readonly');
+      if (work) {
+        const rows = await collectHistoricalRows(transaction, storeNames, work, true);
+        work.assertCurrent();
+        await transaction.done;
+        work.assertCurrent();
+        await work.run(measureHistoricalRows(rows, storeNames, work));
+        work.assertCurrent();
+        return { projects: rows.projects, workspace: rows.workspace[0], presets: rows.presets, pendingImports: rows.pendingImports };
+      }
       const [projects, workspace, presets, pendingImports] = await Promise.all([
         transaction.objectStore('projects').getAll(),
         transaction.objectStore('workspace').get('current'),
@@ -660,52 +1099,109 @@ export const createIndexedDbAdapter = (
         pendingImports,
       };
     } catch (error) {
-      if (transaction) await transaction.done.catch(() => {});
+      if (transaction) {
+        if (work) {
+          try { transaction.abort(); } catch { /* Already completed/aborted. */ }
+        }
+        await transaction.done.catch(() => {});
+      }
+      work?.assertCurrent();
       throw mappedError(error);
     }
   };
 
   const readLegacyBackup = async (
     id: string,
+    work?: WorkRuntime,
   ): Promise<LegacyBackupRecord | undefined> => {
-    const activeDatabase = await getDatabase();
+    work?.assertCurrent();
+    const activeDatabase = work ? await work.wait(getDatabase) : await getDatabase();
+    work?.assertCurrent();
     let transaction;
     try {
       transaction = activeDatabase.transaction('legacyBackup', 'readonly');
+      work?.assertCurrent();
+      work?.note('visits'); work?.note('primitiveExceptions');
       const backup = await transaction.store.get(id);
+      if (backup !== undefined) work?.note('metadataRows');
+      work?.assertCurrent();
       await transaction.done;
+      work?.assertCurrent();
+      if (backup !== null && typeof backup === 'object' && Reflect.get(backup, 'kind') === 'normalization-source') {
+        throw new WorkspaceStoreError('Normalization archives are not legacy backups.', 'authority-lost');
+      }
+      if (work && backup !== undefined) await work.run(measureHistoricalRow(backup, 'metadataBytes', work));
+      work?.assertCurrent();
       return backup;
     } catch (error) {
-      if (transaction) await transaction.done.catch(() => {});
+      if (transaction) {
+        if (work) {
+          try { transaction.abort(); } catch { /* Already completed/aborted. */ }
+        }
+        await transaction.done.catch(() => {});
+      }
+      work?.assertCurrent();
       throw mappedError(error);
     }
   };
 
-  const readMigrationLedger = async (): Promise<unknown> => {
-    const activeDatabase = await getDatabase();
+  const readMigrationLedger = async (work?: WorkRuntime): Promise<unknown> => {
+    work?.assertCurrent();
+    const activeDatabase = work ? await work.wait(getDatabase) : await getDatabase();
+    work?.assertCurrent();
     let transaction;
     try {
       transaction = activeDatabase.transaction('migrationLedger', 'readonly');
+      work?.assertCurrent();
+      work?.note('visits'); work?.note('primitiveExceptions');
       const ledger = await transaction.store.get(WORKSPACE_MIGRATION_ID);
+      if (ledger !== undefined) work?.note('metadataRows');
+      work?.assertCurrent();
       await transaction.done;
+      work?.assertCurrent();
+      if (work && ledger !== undefined) await work.run(measureHistoricalRow(ledger, 'metadataBytes', work));
+      work?.assertCurrent();
       return ledger;
     } catch (error) {
-      if (transaction) await transaction.done.catch(() => {});
+      if (transaction) {
+        if (work) {
+          try { transaction.abort(); } catch { /* Already completed/aborted. */ }
+        }
+        await transaction.done.catch(() => {});
+      }
+      work?.assertCurrent();
       throw mappedError(error);
     }
   };
 
   const markVerified = async (
     expected: VerificationExpectation,
+    work?: WorkRuntime,
   ): Promise<MigrationLedger> => {
-    const activeDatabase = await getDatabase();
+    work?.assertCurrent();
+    const activeDatabase = work ? await work.wait(getDatabase) : await getDatabase();
+    work?.assertCurrent();
     const verifiedAt = environment.now();
+    work?.assertCurrent();
     let transaction: WriteTransaction | undefined;
     const requests: Promise<unknown>[] = [];
+    const accounting = work ? createTransactionAccounting(work) : undefined;
+    // Fixed reservation check; keep the approved acquisition/guard prefix intact.
+    work?.note('visits');
+    work?.note('primitiveExceptions');
     try {
-      const ledgerTransaction = activeDatabase.transaction('migrationLedger', 'readwrite');
+      const ledgerTransaction = prerequisiteTransaction(activeDatabase, ['migrationLedger']);
       transaction = ledgerTransaction as WriteTransaction;
-      const ledger = await ledgerTransaction.store.get(WORKSPACE_MIGRATION_ID);
+      await requireUnreservedNormalization(transaction);
+      work?.assertCurrent();
+      const ledgerStore = ledgerTransaction.objectStore('migrationLedger');
+      work?.note('visits');
+      work?.note('primitiveExceptions');
+      const ledger = await ledgerStore.get(WORKSPACE_MIGRATION_ID);
+      accounting?.read(ledger);
+      work?.assertCurrent();
+      if (ledger !== undefined) work?.note('metadataRows');
+      work?.note('markerCasRows');
       if (!recognizedLedger(ledger)
         || ledger.state !== 'copied'
         || ledger.unresolvedRecovery !== null
@@ -714,32 +1210,65 @@ export const createIndexedDbAdapter = (
         || ledger.expectedTargetDigest !== expected.expectedTargetDigest) {
         throw conflict('Copied migration ledger changed before verification.');
       }
+      work?.assertCurrent();
+      // One captured record's spread is transaction work, not a dataset traversal.
+      work?.note('visits');
+      work?.note('primitiveExceptions');
       const verifiedLedger: MigrationLedger = {
         ...ledger,
         state: 'verified',
         ledgerRevision: ledger.ledgerRevision + 1,
         verifiedAt,
       };
-      requests.push(ledgerTransaction.store.put(verifiedLedger));
+      accounting?.operation(verifiedLedger, 2); // Shallow copy and attempted put.
+      work?.assertCurrent();
+      work?.note('visits');
+      work?.note('primitiveExceptions');
+      work?.note('writes');
+      requests.push(ledgerStore.put(verifiedLedger));
       environment.fault?.('mutation.before-complete');
+      work?.assertCurrent();
       await Promise.all(requests);
+      work?.assertCurrent();
       await ledgerTransaction.done;
+      work?.assertCurrent();
+      if (accounting) await accounting.finish();
+      work?.assertCurrent();
+      work?.notify('durable');
       return verifiedLedger;
     } catch (error) {
-      return abortTransaction(transaction, requests, error);
+      accounting?.failed();
+      return await abortTransaction(transaction, requests, error, work);
+    } finally {
+      if (accounting) await accounting.close();
     }
   };
 
   const markLegacyDrift = async (
     expected: LegacyDriftExpectation,
+    work?: WorkRuntime,
   ): Promise<MigrationLedger> => {
-    const activeDatabase = await getDatabase();
+    work?.assertCurrent();
+    const activeDatabase = work ? await work.wait(getDatabase) : await getDatabase();
+    work?.assertCurrent();
     let transaction: WriteTransaction | undefined;
     const requests: Promise<unknown>[] = [];
+    const accounting = work ? createTransactionAccounting(work) : undefined;
+    work?.note('visits');
+    work?.note('primitiveExceptions');
     try {
-      const ledgerTransaction = activeDatabase.transaction('migrationLedger', 'readwrite');
+      const ledgerTransaction = prerequisiteTransaction(activeDatabase, ['migrationLedger']);
       transaction = ledgerTransaction as WriteTransaction;
-      const ledger = await ledgerTransaction.store.get(WORKSPACE_MIGRATION_ID);
+      await requireUnreservedNormalization(transaction);
+      work?.assertCurrent();
+      const ledgerStore = ledgerTransaction.objectStore('migrationLedger');
+      work?.note('visits');
+      work?.note('primitiveExceptions');
+      const ledger = await ledgerStore.get(WORKSPACE_MIGRATION_ID);
+      accounting?.read(ledger);
+      work?.assertCurrent();
+      if (ledger !== undefined) work?.note('metadataRows');
+      work?.note('markerCasRows');
       if (!recognizedLedger(ledger)
         || ledger.state !== 'verified'
         || ledger.acceptedLegacyDigest !== expected.expectedAcceptedLegacyDigest) {
@@ -748,6 +1277,9 @@ export const createIndexedDbAdapter = (
       if (ledger.unresolvedRecovery?.kind === 'legacy-drift'
         && ledger.unresolvedRecovery.observedLegacyDigest === expected.marker.observedLegacyDigest) {
         await ledgerTransaction.done;
+        work?.assertCurrent();
+        if (accounting) await accounting.finish();
+        work?.assertCurrent();
         return ledger;
       }
       if (ledger.ledgerRevision !== expected.expectedLedgerRevision
@@ -756,17 +1288,33 @@ export const createIndexedDbAdapter = (
           : ledger.unresolvedRecovery?.id !== expected.expectedRecoveryId)) {
         throw conflict('Legacy recovery marker changed before drift was recorded.');
       }
+      work?.assertCurrent();
+      work?.note('visits');
+      work?.note('primitiveExceptions');
       const next: MigrationLedger = {
         ...ledger,
         ledgerRevision: ledger.ledgerRevision + 1,
         unresolvedRecovery: expected.marker,
       };
-      requests.push(ledgerTransaction.store.put(next));
+      accounting?.operation(next, 2);
+      work?.assertCurrent();
+      work?.note('visits');
+      work?.note('primitiveExceptions');
+      work?.note('writes');
+      requests.push(ledgerStore.put(next));
       await Promise.all(requests);
+      work?.assertCurrent();
       await ledgerTransaction.done;
+      work?.assertCurrent();
+      if (accounting) await accounting.finish();
+      work?.assertCurrent();
+      work?.notify('durable');
       return next;
     } catch (error) {
-      return abortTransaction(transaction, requests, error);
+      accounting?.failed();
+      return await abortTransaction(transaction, requests, error, work);
+    } finally {
+      if (accounting) await accounting.close();
     }
   };
 
@@ -891,10 +1439,7 @@ export const createIndexedDbAdapter = (
       const ledger = await workspaceTransaction.objectStore('migrationLedger')
         .get(WORKSPACE_MIGRATION_ID);
       requireVerifiedAuthority(ledger);
-      const stored = await workspaceTransaction.objectStore('workspace').get('current');
-      if (!stored || stored.revision !== expectedRevision) {
-        throw conflict('Workspace revision changed.');
-      }
+      const stored = requireWorkspaceRevision(await workspaceTransaction.objectStore('workspace').get('current'), expectedRevision);
       const next: StoredWorkspace = {
         ...workspace,
         id: 'current',
@@ -1438,6 +1983,12 @@ export const createIndexedDbAdapter = (
     }
   };
 
+  // The explicitly requested v3 adapter supplies prerequisites only. It cannot edit
+  // the historical representation, including before a normalization reservation.
+  const historicalEditorOnly = <A extends unknown[], R>(operation: (...args: A) => Promise<R>) =>
+    (...args: A): Promise<R> => requestedVersion === NORMALIZED_DB_VERSION
+      ? Promise.reject(unverifiedAuthority()) : operation(...args);
+
   return {
     open,
     close() {
@@ -1450,23 +2001,23 @@ export const createIndexedDbAdapter = (
     describeSchema,
     inspect,
     writeInitialCopy,
-    replaceCopiedInitialCopy,
+    replaceCopiedInitialCopy: historicalEditorOnly(replaceCopiedInitialCopy),
     repairHistoricalLineage,
     readWorkspaceRecords,
     readLegacyBackup,
     readMigrationLedger,
     markVerified,
     markLegacyDrift,
-    recoverLegacyAsCopies,
-    saveProject,
-    saveWorkspace,
-    createAndActivateProject,
-    activateProject,
-    closeProject,
-    saveCustomPreset,
-    deleteCustomPreset,
-    stageImport,
-    replaceStagedImport,
-    consumeImport,
+    recoverLegacyAsCopies: historicalEditorOnly(recoverLegacyAsCopies),
+    saveProject: historicalEditorOnly(saveProject),
+    saveWorkspace: historicalEditorOnly(saveWorkspace),
+    createAndActivateProject: historicalEditorOnly(createAndActivateProject),
+    activateProject: historicalEditorOnly(activateProject),
+    closeProject: historicalEditorOnly(closeProject),
+    saveCustomPreset: historicalEditorOnly(saveCustomPreset),
+    deleteCustomPreset: historicalEditorOnly(deleteCustomPreset),
+    stageImport: historicalEditorOnly(stageImport),
+    replaceStagedImport: historicalEditorOnly(replaceStagedImport),
+    consumeImport: historicalEditorOnly(consumeImport),
   };
 };

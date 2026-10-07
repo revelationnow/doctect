@@ -20,7 +20,7 @@ import { createLocalWorkspaceStoreForTesting } from '../../../services/localWork
 import {
   WorkspaceStoreError,
   type LocalWorkspaceStore,
-  type WorkspaceCommand,
+  type SnapshotWorkspaceCommand as WorkspaceCommand,
   type WorkspaceCustomPreset,
   type WorkspaceImportInput,
   type WorkspaceProject,
@@ -396,6 +396,19 @@ const readyStore = async (
   harness.records.length = 0;
   return { store, harness, snapshot: result.snapshot };
 };
+
+it('production-v2 command boundary refuses uninstalled incremental lanes without storage work', async () => {
+  const { store, harness, snapshot } = await readyStore();
+  const authority = snapshot.projects[0];
+  const trap = vi.fn(() => { throw new Error('Unadmitted payload inspected'); });
+  const document = { type: 'save-document-changes' as const, authority, editorGeneration: 1,
+    get changes(): readonly import('../../../services/document/contracts').DocumentChange[] { return trap(); } };
+  await expect(store.commit(document)).rejects.toMatchObject({ code: 'authority-lost' });
+  await expect(store.commit({ type: 'save-editor-preferences', authority, editorGeneration: 1, patch: { scale: 2 } })).rejects.toMatchObject({ code: 'authority-lost' });
+  await expect(store.commit({ type: 'update-project-metadata', authority, editorGeneration: 1, patch: { name: 'Not admitted' } })).rejects.toMatchObject({ code: 'authority-lost' });
+  expect(trap).not.toHaveBeenCalled(); expect(harness.records).toEqual([]);
+  expect((await store.bootstrap()).status).toBe('ready'); expect(WORKSPACE_DB_VERSION).toBe(2);
+});
 
 type CurrentIndexedDbInspection = Omit<IndexedDbInspection, 'projects'> & {
   projects: StoredProject[];

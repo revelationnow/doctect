@@ -12,6 +12,7 @@ import type { WorkspaceProject } from '../../services/localWorkspace/index';
 
 interface CloudMenuProps {
     project: WorkspaceProject;
+    getWorkingProject?: () => WorkspaceProject;
     onLinkCloud: (cloud: { projectId: string; lastSyncedCommitId: string }) => Promise<boolean>;
     onRestoreState: (
         state: AppState,
@@ -21,13 +22,14 @@ interface CloudMenuProps {
 
 type CloudLink = NonNullable<WorkspaceProject['cloud']>;
 
-export function CloudMenu({ project, onLinkCloud, onRestoreState }: CloudMenuProps) {
+export function CloudMenu({ project, getWorkingProject, onLinkCloud, onRestoreState }: CloudMenuProps) {
     const { data: session } = useSession();
     const [open, setOpen] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showHistory, setShowHistory] = useState(false);
     const [showPublish, setShowPublish] = useState(false);
+    const [publishProject, setPublishProject] = useState<WorkspaceProject | null>(null);
     const [showEditListing, setShowEditListing] = useState(false);
     const [showPropose, setShowPropose] = useState(false);
     const [cloudProject, setCloudProject] = useState<CloudProject | null>(null);
@@ -69,15 +71,16 @@ export function CloudMenu({ project, onLinkCloud, onRestoreState }: CloudMenuPro
                 return;
             }
 
-            const message = window.prompt('Describe this save (commit message):', project.cloud ? 'Update' : 'Initial save');
+            const current = getWorkingProject?.() ?? project;
+            const message = window.prompt('Describe this save (commit message):', current.cloud ? 'Update' : 'Initial save');
             if (message === null) return;
             let cloudLink: CloudLink;
-            if (!project.cloud) {
-                const res = await cloudApi.createProject({ name: project.name, state: project.initialState, message });
+            if (!current.cloud) {
+                const res = await cloudApi.createProject({ name: current.name, state: current.initialState, message });
                 cloudLink = { projectId: res.project.id, lastSyncedCommitId: res.commit.id };
             } else {
-                const res = await cloudApi.saveCommit(project.cloud.projectId, project.cloud.lastSyncedCommitId, { state: project.initialState, message });
-                cloudLink = { projectId: project.cloud.projectId, lastSyncedCommitId: res.commit.id };
+                const res = await cloudApi.saveCommit(current.cloud.projectId, current.cloud.lastSyncedCommitId, { state: current.initialState, message });
+                cloudLink = { projectId: current.cloud.projectId, lastSyncedCommitId: res.commit.id };
             }
             if (await onLinkCloud(cloudLink) === false) {
                 setPendingCloudLinks(current => ({ ...current, [project.id]: cloudLink }));
@@ -160,7 +163,8 @@ export function CloudMenu({ project, onLinkCloud, onRestoreState }: CloudMenuPro
                                 </Link>
                             )}
                             {project.cloud && (
-                                <button onClick={() => { setShowPublish(true); setOpen(false); }}
+                                <button onClick={() => { try { setPublishProject(getWorkingProject?.() ?? project); setShowPublish(true); setOpen(false); }
+                                    catch (error) { setError(error instanceof Error ? error.message : 'Current project is unavailable.'); } }}
                                     className="w-full text-left flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50">
                                     <Globe size={12} /> Publish to gallery…
                                 </button>
@@ -198,7 +202,7 @@ export function CloudMenu({ project, onLinkCloud, onRestoreState }: CloudMenuPro
                 />
             )}
             {showPublish && project.cloud && (
-                <PublishModal project={project} cloudProjectId={project.cloud.projectId}
+                <PublishModal project={publishProject ?? project} cloudProjectId={project.cloud.projectId}
                     onClose={() => setShowPublish(false)}
                     onPublished={() => { setShowPublish(false); window.alert('Published! View it in the Gallery.'); }} />
             )}

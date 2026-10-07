@@ -16,6 +16,14 @@ import clsx from 'clsx';
 import { resolveTextPadding, TEXT_PADDING_SIDES } from '../services/textPadding';
 import type { TextPaddingSelection } from './properties/TextPaddingControls';
 
+export interface IncrementalPropertyActions {
+    readonly contextEpoch: number | string;
+    patchElements(ids: readonly string[], updates: Partial<TemplateElement> | ((previous: TemplateElement) => Partial<TemplateElement>), saveHistory: boolean): void;
+    patchNodes(ids: readonly string[], updates: Partial<AppNode>): void;
+    setPanelExpanded(key: string, expanded: boolean): void;
+    panelsExpanded: Readonly<Record<string, boolean>>;
+}
+
 interface PropertiesPanelProps {
     state: AppState;
     activePreviewNode?: AppNode;
@@ -25,6 +33,7 @@ interface PropertiesPanelProps {
     onOpenNodeSelector: (mode: 'grid_source' | 'link_element', elementId: string) => void; // Pass elementId context
     onUpdateTemplate: (id: string, updates: Partial<PageTemplate>, autoReflow?: boolean, scaleFontSize?: boolean) => void;
     layersSlot?: React.ReactNode;
+    incrementalActions?: IncrementalPropertyActions;
 }
 
 const INITIAL_ELEMENT_PROPERTY_SECTIONS: ElementPropertySectionState = {
@@ -36,19 +45,25 @@ const INITIAL_ELEMENT_PROPERTY_SECTIONS: ElementPropertySectionState = {
     svgSource: true,
 };
 
-export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, activePreviewNode, onUpdateElements, onUpdateNode, onDeleteElements, onOpenNodeSelector, onUpdateTemplate, layersSlot }) => {
+export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, activePreviewNode, onUpdateElements, onUpdateNode, onDeleteElements, onOpenNodeSelector, onUpdateTemplate, layersSlot, incrementalActions }) => {
     const { nodes, selectedNodeId, viewMode, selectedElementIds, variants, activeVariantId, selectedTemplateId } = state;
     // Session-local: Template Settings starts expanded, collapsible from its header.
-    const [settingsExpanded, setSettingsExpanded] = React.useState(true);
-    const [elementPropertySections, setElementPropertySections] = React.useState<ElementPropertySectionState>(
+    const [localSettingsExpanded, setSettingsExpanded] = React.useState(true);
+    const settingsExpanded = incrementalActions ? incrementalActions.panelsExpanded['template-settings'] ?? true : localSettingsExpanded;
+    const [localElementPropertySections, setElementPropertySections] = React.useState<ElementPropertySectionState>(
         () => ({ ...INITIAL_ELEMENT_PROPERTY_SECTIONS }),
     );
+    const elementPropertySections = incrementalActions ? Object.fromEntries(Object.entries(INITIAL_ELEMENT_PROPERTY_SECTIONS)
+        .map(([key, fallback]) => [key, incrementalActions.panelsExpanded[`element.${key}`] ?? fallback])) as ElementPropertySectionState : localElementPropertySections;
     const toggleElementPropertySection = useCallback((section: ElementPropertySectionKey) => {
+        if (incrementalActions) {
+            incrementalActions.setPanelExpanded(`element.${section}`, !elementPropertySections[section]); return;
+        }
         setElementPropertySections(current => ({
             ...current,
             [section]: !current[section],
         }));
-    }, []);
+    }, [incrementalActions, elementPropertySections]);
     const node = nodes[selectedNodeId];
     const isHierarchyMode = viewMode === 'hierarchy';
 
@@ -122,6 +137,9 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, activeP
     const [dimUnit, setDimUnit] = React.useState<'px' | 'pt' | 'in' | 'mm'>('px');
     const [autoReflow, setAutoReflow] = React.useState(true);
     const [scaleFontSize, setScaleFontSize] = React.useState(true);
+    // Positional traversal controls retain a sequence token across field edits,
+    // but not across add/remove. Weak keys never retain old document payloads.
+    const traversalSequences = React.useRef(new WeakMap<object, object>());
 
     const applyPreset = (key: string) => {
         const p = PAGE_PRESETS[key];
@@ -144,6 +162,69 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, activeP
 
     // Hooks must be called before any early returns
     const handleUpdate = useCallback((updates: Partial<TemplateElement> | ((prev: TemplateElement) => Partial<TemplateElement>), saveHistory: boolean = true) => {
+        if (incrementalActions) {
+            if (typeof updates !== 'function' && updates.borderSides) {
+                const sides = updates.borderSides;
+                const before = displayElement?.borderSides ?? {};
+                incrementalActions.patchElements(selectedElementIds, previous => {
+                    const next = { ...previous.borderSides };
+                    for (const side of ['top', 'right', 'bottom', 'left'] as const) {
+                        if (Object.hasOwn(before, side) && !Object.hasOwn(sides, side)) delete next[side];
+                        else if (Object.hasOwn(sides, side) && sides[side] !== before[side]) {
+                            const value = sides[side];
+                            next[side] = value ? { ...next[side], ...Object.fromEntries(Object.entries(value).filter(([key, field]) =>
+                                !before[side] || !Object.hasOwn(before[side], key) || !Object.is(before[side]?.[key as keyof typeof value], field))) } as typeof value : value;
+                        }
+                    }
+                    return { ...updates, borderSides: next };
+                }, saveHistory);
+                return;
+            }
+            // SingleElementEditor still emits a rendered whole gridConfig. Translate
+            // that selected map into field intent before resolving each live element.
+            // Functional controls (including text padding) already resolve live values.
+            const grid = typeof updates === 'function' ? undefined : updates.gridConfig;
+            const before = displayElement?.gridConfig;
+            if (grid && before) {
+                const renderedPaths = new Map(selectedElements.map(element => [element.id, element.gridConfig?.traversalPath]));
+                const fields = Object.fromEntries(Object.entries(grid).filter(([key, value]) =>
+                    key !== 'traversalPath' && (!Object.hasOwn(before, key) || !Object.is(before[key as keyof typeof before], value))));
+                incrementalActions.patchElements(selectedElementIds, previous => {
+                    const current = previous.gridConfig;
+                    if (!current) return {};
+                    const next = { ...current, ...fields };
+                    if (grid.traversalPath !== before.traversalPath) {
+                        const oldPath = before.traversalPath ?? [];
+                        const path = grid.traversalPath ?? [];
+                        const live = current.traversalPath ?? [];
+                        const renderedPath = renderedPaths.get(previous.id) ?? oldPath;
+                        const token = traversalSequences.current.get(renderedPath) ?? {};
+                        traversalSequences.current.set(renderedPath, token);
+                        if (live !== renderedPath && current.traversalPath && traversalSequences.current.get(live) !== token) return {};
+                        if (path.length === oldPath.length) {
+                            // A step editor changes named fields, not neighboring steps.
+                            next.traversalPath = live.map((step, index) => path[index] && oldPath[index] !== path[index]
+                                ? { ...step, ...Object.fromEntries(Object.entries(path[index]).filter(([key, value]) =>
+                                    !Object.hasOwn(oldPath[index], key) || !Object.is(oldPath[index][key as keyof typeof step], value))) }
+                                : step);
+                        } else if (path.length > oldPath.length) {
+                            next.traversalPath = [...live, ...path.slice(oldPath.length)];
+                        } else {
+                            const removed = new Set(oldPath.flatMap((step, index) => path.includes(step) ? [] : [index]));
+                            next.traversalPath = live.filter((_, index) => !removed.has(index));
+                        }
+                        traversalSequences.current.set(next.traversalPath, path.length === oldPath.length ? token : {});
+                    }
+                    return { ...updates, gridConfig: next };
+                }, saveHistory);
+            } else incrementalActions.patchElements(selectedElementIds, previous => {
+                const patch = typeof updates === 'function' ? updates(previous) : updates;
+                // Padding controls resolve known sides; opaque extension fields are
+                // not instructions to delete when those controls omit them.
+                return patch.textPadding ? { ...patch, textPadding: { ...previous.textPadding, ...patch.textPadding } } : patch;
+            }, saveHistory);
+            return;
+        }
         if (selectedElements.length > 0 && template) {
             // Apply updates to ALL selected elements
             const newElements = template.elements.map(el => {
@@ -162,7 +243,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, activeP
             });
             onUpdateElements(newElements, saveHistory);
         }
-    }, [onUpdateElements, selectedElements, template, selectedElementIds]);
+    }, [onUpdateElements, selectedElements, template, selectedElementIds, incrementalActions, displayElement]);
 
     const handleOpenNodeSelector = useCallback((mode: 'grid_source' | 'link_element') => {
         if (selectedElements.length > 0) {
@@ -179,7 +260,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, activeP
                 icon={Settings2}
                 testId="template-settings-section"
                 expanded={settingsExpanded}
-                onToggle={() => setSettingsExpanded(v => !v)}
+                onToggle={() => incrementalActions ? incrementalActions.setPanelExpanded('template-settings', !settingsExpanded) : setSettingsExpanded(v => !v)}
             >
                 <div className="px-4 pb-4">
 
@@ -199,7 +280,8 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, activeP
                                 <select className="w-full border rounded px-2 py-1 text-sm mt-1 bg-white"
                                     defaultValue=""
                                     onChange={(e) => {
-                                        state.selectedNodeIds.forEach(id => onUpdateNode(id, { type: e.target.value }));
+                                        if (incrementalActions) incrementalActions.patchNodes(state.selectedNodeIds, { type: e.target.value });
+                                        else state.selectedNodeIds.forEach(id => onUpdateNode(id, { type: e.target.value }));
                                     }}>
                                     <option value="" disabled>Select Template...</option>
                                     {Object.values(state.variants[state.activeVariantId]?.templates || {}).map((t: any) => (
@@ -345,7 +427,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, activeP
                             </div>
                         )}
                         <SingleElementEditor
-                            key={selectedElements[0].id} // Stable key to avoid remounting jank, but updates on selection change
+                            key={incrementalActions ? JSON.stringify([activeVariantId, effectiveTemplateId, selectedElementIds, incrementalActions.contextEpoch]) : selectedElements[0].id}
                             // (this also remounts SvgSourceSection on selection change, resetting its draft + pending debounce timer)
                             element={displayElement}
                             onUpdate={handleUpdate}

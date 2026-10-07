@@ -3,6 +3,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
+import { isolatedEnvironment } from '../../scripts/verify-incremental-persistence.mjs';
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
 const workflowPath = path.join(repositoryRoot, '.github/workflows/local-workspace-migration.yml');
@@ -38,6 +39,8 @@ const probeConfig = overrides => {
         E2E_WEB_PORT: _webPort,
         E2E_API_PORT: _apiPort,
         E2E_API_BASE: _apiBase,
+        E2E_BUILT_BUNDLE: _built,
+        INCREMENTAL_PERFORMANCE_PHASE: _phase,
         ...cleanEnv
     } = process.env;
     const result = spawnSync(process.execPath, ['-e', probeScript], {
@@ -487,6 +490,62 @@ const yamlKey = (key, style) => style === 'plain'
 
 const duplicateKeyCases = ['before', 'after'].flatMap(position =>
     ['plain', 'single', 'double'].map(style => [position, style]));
+
+describe('incremental project discovery', () => {
+    const isolated = phase => isolatedEnvironment({
+        phase, webPort: 4310, apiPort: 4311,
+        outputDir: '/tmp/opencode/config-contract-no-server',
+    }, {});
+    const probe = env => spawnSync(process.execPath, ['-e', `
+        const config = require('./playwright.config.cjs');
+        process.stdout.write(JSON.stringify(config, (_key, value) =>
+            value instanceof RegExp ? value.toString() : value));
+    `], { cwd: repositoryRoot, env, encoding: 'utf8' });
+
+    it('does not register the performance project when phase is absent', () => {
+        const env = isolated('baseline');
+        delete env.INCREMENTAL_PERFORMANCE_PHASE;
+        const result = probe(env);
+        expect(result.status, result.stderr).toBe(0);
+        expect(JSON.parse(result.stdout).projects.map(project => project.name)).toEqual(sourceProjects);
+    });
+
+    it.each(['baseline', 'final'])('requires isolated mode for %s and preserves exact matching and ordinary quotas', phase => {
+        const env = isolated(phase);
+        const result = probe(env);
+        expect(result.status, result.stderr).toBe(0);
+        const config = JSON.parse(result.stdout);
+        const project = config.projects.find(project => project.name === 'incremental-performance-chromium');
+        expect(project.testMatch).toBe('/incremental_performance\\.spec\\.ts$/');
+        expect(project.use.launchOptions).toEqual({ args: [] });
+        expect(config.webServer.command).toBe('node scripts/incremental-test-server.mjs');
+        expect(config.webServer.reuseExistingServer).toBe(false);
+        expect(probe({ ...env, E2E_BUILT_BUNDLE: '0' }).status).not.toBe(0);
+        expect(probe({ ...env, SQLITE_PATH: '/not-isolated.sqlite' }).status).not.toBe(0);
+    });
+
+    it.each(['', 'unknown', 'BASELINE', ' final '])('rejects explicit invalid phase %j instead of ordinary startup', phase => {
+        const result = probe({ ...isolated('baseline'), INCREMENTAL_PERFORMANCE_PHASE: phase });
+        expect(result.status).not.toBe(0);
+        expect(result.stderr).toContain('isolated incremental verification launcher');
+    });
+
+    it('default --list discovery excludes incremental tests without starting servers', () => {
+        const env = isolated('baseline');
+        delete env.INCREMENTAL_PERFORMANCE_PHASE;
+        delete env.E2E_BUILT_BUNDLE;
+        // Some ordinary specs import DB helpers during collection. Never open
+        // repository/user SQLite files, even though --list starts no servers.
+        env.SQLITE_PATH = ':memory:';
+        const result = spawnSync(process.execPath, [
+            'node_modules/@playwright/test/cli.js', 'test', '--list', '--reporter=list',
+        ], { cwd: repositoryRoot, env, encoding: 'utf8', timeout: 30_000, maxBuffer: 4 * 1024 * 1024 });
+        expect(result.status, result.stderr).toBe(0);
+        expect(result.stdout).toContain('[chromium]');
+        expect(result.stdout).not.toContain('incremental-performance-chromium');
+        expect(result.stdout).not.toContain('incremental_performance.spec.ts');
+    }, 35_000);
+});
 
 describe('playwright config ports', () => {
     it('uses the selected API port instead of a stale ambient API base', () => {

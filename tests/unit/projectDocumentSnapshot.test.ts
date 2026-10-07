@@ -55,6 +55,17 @@ const makeState = (): AppState => ({
 });
 
 describe('project document snapshots', () => {
+    it.each(['generator', 'activeLayerId'] as const)('retains exact own-presence of optional %s across capture and restore', key => {
+        const absent = makeState(); delete absent[key];
+        const captured = snapshotDocument(absent);
+        expect(Object.hasOwn(captured, key)).toBe(false);
+        const current = makeState(); current.activeLayerId = 'new-layer';
+        expect(Object.hasOwn(restoreDocument(current, captured), key)).toBe(false);
+        const present = { ...absent, [key]: undefined };
+        const ownUndefined = snapshotDocument(present);
+        expect(Object.hasOwn(ownUndefined, key)).toBe(true);
+        expect(Object.hasOwn(restoreDocument(absent, ownUndefined), key)).toBe(true);
+    });
     it('omits absent optional generator metadata', () => {
         const state = makeState();
         delete state.generator;

@@ -1,6 +1,6 @@
 import {
   WorkspaceStoreError,
-  type WorkspaceCommand,
+  type SnapshotWorkspaceCommand as WorkspaceCommand,
   type WorkspaceProject,
   type WorkspaceSnapshot,
 } from './contracts';

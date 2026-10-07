@@ -214,6 +214,7 @@ export const OverlayTextEditor: React.FC<OverlayTextEditorProps> = ({ element, o
         >
             <div
                 data-testid="overlay-text-editor-box"
+                data-canvas-event-owner="inline-text"
                 style={{
                     position: 'absolute',
                     left: contentBox.x,

@@ -1,4 +1,8 @@
 import type { AppState } from '../../types';
+import type { DocumentChange, EditorPreferences, EditorScalarPreferencePatch } from '../document/contracts';
+import type { QueueStructuralInput, QueueFoldInput } from './incrementalQueue';
+import type { BulkDocumentAck, DocumentSaveAck, PreferenceSaveAck } from './normalized/schema';
+import type { WorkspaceLifecycleIntent, WorkspaceCommandResult as NormalizedWorkspaceCommandResult } from './normalized/workspaceCommands';
 
 export interface WorkspaceProject {
   id: string;
@@ -51,7 +55,7 @@ export interface WorkspaceSnapshot {
   pendingImports: WorkspacePendingImport[];
 }
 
-export type WorkspaceCommand =
+export type SnapshotWorkspaceCommand =
   | { type: 'save-project'; project: WorkspaceProject }
   | { type: 'create-and-activate-project'; project: WorkspaceProject }
   | { type: 'activate-project'; projectId: string }
@@ -74,6 +78,53 @@ export type WorkspaceCommand =
   | { type: 'consume-import'; importId: string }
   | { type: 'recover-legacy-as-copies'; recoveryId: string };
 
+export interface IncrementalWorkspaceCommand {
+  type: 'save-document-changes';
+  authority: WorkspaceProject;
+  editorGeneration: number;
+  changes: readonly DocumentChange[];
+  structural?: QueueStructuralInput;
+  linkedProjectName?: { readonly name: string };
+}
+export interface PreferenceWorkspaceCommand {
+  type: 'save-editor-preferences';
+  authority: WorkspaceProject;
+  editorGeneration: number;
+  patch: EditorScalarPreferencePatch;
+  folds?: QueueFoldInput;
+}
+export interface ReplacementWorkspaceCommand {
+  type: 'replace-document';
+  authority: WorkspaceProject;
+  editorGeneration: number;
+  state: AppState;
+  preferences: EditorPreferences;
+  linkedProjectName?: { readonly name: string };
+}
+export interface ProjectMetadataCommand {
+  type: 'update-project-metadata';
+  authority: WorkspaceProject;
+  editorGeneration: number;
+  patch: Partial<Pick<WorkspaceProject, 'name' | 'cloud'>>;
+}
+export interface WorkspaceLifecycleCommand {
+  readonly type: 'workspace-lifecycle';
+  readonly intent: WorkspaceLifecycleIntent;
+}
+export type WorkspaceLifecycleCommit = (command: WorkspaceLifecycleCommand) => Promise<NormalizedWorkspaceCommandResult>;
+export type WorkspaceCommand = SnapshotWorkspaceCommand | IncrementalWorkspaceCommand | PreferenceWorkspaceCommand | ReplacementWorkspaceCommand | ProjectMetadataCommand | WorkspaceLifecycleCommand;
+export type WorkspaceCommandResult = WorkspaceSnapshot | DocumentSaveAck | PreferenceSaveAck | BulkDocumentAck | NormalizedWorkspaceCommandResult;
+export type SnapshotWorkspaceCommit = (command: SnapshotWorkspaceCommand) => Promise<WorkspaceSnapshot>;
+export interface WorkspaceCommit {
+  (command: WorkspaceLifecycleCommand): Promise<NormalizedWorkspaceCommandResult>;
+  (command: IncrementalWorkspaceCommand): Promise<DocumentSaveAck>;
+  (command: PreferenceWorkspaceCommand): Promise<PreferenceSaveAck>;
+  (command: ReplacementWorkspaceCommand): Promise<BulkDocumentAck>;
+  (command: ProjectMetadataCommand): Promise<DocumentSaveAck>;
+  (command: SnapshotWorkspaceCommand): Promise<WorkspaceSnapshot>;
+  (command: WorkspaceCommand): Promise<WorkspaceCommandResult>;
+}
+
 export type WorkspaceBootstrapPhase =
   | 'opening-local-storage'
   | 'checking-existing-projects'
@@ -92,7 +143,9 @@ export interface MigrationReceipt {
 export type RecoverySource =
   | 'legacy-current'
   | 'legacy-original'
-  | 'indexeddb-workspace';
+  | 'indexeddb-workspace'
+  | 'normalized-active'
+  | 'normalization-source';
 
 export const INDEXED_DB_UPGRADE_BLOCKED_MESSAGE = 'IndexedDB upgrade is blocked.';
 
@@ -152,6 +205,6 @@ export class WorkspaceStoreError extends Error {
 export interface LocalWorkspaceStore {
   bootstrap(observer?: WorkspaceBootstrapObserver): Promise<WorkspaceBootstrapResult>;
   /** Returned snapshots are authority-bearing, shared publications and must be treated as immutable. */
-  commit(command: WorkspaceCommand): Promise<WorkspaceSnapshot>;
+  commit: WorkspaceCommit;
   exportRecoveryBundle(source: RecoverySource): Promise<Blob>;
 }

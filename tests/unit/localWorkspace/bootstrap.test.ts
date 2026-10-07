@@ -36,7 +36,11 @@ import {
   canonicalStringify,
   digestLegacySnapshot,
 } from '../../../services/localWorkspace/canonical';
-import { captureLegacySnapshot } from '../../../services/localWorkspace/legacy';
+import { captureLegacySnapshot, captureStableLegacySnapshot, captureStableLegacySnapshotWithDigest } from '../../../services/localWorkspace/legacy';
+import { makeWorkHarness } from '../../helpers/normalizationWorkHarness';
+import { isRecognizedLedger, isRecognizedLedgerWork, isHistoricalLineageLedger,
+  isHistoricalLineageLedgerWork, validateHistoricalBackup, classifyHistoricalInspection,
+  classifyHistoricalInspectionWork } from '../../../services/localWorkspace/historicalBootstrap';
 import { prepareLineageRepair } from '../../../services/localWorkspace/lineageRepair';
 import {
   prepareInitialCopy,
@@ -106,6 +110,363 @@ afterAll(() => {
 
 beforeEach(() => vi.spyOn(console, 'log').mockImplementation(() => {}));
 afterEach(() => vi.restoreAllMocks());
+
+describe('cooperative historical inspection classification', () => {
+  const empty = (): IndexedDbInspection => ({ projects: [], workspace: [], presets: [], pendingImports: [], migrationLedger: [], legacyBackup: [] });
+
+  it('classifies empty storage without hashing or allocating source captures', async () => {
+    const h = makeWorkHarness('prerequisite'); const inspection = empty();
+    expect(await h.runtime.run(classifyHistoricalInspectionWork(inspection))).toEqual({ kind: 'empty' });
+    expect(classifyHistoricalInspection(inspection)).toEqual({ kind: 'empty' });
+    expect(h.runtime.snapshot()).toMatchObject({ writes: 0, hashBytes: 0, captureHighWater: 0 });
+  });
+
+  it.each(STORE_NAMES.filter(name => name !== 'migrationLedger'))('rejects orphaned %s rows', async name => {
+    const inspection = empty(); (inspection[name] as unknown[]).push({ id: 'orphan' });
+    expect(await makeWorkHarness('prerequisite').runtime.run(classifyHistoricalInspectionWork(inspection)))
+      .toEqual(classifyHistoricalInspection(inspection));
+    expect(classifyHistoricalInspection(inspection)).toEqual({ kind: 'unrecognized' });
+  });
+
+  it.each([1, 2])('retains version %i state classifications and ledger identity', async version => {
+    const prepared = await prepareFor(createHarness());
+    for (const state of ['copied', 'verified', 'cleanup-started', 'cleanup-complete'] as const) {
+      const ledger = { ...prepared.ledger, indexedDbVersion: version, state, verifiedAt: state === 'copied' ? null : VERIFIED_NOW };
+      const inspection = { ...empty(), migrationLedger: [ledger] } as IndexedDbInspection;
+      const actual = await makeWorkHarness('prerequisite').runtime.run(classifyHistoricalInspectionWork(inspection));
+      expect(actual).toEqual(classifyHistoricalInspection(inspection));
+      expect(actual.kind).toBe(version === 1 ? 'historical-lineage' : 'current');
+      if (actual.kind === 'current' || actual.kind === 'historical-lineage') expect(actual.ledger).toBe(ledger);
+    }
+  });
+
+  it.each(['multiple', 'invalid', 'unsupported'] as const)('rejects %s ledgers identically', async kind => {
+    const prepared = await prepareFor(createHarness()); const ledger = prepared.ledger;
+    const inspection = { ...empty(), migrationLedger: kind === 'multiple' ? [ledger, ledger]
+      : [kind === 'invalid' ? { ...ledger, sourceDigest: 'wrong' } : { ...ledger, indexedDbVersion: 99 }] } as IndexedDbInspection;
+    expect(await makeWorkHarness('prerequisite').runtime.run(classifyHistoricalInspectionWork(inspection)))
+      .toEqual({ kind: 'unrecognized' });
+    expect(classifyHistoricalInspection(inspection)).toEqual({ kind: 'unrecognized' });
+  });
+
+  it.each([1, 2])('cancels during version %i fingerprint traversal', async version => {
+    const prepared = await prepareFor(createHarness()); const h = makeWorkHarness('prerequisite'); h.observe(h.cancel);
+    const inspection = { ...empty(), migrationLedger: [{ ...prepared.ledger, indexedDbVersion: version,
+      counts: { ...prepared.ledger.counts, sourceProjects: 3000, targetProjects: 3000 },
+      projectFingerprints: Array.from({ length: 3000 }, (_, sourceIndex) => ({ sourceIndex, id: `p${sourceIndex}`, digest: 'f'.repeat(64) })),
+    }] } as IndexedDbInspection;
+    await expect(h.runtime.run(classifyHistoricalInspectionWork(inspection))).rejects.toMatchObject({ name: 'AbortError' });
+    expect(h.runtime.snapshot().visits).toBeGreaterThan(0); expect(h.runtime.snapshot().writes).toBe(0);
+  });
+
+  it('rejects before inspecting storage when already cancelled', async () => {
+    const h = makeWorkHarness('prerequisite'); h.cancel(); const inspection = empty();
+    const get = vi.fn(() => []);
+    Object.defineProperty(inspection, 'migrationLedger', { get });
+    await expect(h.runtime.run(classifyHistoricalInspectionWork(inspection))).rejects.toMatchObject({ name: 'AbortError' });
+    expect(get).not.toHaveBeenCalled();
+  });
+});
+
+describe('cooperative historical ledger and backup validation', () => {
+  const subtle = webcrypto.subtle as unknown as SubtleCrypto;
+
+  it.each([1, 2])('preserves version %i classification and all historical states', async version => {
+    const prepared = await prepareFor(createHarness());
+    for (const state of ['copied', 'verified', 'cleanup-started', 'cleanup-complete']) {
+      const ledger = { ...prepared.ledger, indexedDbVersion: version, state, verifiedAt: state === 'copied' ? null : VERIFIED_NOW };
+      const h = makeWorkHarness('prerequisite');
+      expect(isRecognizedLedger(ledger)).toBe(version === 2);
+      expect(isHistoricalLineageLedger(ledger)).toBe(version === 1);
+      expect(await h.runtime.run(isRecognizedLedgerWork(ledger))).toBe(version === 2);
+      expect(await h.runtime.run(isHistoricalLineageLedgerWork(ledger))).toBe(version === 1);
+      expect(h.runtime.snapshot().visits).toBeGreaterThan(0);
+    }
+  });
+
+  it.each([
+    ['unknown ledger field', (v: any) => { v.extra = true; }],
+    ['missing ledger field', (v: any) => { delete v.sourceDigest; }],
+    ['wrong rollout epoch', (v: any) => { v.persistenceRolloutEpoch += 1; }],
+    ['wrong ID', (v: any) => { v.id = 'other'; }],
+    ['empty backup ID', (v: any) => { v.originalLegacyBackupId = ''; }],
+    ['bad digest', (v: any) => { v.sourceDigest = 'bad'; }],
+    ['bad timestamp', (v: any) => { v.migratedAt = '2026-08-14'; }],
+    ['copied with verified time', (v: any) => { v.verifiedAt = VERIFIED_NOW; }],
+    ['verified without time', (v: any) => { v.state = 'verified'; }],
+    ['bad key order', (v: any) => { v.keyFingerprints.reverse(); }],
+    ['bad key presence', (v: any) => { v.keyFingerprints[0].present = 1; }],
+    ['bad source index', (v: any) => { v.projectFingerprints[0].sourceIndex = 1; }],
+    ['extra fingerprint field', (v: any) => { v.projectFingerprints[0].extra = true; }],
+    ['duplicate fingerprint IDs', (v: any) => { v.projectFingerprints.push({ ...v.projectFingerprints[0], sourceIndex: 1 }); v.counts.sourceProjects = 2; }],
+    ['empty target', (v: any) => { v.counts.targetProjects = 0; }],
+    ['wrong source count', (v: any) => { v.counts.sourceProjects += 1; }],
+    ['bad recovery marker', (v: any) => { v.unresolvedRecovery = { id: 'r', kind: 'unknown', detectedAt: TEST_NOW }; }],
+  ])('retains %s rejection in the shared ledger rules', async (_label, corrupt) => {
+    const { ledger } = await prepareFor(createHarness());
+    corrupt(ledger);
+    expect(isRecognizedLedger(ledger)).toBe(false);
+    expect(await makeWorkHarness('prerequisite').runtime.run(isRecognizedLedgerWork(ledger))).toBe(false);
+  });
+
+  it('preserves sparse fingerprint acceptance and long historical backup identifiers', async () => {
+    const { ledger } = await prepareFor(createHarness());
+    ledger.projectFingerprints = new Array(3);
+    ledger.counts.sourceProjects = 3;
+    delete ledger.keyFingerprints[0];
+    ledger.originalLegacyBackupId = '历史'.repeat(1000);
+    expect(isRecognizedLedger(ledger)).toBe(true);
+    expect(await makeWorkHarness('prerequisite').runtime.run(isRecognizedLedgerWork(ledger))).toBe(true);
+  });
+
+  it.each(['legacy-drift', 'target-mismatch', 'unknown-target'] as const)('preserves recognized %s recovery markers', async kind => {
+    const { ledger } = await prepareFor(createHarness());
+    ledger.unresolvedRecovery = { id: 'recovery', kind, detectedAt: TEST_NOW, observedLegacyDigest: undefined };
+    expect(isRecognizedLedger(ledger)).toBe(true);
+    expect(await makeWorkHarness('prerequisite').runtime.run(isRecognizedLedgerWork(ledger))).toBe(true);
+  });
+
+  it.each([1, 2])('cancels large version %i fingerprint traversal', async version => {
+    const { ledger } = await prepareFor(createHarness());
+    const candidate = { ...ledger, indexedDbVersion: version,
+      projectFingerprints: Array.from({ length: 10000 }, (_, index) => ({ sourceIndex: index, id: `p${index}`, digest: 'a'.repeat(64) })),
+      counts: { ...ledger.counts, sourceProjects: 10000 } };
+    const h = makeWorkHarness('prerequisite');
+    h.observe(() => h.cancel());
+    await expect(h.runtime.run(version === 2 ? isRecognizedLedgerWork(candidate) : isHistoricalLineageLedgerWork(candidate)))
+      .rejects.toMatchObject({ name: 'AbortError' });
+  });
+
+  it('hashes a valid backup once cooperatively and returns the original row', async () => {
+    const { backup } = await prepareFor(createHarness());
+    const expected = { id: backup.id, digest: backup.digest, kind: backup.kind, capturedAt: backup.capturedAt };
+    const reference = makeWorkHarness('prerequisite');
+    await digestLegacySnapshot(backup.snapshot, subtle, reference.runtime);
+    const h = makeWorkHarness('prerequisite');
+    const digest = vi.fn(() => { throw new Error('No native digest on Work path'); });
+    expect(await validateHistoricalBackup(backup, expected, { digest } as unknown as SubtleCrypto, h.runtime)).toBe(backup);
+    expect(h.runtime.snapshot().backupValidations).toBe(1);
+    expect(h.runtime.snapshot().legacyHashBytes).toBe(reference.runtime.snapshot().legacyHashBytes);
+    expect(digest).not.toHaveBeenCalled();
+  });
+
+  it.each(['id', 'digest', 'kind', 'capturedAt'] as const)('checks expected backup %s before hashing', async field => {
+    const { backup } = await prepareFor(createHarness());
+    const expected = { id: backup.id, digest: backup.digest, kind: backup.kind, capturedAt: backup.capturedAt };
+    if (field === 'id') expected.id = 'wrong';
+    if (field === 'digest') expected.digest = 'f'.repeat(64);
+    if (field === 'kind') expected.kind = 'conflict';
+    if (field === 'capturedAt') expected.capturedAt = VERIFIED_NOW;
+    const h = makeWorkHarness('prerequisite');
+    await expect(validateHistoricalBackup(backup, expected, subtle, h.runtime)).rejects.toMatchObject({ category: 'verification-failed' });
+    expect(h.runtime.snapshot().legacyHashBytes).toBe(0);
+    expect(h.runtime.snapshot().visits).toBeGreaterThan(0);
+  });
+
+  it('rejects changed backup bytes and normalization archives', async () => {
+    const { backup } = await prepareFor(createHarness());
+    const expected = { id: backup.id, digest: backup.digest };
+    backup.snapshot[LEGACY_KEYS.projects].raw = 'changed';
+    const h = makeWorkHarness('prerequisite');
+    await expect(validateHistoricalBackup(backup, expected, subtle, h.runtime)).rejects.toMatchObject({ category: 'verification-failed' });
+    expect(h.runtime.snapshot().legacyHashBytes).toBeGreaterThan(0);
+    const archive = { ...backup, kind: 'normalization-source' };
+    await expect(validateHistoricalBackup(archive, expected, subtle, h.runtime)).rejects.toMatchObject({ category: 'verification-failed' });
+  });
+
+  it('cancels backup hashing without returning a validated row', async () => {
+    const { backup } = await prepareFor(createHarness());
+    backup.snapshot[LEGACY_KEYS.projects].raw = '😀'.repeat(16000);
+    backup.digest = await digestLegacySnapshot(backup.snapshot, subtle);
+    const h = makeWorkHarness('prerequisite');
+    h.observe(() => h.cancel());
+    await expect(validateHistoricalBackup(backup, { id: backup.id, digest: backup.digest }, subtle, h.runtime))
+      .rejects.toMatchObject({ name: 'AbortError' });
+    expect(h.runtime.snapshot().ownedBytes).toBe(0);
+  });
+
+  it.each([
+    ['extra backup field', (v: any) => { v.extra = true; }],
+    ['extra snapshot field', (v: any) => { v.snapshot.extra = true; }],
+    ['bad presence flag', (v: any) => { v.snapshot[LEGACY_KEYS.projects].present = 1; }],
+    ['absent non-null raw value', (v: any) => { v.snapshot[LEGACY_KEYS.projects].present = false; }],
+    ['noncanonical timestamp', (v: any) => { v.capturedAt = '2026-08-14'; }],
+    ['non-plain snapshot', (v: any) => { v.snapshot = Object.assign(Object.create(null), v.snapshot); }],
+  ])('rejects %s without hashing payloads', async (_label, corrupt) => {
+    const { backup } = await prepareFor(createHarness());
+    const expected = { id: backup.id, digest: backup.digest };
+    corrupt(backup);
+    const digest = vi.fn(async () => new Uint8Array(32).buffer);
+    await expect(validateHistoricalBackup(backup, expected, { digest } as unknown as SubtleCrypto))
+      .rejects.toMatchObject({ category: 'verification-failed' });
+    expect(digest).not.toHaveBeenCalled();
+    const h = makeWorkHarness('prerequisite');
+    await expect(validateHistoricalBackup(backup, expected, subtle, h.runtime))
+      .rejects.toMatchObject({ category: 'verification-failed' });
+    expect(h.runtime.snapshot().backupValidations).toBe(0);
+  });
+
+  it('keeps the no-work injected single-hash contract', async () => {
+    const { backup } = await prepareFor(createHarness());
+    const digest = vi.fn((algorithm: AlgorithmIdentifier, data: BufferSource) => subtle.digest(algorithm, data));
+    expect(await validateHistoricalBackup(backup, { id: backup.id, digest: backup.digest }, { digest } as unknown as SubtleCrypto)).toBe(backup);
+    expect(digest).toHaveBeenCalledTimes(1);
+  });
+
+  it('compares long backup IDs cooperatively without imposing private normalized ID limits', async () => {
+    const { backup } = await prepareFor(createHarness());
+    backup.id = '历史-backup-'.repeat(2000);
+    const h = makeWorkHarness('prerequisite');
+    expect(await validateHistoricalBackup(backup, { id: backup.id, digest: backup.digest }, subtle, h.runtime)).toBe(backup);
+    expect(h.runtime.snapshot().comparedCodeUnits).toBeGreaterThanOrEqual(backup.id.length);
+  });
+});
+
+describe('cooperative stable legacy capture', () => {
+  const subtle = webcrypto.subtle as unknown as SubtleCrypto;
+
+  it('counts twelve reads and three exact hashes with no observer after the final native tail', async () => {
+    const values = { [LEGACY_KEYS.projects]: ' café☕\ud800😀 '.repeat(100), [LEGACY_KEYS.activeProject]: '' };
+    const snapshot = legacySnapshot(values);
+    const reference = makeWorkHarness('legacy-fence');
+    const digest = await digestLegacySnapshot(snapshot, subtle, reference.runtime);
+    const trace: string[] = [];
+    const storage = new MemoryStorage(values, count => { trace.push(`read:${count}`); });
+    const h = makeWorkHarness('legacy-fence');
+    h.observe(() => { trace.push('observer'); });
+    const cryptoDigest = vi.fn(() => { throw new Error('No SubtleCrypto under cooperative work'); });
+    const result = await captureStableLegacySnapshotWithDigest(storage, { digest: cryptoDigest } as unknown as SubtleCrypto, {
+      work: h.runtime, generation: () => 7, expected: { snapshot, digest, generation: 7 },
+    });
+    expect(result).toEqual({ snapshot, digest });
+    expect(storage.reads).toEqual([...LEGACY_DOCUMENT_KEYS, ...LEGACY_DOCUMENT_KEYS, ...LEGACY_DOCUMENT_KEYS]);
+    expect(h.runtime.snapshot().legacyCaptures).toBe(1);
+    expect(h.runtime.snapshot().legacyReads).toBe(12);
+    expect(h.runtime.snapshot().legacyReadBytes).toBe(3 * new TextEncoder().encode(values[LEGACY_KEYS.projects]).byteLength);
+    expect(h.runtime.snapshot().legacyHashBytes).toBe(3 * reference.runtime.snapshot().legacyHashBytes);
+    expect(h.runtime.snapshot().ownedBytes).toBe(0);
+    expect(trace.slice(trace.indexOf('read:9'))).toEqual(['read:9', 'read:10', 'read:11', 'read:12']);
+    expect(cryptoDigest).not.toHaveBeenCalled();
+    expect(storage.mutations).toEqual([]);
+  });
+
+  it.each(['raw', 'presence', 'digest', 'generation'] as const)('rejects a mismatched expected %s in the final tail', async field => {
+    const values = { [LEGACY_KEYS.projects]: '[]', [LEGACY_KEYS.activeProject]: '' };
+    const snapshot = legacySnapshot(values);
+    const expected = { snapshot: structuredClone(snapshot), digest: await digestLegacySnapshot(snapshot, subtle), generation: 2 };
+    if (field === 'raw') expected.snapshot[LEGACY_KEYS.projects].raw = ' []';
+    if (field === 'presence') expected.snapshot[LEGACY_KEYS.activeProject] = { present: false, raw: null };
+    if (field === 'digest') expected.digest = 'f'.repeat(64);
+    if (field === 'generation') expected.generation = 3;
+    const h = makeWorkHarness('legacy-fence');
+    const storage = memoryStorage(values);
+    await expect(captureStableLegacySnapshotWithDigest(storage, subtle, {
+      work: h.runtime, generation: () => 2, expected,
+    })).rejects.toMatchObject({ name: 'LegacyCaptureError', category: 'legacy-changing' });
+    expect(h.runtime.snapshot().legacyReads).toBe(12);
+    expect(h.runtime.snapshot().ownedBytes).toBe(0);
+  });
+
+  it('weights changed final-read strings on failure rather than reusing old byte counts', async () => {
+    const changed = '😀'.repeat(100);
+    const storage = new MemoryStorage({ [LEGACY_KEYS.projects]: 'a' }, (count, current) => {
+      if (count === 8) current.seed(LEGACY_KEYS.projects, changed);
+    });
+    const h = makeWorkHarness('legacy-fence');
+    await expect(captureStableLegacySnapshotWithDigest(storage, subtle, { work: h.runtime }))
+      .rejects.toMatchObject({ category: 'legacy-changing' });
+    expect(h.runtime.snapshot().legacyReadBytes).toBe(2 + new TextEncoder().encode(changed).byteLength);
+    expect(h.runtime.snapshot().legacyReads).toBe(12);
+    expect(h.runtime.snapshot().ownedBytes).toBe(0);
+  });
+
+  it('retries generation-only drift and accounts every attempted capture', async () => {
+    let generation = 0;
+    const storage = new MemoryStorage({ [LEGACY_KEYS.projects]: '[]' }, count => { if (count === 4) generation += 1; });
+    const h = makeWorkHarness('legacy-fence');
+    await captureStableLegacySnapshotWithDigest(storage, subtle, { generation: () => generation, work: h.runtime });
+    expect(h.runtime.snapshot().legacyCaptures).toBe(2);
+    expect(h.runtime.snapshot().legacyReads).toBe(24);
+    expect(h.runtime.snapshot().retries).toBe(1);
+    expect(h.runtime.snapshot().ownedBytes).toBe(0);
+  });
+
+  it('preserves bounded generation retries without publishing an unstable result', async () => {
+    let generation = 0;
+    const storage = new MemoryStorage({ [LEGACY_KEYS.projects]: '[]' }, count => { if (count % 12 === 4) generation += 1; });
+    const h = makeWorkHarness('legacy-fence');
+    await expect(captureStableLegacySnapshotWithDigest(storage, subtle, {
+      generation: () => generation, generationRetries: 1, work: h.runtime,
+    })).rejects.toMatchObject({ category: 'legacy-changing' });
+    expect(h.runtime.snapshot().legacyReads).toBe(24);
+    expect(h.runtime.snapshot().retries).toBe(1);
+  });
+
+  it('cancellation in a native read prevents the next read in that capture', async () => {
+    const h = makeWorkHarness('legacy-fence');
+    const storage = new MemoryStorage({}, count => { if (count === 2) h.cancel(); });
+    await expect(captureStableLegacySnapshotWithDigest(storage, subtle, { work: h.runtime }))
+      .rejects.toMatchObject({ name: 'AbortError' });
+    expect(storage.reads).toHaveLength(2);
+    expect(h.runtime.snapshot().legacyReads).toBe(2);
+  });
+
+  it('lifecycle loss during preparation wins over the callback error', async () => {
+    const h = makeWorkHarness('legacy-fence');
+    const storage = memoryStorage({ [LEGACY_KEYS.projects]: '[]' });
+    await expect(captureStableLegacySnapshot(storage, () => {
+      h.cancel(); throw new Error('callback failure');
+    }, subtle, { work: h.runtime })).rejects.toMatchObject({ name: 'AbortError' });
+    expect(storage.reads).toHaveLength(4);
+    expect(h.runtime.snapshot().ownedBytes).toBe(0);
+  });
+
+  it('keeps exact source comparison when injected no-work hashes collide', async () => {
+    const storage = new MemoryStorage({ [LEGACY_KEYS.projects]: '[]' }, (count, current) => {
+      if (count === 4) current.seed(LEGACY_KEYS.projects, ' []');
+    });
+    const digest = vi.fn(async () => new Uint8Array(32).buffer);
+    await expect(captureStableLegacySnapshotWithDigest(storage, { digest } as unknown as SubtleCrypto))
+      .rejects.toMatchObject({ category: 'legacy-changing' });
+    expect(digest).toHaveBeenCalledTimes(3);
+    expect(storage.reads).toHaveLength(12);
+  });
+
+  it('enforces expected raw identity without work even when its digest matches', async () => {
+    const values = { [LEGACY_KEYS.projects]: '[]' };
+    const expected = { snapshot: legacySnapshot({ [LEGACY_KEYS.projects]: ' []' }), digest: '0'.repeat(64), generation: 0 };
+    const digest = vi.fn(async () => new Uint8Array(32).buffer);
+    await expect(captureStableLegacySnapshotWithDigest(memoryStorage(values), { digest } as unknown as SubtleCrypto, {
+      generation: () => 0, expected,
+    })).rejects.toMatchObject({ category: 'legacy-changing' });
+    expect(digest).toHaveBeenCalledTimes(3);
+  });
+
+  it('removes the invocation guard after a successful capture', async () => {
+    let valid = true;
+    const h = makeWorkHarness('legacy-fence');
+    await captureStableLegacySnapshotWithDigest(memoryStorage(), subtle, {
+      work: h.runtime, assertCurrent: () => { if (!valid) throw new Error('old guard retained'); },
+    });
+    valid = false;
+    await expect(h.runtime.run((function* () {
+      yield { visits: 1, utf8Bytes: 0, run() {} };
+      return 'current';
+    })())).resolves.toBe('current');
+  });
+
+  it('checks invocation guard between final-tail native reads', async () => {
+    let valid = true;
+    const error = new Error('capture owner lost');
+    const h = makeWorkHarness('legacy-fence');
+    const storage = new MemoryStorage({}, count => { if (count === 10) valid = false; });
+    await expect(captureStableLegacySnapshotWithDigest(storage, subtle, {
+      work: h.runtime, assertCurrent: () => { if (!valid) throw error; },
+    })).rejects.toBe(error);
+    expect(storage.reads).toHaveLength(10);
+    expect(h.runtime.snapshot().ownedBytes).toBe(0);
+  });
+});
 
 const requestResult = <T>(request: IDBRequest<T>): Promise<T> =>
   new Promise((resolve, reject) => {

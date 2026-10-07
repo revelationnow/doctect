@@ -3,6 +3,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EditorPage } from '../../pages/EditorPage';
 import { loadProjectState } from '../../services/loadProjectState';
+import { mockWorkspaceCommit } from '../helpers/fakeLocalWorkspaceStore';
 import type {
     LocalWorkspaceStore,
     WorkspaceProject,
@@ -82,7 +83,7 @@ const workspace = (project: WorkspaceProject): WorkspaceSnapshot => ({
 const renderEditor = (initialWorkspace: WorkspaceSnapshot, initialWarnings: string[] = []) => {
     const store: LocalWorkspaceStore = {
         bootstrap: vi.fn(),
-        commit: vi.fn(async command => {
+        commit: mockWorkspaceCommit(async command => {
             if (command.type === 'close-project' && command.successor) {
                 return workspace(command.successor);
             }

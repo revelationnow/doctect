@@ -374,6 +374,30 @@ describe('Canvas fixed text rendering', () => {
 });
 
 describe('Canvas text layout session hook', () => {
+    it('never acquires font readiness or clears a caller-owned injected session', async () => {
+        const originalFonts = Object.getOwnPropertyDescriptor(document, 'fonts');
+        const ready = vi.fn(() => Promise.resolve());
+        const fonts = new EventTarget();
+        Object.defineProperty(fonts, 'ready', { get: ready });
+        const subscribe = vi.spyOn(fonts, 'addEventListener');
+        Object.defineProperty(document, 'fonts', { configurable: true, value: fonts });
+        const fake = createFakeLayoutSession();
+
+        try {
+            const { result, unmount } = renderHook(() => useCanvasTextLayoutSession(fake.session));
+            act(() => fonts.dispatchEvent(new Event('loadingdone')));
+            await act(async () => {});
+            expect(result.current).toBe(fake.session);
+            unmount();
+            expect(ready).not.toHaveBeenCalled();
+            expect(subscribe).not.toHaveBeenCalled();
+            expect(fake.clear).not.toHaveBeenCalled();
+        } finally {
+            if (originalFonts) Object.defineProperty(document, 'fonts', originalFonts);
+            else Reflect.deleteProperty(document, 'fonts');
+        }
+    });
+
     it('clears fallback measurements when fonts became ready before the listener attached', async () => {
         const originalFonts = Object.getOwnPropertyDescriptor(document, 'fonts');
         const fonts = Object.assign(new EventTarget(), { ready: Promise.resolve() });

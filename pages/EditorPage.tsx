@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Link, useBlocker } from 'react-router-dom';
 import { AlertTriangle, Coffee, Github, Square, X } from 'lucide-react';
 import clsx from 'clsx';
@@ -14,7 +14,11 @@ import { KOFI_URL } from '../constants/editor';
 import {
   useWorkspaceProjectWrites,
   type StructuralWorkspaceCommand,
+  type WorkspaceProjectWrites,
 } from '../hooks/useWorkspaceProjectWrites';
+import { useIncrementalProjectWrites } from '../hooks/useIncrementalProjectWrites';
+import { getNormalizedWorkspaceSession, isNormalizedWorkspaceStore } from '../services/localWorkspace/NormalizedWorkspaceStore';
+import type { WorkspaceEditingSession } from '../services/localWorkspace/workspaceEditingSession';
 import { downloadJson } from '../services/browserDownload';
 import { createGeneratedAppState } from '../services/generatedProjectState';
 import { trackEvent } from '../services/analytics';
@@ -59,12 +63,56 @@ const commandErrorMessage = (error: unknown): string => (
   error instanceof Error ? error.message : 'Local workspace command failed.'
 );
 
-export function EditorPage({
+type PageWrites = Omit<WorkspaceProjectWrites, 'commitStructural'> & {
+  commitStructural(command: StructuralWorkspaceCommand, expectedAuthorityEpoch?: number): Promise<unknown>;
+};
+function LegacyEditorPage(props: EditorPageProps) {
+  const writes = useWorkspaceProjectWrites(props.store, props.initialWorkspace, props.onWorkspaceChange);
+  return <EditorPageShell {...props} writes={writes} />;
+}
+function NormalizedEditorPage(props: EditorPageProps) {
+  const editing = getNormalizedWorkspaceSession(props.store);
+  if (!editing) throw Error('Normalized editor was mounted without editing admission.');
+  const view = useSyncExternalStore(editing.subscribe, editing.getSnapshot, editing.getSnapshot);
+  useEffect(() => {
+    const flush = () => { if (document.visibilityState === 'hidden') void editing.flush().catch(() => {}); };
+    document.addEventListener('visibilitychange', flush); return () => document.removeEventListener('visibilitychange', flush);
+  }, [editing]);
+  const writes: PageWrites = { ...view, updateProject: editing.updateProject, commitStructural: editing.commitStructural, retryProject: editing.retryProject };
+  return <EditorPageShell {...props} writes={writes} editing={editing} />;
+}
+export function EditorPage(props: EditorPageProps): React.ReactElement {
+  // Constructor identity is fixed. Failure never switches a normalized store to a historical writer.
+  return isNormalizedWorkspaceStore(props.store) ? <NormalizedEditorPage {...props} /> : <LegacyEditorPage {...props} />;
+}
+function NormalizedProjectPane({ editing, store, project, active, onCreateGeneratedProject, onSaveCustomPreset }: {
+  editing: WorkspaceEditingSession; store: LocalWorkspaceStore; project: WorkspaceProject; active: boolean;
+  onCreateGeneratedProject: React.ComponentProps<typeof ProjectEditor>['onCreateGeneratedProject'];
+  onSaveCustomPreset: React.ComponentProps<typeof ProjectEditor>['onSaveCustomPreset'];
+}) {
+  const binding = editing.bindingFor(project.id), epoch = editing.getSnapshot().authorityEpochs.get(project.id)!;
+  const writer = useIncrementalProjectWrites({ projectId: project.id, authorityEpoch: epoch, binding, store,
+    resolveAuthority: () => editing.project(project.id), flushPending: () => editing.flush(project.id) });
+  useLayoutEffect(() => editing.registerWriter(project.id, writer), [editing, project.id, writer.writeOwner]);
+  useLayoutEffect(() => { editing.noteWriter(project.id, writer); }, [editing, project.id, writer.documentState, writer.preferenceState]);
+  return <ProjectEditor projectId={project.id} projectName={project.name} initialState={project.initialState} isActive={active}
+    incremental={binding}
+    onDocumentEdit={event => { void editing.persistEditor(project.id, event.editorGeneration, () => writer.updateDocument(project.id, event, epoch)); }}
+    onPreferencesChange={(patch, metadata) => { void editing.persistEditor(project.id, metadata.editorGeneration,
+      () => writer.updatePreferences(project.id, patch, metadata, epoch)); }}
+    onStateChange={() => { throw Error('Full-state autosave reached the incremental editor.'); }}
+    onNameChange={() => { throw Error('Legacy name callback reached the incremental editor.'); }}
+    onCreateGeneratedProject={onCreateGeneratedProject} onSaveCustomPreset={onSaveCustomPreset} />;
+}
+
+function EditorPageShell({
   store,
   initialWorkspace,
   initialWarnings,
   onWorkspaceChange,
-}: EditorPageProps): React.ReactElement {
+  writes,
+  editing,
+}: EditorPageProps & { writes: PageWrites; editing?: WorkspaceEditingSession }): React.ReactElement {
   const {
     workspace,
     authorityEpochs,
@@ -73,7 +121,7 @@ export function EditorPage({
     updateProject,
     commitStructural,
     retryProject,
-  } = useWorkspaceProjectWrites(store, initialWorkspace, onWorkspaceChange);
+  } = writes;
   const [loadWarnings, setLoadWarnings] = useState(initialWarnings);
   const [commandError, setCommandError] = useState<string | null>(null);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
@@ -105,12 +153,12 @@ export function EditorPage({
   const commitAndApply = async (
     command: StructuralWorkspaceCommand,
     expectedAuthorityEpoch?: number,
-  ): Promise<WorkspaceSnapshot | null> => {
+  ): Promise<boolean | null> => {
     setCommandError(null);
     try {
-      const snapshot = await commitStructural(command, expectedAuthorityEpoch);
+      await commitStructural(command, expectedAuthorityEpoch);
       setCommandError(null);
-      return snapshot;
+      return true;
     } catch (error) {
       setCommandError(commandErrorMessage(error));
       return null;
@@ -217,13 +265,16 @@ export function EditorPage({
     setClosingProjectIntent(null);
   };
 
-  const downloadProjectJson = (project: WorkspaceProject): void => {
-    downloadJson(project.initialState, projectJsonFilename(project));
+  const downloadProjectJson = (project: WorkspaceProject): boolean => {
+    try {
+      const current = editing ? editing.readProject(project.id, authorityEpochs.get(project.id)) : project;
+      downloadJson(current.initialState, projectJsonFilename(current)); return true;
+    } catch (error) { setCommandError(commandErrorMessage(error)); return false; }
   };
 
   const handleSaveAndClose = async (): Promise<void> => {
     if (!closingProject) return;
-    downloadProjectJson(closingProject);
+    if (!downloadProjectJson(closingProject)) return;
     await executeCloseProject();
   };
 
@@ -292,7 +343,7 @@ export function EditorPage({
     return updateProject(projectId, project => ({
       ...project,
       initialState,
-      revision: (project.revision ?? 0) + 1,
+      ...(!editing ? { revision: (project.revision ?? 0) + 1 } : {}),
       ...(cloud ? { cloud } : {}),
     }), authorityEpoch);
   };
@@ -345,6 +396,7 @@ export function EditorPage({
           {activeProject && (
             <CloudMenu
               project={activeProject}
+              getWorkingProject={editing ? () => editing.readProject(activeProject.id, authorityEpochs.get(activeProject.id)) : undefined}
               onLinkCloud={cloud => handleLinkCloud(
                 activeProject.id,
                 authorityEpochs.get(activeProject.id) ?? 0,
@@ -427,6 +479,7 @@ export function EditorPage({
               key={`${project.id}:${project.revision ?? 0}:${authorityEpoch}`}
               data-testid="project-pane"
               data-active={project.id === activeProjectId ? 'true' : 'false'}
+              inert={editing?.getSnapshot().blocked || undefined}
               className={clsx(
                 'absolute inset-0 h-full w-full',
                 project.id === activeProjectId
@@ -434,7 +487,10 @@ export function EditorPage({
                   : 'pointer-events-none z-0 opacity-0',
               )}
             >
-              <ProjectEditor
+              {editing ? <NormalizedProjectPane editing={editing} store={store} project={project}
+                active={project.id === activeProjectId && !editing.getSnapshot().blocked}
+                onCreateGeneratedProject={(name, generated, source) => handleCreateGeneratedProject(project.id, name, generated, source)}
+                onSaveCustomPreset={handleSaveCustomPreset} /> : <ProjectEditor
                 projectId={project.id}
                 projectName={project.name}
                 initialState={project.initialState}
@@ -445,11 +501,16 @@ export function EditorPage({
                   handleCreateGeneratedProject(project.id, name, generated, source)
                 )}
                 onSaveCustomPreset={handleSaveCustomPreset}
-              />
+              />}
             </div>
           );
         })}
       </div>
+
+      {editing?.getSnapshot().blocked && <div role="alert" className="border-t bg-amber-50 px-4 py-2 text-sm text-amber-900">
+        Local editing is paused. Open work and Undo history are preserved.
+        <button type="button" onClick={() => editing.retryProject()} className="ml-3 underline">Retry local storage</button>
+      </div>}
 
       <NewProjectModal
         isOpen={showNewProjectModal}

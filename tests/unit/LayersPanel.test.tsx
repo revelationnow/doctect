@@ -33,6 +33,14 @@ export const renderPanel = (elements: TemplateElement[], layers: Layer[], extra:
 };
 
 describe('LayersPanel layer rows', () => {
+    it('retains legacy numeric-ID selection and dropdown behavior outside incremental mode', () => {
+        const layer = makeLayer(42 as unknown as string, 0, { name: 'Historical numeric' });
+        const h = renderPanel([makeEl('selected')], [layer], { selectedElementIds: ['selected'] });
+        fireEvent.click(h.getByTestId('layer-name'));
+        expect(h.onSetActiveLayer).toHaveBeenCalledWith(42);
+        expect(h.getByTestId('move-selection-select').querySelector('option[value="42"]')).not.toBeNull();
+    });
+
     const layers = [makeLayer('back', 0, { name: 'Background' }), makeLayer('front', 1, { name: 'Foreground' })];
 
     it('renders layers frontmost-first', () => {

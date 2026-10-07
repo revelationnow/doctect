@@ -2260,7 +2260,7 @@ const localWorkspaceStorageApprovals = (sourceFile: ts.SourceFile): ts.CallExpre
   if (!storeCall
     || !ts.isCallExpression(storeCall)
     || !ts.isIdentifier(storeCall.expression)
-    || storeCall.expression.text !== 'createLocalWorkspaceStore'
+    || storeCall.expression.text !== 'createNormalizedWorkspaceStore'
     || storeCall.arguments.length !== 1) return [];
   const environment = unwrap(storeCall.arguments[0]);
   if (!ts.isObjectLiteralExpression(environment)) return [];
@@ -2402,6 +2402,448 @@ const isLegacyTypesModule = (specifier: string): boolean => {
   const basename = normalized.slice(normalized.lastIndexOf('/') + 1);
   return /^legacyTypes(?:\..+)?$/.test(basename);
 };
+
+// Directed, filename-specific runtime closure. No directory grants storage or
+// worker ownership. Type-only imports are checked separately from runtime edges.
+const workspacePath = 'services/localWorkspace/';
+const normalizedPath = `${workspacePath}normalized/`;
+const workerEntryPath = `${workspacePath}workspaceWorker.ts`;
+const workerClientPath = `${workspacePath}workspaceWorkerClient.ts`;
+const workspaceAdmissionPath = `${workspacePath}workspaceCommandAdmission.ts`;
+const normalizedStorePath = `${workspacePath}NormalizedWorkspaceStore.ts`;
+const editingSessionPath = `${workspacePath}workspaceEditingSession.ts`;
+const startupProtocolPath = `${workspacePath}workspaceStartupProtocol.ts`;
+const startupFacadePath = `${workspacePath}workspaceStartup.ts`;
+const recoveryAdmissionPath = `${workspacePath}workspaceRecoveryAdmission.ts`;
+const installationRegistryPath = `${workspacePath}projectInstallationRegistry.ts`;
+const writeRecoveryPath = `${workspacePath}projectWriteRecovery.ts`;
+const coordinatorPath = `${normalizedPath}coordinator.ts`;
+const repositoryPath = `${normalizedPath}repository.ts`;
+const adapterPath = `${workspacePath}indexedDbAdapter.ts`;
+const workerRuntimeEdges = new Map<string, readonly string[]>([
+  [workerEntryPath, [coordinatorPath, `${workspacePath}schema.ts`, 'services/presets.ts']],
+  [workerClientPath, [`${workspacePath}workspaceWorkerProtocol.ts`]],
+  [`${workspacePath}workspaceWorkerProtocol.ts`, [`${workspacePath}legacyTypes.ts`, startupProtocolPath]],
+  [startupProtocolPath, []], [startupFacadePath, [`${workspacePath}workspaceWorkerProtocol.ts`, workerClientPath, 'shared/cooperativeWork.js', 'shared/jsonWork.js']],
+  [`${normalizedPath}startup.ts`, ['shared/cooperativeWork.js']],
+  [normalizedStorePath, [...['indexedDbAdapter', 'historicalBootstrap', 'workspaceWorkerClient', 'workspaceStartup', 'workspaceEditingSession',
+    'projectPreparationClient', 'legacy', 'recovery', 'workspaceRecoveryAdmission', 'contracts'].map(name => `${workspacePath}${name}.ts`), `${normalizedPath}migration.ts`]],
+  [editingSessionPath, ['shared/cooperativeWork.js', ...['contracts', 'incrementalCommandAdmission', 'workspaceCommandAdmission', 'projectInstallationRegistry',
+    'commandDispatcher', 'projectAuthority', 'incrementalQueue', 'workspaceWorkerProtocol', 'workspaceStartup', 'workspaceWorkerClient'].map(name => `${workspacePath}${name}.ts`), `${normalizedPath}codec.ts`]],
+  [workspaceAdmissionPath, ['shared/cooperativeWork.js', 'shared/jsonWork.js',
+    `${workspacePath}contracts.ts`, `${workspacePath}workspaceCatalog.ts`, `${workspacePath}workspaceWorkerProtocol.ts`, installationRegistryPath,
+    `${workspacePath}incrementalQueue.ts`, writeRecoveryPath, recoveryAdmissionPath]],
+  [recoveryAdmissionPath, ['shared/cooperativeWork.js', `${workspacePath}legacy.ts`, `${workspacePath}legacyTypes.ts`, `${workspacePath}contracts.ts`]],
+  [installationRegistryPath, [`${workspacePath}workspaceWorkerProtocol.ts`]],
+  [writeRecoveryPath, [`${workspacePath}contracts.ts`, `${workspacePath}incrementalQueue.ts`, installationRegistryPath]],
+  [coordinatorPath, [repositoryPath, `${workspacePath}workspaceWorkerProtocol.ts`, `${normalizedPath}migration.ts`, `${normalizedPath}workspaceCommands.ts`,
+    `${normalizedPath}startup.ts`, startupProtocolPath, 'shared/cooperativeWork.js', 'shared/jsonWork.js']],
+  [`${normalizedPath}migration.ts`, [`${workspacePath}contracts.ts`, `${workspacePath}historicalBootstrap.ts`, `${workspacePath}recovery.ts`, `${workspacePath}legacyTypes.ts`, 'shared/cooperativeWork.js']],
+  [`${workspacePath}recovery.ts`, [...['canonical', 'legacyTypes', 'migration', 'validation'].map(name => `${workspacePath}${name}.ts`), 'shared/cooperativeWork.js', 'shared/jsonWork.js']],
+  [repositoryPath, ['services/document/references.ts', 'services/document/partition.ts', 'services/document/layerFolds.ts',
+    `${workspacePath}canonical.ts`, `${workspacePath}migration.ts`, `${workspacePath}historicalBootstrap.ts`, `${workspacePath}schema.ts`,
+    'shared/cooperativeWork.js', 'shared/jsonWork.js', `${workspacePath}workspaceCatalog.ts`,
+    ...['codec', 'commitProof', 'validateChanges', 'schema', 'work', 'workspaceManifest', 'workspaceCommitProof', 'projectBaseline', 'emissionPlan', 'workspaceCommands', 'bulkProject', 'sourceDigests', 'frameComparison'].map(name => `${normalizedPath}${name}.ts`)]],
+  [`${normalizedPath}sourceDigests.ts`, ['shared/cooperativeWork.js', 'shared/jsonWork.js', `${workspacePath}canonical.ts`,
+    `${normalizedPath}schema.ts`, `${normalizedPath}work.ts`, `${normalizedPath}commitProof.ts`]],
+  [`${normalizedPath}frameComparison.ts`, ['shared/cooperativeWork.js', 'shared/jsonWork.js', `${normalizedPath}commitProof.ts`]],
+  // Source validation reuses historical safety code. Its exact transitive closure
+  // is fenced too; none of these modules gains an IndexedDB writer or browser storage.
+  [`${workspacePath}historicalBootstrap.ts`, [...['canonical', 'contracts', 'legacy', 'legacyTypes', 'lineageRepair', 'migration', 'schema']
+    .map(name => `${workspacePath}${name}.ts`), 'shared/cooperativeWork.js', 'shared/jsonWork.js']],
+  [`${workspacePath}migration.ts`, ['services/presets.ts', ...['canonical', 'legacyTypes', 'schema', 'validation'].map(name => `${workspacePath}${name}.ts`),
+    'shared/cooperativeWork.js', 'shared/jsonWork.js']],
+  [`${workspacePath}lineageRepair.ts`, [...['canonical', 'migration', 'schema'].map(name => `${workspacePath}${name}.ts`),
+    'shared/cooperativeWork.js', 'shared/jsonWork.js']],
+  [`${workspacePath}legacy.ts`, [...['canonical', 'legacyTypes'].map(name => `${workspacePath}${name}.ts`),
+    'shared/cooperativeWork.js', 'shared/jsonWork.js']],
+  [`${workspacePath}validation.ts`, ['shared/validateAppState.js', 'services/loadProjectState.ts', 'services/migration.ts', `${workspacePath}canonical.ts`,
+    'shared/cooperativeWork.js', 'shared/jsonWork.js']],
+  [`${workspacePath}contracts.ts`, []],
+  ['services/presets.ts', ['types.ts', ...['migration', 'loadProjectState', 'layers', 'textPadding', 'textOverflow',
+    'blank_preset', 'notebook_preset', 'planner_preset'].map(name => `services/${name}.ts`)]],
+  ['services/loadProjectState.ts', ['services/migration.ts', 'shared/generatorMetadata.js', 'shared/cooperativeWork.js', 'shared/jsonWork.js']],
+  ['services/blank_preset.ts', []], ['services/notebook_preset.ts', []], ['services/planner_preset.ts', []],
+  [`${normalizedPath}codec.ts`, ['shared/validateAppState.js', 'services/document/partition.ts', 'services/migration.ts',
+    'shared/cooperativeWork.js', 'shared/jsonWork.js', `${workspacePath}canonical.ts`, `${workspacePath}migration.ts`, ...['sizeLedger', 'commitProof', 'schema', 'emissionPlan'].map(name => `${normalizedPath}${name}.ts`)]],
+  [`${normalizedPath}emissionPlan.ts`, ['shared/cooperativeWork.js', 'shared/jsonWork.js', `${normalizedPath}schema.ts`]],
+  [`${normalizedPath}commitProof.ts`, [`${workspacePath}canonical.ts`, 'shared/cooperativeWork.js', 'shared/jsonWork.js']],
+  [`${normalizedPath}incrementalSha256.ts`, []],
+  [`${normalizedPath}work.ts`, [`${workspacePath}canonical.ts`, 'shared/cooperativeWork.js', 'shared/jsonWork.js']],
+  [`${normalizedPath}workspaceManifest.ts`, ['shared/cooperativeWork.js', 'shared/jsonWork.js',
+    ...['commitProof', 'work', 'workspaceCommitProof'].map(name => `${normalizedPath}${name}.ts`)]],
+  [`${normalizedPath}workspaceCommitProof.ts`, ['shared/cooperativeWork.js', `${normalizedPath}commitProof.ts`, `${normalizedPath}work.ts`]],
+  [`${normalizedPath}workspaceCommands.ts`, ['shared/cooperativeWork.js', 'shared/jsonWork.js',
+    `${workspacePath}workspaceCatalog.ts`, `${workspacePath}validation.ts`,
+    ...['commitProof', 'work', 'codec', 'projectBaseline', 'workspaceManifest', 'workspaceCommitProof', 'schema', 'workspaceRecovery'].map(name => `${normalizedPath}${name}.ts`)]],
+  [`${normalizedPath}workspaceRecovery.ts`, ['shared/cooperativeWork.js', 'shared/jsonWork.js', `${normalizedPath}commitProof.ts`,
+    ...['legacyTypes', 'canonical', 'recovery', 'historicalBootstrap'].map(name => `${workspacePath}${name}.ts`)]],
+  [`${workspacePath}workspaceCatalog.ts`, ['shared/cooperativeWork.js', 'shared/jsonWork.js',
+    `${normalizedPath}commitProof.ts`, `${normalizedPath}work.ts`]],
+  [`${normalizedPath}projectBaseline.ts`, ['shared/cooperativeWork.js', 'shared/jsonWork.js',
+    ...['commitProof', 'work', 'schema'].map(name => `${normalizedPath}${name}.ts`)]],
+  [`${normalizedPath}bulkProject.ts`, ['shared/cooperativeWork.js', 'shared/jsonWork.js', `${workspacePath}validation.ts`,
+    ...['codec', 'commitProof', 'projectBaseline', 'work', 'schema'].map(name => `${normalizedPath}${name}.ts`)]],
+  ['shared/cooperativeWork.js', []],
+  ['shared/jsonWork.js', ['shared/cooperativeWork.js']],
+  [`${normalizedPath}validateChanges.ts`, ['services/document/references.ts', 'services/document/partition.ts',
+    `${workspacePath}canonical.ts`, `${normalizedPath}commitProof.ts`, 'shared/validateAppState.js', 'shared/cooperativeWork.js', 'shared/jsonWork.js',
+    'shared/generatorMetadata.js', 'shared/projectLimits.js', `${normalizedPath}sizeLedger.ts`, `${normalizedPath}schema.ts`]],
+  [`${normalizedPath}sizeLedger.ts`, ['services/document/partition.ts', 'shared/cooperativeWork.js', 'shared/jsonWork.js']],
+  [`${normalizedPath}schema.ts`, []],
+  ['services/document/partition.ts', ['services/layers.ts', 'shared/cooperativeWork.js', 'shared/jsonWork.js']],
+  ['services/document/references.ts', ['shared/cooperativeWork.js', 'shared/jsonWork.js']], ['services/document/layerFolds.ts', []],
+  ['services/migration.ts', ['services/layers.ts', 'services/textPadding.ts', 'services/textOverflow.ts', 'types.ts',
+    'shared/cooperativeWork.js', 'shared/jsonWork.js']],
+  ['services/layers.ts', ['types.ts', 'shared/cooperativeWork.js', 'shared/jsonWork.js']],
+  ['services/textPadding.ts', ['shared/cooperativeWork.js', 'shared/jsonWork.js']],
+  ['services/textOverflow.ts', ['shared/cooperativeWork.js', 'shared/jsonWork.js']], ['types.ts', []],
+  [`${workspacePath}canonical.ts`, [`${workspacePath}legacyTypes.ts`, 'shared/jsonWork.js',
+    'shared/cooperativeWork.js', `${normalizedPath}incrementalSha256.ts`]],
+  [`${workspacePath}legacyTypes.ts`, []], [`${workspacePath}schema.ts`, []],
+  ['shared/validateAppState.js', ['shared/projectLimits.js', 'shared/generatorMetadata.js',
+    'shared/cooperativeWork.js', 'shared/jsonWork.js']],
+  ['shared/projectLimits.js', []], ['shared/generatorMetadata.js', ['shared/cooperativeWork.js', 'shared/jsonWork.js']],
+]);
+const workerPrivateCallers = new Map<string, readonly string[]>([
+  [workspaceAdmissionPath, [editingSessionPath]],
+  [recoveryAdmissionPath, [workspaceAdmissionPath, normalizedStorePath]],
+  [installationRegistryPath, [workspaceAdmissionPath, writeRecoveryPath, editingSessionPath]],
+  [writeRecoveryPath, ['hooks/useIncrementalProjectWrites.ts', `${workspacePath}incrementalCommandAdmission.ts`, workspaceAdmissionPath]],
+  [`${normalizedPath}migration.ts`, [coordinatorPath, normalizedStorePath]],
+  [normalizedStorePath, [`${workspacePath}index.ts`, 'pages/EditorPage.tsx', 'components/workspace/WorkspaceBootstrapGate.tsx', 'components/workspace/NormalizedWorkspaceBootstrapGate.tsx']],
+  [editingSessionPath, [normalizedStorePath]],
+  [startupFacadePath, [normalizedStorePath, editingSessionPath]],
+  [`${normalizedPath}startup.ts`, [coordinatorPath]],
+  [repositoryPath, [coordinatorPath]], [coordinatorPath, [workerEntryPath]],
+  [workerEntryPath, []], [workerClientPath, [normalizedStorePath, startupFacadePath, editingSessionPath]],
+]);
+const workerModuleTarget = (path: string, specifier: string): string | undefined => {
+  const target = resolvedModuleEdge(path, specifier);
+  if (!target) return undefined;
+  const typescriptTarget = target.replace(/\.js$/, '.ts');
+  if (typescriptTarget !== target && workerRuntimeEdges.has(typescriptTarget)) return typescriptTarget;
+  return extname(target) ? target : `${target}.ts`;
+};
+
+// Group A grants two capabilities, not normalized writer ownership: empty schema
+// creation in the explicit upgrade callback, and an absence count in the same
+// historical prerequisite transaction. Match ASTs (including control flow), then
+// close every use of the imported constants and the two private guard helpers.
+// Templates are policy contracts, never copies loaded from mutable runtime code.
+const adapterAstShape = (node: ts.Node): string => {
+  const shape = (current: ts.Node): unknown[] => {
+    const children: unknown[][] = [];
+    ts.forEachChild(current, child => { children.push(shape(child)); });
+    const value = ts.isIdentifier(current) || ts.isStringLiteralLike(current) || ts.isNumericLiteral(current)
+      ? current.text : ts.isVariableDeclarationList(current) ? current.flags & ts.NodeFlags.BlockScoped : '';
+    const typeOnly = ts.isImportClause(current) || ts.isImportSpecifier(current)
+      || ts.isExportDeclaration(current) || ts.isExportSpecifier(current) ? current.isTypeOnly : false;
+    return [current.kind, value, typeOnly, children];
+  };
+  return JSON.stringify(shape(node));
+};
+const adapterPolicyStatements = (source: string): readonly ts.Statement[] =>
+  ts.createSourceFile('adapter-policy.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS).statements;
+const adapterMatchesStatements = (nodes: readonly ts.Node[], source: string): boolean => {
+  const expected = adapterPolicyStatements(source);
+  return nodes.length === expected.length && nodes.every((node, index) => (
+    adapterAstShape(node) === adapterAstShape(expected[index])
+  ));
+};
+const adapterMatchesExpression = (node: ts.Node | undefined, source: string): boolean => {
+  if (!node) return false;
+  const statement = adapterPolicyStatements(`const approved = ${source};`)[0] as ts.VariableStatement;
+  return adapterAstShape(node) === adapterAstShape(statement.declarationList.declarations[0].initializer!);
+};
+const historicalPrerequisiteOpen = (sourceFile: ts.SourceFile): ts.Node | undefined => {
+  const factory = uniqueTopLevelFunction(sourceFile, 'createHistoricalBootstrap');
+  const bootstrap = uniqueConstInitializer(sourceFile, 'bootstrap');
+  const provider = uniqueConstInitializer(sourceFile, 'getAdapter');
+  if (!factory?.body || !ts.isBlock(factory.body) || !bootstrap || !ts.isArrowFunction(bootstrap)
+    || !ts.isBlock(bootstrap.body) || bootstrap.parent.parent.parent.parent !== factory.body
+    || !provider || provider.parent.parent.parent.parent !== factory.body
+    || !adapterMatchesExpression(provider, 'environment.adapter')
+    || sourceValueBindings(sourceFile, 'getAdapter').length !== 1
+    || sourceValueBindings(sourceFile, 'environment').length !== 1
+    || sourceHasRuntimeWrite(sourceFile, 'getAdapter') || sourceHasRuntimeWrite(sourceFile, 'environment')
+    || sourceHasRuntimeWrite(sourceFile, 'adapter')) return undefined;
+  const outer = bootstrap.body.statements;
+  if (outer.length !== 7 || !adapterMatchesStatements(outer.slice(0, 6), `
+    const work = options.work ?? environment.work;
+    const removeGuard = work && environment.assertCurrent ? work.addGuard(() => environment.assertCurrent?.()) : undefined;
+    const check = () => work?.assertCurrent();
+    let releases = new Set<() => void>();
+    let admission: RetainedValue<HistoricalAdmission> | undefined;
+    let transferred = false;
+  `)) return undefined;
+  const guarded = outer[6];
+  if (!ts.isTryStatement(guarded) || guarded.catchClause || !guarded.finallyBlock
+    || !adapterMatchesStatements(guarded.finallyBlock.statements, `
+      try { check(); } catch (error) { transferred = false; throw error; }
+      finally {
+        for (const release of releases) release();
+        if (!transferred) admission?.release();
+        removeGuard?.();
+      }
+    `)) return undefined;
+  const statements = guarded.tryBlock.statements;
+  if (!adapterMatchesStatements(statements.slice(0, 4), `
+    check();
+    const emit = (phase: WorkspaceBootstrapPhase) => { check(); onPhase(phase); check(); };
+    const adapter = getAdapter();
+    emit('opening-local-storage');
+  `)) return undefined;
+  const opening = statements[4];
+  if (!opening || !ts.isTryStatement(opening)
+    || !adapterMatchesStatements(opening.tryBlock.statements, 'check(); await adapter.open(); check();')) return undefined;
+  const expression = (opening.tryBlock.statements[1] as ts.ExpressionStatement).expression as ts.AwaitExpression;
+  return (expression.expression as ts.CallExpression).expression;
+};
+
+const normalizedStorePrerequisiteOpen = (sourceFile: ts.SourceFile): ts.Node | undefined => {
+  const adapter = uniqueConstInitializer(sourceFile, 'adapter');
+  if (!adapter || !adapterMatchesExpression(adapter, 'createIndexedDbAdapter({ indexedDB: environment.indexedDB, now: environment.now }, 3)')
+    || sourceValueBindings(sourceFile, 'adapter').length !== 1 || sourceValueBindings(sourceFile, 'environment').length !== 1
+    || sourceValueBindings(sourceFile, 'createIndexedDbAdapter').length !== 1
+    || ['adapter', 'environment', 'createIndexedDbAdapter'].some(name => sourceHasRuntimeWrite(sourceFile, name))) return undefined;
+  const candidates: ts.PropertyAccessExpression[] = []; let invalid = false;
+  const visit = (node: ts.Node): void => {
+    if (ts.isIdentifier(node) && node.text === 'adapter') {
+      const parent = node.parent;
+      const declared = ts.isVariableDeclaration(parent) && parent.name === node;
+      const property = ts.isPropertyAssignment(parent) && parent.name === node;
+      const passed = ts.isArrowFunction(parent) && parent.body === node && ts.isPropertyAssignment(parent.parent)
+        && directPropertyName(parent.parent.name) === 'adapter';
+      const member = ts.isPropertyAccessExpression(parent) && parent.expression === node && ['open', 'close'].includes(parent.name.text);
+      if (!declared && !property && !passed && !member) invalid = true;
+    }
+    if (ts.isPropertyAccessExpression(node) && adapterMatchesExpression(node, 'adapter.open')) {
+      const call = node.parent, arrow = call.parent, property = arrow.parent;
+      if (!ts.isCallExpression(call) || call.arguments.length || !ts.isArrowFunction(arrow) || arrow.body !== call
+        || !ts.isPropertyAssignment(property) || directPropertyName(property.name) !== 'ensurePhysicalLayout') invalid = true;
+      else candidates.push(node);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  const closeBlocks: ts.Block[] = [];
+  const closes = (node: ts.Node): void => {
+    if (ts.isTryStatement(node) && node.finallyBlock && adapterMatchesStatements(node.finallyBlock.statements, 'adapter.close();')) closeBlocks.push(node.finallyBlock);
+    ts.forEachChild(node, closes);
+  };
+  closes(sourceFile);
+  return !invalid && candidates.length === 1 && closeBlocks.length === 1 ? candidates[0] : undefined;
+};
+const adapterGroupAApprovals = (sourceFile: ts.SourceFile): Set<ts.Node> => {
+  const denied = new Set<ts.Node>();
+  const within = (node: ts.Node, owner: ts.Node): boolean => {
+    for (let current: ts.Node | undefined = node; current; current = current.parent) {
+      if (current === owner) return true;
+    }
+    return false;
+  };
+  const runtimeNodes: ts.Node[] = [];
+  const collect = (node: ts.Node): void => {
+    // TypeScript represents emitted class heritage as a type node. Keep its
+    // expression in the capability-use closure, just as inspectNode does below.
+    if (ts.isExpressionWithTypeArguments(node) && ts.isHeritageClause(node.parent)
+      && node.parent.token === ts.SyntaxKind.ExtendsKeyword
+      && (ts.isClassDeclaration(node.parent.parent) || ts.isClassExpression(node.parent.parent))) {
+      collect(node.expression);
+      return;
+    }
+    if (ts.isTypeNode(node)) return;
+    runtimeNodes.push(node);
+    ts.forEachChild(node, collect);
+  };
+  collect(sourceFile);
+  const bindingChecks = new Map<string, boolean>();
+  const uniqueBinding = (name: string): boolean => {
+    if (!bindingChecks.has(name)) bindingChecks.set(name, sourceValueBindings(sourceFile, name).length === 1
+      && !sourceHasRuntimeWrite(sourceFile, name));
+    return bindingChecks.get(name)!;
+  };
+  const factory = uniqueTopLevelFunction(sourceFile, 'createIndexedDbAdapter');
+  if (!factory || !ts.isArrowFunction(factory) || !ts.isBlock(factory.body)
+    || !uniqueBinding('createIndexedDbAdapter') || !uniqueBinding('requestedVersion')
+    || factory.parameters.length !== 2
+    || !adapterMatchesExpression(factory.parameters[1].initializer, 'WORKSPACE_DB_VERSION')) return denied;
+  const factoryBody = factory.body;
+  const privateFunction = (name: string): ts.ArrowFunction | undefined => {
+    if (!uniqueBinding(name)) return undefined;
+    const expression = uniqueConstInitializer(sourceFile, name);
+    if (!expression || !ts.isArrowFunction(expression)) return undefined;
+    const declaration = expression.parent;
+    return ts.isVariableDeclaration(declaration) && ts.isVariableDeclarationList(declaration.parent)
+      && ts.isVariableStatement(declaration.parent.parent)
+      && declaration.parent.parent.parent === factoryBody ? expression : undefined;
+  };
+  const schemaImports = sourceFile.statements.filter(statement => ts.isImportDeclaration(statement)
+    && directStringLiteral(statement.moduleSpecifier) === './normalized/schema');
+  if (schemaImports.length !== 1 || !adapterMatchesStatements(schemaImports, `
+    import { NORMALIZED_DB_VERSION, NORMALIZED_STORE_NAMES, type NormalizedWorkspaceDatabase } from './normalized/schema';
+  `)) return denied;
+  const schemaImport = schemaImports[0];
+  const openConnection = privateFunction('openConnection');
+  const prerequisite = privateFunction('prerequisiteTransaction');
+  const guard = privateFunction('requireUnreservedNormalization');
+  const editorFence = privateFunction('historicalEditorOnly');
+  if (!openConnection || !prerequisite || !guard || !editorFence) return denied;
+
+  const upgrades = runtimeNodes.filter(node => ts.isMethodDeclaration(node)
+    && directPropertyName(node.name) === 'upgrade');
+  if (upgrades.length !== 1) return denied;
+  const upgrade = upgrades[0] as ts.MethodDeclaration;
+  const options = upgrade.parent;
+  const openCall = options.parent;
+  const openBinding = sourceValueBindings(sourceFile, 'openDB')[0]?.parent;
+  if (!openBinding || !ts.isImportSpecifier(openBinding) || openBinding.isTypeOnly
+    || openBinding.propertyName || !ts.isImportClause(openBinding.parent.parent)
+    || openBinding.parent.parent.isTypeOnly
+    || !ts.isImportDeclaration(openBinding.parent.parent.parent)
+    || directStringLiteral(openBinding.parent.parent.parent.moduleSpecifier) !== 'idb') return denied;
+  if (!ts.isObjectLiteralExpression(options) || !ts.isCallExpression(openCall)
+    || options.properties.length !== 4
+    || options.properties.some((property, index) => !ts.isMethodDeclaration(property)
+      || directPropertyName(property.name) !== ['upgrade', 'blocked', 'blocking', 'terminated'][index])
+    || openCall.questionDotToken || openCall.arguments.length !== 3
+    || openCall.arguments[2] !== options
+    || !adapterMatchesExpression(openCall.expression, 'openDB')
+    || !adapterMatchesExpression(openCall.arguments[0], 'WORKSPACE_DB_NAME')
+    || !adapterMatchesExpression(openCall.arguments[1], 'requestedVersion')
+    || enclosingVariableFunction(openCall)?.declaration !== openConnection
+    || !uniqueBinding('openDB') || !uniqueBinding('upgradeDatabase')
+    || !adapterMatchesExpression(ts.factory.createObjectLiteralExpression([upgrade]), `{
+      upgrade(upgradeDatabase) {
+        for (const storeName of STORE_NAMES) {
+          if (!upgradeDatabase.objectStoreNames.contains(storeName)) {
+            upgradeDatabase.createObjectStore(storeName, { keyPath: 'id' });
+          }
+        }
+        if (requestedVersion === NORMALIZED_DB_VERSION) {
+          const normalized = upgradeDatabase;
+          for (const storeName of NORMALIZED_STORE_NAMES) {
+            if (!normalized.objectStoreNames.contains(storeName)) {
+              normalized.createObjectStore(storeName, {
+                keyPath: storeName === 'normalizationLedger' ? 'id' : 'key',
+              });
+            }
+          }
+        }
+      }
+    }`)) return denied;
+  if (!adapterMatchesExpression(prerequisite, `(
+      activeDatabase: IDBPDatabase<NormalizedWorkspaceDatabase>, stores: readonly StoreName[],
+    ): WriteTransaction => activeDatabase.transaction(
+      activeDatabase.version === NORMALIZED_DB_VERSION ? [...stores, 'normalizationLedger'] : stores,
+      'readwrite',
+    )`)
+    || !adapterMatchesExpression(guard, `async (transaction: WriteTransaction): Promise<void> => {
+      if (transaction.objectStoreNames.contains('normalizationLedger')
+        && await transaction.objectStore('normalizationLedger').count() !== 0) {
+        throw conflict('Normalization has already reserved historical source authority.');
+      }
+    }`)
+    || !adapterMatchesExpression(editorFence, `<A extends unknown[], R>(operation: (...args: A) => Promise<R>) =>
+      (...args: A): Promise<R> => requestedVersion === NORMALIZED_DB_VERSION
+        ? Promise.reject(unverifiedAuthority()) : operation(...args)`)) return denied;
+
+  // Only the four real prerequisite writers may acquire the guarded transaction.
+  // Exact try-block prefixes prove acquisition/alias/await order; catch must abort.
+  const helperUses: ts.Node[] = [prerequisite.parent, guard.parent];
+  const callers = [
+    ['writeInitialCopy', 'transaction', `transaction = prerequisiteTransaction(activeDatabase, STORE_NAMES);`],
+    ['repairHistoricalLineage', 'repairTransaction', `
+      const repairTransaction = prerequisiteTransaction(activeDatabase, ['projects', 'migrationLedger']);
+      transaction = repairTransaction as WriteTransaction;`],
+    ['markVerified', 'ledgerTransaction', `
+      const ledgerTransaction = prerequisiteTransaction(activeDatabase, ['migrationLedger']);
+      transaction = ledgerTransaction as WriteTransaction;`],
+    ['markLegacyDrift', 'ledgerTransaction', `
+      const ledgerTransaction = prerequisiteTransaction(activeDatabase, ['migrationLedger']);
+      transaction = ledgerTransaction as WriteTransaction;`],
+  ];
+  for (const [name, alias, acquisition] of callers) {
+    const caller = privateFunction(name);
+    if (!caller || !ts.isBlock(caller.body)) return denied;
+    const prefix = `${acquisition} await requireUnreservedNormalization(transaction);`;
+    const length = adapterPolicyStatements(prefix).length;
+    const attempts = caller.body.statements.filter(statement => ts.isTryStatement(statement)
+      && adapterMatchesStatements(statement.tryBlock.statements.slice(0, length), prefix));
+    if (attempts.length !== 1) return denied;
+    const attempt = attempts[0] as ts.TryStatement;
+    const abortCall = '{ accounting?.failed(); return await abortTransaction(transaction, requests, error, work); }';
+    const cleanupAllowed = name === 'repairHistoricalLineage'
+      ? !!attempt.finallyBlock && adapterMatchesStatements(attempt.finallyBlock.statements, `
+        try { if (accounting) await accounting.close(); }
+        finally { expectedIndex = undefined; indexOwnership?.release(); }
+      `)
+      : !!attempt.finallyBlock && adapterMatchesStatements(attempt.finallyBlock.statements, 'if (accounting) await accounting.close();');
+    if (!attempt.catchClause || !cleanupAllowed
+      || !adapterMatchesStatements([attempt.catchClause.block], abortCall)) return denied;
+    const prologue = attempt.tryBlock.statements.slice(0, length);
+    helperUses.push(...prologue);
+
+    // Returned transaction also includes the ledger. Prevent dynamic store/member
+    // selection, alias/callback escape, or a second guard running on another tx.
+    for (const node of runtimeNodes) {
+      if (!ts.isIdentifier(node) || !['transaction', alias].includes(node.text) || !within(node, caller)) continue;
+      if (prologue.some(statement => within(node, statement))) continue;
+      if (ts.isVariableDeclaration(node.parent) && node.parent.name === node
+        && !node.parent.initializer && enclosingFunction(node) === caller) continue;
+      if (within(node, attempt.catchClause)) continue;
+      if (name === 'writeInitialCopy' && ts.isCallExpression(node.parent)
+        && adapterMatchesExpression(node.parent, 'enqueuePreparedCopy(transaction, prepared, requests, work, accounting)')
+        && enclosingFunction(node) === caller) continue;
+      if (name === 'repairHistoricalLineage' && ts.isCallExpression(node.parent)
+        && adapterMatchesExpression(node.parent, 'enqueueLineageRepair(transaction, prepared, expectedIndex, requests, work, accounting)')
+        && enclosingFunction(node) === caller) continue;
+      let receiver: ts.Node = node;
+      if (ts.isNonNullExpression(receiver.parent)) receiver = receiver.parent;
+      const member = receiver.parent;
+      if (!ts.isPropertyAccessExpression(member) || member.expression !== receiver || member.questionDotToken) return denied;
+      if (member.name.text === 'done' && ts.isAwaitExpression(member.parent)
+        && enclosingFunction(node) === caller) continue;
+      const call = member.parent;
+      if (member.name.text !== 'objectStore' || !ts.isCallExpression(call)
+        || call.expression !== member || call.questionDotToken || call.arguments.length !== 1) return denied;
+      const store = directStringLiteral(call.arguments[0]);
+      if (store && ['projects', 'workspace', 'presets', 'pendingImports', 'migrationLedger', 'legacyBackup'].includes(store)
+        && enclosingFunction(node) === caller) continue;
+      const callback = enclosingFunction(node);
+      if (name === 'writeInitialCopy' && callback && ts.isArrowFunction(callback)
+        && adapterMatchesExpression(callback, 'storeName => transaction.objectStore(storeName).count()')
+        && ts.isCallExpression(callback.parent)
+        && adapterMatchesExpression(callback.parent, 'STORE_NAMES.map(storeName => transaction.objectStore(storeName).count())')) continue;
+      return denied;
+    }
+  }
+
+  const closedUses = new Map<string, readonly ts.Node[]>([
+    ['NORMALIZED_STORE_NAMES', [schemaImport, upgrade]],
+    ['NORMALIZED_DB_VERSION', [schemaImport, upgrade, prerequisite, editorFence]],
+    ['NormalizedWorkspaceDatabase', [schemaImport]],
+    ['prerequisiteTransaction', helperUses], ['requireUnreservedNormalization', helperUses],
+    ['upgradeDatabase', [upgrade]],
+  ]);
+  for (const [name, contexts] of closedUses) {
+    if (!uniqueBinding(name) || runtimeNodes.some(node => ts.isIdentifier(node) && node.text === name
+      && !contexts.some(context => within(node, context)))) return denied;
+  }
+  // Approval attaches to these exact nodes, never a whole function/module range.
+  return new Set([schemaImport, ...runtimeNodes.filter(node => ts.isStringLiteralLike(node)
+    && node.text === 'normalizationLedger' && [upgrade, prerequisite, guard].some(owner => within(node, owner)))]);
+};
+// Existing Node-only authoring CLIs load caller-selected episode/scenario files.
+// These exact expressions are not allowed in any browser/worker module; none of
+// these CLI files is in the approved transitive worker runtime graph.
+const authoringCliImports = new Map([
+  ['docs-capture/run.js', 'path.join(scenariosDir,`${name}.js`)'],
+  ['tutorial/assemble.js', 'path.resolve(process.argv[2])'],
+  ['tutorial/narrate.js', 'path.resolve(process.argv[2])'],
+  ['tutorial/record.js', 'path.resolve(process.argv[2])'],
+]);
 
 const analyzeSources = (inputs: readonly SourceInput[]): Map<string, string[]> => {
   const results = new Map(inputs.map(input => [input.path, [] as string[]]));
@@ -2595,6 +3037,11 @@ const analyzeSources = (inputs: readonly SourceInput[]): Map<string, string[]> =
     const report = (node: ts.Node, message: string): void => {
       reportOffset(node.getStart(sourceFile), message);
     };
+    const adapterApprovals = enforceDirectStorageBoundary && policyPath === adapterPath
+      ? adapterGroupAApprovals(sourceFile) : new Set<ts.Node>();
+    const historicalOpen = enforceDirectStorageBoundary && policyPath === `${workspacePath}historicalBootstrap.ts`
+      ? historicalPrerequisiteOpen(sourceFile) : enforceDirectStorageBoundary && policyPath === normalizedStorePath
+        ? normalizedStorePrerequisiteOpen(sourceFile) : undefined;
     const directStorageLines = new Set<number>();
     const reportDirectStorage = (node: ts.Node): void => {
       const line = reportLine(input, node.getStart(sourceFile));
@@ -2602,9 +3049,32 @@ const analyzeSources = (inputs: readonly SourceInput[]): Map<string, string[]> =
       directStorageLines.add(line);
       report(node, 'accesses production localStorage outside approved persistence modules');
     };
-    const inspectModuleSpecifier = (node: ts.Node, expression: ts.Expression | undefined): void => {
+    const inspectModuleSpecifier = (node: ts.Node, expression: ts.Expression | undefined, typeOnly = false): void => {
       const specifier = directStringLiteral(expression);
-      if (!specifier) return;
+      if (!specifier) {
+        const authoringCli = expression && ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword
+          && authoringCliImports.get(policyPath) === expression.getText(sourceFile).replace(/\s+/g, '');
+        if (expression && enforceDirectStorageBoundary && !typeOnly && !authoringCli)
+          report(node, 'normalized worker capability: unanalyzable executable import');
+        return;
+      }
+      if (enforceDirectStorageBoundary && !typeOnly) {
+        const target = workerModuleTarget(policyPath, specifier);
+        const callers = target && workerPrivateCallers.get(target);
+        const edges = workerRuntimeEdges.get(policyPath);
+        const normalizationOwnerImport = (policyPath === coordinatorPath || policyPath === normalizedStorePath) && target === `${normalizedPath}migration.ts`;
+        const bindings = ts.isImportDeclaration(node) && !node.importClause?.name ? node.importClause?.namedBindings : undefined;
+        const runtimeBindings = bindings && ts.isNamedImports(bindings) ? bindings.elements.filter(binding => !binding.isTypeOnly) : [];
+        const exactNormalizerImport = runtimeBindings.length === 1 && !runtimeBindings[0].propertyName
+          && runtimeBindings[0].name.text === 'normalizeWorkspace';
+        if (callers && !callers.includes(policyPath) || edges && (!target || !edges.includes(target))
+          || normalizationOwnerImport && !exactNormalizerImport
+          || /^idb(?:$|[/?])/.test(specifier) && policyPath !== adapterPath
+          || policyPath === adapterPath && target?.startsWith(normalizedPath) && !adapterApprovals.has(node)
+          || target && authoringCliImports.has(target)) {
+          report(node, 'normalized worker capability: unauthorized runtime module edge');
+        }
+      }
       if (productionSource && moduleEntersExcludedDirectory(policyPath, specifier)) {
         report(node, 'loads executable code from excluded repository paths');
       }
@@ -2650,6 +3120,69 @@ const analyzeSources = (inputs: readonly SourceInput[]): Map<string, string[]> =
         ? { specifier, context: 'source-url' }
         : undefined;
     };
+    const workerConstructor = (node: ts.NewExpression): boolean => {
+      const constructor = unwrap(node.expression);
+      return ts.isIdentifier(constructor) && ['Worker', 'SharedWorker'].includes(constructor.text);
+    };
+    // Bounded constant resolution is only for callers outside the protected
+    // closure. URL objects must have one use: aliases cannot hide later mutation
+    // or escape to a function that changes their destination.
+    const workerConstant = (expression: ts.Expression | undefined, seen = new Set<string>()): ts.Expression | undefined => {
+      if (!expression) return undefined;
+      const value = unwrap(expression);
+      if (!ts.isIdentifier(value)) return value;
+      if (seen.size >= 16 || seen.has(value.text)
+        || sourceValueBindings(sourceFile, value.text).length !== 1
+        || hasRuntimeWrite(value.text)) return undefined;
+      let references = 0;
+      const count = (node: ts.Node): void => {
+        if (ts.isIdentifier(node) && node.text === value.text
+          && !propertyAccessName(node) && !ts.isMetaProperty(node.parent)) references++;
+        ts.forEachChild(node, count);
+      };
+      count(sourceFile);
+      if (references !== 2) return undefined;
+      return workerConstant(uniqueConstInitializer(sourceFile, value.text), new Set([...seen, value.text]));
+    };
+    const workerString = (expression: ts.Expression | undefined, depth = 0): string | undefined => {
+      if (depth >= 16) return undefined;
+      const value = workerConstant(expression);
+      if (!value) return undefined;
+      const literal = directStringLiteral(value);
+      if (literal !== undefined) return literal;
+      if (!ts.isBinaryExpression(value) || value.operatorToken.kind !== ts.SyntaxKind.PlusToken) return undefined;
+      const left = workerString(value.left, depth + 1); const right = workerString(value.right, depth + 1);
+      return left !== undefined && right !== undefined ? left + right : undefined;
+    };
+    const workerMetaUrl = (expression: ts.Expression | undefined): boolean => {
+      const value = workerConstant(expression);
+      if (!value || !ts.isPropertyAccessExpression(value) && !ts.isElementAccessExpression(value)) return false;
+      const key = ts.isPropertyAccessExpression(value) ? value.name.text : workerString(value.argumentExpression);
+      const meta = workerConstant(value.expression);
+      return key === 'url' && !!meta && ts.isMetaProperty(meta)
+        && meta.keywordToken === ts.SyntaxKind.ImportKeyword && meta.name.text === 'meta';
+    };
+    const resolvedWorkerConstant = (node: ts.NewExpression): ReturnType<typeof workerEntry> | undefined => {
+      const entry = workerConstant(node.arguments?.[0]);
+      const direct = workerString(entry);
+      if (direct !== undefined) return { specifier: direct, context: 'browser' };
+      if (!entry || !ts.isNewExpression(entry) || !ts.isIdentifier(entry.expression)
+        || entry.expression.text !== 'URL' || !unshadowedBuiltIn('URL')) return undefined;
+      const specifier = workerString(entry.arguments?.[0]);
+      return specifier !== undefined && workerMetaUrl(entry.arguments?.[1])
+        ? { specifier, context: 'source-url' } : undefined;
+    };
+    const inertEmptyWorker = (node: ts.NewExpression): boolean => {
+      const entry = workerConstant(node.arguments?.[0]);
+      return !!entry && entry.getText(sourceFile).replace(/\s+/g, '') === 'URL.createObjectURL(newBlob([]))'
+        && unshadowedBuiltIn('URL') && !hasRuntimeWrite('URL', 'createObjectURL') && unshadowedBuiltIn('Blob');
+    };
+    const exactGeneratorWorker = (node: ts.NewExpression): boolean => (
+      policyPath === 'services/generatorSandbox.ts'
+      && node.getText(sourceFile) === 'new Worker(evaluatorUrl)'
+      // Freeze surrounding source/URL assignment too, not just a reusable alias.
+      && createHash('sha256').update(input.source).digest('hex') === '1a88277576aed21782cb61ec1945395471b845428fe491874f8c1dda6933ca61'
+    );
     const transparentExpression = (node: ts.Identifier): ts.Expression => {
       let expression: ts.Expression = node;
       while (
@@ -2894,6 +3427,8 @@ const analyzeSources = (inputs: readonly SourceInput[]): Map<string, string[]> =
       const parent = expression.parent;
       if (ts.isTypeOfExpression(parent) && parent.expression === expression) return true;
       if (ts.isPropertyAccessExpression(parent) && parent.expression === expression) {
+        if (policyPath === workerEntryPath && node.text === 'self' && parent.name.text === 'postMessage'
+          && unshadowedBuiltIn('self') && ts.isCallExpression(parent.parent) && parent.parent.expression === parent) return true;
         return approvedBrowserRootProperties.has(parent.name.text);
       }
       if (ts.isElementAccessExpression(parent) && parent.expression === expression) {
@@ -2987,6 +3522,28 @@ const analyzeSources = (inputs: readonly SourceInput[]): Map<string, string[]> =
         : undefined;
     };
 
+    const exactWorkerIdbInjection = (node: ts.Node): boolean => {
+      const property = ts.isPropertyAccessExpression(node.parent) ? node.parent.parent : node.parent;
+      if (!ts.isPropertyAssignment(property) || directPropertyName(property.name) !== 'indexedDB'
+        || property.initializer.getText(sourceFile) !== 'self.indexedDB') return false;
+      const object = property.parent; const call = object.parent;
+      if (!ts.isObjectLiteralExpression(object) || !ts.isCallExpression(call)
+        || call.arguments.length !== 1 || call.arguments[0] !== object
+        || !ts.isIdentifier(call.expression) || call.expression.text !== 'createWorkspaceWorkerHandler') return false;
+      const declaration = call.parent;
+      return ts.isVariableDeclaration(declaration) && ts.isIdentifier(declaration.name) && declaration.name.text === 'handler'
+        && ts.isVariableDeclarationList(declaration.parent) && ts.isVariableStatement(declaration.parent.parent)
+        && declaration.parent.parent.parent === sourceFile;
+    };
+    const exactNormalizedAdapterIdbInjection = (node: ts.Node): boolean => {
+      if (policyPath !== normalizedStorePath || !historicalOpen || !node.parent) return false;
+      const call = uniqueConstInitializer(sourceFile, 'adapter');
+      const property = ts.isPropertyAccessExpression(node.parent) ? node.parent.parent : node.parent;
+      return Boolean(call && ts.isCallExpression(call) && ts.isPropertyAssignment(property)
+        && directPropertyName(property.name) === 'indexedDB' && adapterMatchesExpression(property.initializer, 'environment.indexedDB')
+        && property.parent === call.arguments[0]);
+    };
+
     const inspectNode = (node: ts.Node): void => {
       if (ts.isExpressionWithTypeArguments(node)
         && ts.isHeritageClause(node.parent)
@@ -2996,6 +3553,40 @@ const analyzeSources = (inputs: readonly SourceInput[]): Map<string, string[]> =
         return;
       }
       if (ts.isTypeNode(node)) return;
+      if (enforceDirectStorageBoundary) {
+        const member = executableCapabilityMemberName(node);
+        const idbSyntax = (ts.isIdentifier(node) || ts.isStringLiteralLike(node)) && node.text === 'indexedDB';
+        const idbOwner = policyPath === repositoryPath || policyPath === adapterPath;
+        const injectedRepositoryIdb = ts.isIdentifier(node) && (ts.isPropertySignature(node.parent)
+          || ts.isPropertyAccessExpression(node.parent) && node.parent.name === node
+            && ts.isIdentifier(node.parent.expression) && node.parent.expression.text === 'environment');
+        const idbBridge = policyPath === workerEntryPath || policyPath === `${workspacePath}index.ts`
+          || policyPath === `${workspacePath}LocalWorkspaceStore.ts` || exactNormalizedAdapterIdbInjection(node);
+        // Inert sandbox string retains its existing exact-list approval; it is
+        // not a general runtime capability exception for generatorSandbox.
+        const inertIdb = policyPath === 'services/generatorSandbox.ts' && ts.isStringLiteralLike(node)
+          && ts.isArrayLiteralExpression(node.parent) && enclosingFunction(node) === generatorEvaluator && exactGeneratorEvaluator;
+        if (idbSyntax && !idbOwner && !idbBridge && !inertIdb
+          || idbSyntax && policyPath === repositoryPath && !injectedRepositoryIdb
+          || idbSyntax && policyPath === workerEntryPath && !exactWorkerIdbInjection(node)
+          || member && ['transaction', 'objectStore', 'createObjectStore', 'deleteObjectStore'].includes(member) && !idbOwner
+          || member && ['createObjectStore', 'deleteObjectStore', 'createIndex'].includes(member) && policyPath === repositoryPath
+          || workerRuntimeEdges.has(policyPath) && !idbOwner && member === 'open' && node !== historicalOpen
+          || policyPath === adapterPath && ts.isStringLiteralLike(node)
+            && ['projectHeaders', 'projectNodes', 'projectVariants', 'projectTemplates', 'projectSources', 'projectExtensions', 'projectPreferences', 'normalizationLedger'].includes(node.text)
+            && !adapterApprovals.has(node)) {
+          report(node, 'normalized worker capability: unauthorized IndexedDB acquisition or operation');
+        }
+        if (workerRuntimeEdges.has(policyPath) && ts.isIdentifier(node)
+          && ['fetch', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'importScripts'].includes(node.text))
+          report(node, 'normalized worker capability: network initialization or executable loader');
+        if (ts.isIdentifier(node) && ['Worker', 'SharedWorker'].includes(node.text)
+          && !nonValueBrowserRootName(node) && !hasLexicalValueBinding(node)
+          && !ts.isTypeOfExpression(transparentExpression(node).parent)
+          && !(ts.isNewExpression(transparentExpression(node).parent)
+            && (transparentExpression(node).parent as ts.NewExpression).expression === transparentExpression(node)))
+          report(node, 'normalized worker capability: escaped worker constructor');
+      }
       if (enforceDirectStorageBoundary
         && !directStorageApprovedAt(node)
         && localStorageSyntax(node)) {
@@ -3031,6 +3622,11 @@ const analyzeSources = (inputs: readonly SourceInput[]): Map<string, string[]> =
         && !directStorageApprovedAt(node)
         && ts.isIdentifier(node)
         && browserGlobalNames.has(node.text)
+        // These exact worker-only modules use `window` for bounded commit data,
+        // not the browser root. Require a lexical binding; unbound roots and
+        // localStorage/capability acquisition retain all existing checks.
+        && !((policyPath === repositoryPath || policyPath === `${normalizedPath}commitProof.ts`)
+          && node.text === 'window' && hasLexicalValueBinding(node))
         && !nonValueBrowserRootName(node)
         && !approvedBrowserRootUse(node)) {
         report(node, 'passes a browser global outside approved static access');
@@ -3043,7 +3639,13 @@ const analyzeSources = (inputs: readonly SourceInput[]): Map<string, string[]> =
         report(node, 'creates an IndexedDB index');
       }
       if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
-        inspectModuleSpecifier(node, node.moduleSpecifier);
+        const typeOnly = ts.isImportDeclaration(node) ? node.importClause?.isTypeOnly === true
+          || !!node.importClause?.namedBindings && ts.isNamedImports(node.importClause.namedBindings)
+            && !node.importClause.name && node.importClause.namedBindings.elements.length > 0
+            && node.importClause.namedBindings.elements.every(item => item.isTypeOnly)
+          : node.isTypeOnly || !!node.exportClause && ts.isNamedExports(node.exportClause)
+            && node.exportClause.elements.length > 0 && node.exportClause.elements.every(item => item.isTypeOnly);
+        inspectModuleSpecifier(node, node.moduleSpecifier, typeOnly);
       } else if (ts.isImportEqualsDeclaration(node)
         && ts.isExternalModuleReference(node.moduleReference)) {
         inspectModuleSpecifier(node, node.moduleReference.expression);
@@ -3056,6 +3658,21 @@ const analyzeSources = (inputs: readonly SourceInput[]): Map<string, string[]> =
       }
       if (productionSource && ts.isNewExpression(node)) {
         const edge = workerEntry(node);
+        if (enforceDirectStorageBoundary && workerConstructor(node)) {
+          const protectedClosure = workerRuntimeEdges.has(policyPath);
+          const resolved = protectedClosure ? edge : resolvedWorkerConstant(node);
+          const target = resolved?.context === 'source-url' ? workerModuleTarget(policyPath, resolved.specifier)
+            : resolved && resolvedBrowserEdge(input.browserBase ?? repositoryBrowserBase('index.html'), resolved.specifier);
+          if (!resolved) {
+            if (protectedClosure || !inertEmptyWorker(node) && !exactGeneratorWorker(node))
+              report(node, 'normalized worker capability: unanalyzable worker execution edge');
+          }
+          if (target === workerEntryPath || target?.replace(/\.js$/, '.ts') === workerEntryPath) {
+            const exact = policyPath === workerClientPath
+              && node.getText(sourceFile).replace(/\s+/g, '') === "newWorker(newURL('./workspaceWorker.ts',import.meta.url),{type:'module'})";
+            if (!exact) report(node, 'normalized worker capability: unauthorized worker execution edge');
+          } else if (protectedClosure) report(node, 'normalized worker capability: unexpected worker execution edge');
+        }
         const excluded = edge?.context === 'source-url'
           ? browserEntersExcludedDirectory(repositoryBrowserBase(policyPath), edge.specifier)
           : edge?.context === 'browser'
@@ -3101,6 +3718,623 @@ const analyzeProductionSource = (path: string, source: string): string[] =>
     .get(path) ?? [];
 
 describe('local workspace static boundary', () => {
+  describe('normalization algorithm capabilities', () => {
+    const path = `${normalizedPath}migration.ts`;
+    it.each([`${workspacePath}LocalWorkspaceStore.ts`, `${workspacePath}index.ts`, workerEntryPath])('forbids unreviewed live normalizer entry from %s', caller => {
+      const source = readFileSync(join(root, caller), 'utf8');
+      expect(analyzeProductionSource(caller, source)).toEqual([]);
+      expect(analyzeProductionSource(caller, `${source}\nimport '@/services/localWorkspace/normalized/migration';`)).not.toEqual([]);
+    });
+    it('allows the real injected orchestration module without writer creation', () => {
+      expect(analyzeProductionSource(path, readFileSync(join(root, path), 'utf8'))).toEqual([]);
+    });
+    it.each([
+      "import './unreviewedNormalizationCapability';", 'void import(unknownModule);',
+      "import { createNormalizedRepository } from './repository';",
+      "import '../indexedDbAdapter';", 'self.localStorage.getItem("unreviewed");',
+      'new Worker(unknownWorkerUrl);', "db.transaction('projectNodes', 'readwrite').objectStore('projectNodes').put({});",
+    ])('rejects real-source orchestration mutation: %s', addition => {
+      const findings = analyzeProductionSource(path, `${readFileSync(join(root, path), 'utf8')}\n${addition}`);
+      expect(findings.some(finding => finding.includes('could not be parsed'))).toBe(false);
+      expect(findings).not.toEqual([]);
+    });
+    it.each([coordinatorPath, `${workspacePath}recovery.ts`])('allows reviewed owner/recovery source: %s', path => {
+      expect(analyzeProductionSource(path, readFileSync(join(root, path), 'utf8'))).toEqual([]);
+    });
+    it.each(['normalizeWorkspace as foreignNormalizer', 'normalizeWorkspace, extraCapability'])('rejects altered owner normalizer acquisition: %s', replacement => {
+      const source = readFileSync(join(root, coordinatorPath), 'utf8');
+      const before = 'import { normalizeWorkspace, type NormalizationEnvironment';
+      expect(source.split(before)).toHaveLength(2);
+      expect(analyzeProductionSource(coordinatorPath, source.replace(before, `import { ${replacement}, type NormalizationEnvironment`))).not.toEqual([]);
+    });
+    it.each([coordinatorPath, `${workspacePath}recovery.ts`].flatMap(path => [
+      "import './unreviewedNormalizationCapability';", 'void import(unknownModule);',
+      "import '@/services/localWorkspace/indexedDbAdapter';", 'self.localStorage.getItem("unreviewed");',
+      'new Worker(unknownWorkerUrl);', "db.transaction('projectNodes', 'readwrite').objectStore('projectNodes').put({});",
+    ].map(addition => [path, addition])))('rejects real-source owner/recovery mutation in %s: %s', (path, addition) => {
+      const findings = analyzeProductionSource(path, `${readFileSync(join(root, path), 'utf8')}\n${addition}`);
+      expect(findings.some(finding => finding.includes('could not be parsed'))).toBe(false);
+      expect(findings).not.toEqual([]);
+    });
+  });
+  describe('normalization incremental hash leaf capability', () => {
+    const path = `${normalizedPath}incrementalSha256.ts`;
+    const actual = () => readFileSync(join(root, path), 'utf8');
+    it('allows the dependency-free production helper', () => {
+      expect(analyzeProductionSource(path, actual())).toEqual([]);
+    });
+    it.each([
+      "import './unreviewedNormalizationCapability';",
+      "import './repository';",
+      "import '../indexedDbAdapter';",
+      'void import(unknownModule);',
+      'self.localStorage.getItem("unreviewed");',
+      'new Worker(unknownWorkerUrl);',
+    ])('rejects added capability: %s', addition => {
+      const findings = analyzeProductionSource(path, `${actual()}\n${addition}`);
+      expect(findings.some(finding => finding.includes('could not be parsed'))).toBe(false);
+      expect(findings).not.toEqual([]);
+    });
+  });
+  describe('normalization cooperative work architecture', () => {
+    // Check dependencies and storage ownership here. Runtime behavior belongs
+    // in normalized/work.test.ts, not a second implementation of the scheduler.
+    const path = 'shared/cooperativeWork.js';
+    const actual = () => readFileSync(join(root, path), 'utf8');
+    it('allows ordinary local array computation without a scheduler sandbox', () => {
+      expect(analyzeProductionSource(path, `${actual()}
+        function sum(values) {
+          let total = 0;
+          for (let i = 0; i < values.length; i++) total += values[i];
+          return total;
+        }
+      `)).toEqual([]);
+    });
+    it('registers the dependency-free runtime without a directory-wide exception', () => {
+      expect(workerRuntimeEdges.get(path)).toEqual([]);
+      expect(workerRuntimeEdges.has('shared/cooperativeWork.d.ts')).toBe(false);
+      expect(analyzeProductionSource(path, actual())).toEqual([]);
+    });
+    it.each([
+      "import './unreviewedNormalizationCapability';",
+      "import '../services/localWorkspace/normalized/repository';",
+      "import '../services/localWorkspace/indexedDbAdapter';",
+      'void import(unknownModule);',
+      'self.localStorage.getItem("unreviewed");',
+      'indexedDB.open("unreviewed");',
+      'new Worker(unknownWorkerUrl);',
+      'fetch("/unreviewed");',
+    ])('rejects parsed helper capability addition: %s', addition => {
+      const findings = analyzeProductionSource(path, `${actual()}\n${addition}`);
+      expect(findings.some(finding => finding.includes('could not be parsed'))).toBe(false);
+      expect(findings).not.toEqual([]);
+    });
+  });
+  describe('canonical traversal architecture', () => {
+    it('registers only the canonical traversal dependencies', () => {
+      expect(workerRuntimeEdges.get('shared/jsonWork.js')).toEqual(['shared/cooperativeWork.js']);
+      expect(workerRuntimeEdges.get(`${workspacePath}canonical.ts`)).toEqual([
+        `${workspacePath}legacyTypes.ts`, 'shared/jsonWork.js', 'shared/cooperativeWork.js',
+        `${normalizedPath}incrementalSha256.ts`,
+      ]);
+      for (const path of ['shared/jsonWork.js', `${workspacePath}canonical.ts`]) {
+        expect(analyzeProductionSource(path, readFileSync(join(root, path), 'utf8'))).toEqual([]);
+      }
+    });
+    it.each([
+      "import '../services/localWorkspace/normalized/repository';",
+      'indexedDB.open("unreviewed");',
+      'fetch("/unreviewed");',
+    ])('does not give JSON traversal storage or network ownership: %s', addition => {
+      const path = 'shared/jsonWork.js';
+      const source = readFileSync(join(root, path), 'utf8');
+      const findings = analyzeProductionSource(path, `${source}\n${addition}`);
+      expect(findings.some(finding => finding.includes('could not be parsed'))).toBe(false);
+      expect(findings).not.toEqual([]);
+    });
+  });
+  describe('cooperative loader helper architecture', () => {
+    const paths = ['services/textOverflow.ts', 'services/textPadding.ts', 'services/layers.ts',
+      'services/migration.ts', 'services/loadProjectState.ts', 'shared/generatorMetadata.js', 'shared/validateAppState.js',
+      `${workspacePath}validation.ts`, `${workspacePath}migration.ts`, `${workspacePath}lineageRepair.ts`,
+      `${workspacePath}legacy.ts`, `${workspacePath}historicalBootstrap.ts`];
+    it.each(paths)('allows actual reviewed cooperative helper %s', path => {
+      expect(analyzeProductionSource(path, readFileSync(join(root, path), 'utf8'))).toEqual([]);
+    });
+    it.each(paths)('rejects unreviewed imports in cooperative helper %s', path => {
+      expect(analyzeProductionSource(path, `${readFileSync(join(root, path), 'utf8')}\nimport './unreviewedNormalizationCapability';`)).not.toEqual([]);
+    });
+  });
+  describe('streamed frame architecture', () => {
+    const path = `${normalizedPath}work.ts`;
+    it('registers only framing and work dependencies, not a storage owner', () => {
+      expect(workerRuntimeEdges.get(path)).toEqual([
+        `${workspacePath}canonical.ts`, 'shared/cooperativeWork.js', 'shared/jsonWork.js',
+      ]);
+      expect(analyzeProductionSource(path, readFileSync(join(root, path), 'utf8'))).toEqual([]);
+    });
+    it.each([
+      "import './repository';", "import '../indexedDbAdapter';",
+      'indexedDB.open("unreviewed");', 'fetch("/unreviewed");',
+    ])('retains storage/network restrictions: %s', addition => {
+      const source = readFileSync(join(root, path), 'utf8');
+      const findings = analyzeProductionSource(path, `${source}\n${addition}`);
+      expect(findings.some(finding => finding.includes('could not be parsed'))).toBe(false);
+      expect(findings).not.toEqual([]);
+    });
+  });
+  describe('normalization source validation runtime edges', () => {
+    // Actual dependencies of repository source validation. This includes the old
+    // migration module's preset/loader imports, not a directory-wide permission.
+    const paths = [repositoryPath, ...['historicalBootstrap', 'migration', 'lineageRepair', 'legacy', 'validation', 'contracts']
+      .map(name => `${workspacePath}${name}.ts`), ...['presets', 'loadProjectState', 'blank_preset', 'notebook_preset', 'planner_preset']
+      .map(name => `services/${name}.ts`)];
+    it.each(paths)('allows actual reviewed source: %s', path => {
+      expect(analyzeProductionSource(path, readFileSync(join(root, path), 'utf8'))).toEqual([]);
+    });
+    it.each(paths.flatMap(path => [
+      "import './unreviewedNormalizationCapability';",
+      'void import(unknownModule);',
+      'self.localStorage.getItem("unreviewed");',
+      'new Worker(unknownWorkerUrl);',
+    ].map(addition => [path, addition])))('rejects capability mutation in %s: %s', (path, addition) => {
+      const findings = analyzeProductionSource(path, `${readFileSync(join(root, path), 'utf8')}\n${addition}`);
+      expect(findings.some(finding => finding.includes('could not be parsed'))).toBe(false);
+      expect(findings).not.toEqual([]);
+    });
+    it.each([
+      ['foreign adapter', 'const adapter = getAdapter();\n    emit', 'const adapter = foreignFactory;\n    emit'],
+      ['foreign provider', 'const getAdapter = environment.adapter;', 'const getAdapter = foreignProvider;'],
+      ['open arguments', 'await adapter.open();', 'await adapter.open("other", 3);'],
+      ['unawaited open', 'await adapter.open();', 'adapter.open();'],
+      ['escaped opener', 'await adapter.open();', 'leak(adapter.open); await adapter.open();'],
+      ['extra opener', 'await adapter.open();', 'await adapter.open(); await other.open();'],
+    ])('denies altered injected historical opener: %s', (_name, before, after) => {
+      const path = `${workspacePath}historicalBootstrap.ts`;
+      const source = readFileSync(join(root, path), 'utf8');
+      expect(source.split(before)).toHaveLength(2);
+      expect(analyzeProductionSource(path, source.replace(before, after))).not.toEqual([]);
+    });
+    it.each([
+      [repositoryPath, "import '../indexedDbAdapter';"],
+      [`${workspacePath}historicalBootstrap.ts`, "import './indexedDbAdapter';"],
+      [`${workspacePath}migration.ts`, "import './normalized/repository';"],
+      [`${workspacePath}validation.ts`, "import './normalized/coordinator';"],
+    ])('keeps writer creation edges denied: %s %s', (path, addition) => {
+      expect(analyzeProductionSource(path, `${readFileSync(join(root, path), 'utf8')}\n${addition}`)).not.toEqual([]);
+    });
+  });
+
+  describe('Group A adapter capabilities', () => {
+    const actualAdapter = (): string => readFileSync(join(root, adapterPath), 'utf8');
+    const replaceOnce = (source: string, before: string, after: string): string => {
+      expect(source.split(before)).toHaveLength(2);
+      return source.replace(before, after);
+    };
+
+    it('allows actual explicit-v3 upgrade and same-transaction absence guard only', () => {
+      expect(analyzeProductionSource(adapterPath, actualAdapter())).toEqual([]);
+    });
+
+    it.each([
+      ['return abortTransaction(transaction, requests, error, work);', 'return;'],
+      ['return abortTransaction(transaction, requests, error, work);', 'return abortTransaction(otherTransaction, requests, error, work);'],
+      ['return abortTransaction(transaction, requests, error, work);', 'return abortTransaction(transaction, requests, error, work).catch(() => {});'],
+      ['return abortTransaction(transaction, requests, error, work);', 'return abortTransaction(transaction, requests, error);'],
+      ['enqueuePreparedCopy(transaction, prepared, requests, work)', 'enqueuePreparedCopy(transaction, prepared, requests)'],
+      ['enqueuePreparedCopy(transaction, prepared, requests, work)', 'enqueuePreparedCopy(transaction, prepared, requests, otherWork)'],
+    ].flatMap(([before, after]) => (before.startsWith('return')
+      ? ['writeInitialCopy', 'repairHistoricalLineage', 'markVerified', 'markLegacyDrift'] : ['writeInitialCopy'])
+      .map(name => [name, before.startsWith('return') ? before.replace('return ', 'return await ')
+        : before.replace('requests, work)', 'requests, work, accounting)'), after]))
+      .concat([['repairHistoricalLineage', 'return await abortTransaction(transaction, requests, error, work);',
+        'return abortTransaction(transaction, requests, error, work);']]))('keeps exact guarded writer cleanup/runtime binding: %s %s -> %s', (name, before, after) => {
+      const actual = actualAdapter();
+      const start = actual.indexOf(`  const ${name} =`);
+      const end = actual.indexOf('\n  const ', start + 1);
+      expect(start).toBeGreaterThan(0); expect(end).toBeGreaterThan(start);
+      const source = actual.slice(0, start) + replaceOnce(actual.slice(start, end), before, after) + actual.slice(end);
+      expect(analyzeProductionSource(adapterPath, source)).toEqual(expect.arrayContaining([
+        expect.stringContaining('normalized worker capability:'),
+      ]));
+    });
+
+    it.each([
+      'enqueueLineageRepair(transaction, prepared, expectedIndex, requests)',
+      'enqueueLineageRepair(transaction, prepared, expectedIndex, requests, otherWork)',
+      'enqueueLineageRepair(transaction, prepared, otherIndex, requests, work)',
+    ])('keeps exact guarded lineage helper binding: %s', replacement => {
+      const source = replaceOnce(actualAdapter(),
+        'enqueueLineageRepair(transaction, prepared, expectedIndex, requests, work, accounting)', replacement);
+      expect(analyzeProductionSource(adapterPath, source)).toEqual(expect.arrayContaining([
+        expect.stringContaining('normalized worker capability:'),
+      ]));
+    });
+
+    it('matches AST context rather than source bytes or comments', () => {
+      const source = replaceOnce(actualAdapter(),
+        'requestedVersion === NORMALIZED_DB_VERSION) {',
+        'requestedVersion /* explicit private upgrade */ === NORMALIZED_DB_VERSION) {');
+      expect(analyzeProductionSource(adapterPath, source)).toEqual([]);
+    });
+
+    it.each([
+      ['wrong default version', 'requestedVersion = WORKSPACE_DB_VERSION', 'requestedVersion = NORMALIZED_DB_VERSION'],
+      ['missing default version', 'requestedVersion = WORKSPACE_DB_VERSION', 'requestedVersion'],
+      ['type-only version binding', 'import { NORMALIZED_DB_VERSION,', 'import { type NORMALIZED_DB_VERSION,'],
+      ['overridden upgrade callback', 'upgrade(upgradeDatabase) {', '...otherCallbacks, upgrade(upgradeDatabase) {'],
+      ['untrusted openDB binding', "} from 'idb';", "} from './untrustedOpener';"],
+      ['widened upgrade gate', 'requestedVersion === NORMALIZED_DB_VERSION) {', 'requestedVersion >= NORMALIZED_DB_VERSION) {'],
+      ['wrong upgrade version', 'requestedVersion === NORMALIZED_DB_VERSION) {', 'requestedVersion === 2) {'],
+      ['wrong upgraded store set', 'of NORMALIZED_STORE_NAMES)', 'of STORE_NAMES)'],
+      ['missing store', 'of NORMALIZED_STORE_NAMES)', 'of NORMALIZED_STORE_NAMES.slice(1))'],
+      ['wrong ledger keyPath', "storeName === 'normalizationLedger' ? 'id' : 'key'", "storeName === 'normalizationLedger' ? 'key' : 'key'"],
+      ['wrong project keyPath', "storeName === 'normalizationLedger' ? 'id' : 'key'", "storeName === 'normalizationLedger' ? 'id' : 'id'"],
+      ['wrong ledger store', "storeName === 'normalizationLedger' ? 'id' : 'key'", "storeName === 'projectNodes' ? 'id' : 'key'"],
+      ['wrong upgrade callback', 'upgrade(upgradeDatabase) {', 'blocked(upgradeDatabase) {'],
+      ['wrong open version', 'WORKSPACE_DB_NAME, requestedVersion, {', 'WORKSPACE_DB_NAME, 3, {'],
+      ['escaped upgrade database', 'const normalized = upgradeDatabase;', 'const normalized = upgradeDatabase; leak(normalized);'],
+      ['escaped schema member', 'const normalized = upgradeDatabase;', 'const normalized = upgradeDatabase; leak(normalized.createObjectStore);'],
+      ['escaped upgrade callback', 'upgrade(upgradeDatabase) {', 'upgrade(upgradeDatabase) { leak(() => upgradeDatabase);'],
+      ['upgrade payload write', 'const normalized = upgradeDatabase;', "const normalized = upgradeDatabase; normalized.transaction('projectNodes', 'readwrite').objectStore('projectNodes').put({});"],
+      ['upgrade authority write', 'const normalized = upgradeDatabase;', "const normalized = upgradeDatabase; normalized.transaction('normalizationLedger', 'readwrite').objectStore('normalizationLedger').put({});"],
+      ['returned created store capability', 'normalized.createObjectStore(storeName, {', 'leak(normalized.createObjectStore(storeName, {'],
+      ['wrong guard version', 'activeDatabase.version === NORMALIZED_DB_VERSION ?', 'activeDatabase.version === 2 ?'],
+      ['widened guard transaction', "[...stores, 'normalizationLedger'] : stores", "[...stores, ...NORMALIZED_STORE_NAMES] : stores"],
+      ['guard scope omission', "[...stores, 'normalizationLedger'] : stores", 'stores : stores'],
+      ['guard readonly transaction', "'readwrite',\n  );\n  const requireUnreservedNormalization", "'readonly',\n  );\n  const requireUnreservedNormalization"],
+      ['guard bypass disjunction', "&& await transaction.objectStore('normalizationLedger').count() !== 0", "|| await transaction.objectStore('normalizationLedger').count() !== 0"],
+      ['guard ignores one reservation', ".count() !== 0) {", '.count() > 1) {'],
+      ['guard counts only recognized key', ".objectStore('normalizationLedger').count()", ".objectStore('normalizationLedger').count('incremental-local-persistence-v3')"],
+      ['guard skips await', "&& await transaction.objectStore('normalizationLedger').count()", "&& transaction.objectStore('normalizationLedger').count()"],
+      ['guard returns instead of rejecting', "throw conflict('Normalization has already reserved historical source authority.');", 'return;'],
+      ['guard authority mutation', ".objectStore('normalizationLedger').count()", ".objectStore('normalizationLedger').put({ id: 'active' })"],
+      ['guard store escape', ".objectStore('normalizationLedger').count()", ".objectStore('normalizationLedger').count.call(leak(transaction))"],
+      ['guard transaction escape', 'async (transaction: WriteTransaction): Promise<void> => {', 'async (transaction: WriteTransaction): Promise<void> => { leak(transaction);'],
+      ['extra runtime schema binding', 'NORMALIZED_DB_VERSION, NORMALIZED_STORE_NAMES, type NormalizedWorkspaceDatabase', 'NORMALIZED_DB_VERSION, NORMALIZED_STORE_NAMES, NORMALIZATION_LEDGER_ID, type NormalizedWorkspaceDatabase'],
+    ])('denies %s', (_name, before, after) => {
+      // Keep the returned-store mutation syntactically valid; parse errors are not policy evidence.
+      let source = replaceOnce(actualAdapter(), before, after);
+      if (_name === 'returned created store capability') {
+        source = replaceOnce(source, "keyPath: storeName === 'normalizationLedger' ? 'id' : 'key',\n                  });",
+          "keyPath: storeName === 'normalizationLedger' ? 'id' : 'key',\n                  }));");
+      }
+      const findings = analyzeProductionSource(adapterPath, source);
+      expect(findings.some(finding => finding.includes('could not be parsed'))).toBe(false);
+      expect(findings).toEqual(expect.arrayContaining([expect.stringContaining('normalized worker capability:')]));
+    });
+
+    it.each(['writeInitialCopy', 'repairHistoricalLineage', 'markVerified', 'markLegacyDrift'].flatMap(name => [
+      '', 'void requireUnreservedNormalization(transaction);',
+      'await requireUnreservedNormalization(otherTransaction);',
+      'await requireUnreservedNormalization(transaction).catch(() => {});',
+      'if (false) await requireUnreservedNormalization(transaction);',
+      "await transaction.objectStore('migrationLedger').put({}); await requireUnreservedNormalization(transaction);",
+      'await requireUnreservedNormalization(transaction); leak(transaction);',
+      'await requireUnreservedNormalization(transaction); transaction.objectStore(transaction.objectStoreNames[0]).put({});',
+    ].map(replacement => [name, replacement])))
+    ('denies guard bypass or escape in %s: %s', (name, replacement) => {
+      const source = actualAdapter();
+      const start = source.indexOf(`  const ${name} =`);
+      const guard = source.indexOf('await requireUnreservedNormalization(transaction);', start);
+      expect(start).toBeGreaterThan(0);
+      expect(guard).toBeGreaterThan(start);
+      const mutated = source.slice(0, guard) + source.slice(guard).replace(
+        'await requireUnreservedNormalization(transaction);', replacement);
+      expect(analyzeProductionSource(adapterPath, mutated), replacement).toEqual(expect.arrayContaining([
+        expect.stringContaining('normalized worker capability:'),
+      ]));
+    });
+
+    it.each([
+      'export { NORMALIZED_STORE_NAMES };',
+      'const names = NORMALIZED_STORE_NAMES; leak(names);',
+      'const name = NORMALIZED_STORE_NAMES[0]; db.transaction(name, "readwrite");',
+      'NORMALIZED_STORE_NAMES.forEach(name => db.transaction(name, "readwrite"));',
+      'leak(() => NORMALIZED_STORE_NAMES);',
+      'class EscapedSchemaMember extends NORMALIZED_STORE_NAMES.constructor {}',
+      'NORMALIZED_STORE_NAMES.push("other");',
+      'export { NORMALIZED_DB_VERSION };',
+      "import * as schema from './normalized/schema'; leak(schema);",
+      "export { NORMALIZED_STORE_NAMES } from './normalized/schema';",
+      "void import('./normalized/schema');",
+      "import './normalized/migration';",
+      "import './normalized/repository';",
+      "import './normalized/coordinator';",
+      "db.transaction(['projectNodes'], 'readwrite').objectStore('projectNodes').put({});",
+      "db.transaction(['normalizationLedger'], 'readwrite').objectStore('normalizationLedger').put({});",
+    ])('denies added capability even beside approved context: %s', addition => {
+      expect(analyzeProductionSource(adapterPath, `${actualAdapter()}\n${addition}`)).toEqual(expect.arrayContaining([
+        expect.stringContaining('normalized worker capability:'),
+      ]));
+    });
+
+    it.each([
+      'leak(prerequisiteTransaction);', 'leak(requireUnreservedNormalization);',
+      'prerequisiteTransaction(activeDatabase, STORE_NAMES);',
+      'requireUnreservedNormalization(transaction);',
+      'const NORMALIZED_STORE_NAMES = STORE_NAMES;',
+      'const NORMALIZED_DB_VERSION = 2;',
+    ])('denies escaped or shadowed helper capability: %s', addition => {
+      const source = replaceOnce(actualAdapter(), 'const describeSchema = async', `${addition}\n  const describeSchema = async`);
+      expect(analyzeProductionSource(adapterPath, source)).toEqual(expect.arrayContaining([
+        expect.stringContaining('normalized worker capability:'),
+      ]));
+    });
+
+    it.each([
+      [coordinatorPath, "import '../historicalBootstrap';"],
+      [coordinatorPath, "import './migration';"],
+      [repositoryPath, "import '../indexedDbAdapter';"],
+      [`${normalizedPath}schema.ts`, "import '../historicalBootstrap';"],
+    ])('does not preauthorize future owner edge %s: %s', (path, source) => {
+      expect(analyzeProductionSource(path, source)).toEqual(expect.arrayContaining([
+        expect.stringContaining('normalized worker capability: unauthorized runtime module edge'),
+      ]));
+    });
+
+    it.each(['self.localStorage.getItem("x");', 'new Worker(unknownUrl);'])
+    ('retains browser capability denial beside approved context: %s', addition => {
+      expect(analyzeProductionSource(adapterPath, `${actualAdapter()}\n${addition}`)).not.toEqual([]);
+    });
+  });
+
+  it.each(['import', 'export'])('rejects empty runtime %s edges in JavaScript', keyword => {
+    for (const [path, target] of [
+      ['components/Bad.js', '../services/localWorkspace/workspaceWorker.ts'],
+      ['shared/projectLimits.js', '../networkInit.js'],
+    ]) {
+      expect(analyzeProductionSource(path, `${keyword} {} from '${target}';`)).toEqual(expect.arrayContaining([
+        expect.stringContaining('normalized worker capability: unauthorized runtime module edge'),
+      ]));
+    }
+  });
+
+  it.each([
+    "import type {} from '../services/localWorkspace/workspaceWorker';",
+    "export type {} from '../services/localWorkspace/workspaceWorker';",
+    "import { type Handler } from '../services/localWorkspace/workspaceWorker';",
+    "export { type Handler } from '../services/localWorkspace/workspaceWorker';",
+  ])('preserves genuine type-only edges: %s', source => {
+    expect(analyzeProductionSource('components/Types.ts', source)).toEqual([]);
+  });
+
+  it.each([workerClientPath, coordinatorPath, 'shared/projectLimits.js', 'components/Bad.ts'])
+  ('rejects unresolved worker execution in %s', path => {
+    for (const constructor of ['Worker', 'SharedWorker']) {
+      for (const source of [
+        `const url = new URL('/services/localWorkspace/workspaceWorker.ts', import.meta.url); new ${constructor}(url, { type: 'module' });`,
+        `new ${constructor}(new URL(prefix + '/workspaceWorker.ts', import.meta.url));`,
+        `new ${constructor}(unknownUrl);`,
+        `const target = '/services/localWorkspace/workspaceWorker.ts'; new ${constructor}(target);`,
+        `const target = '/services/localWorkspace/' + 'workspaceWorker.ts'; new ${constructor}(new URL(target, import.meta.url));`,
+      ]) expect(analyzeProductionSource(path, source)).toEqual(expect.arrayContaining([
+        expect.stringContaining('normalized worker capability:'),
+      ]));
+    }
+  });
+
+  it('allows the exact client constructor and resolved unrelated constant workers', () => {
+    expect(analyzeProductionSource(workerClientPath,
+      "new Worker(new URL('./workspaceWorker.ts', import.meta.url), { type: 'module' });")).toEqual([]);
+    for (const constructor of ['Worker', 'SharedWorker']) {
+      expect(analyzeProductionSource('components/Good.ts', `if (typeof ${constructor} !== 'function') throw Error('unavailable');`)).toEqual([]);
+      expect(analyzeProductionSource('components/Good.ts',
+        `const path = './worker.ts'; const url = new URL(path, import.meta.url); new ${constructor}(url);`)).toEqual([]);
+    }
+  });
+
+  it.each([
+    "const Constructor = Worker; new Constructor(url);",
+    "const Constructor = SharedWorker; new Constructor(url);",
+    "let url = './safe.ts'; url = privateUrl; new Worker(url);",
+    "const url = new URL('./safe.ts', import.meta.url); url.pathname = privatePath; new Worker(url);",
+    "const url = new URL('./safe.ts', import.meta.url); alter(url); new Worker(url);",
+    "const url = other; const other = url; new Worker(url);",
+    "const workerUrl = URL.createObjectURL(new Blob([privateSource])); new Worker(workerUrl);",
+  ])('rejects worker alias escape: %s', source => {
+    expect(analyzeProductionSource('components/Bad.ts', source)).toEqual(expect.arrayContaining([
+      expect.stringContaining('normalized worker capability:'),
+    ]));
+  });
+
+  it('keeps the existing generator worker exception exact, not an alias grant', () => {
+    const source = readFileSync(join(root, 'services/generatorSandbox.ts'), 'utf8');
+    expect(analyzeProductionSource('services/generatorSandbox.ts', source)).toEqual([]);
+    expect(analyzeProductionSource('services/generatorSandbox.ts', source.replace(
+      'new Worker(evaluatorUrl)', 'new Worker(privateUrl)',
+    ))).toEqual(expect.arrayContaining([expect.stringContaining('normalized worker capability:')]));
+  });
+
+  it.each([
+    ['components/Bad.tsx', "indexedDB.open('x');"],
+    ['components/Bad.tsx', "window.indexedDB.open('x');"],
+    ['components/Bad.tsx', "const { indexedDB: db } = self; db.open('x');"],
+    ['components/Bad.tsx', "const db = self['indexedDB']; db.open('x');"],
+    ['components/Bad.tsx', "import('idb');"],
+    ['components/Bad.tsx', "export { openDB } from 'idb';"],
+    ['services/localWorkspace/rogue.ts', "import { createNormalizedRepository } from './normalized/repository';"],
+    ['components/Bad.tsx', "import('@/services/localWorkspace/normalized/repository.ts?x');"],
+    ['components/Bad.tsx', "import('../services/localWorkspace/normalized/repository.js');"],
+    ['components/Bad.tsx', "import('../services/localWorkspace/' + 'normalized/repository');"],
+    ['components/Bad.tsx', "require('../services/localWorkspace/normalized/coordinator');"],
+    ['components/Bad.tsx', "export * from '../services/localWorkspace/workspaceWorkerClient';"],
+    ['services/localWorkspace/normalized/secondWriter.ts', "db.transaction(['projectNodes'], 'readwrite').objectStore('projectNodes').put({});"],
+    ['services/localWorkspace/normalized/secondWriter.ts', "const { objectStore: store } = tx; store('projectNodes').put({});"],
+    ['services/localWorkspace/workspaceWorker.ts', "self.indexedDB.open('x');"],
+    ['services/localWorkspace/workspaceWorker.ts', "const db = self.indexedDB; db.open('x');"],
+    ['services/localWorkspace/workspaceWorker.ts', "export const database = self.indexedDB;"],
+    ['services/localWorkspace/workspaceWorker.ts', "const handler = other({ indexedDB: self.indexedDB });"],
+    ['services/localWorkspace/normalized/repository.ts', "self.indexedDB.open('x');"],
+    ['services/localWorkspace/normalized/coordinator.ts', "environment.indexedDB.open('x');"],
+    ['services/localWorkspace/indexedDbAdapter.ts', "db.transaction(['projectNodes'], 'readwrite');"],
+    ['services/localWorkspace/indexedDbAdapter.ts', "import { NORMALIZED_STORE_NAMES } from './normalized/schema';"],
+    ['services/localWorkspace/normalized/repository.ts', "db.createObjectStore('projectNodes');"],
+    ['services/localWorkspace/workspaceWorkerClient.ts', "import './normalized/coordinator';"],
+    ['components/Bad.tsx', "new Worker(new URL('../services/localWorkspace/workspaceWorker.ts', import.meta.url), { type: 'module' });"],
+    ['services/localWorkspace/workspaceWorker.ts', "import './index';"],
+    ['services/localWorkspace/workspaceWorker.ts', "import(path);"],
+    ['services/localWorkspace/workspaceWorker.ts', "import('https://invalid.example/init.js');"],
+    ['services/localWorkspace/workspaceWorker.ts', "fetch('/init');"],
+    ['services/document/partition.ts', "import React from 'react'; export const x = React.createElement;"],
+  ])('rejects normalized worker capability bypass in %s: %s', (path, source) => {
+    expect(analyzeProductionSource(path, source)).toEqual(expect.arrayContaining([
+      expect.stringContaining('normalized worker capability'),
+    ]));
+  });
+
+  it.each(['services/localWorkspace/workspaceWorker.ts', 'services/localWorkspace/normalized/coordinator.ts',
+    'services/localWorkspace/normalized/secondWriter.ts'])('never grants worker localStorage access in %s', path => {
+    expect(analyzeProductionSource(path, "self.localStorage.getItem('x');")).toEqual(expect.arrayContaining([
+      expect.stringContaining('accesses production localStorage'),
+    ]));
+  });
+
+  it('allows exact worker messaging and type-only schema edges without global capability relaxation', () => {
+    expect(analyzeProductionSource('services/localWorkspace/workspaceWorker.ts',
+      "import { createWorkspaceWorkerHandler } from './normalized/coordinator'; self.postMessage({});")).toEqual([]);
+    expect(analyzeProductionSource('components/Bad.tsx', 'self.postMessage({});')).not.toEqual([]);
+    expect(analyzeProductionSource('components/Types.ts',
+      "import type { DocumentBatch } from '../services/localWorkspace/normalized/schema'; export type Batch = DocumentBatch;")).toEqual([]);
+    expect(analyzeProductionSource(workerEntryPath,
+      "import { createWorkspaceWorkerHandler } from './normalized/coordinator'; const handler = createWorkspaceWorkerHandler({ indexedDB: self.indexedDB });")).toEqual([]);
+  });
+
+  it.each([repositoryPath, `${normalizedPath}commitProof.ts`])('distinguishes lexical commit windows from browser roots in %s', path => {
+    expect(analyzeProductionSource(path, 'function inspect(window: { entries: unknown[] }) { return window.entries; }')).toEqual([]);
+    expect(analyzeProductionSource(path, 'export const escaped = window;')).not.toEqual([]);
+    expect(analyzeProductionSource(path, "function inspect(window: Window) { return window.localStorage; }")).not.toEqual([]);
+  });
+
+  it('checks each transitive worker runtime edge, not merely the entry imports', () => {
+    const inputs = [
+      { path: workerEntryPath, source: "import './normalized/coordinator';", directStorageBoundary: true },
+      { path: coordinatorPath, source: "import './repository';", directStorageBoundary: true },
+      { path: repositoryPath, source: "import './codec';", directStorageBoundary: true },
+      { path: `${normalizedPath}codec.ts`, source: "import '../networkInit';", directStorageBoundary: true },
+      { path: `${workspacePath}networkInit.ts`, source: "import React from 'react'; fetch('/init');", directStorageBoundary: true },
+    ];
+    expect(analyzeSources(inputs).get(`${normalizedPath}codec.ts`)).toEqual(expect.arrayContaining([
+      expect.stringContaining('normalized worker capability'),
+    ]));
+  });
+
+  it.each(['workspaceManifest', 'workspaceCommitProof', 'projectBaseline', 'emissionPlan', 'workspaceCommands', 'bulkProject', 'workspaceRecovery', 'frameComparison'])('keeps authority helper %s inside its pure worker closure', name => {
+    const path = `${normalizedPath}${name}.ts`;
+    expect(analyzeProductionSource(path, readFileSync(join(root, path), 'utf8'))).toEqual([]);
+    expect(analyzeProductionSource(path, "import '../indexedDbAdapter';")).not.toEqual([]);
+    expect(analyzeProductionSource(path, "self.indexedDB.open('unreviewed');")).not.toEqual([]);
+    expect(analyzeProductionSource(path, "db.transaction('projectNodes', 'readwrite').objectStore('projectNodes').put({});")).not.toEqual([]);
+  });
+
+  it('keeps workspace catalog metadata inside its pure worker closure', () => {
+    const path = `${workspacePath}workspaceCatalog.ts`;
+    expect(analyzeProductionSource(path, readFileSync(join(root, path), 'utf8'))).toEqual([]);
+    expect(analyzeProductionSource(path, "import './indexedDbAdapter';")).not.toEqual([]);
+    expect(analyzeProductionSource(path, "self.indexedDB.open('unreviewed');")).not.toEqual([]);
+    expect(analyzeProductionSource(path, "db.transaction('workspace', 'readwrite').objectStore('workspace').put({});")).not.toEqual([]);
+  });
+
+  it('keeps the private lifecycle owner inside its exact metadata and queue-only runtime closure', () => {
+    const path = `${workspacePath}workspaceCommandAdmission.ts`;
+    expect(analyzeProductionSource(path, readFileSync(join(root, path), 'utf8'))).toEqual([]);
+    expect(analyzeProductionSource(path, "import './indexedDbAdapter';")).not.toEqual([]);
+    expect(analyzeProductionSource(path, "import './normalized/workspaceCommands';")).not.toEqual([]);
+    expect(analyzeProductionSource(path, "self.indexedDB.open('unreviewed');")).not.toEqual([]);
+  });
+
+  it('grants restart orchestration only queue and authenticated write-owner capabilities', () => {
+    expect(workerRuntimeEdges.get(workspaceAdmissionPath)).toEqual(['shared/cooperativeWork.js', 'shared/jsonWork.js',
+      `${workspacePath}contracts.ts`, `${workspacePath}workspaceCatalog.ts`, `${workspacePath}workspaceWorkerProtocol.ts`, installationRegistryPath,
+      `${workspacePath}incrementalQueue.ts`, writeRecoveryPath, recoveryAdmissionPath]);
+    for (const target of ['./normalized/repository', './indexedDbAdapter', './workspaceWorkerClient', './unreviewedRecoveryHelper']) {
+      expect(analyzeProductionSource(workspaceAdmissionPath, `import '${target}';`)).not.toEqual([]);
+    }
+  });
+
+  it('does not authorize production entrypoints to instantiate private lifecycle admission', () => {
+    expect(analyzeProductionSource('components/EditorPage.tsx', "import { createWorkspaceCommandAdmission } from '../services/localWorkspace/workspaceCommandAdmission';")).not.toEqual([]);
+  });
+
+  it('grants normal startup only the exact v3 prerequisite opener and retains cleanup/escape checks', () => {
+    const source = readFileSync(join(root, normalizedStorePath), 'utf8');
+    const parsed = ts.createSourceFile(normalizedStorePath, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+    expect(normalizedStorePrerequisiteOpen(parsed), JSON.stringify({ adapter: uniqueConstInitializer(parsed, 'adapter')?.getText(parsed),
+      bindings: ['adapter', 'environment', 'createIndexedDbAdapter'].map(name => [name, sourceValueBindings(parsed, name).length, sourceHasRuntimeWrite(parsed, name)]) })).toBeDefined();
+    const findings = analyzeProductionSource(normalizedStorePath, source);
+    expect(findings, findings.join('\n')).toEqual([]);
+    for (const altered of [source.replace('}, 3)', '}, 2)'), source.replace('finally { adapter.close(); }', 'finally {}'),
+      source.replace('adapter: () => adapter', 'adapter: () => adapter, escaped: leak(adapter)'),
+      source.replace('ensurePhysicalLayout: () => adapter.open()', 'ensurePhysicalLayout: () => environment.indexedDB.open("other")')]) {
+      expect(altered).not.toBe(source); expect(analyzeProductionSource(normalizedStorePath, altered)).not.toEqual([]);
+    }
+    for (const caller of ['pages/EditorPage.tsx', 'components/Canvas.tsx', normalizedStorePath]) {
+      expect(analyzeProductionSource(caller, "import '@/services/localWorkspace/normalized/repository';")).not.toEqual([]);
+    }
+  });
+
+  it('keeps legacy source admission browser-only and grants no second writer or production ingress', () => {
+    expect(analyzeProductionSource(recoveryAdmissionPath, readFileSync(join(root, recoveryAdmissionPath), 'utf8'))).toEqual([]);
+    for (const source of ["import './normalized/repository';", "import './indexedDbAdapter';", "self.indexedDB.open('x');", "fetch('/x');"]) {
+      expect(analyzeProductionSource(recoveryAdmissionPath, source)).not.toEqual([]);
+    }
+    for (const caller of [coordinatorPath, workerEntryPath, 'components/EditorPage.tsx']) {
+      expect(analyzeProductionSource(caller, "import '@/services/localWorkspace/workspaceRecoveryAdmission';")).not.toEqual([]);
+    }
+  });
+
+  it('keeps installation registry liveness private and free of storage ownership', () => {
+    const path = `${workspacePath}projectInstallationRegistry.ts`;
+    expect(analyzeProductionSource(path, readFileSync(join(root, path), 'utf8'))).toEqual([]);
+    expect(analyzeProductionSource(path, "import './indexedDbAdapter';")).not.toEqual([]);
+    expect(analyzeProductionSource('components/EditorPage.tsx', "import { createProjectInstallationRegistry } from '../services/localWorkspace/projectInstallationRegistry';")).not.toEqual([]);
+  });
+
+  it('keeps write-owner recovery inside its exact queue and installation closure', () => {
+    const path = `${workspacePath}projectWriteRecovery.ts`;
+    expect(workerRuntimeEdges.get(path)).toEqual([
+      `${workspacePath}contracts.ts`, `${workspacePath}incrementalQueue.ts`, installationRegistryPath,
+    ]);
+    expect(analyzeProductionSource(path, readFileSync(join(root, path), 'utf8'))).toEqual([]);
+    for (const source of ["import './indexedDbAdapter';", "import './normalized/repository';", "import './normalized/workspaceCommands';",
+      "import './unreviewedRecoveryHelper';", "self.indexedDB.open('unreviewed');", 'fetch("/unreviewed");']) {
+      expect(analyzeProductionSource(path, source)).not.toEqual([]);
+    }
+  });
+
+  it('grants recovery ownership only to the exact save hook, command admission and lifecycle owner', () => {
+    const path = `${workspacePath}projectWriteRecovery.ts`;
+    expect(workerPrivateCallers.get(path)).toEqual(['hooks/useIncrementalProjectWrites.ts', `${workspacePath}incrementalCommandAdmission.ts`, workspaceAdmissionPath]);
+    for (const caller of ['hooks/useIncrementalProjectWrites.ts', `${workspacePath}incrementalCommandAdmission.ts`, workspaceAdmissionPath]) {
+      expect(analyzeProductionSource(caller, readFileSync(join(root, caller), 'utf8'))).toEqual([]);
+    }
+    for (const [caller, source] of [
+      ['components/EditorPage.tsx', "import { createProjectWriteOwner } from '../services/localWorkspace/projectWriteRecovery';"],
+      [`${workspacePath}LocalWorkspaceStore.ts`, "import { prepareProjectWriteRecovery } from './projectWriteRecovery';"],
+      [`${workspacePath}unreviewedRecoveryHelper.ts`, "import { claimProjectWriteRecovery } from './projectWriteRecovery';"],
+    ]) expect(analyzeProductionSource(caller, source)).not.toEqual([]);
+  });
+
+  it.each(['./codec', './sizeLedger', './repository', '../../document/partition'])('prevents emission replay importing semantic derivation %s', target => {
+    expect(analyzeProductionSource(`${normalizedPath}emissionPlan.ts`, `import '${target}';`)).not.toEqual([]);
+  });
+
+  it('grants normalizer only the approved runtime and fixed legacy-key edges', () => {
+    const path = `${normalizedPath}migration.ts`;
+    expect(analyzeProductionSource(path,
+      "import { createWorkRuntime } from '../../../shared/cooperativeWork.js'; import { LEGACY_DOCUMENT_KEYS } from '../legacyTypes';")).toEqual([]);
+    expect(analyzeProductionSource(path, "import { createNormalizedRepository } from './repository';")).not.toEqual([]);
+    expect(analyzeProductionSource(path, "import { canonicalBytesWork } from '../../../shared/jsonWork.js';")).not.toEqual([]);
+  });
+
+  it('keeps Node authoring CLI dynamic-import exceptions filename and expression exact', () => {
+    expect(analyzeProductionSource('tutorial/record.js', 'import(path.resolve(process.argv[2]));')).toEqual([]);
+    expect(analyzeProductionSource('components/Bad.tsx', 'import(path.resolve(process.argv[2]));')).not.toEqual([]);
+    expect(analyzeProductionSource('tutorial/record.js', 'import(target);')).not.toEqual([]);
+    expect(analyzeProductionSource(workerEntryPath, "import '../../tutorial/record';")).not.toEqual([]);
+    expect(analyzeProductionSource('components/Bad.tsx', "import '../tutorial/record.js';")).not.toEqual([]);
+  });
+
   it('confines legacy document storage and keeps IndexedDB schema index-free', { timeout: 30_000 }, () => {
     const inputs = repositorySourcePaths().map(path => ({
       path,
@@ -5725,7 +6959,7 @@ describe('local workspace static boundary', () => {
     expect(preferences).not.toContain('storageFor');
     expect(preferences).not.toMatch(/:\s*Storage\s*\|\s*null/);
     expect(workspace).not.toMatch(/\bconst browserEnvironment\b/);
-    expect(workspace).toMatch(/createLocalWorkspaceStore\(\{/);
+    expect(workspace).toMatch(/createNormalizedWorkspaceStore\(\{/);
   });
 
   it('pins builder source, output, and committed preference region independently', () => {

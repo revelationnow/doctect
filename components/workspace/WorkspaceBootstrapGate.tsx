@@ -13,6 +13,8 @@ import type {
   WorkspaceSnapshot,
 } from '../../services/localWorkspace/index';
 import { MigrationReceipt as MigrationReceiptScreen } from './MigrationReceipt';
+import { isNormalizedWorkspaceStore } from '../../services/localWorkspace/NormalizedWorkspaceStore';
+import { NormalizedWorkspaceBootstrapGate } from './NormalizedWorkspaceBootstrapGate';
 import {
   OPEN_WORKSPACE_PRESENTATION,
   PROJECT_DOWNLOAD_ERROR,
@@ -174,7 +176,11 @@ const rejectedImportConsumptionResult = (): WorkspaceBlockingResult => ({
   },
 });
 
-export function WorkspaceBootstrapGate({
+export function WorkspaceBootstrapGate(props: WorkspaceBootstrapGateProps) {
+  return isNormalizedWorkspaceStore(props.store) ? <NormalizedWorkspaceBootstrapGate {...props} /> : <HistoricalWorkspaceBootstrapGate {...props} />;
+}
+
+function HistoricalWorkspaceBootstrapGate({
   store,
   renderEditor,
 }: WorkspaceBootstrapGateProps) {

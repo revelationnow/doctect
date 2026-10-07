@@ -12,9 +12,15 @@
  */
 
 import { AppState } from '../types';
-import { ensureTemplateLayers } from './layers';
-import { normalizeProjectTextPadding, ZERO_TEXT_PADDING } from './textPadding';
-import { normalizeTextOverflow } from './textOverflow';
+import { ensureTemplateLayersWork } from './layers';
+import { normalizeProjectTextPaddingWork, normalizeOwnedProjectTextPaddingWork, ZERO_TEXT_PADDING } from './textPadding';
+import { normalizeTextOverflowWork, normalizeOwnedTextOverflowWork } from './textOverflow';
+import { effect, primitive, runSync, type Work } from '../shared/cooperativeWork.js';
+import { copyEnumerableWork, enumerableEntriesWork, jsonCloneWork, normalizeOwnedJsonWork, type JsonMode } from '../shared/jsonWork.js';
+
+type MigrationMode = JsonMode | 'owned';
+const copyMigrationStateWork = (state: any, mode: MigrationMode): Work<any> =>
+    mode === 'owned' ? normalizeOwnedJsonWork(state) : jsonCloneWork(state, mode);
 
 /**
  * Current schema version. Increment this when making breaking changes.
@@ -28,26 +34,33 @@ export const CURRENT_SCHEMA_VERSION = 11;
  * - Adds `autoWidth: false` to text elements that don't have the field
  *   (Prior to v1, text boxes with fixed width didn't have this field)
  */
-function migrateV0ToV1(state: any): any {
+function* migrateV0ToV1Work(state: any, mode: MigrationMode): Work<any> {
     console.log('[Migration] Applying v0 → v1: Adding autoWidth to text elements');
 
-    // Deep clone to avoid mutations
-    const migrated = JSON.parse(JSON.stringify(state));
+    // Preserve the historical JSON conversion boundary.
+    const migrated = yield* copyMigrationStateWork(state, mode);
 
     // Migrate all templates
     if (migrated.templates) {
-        Object.keys(migrated.templates).forEach(templateId => {
+        for (const templateId of (yield* primitive('keys', () => Object.keys(migrated.templates)))) {
+            yield* effect(1, () => {});
             const template = migrated.templates[templateId];
             if (template.elements && Array.isArray(template.elements)) {
-                template.elements = template.elements.map((element: any) => {
+                const elements = template.elements, length = elements.length, mapped = new Array(length);
+                for (let index = 0; index < length; index++) {
+                    if (!(yield* effect(1, () => index in elements))) continue;
+                    const element = elements[index];
                     // Add autoWidth: false to text elements that don't have it
                     if (element.type === 'text' && element.autoWidth === undefined) {
-                        return { ...element, autoWidth: false };
+                        const copy = yield* copyEnumerableWork(element);
+                        yield* effect(1, () => { copy.autoWidth = false; mapped[index] = copy; });
+                    } else {
+                        mapped[index] = element;
                     }
-                    return element;
-                });
+                }
+                template.elements = mapped;
             }
-        });
+        }
     }
 
     migrated.schemaVersion = 1;
@@ -61,11 +74,11 @@ function migrateV0ToV1(state: any): any {
  * - Adds `templatePreviewNodeId` field for template preview node selection
  *   (New feature: users can select which node's data to use when previewing templates)
  */
-function migrateV1ToV2(state: any): any {
+function* migrateV1ToV2Work(state: any, mode: MigrationMode): Work<any> {
     console.log('[Migration] Applying v1 → v2: Adding templatePreviewNodeId');
 
-    // Deep clone to avoid mutations
-    const migrated = JSON.parse(JSON.stringify(state));
+    // Preserve the historical JSON conversion boundary.
+    const migrated = yield* copyMigrationStateWork(state, mode);
 
     // Initialize templatePreviewNodeId if not present (optional field, undefined is valid)
     // No action needed since the field is optional - just bump version
@@ -83,6 +96,19 @@ function migrateV1ToV2(state: any): any {
  * @returns Migrated AppState at current schema version
  */
 export function migrateState(state: any): AppState {
+    return runSync(migrateStateWork(state));
+}
+
+export function* migrateStateWork(state: any, mode: JsonMode = 'compat'): Work<AppState> {
+    return yield* migrateWithModeWork(state, mode);
+}
+
+/** Private mutable JSON working state only; discard after failure or cancellation. */
+export function* migrateOwnedStateWork(state: Record<string, any>): Work<AppState> {
+    return yield* migrateWithModeWork(state, 'owned');
+}
+
+function* migrateWithModeWork(state: any, mode: MigrationMode): Work<AppState> {
     if (!state || typeof state !== 'object') {
         throw new Error('Invalid state: expected an object');
     }
@@ -101,65 +127,66 @@ export function migrateState(state: any): AppState {
 
     // Apply migrations sequentially
     if (version < 1) {
-        migratedState = migrateV0ToV1(migratedState);
+        migratedState = yield* migrateV0ToV1Work(migratedState, mode);
         version = 1;
     }
 
     if (version < 2) {
-        migratedState = migrateV1ToV2(migratedState);
+        migratedState = yield* migrateV1ToV2Work(migratedState, mode);
         version = 2;
     }
 
     if (version < 3) {
-        migratedState = migrateV2ToV3(migratedState);
+        migratedState = yield* migrateV2ToV3Work(migratedState, mode);
         version = 3;
     }
 
     if (version < 4) {
-        migratedState = migrateV3ToV4(migratedState);
+        migratedState = yield* migrateV3ToV4Work(migratedState, mode);
         version = 4;
     }
 
     if (version < 5) {
-        migratedState = migrateV4ToV5(migratedState);
+        migratedState = yield* migrateV4ToV5Work(migratedState, mode);
         version = 5;
     }
 
     if (version < 6) {
-        migratedState = migrateV5ToV6(migratedState);
+        migratedState = yield* migrateV5ToV6Work(migratedState, mode);
         version = 6;
     }
 
     if (version < 7) {
-        migratedState = migrateV6ToV7(migratedState);
+        migratedState = yield* migrateV6ToV7Work(migratedState, mode);
         version = 7;
     }
 
     if (version < 8) {
-        migratedState = migrateV7ToV8(migratedState);
+        migratedState = yield* migrateV7ToV8Work(migratedState, mode);
         version = 8;
     }
 
     if (version < 9) {
-        migratedState = migrateV8ToV9(migratedState);
+        migratedState = yield* migrateV8ToV9Work(migratedState, mode);
         version = 9;
     }
 
     if (version < 10) {
-        migratedState = migrateV9ToV10(migratedState);
+        migratedState = yield* migrateV9ToV10Work(migratedState, mode);
         version = 10;
     }
 
     if (version < 11) {
-        migratedState = migrateV10ToV11(migratedState);
+        migratedState = yield* migrateV10ToV11Work(migratedState, mode);
         version = 11;
     }
 
     console.log(`[Migration] Migration complete. Now at v${CURRENT_SCHEMA_VERSION}`);
 
-    return normalizeProjectTextPadding(
-        normalizeTextOverflow(migratedState as Record<string, any>),
-    ) as AppState;
+    const overflow = yield* (mode === 'owned' ? normalizeOwnedTextOverflowWork(migratedState)
+        : normalizeTextOverflowWork(migratedState));
+    return (yield* (mode === 'owned' ? normalizeOwnedProjectTextPaddingWork(overflow)
+        : normalizeProjectTextPaddingWork(overflow))) as AppState;
 }
 
 /**
@@ -169,9 +196,9 @@ export function migrateState(state: any): AppState {
  * - Adds `transformOrigin` support (optional)
  * - Bumps schema version
  */
-function migrateV2ToV3(state: any): any {
+function* migrateV2ToV3Work(state: any, mode: MigrationMode): Work<any> {
     console.log('[Migration] Applying v2 → v3: Bumping version for transform origin support');
-    const migrated = JSON.parse(JSON.stringify(state));
+    const migrated = yield* copyMigrationStateWork(state, mode);
     // Field is optional, no data transformation needed
     migrated.schemaVersion = 3;
     return migrated;
@@ -185,9 +212,9 @@ function migrateV2ToV3(state: any): any {
  * - Creates a "Default" variant containing existing templates
  * - Adds `activeVariantId` field
  */
-function migrateV3ToV4(state: any): any {
+function* migrateV3ToV4Work(state: any, mode: MigrationMode): Work<any> {
     console.log('[Migration] Applying v3 → v4: Converting to variant structure');
-    const migrated = JSON.parse(JSON.stringify(state));
+    const migrated = yield* copyMigrationStateWork(state, mode);
 
     // Create default variant from existing templates
     const defaultVariant = {
@@ -210,9 +237,9 @@ function migrateV3ToV4(state: any): any {
  * Changes:
  * - Adds `selectedNodeIds` and `selectedTemplateIds` (Arrays) alongside singular selection
  */
-function migrateV4ToV5(state: any): any {
+function* migrateV4ToV5Work(state: any, mode: MigrationMode): Work<any> {
     console.log('[Migration] Applying v4 → v5: Adding multi-select array fields');
-    const migrated = JSON.parse(JSON.stringify(state));
+    const migrated = yield* copyMigrationStateWork(state, mode);
 
     migrated.selectedNodeIds = migrated.selectedNodeId ? [migrated.selectedNodeId] : [];
     migrated.selectedTemplateIds = migrated.selectedTemplateId ? [migrated.selectedTemplateId] : [];
@@ -229,9 +256,9 @@ function migrateV4ToV5(state: any): any {
  * - Adds grid formatting options: gridBorderMode, header/first-column styling,
  *   alternating row/column colors on GridConfig (all optional)
  */
-function migrateV5ToV6(state: any): any {
+function* migrateV5ToV6Work(state: any, mode: MigrationMode): Work<any> {
     console.log('[Migration] Applying v5 → v6: Adding border sides and grid formatting support');
-    const migrated = JSON.parse(JSON.stringify(state));
+    const migrated = yield* copyMigrationStateWork(state, mode);
     // All new fields are optional with sensible defaults, no data transformation needed
     migrated.schemaVersion = 6;
     return migrated;
@@ -247,49 +274,56 @@ function migrateV5ToV6(state: any): any {
  * - Rect/text elements: creates borderSides from element stroke settings if not
  *   already set, so per-side border UI shows correct defaults.
  */
-function migrateV6ToV7(state: any): any {
+function* migrateV6ToV7Work(state: any, mode: MigrationMode): Work<any> {
     console.log('[Migration] Applying v6 → v7: Inheriting border settings into grid cells and per-side borders');
-    const migrated = JSON.parse(JSON.stringify(state));
+    const migrated = yield* copyMigrationStateWork(state, mode);
 
-    const migrateElements = (elements: any[]) => {
+    function* migrateElements(elements: any[]): Work<void> {
         if (!elements || !Array.isArray(elements)) return;
-        elements.forEach((el: any) => {
-            const stroke = el.stroke;
-            const strokeWidth = Number(el.strokeWidth) || 0;
-            const borderStyle = el.borderStyle || 'solid';
+        for (let index = 0, length = elements.length; index < length; index++) {
+            if (!(yield* effect(1, () => index in elements))) continue;
+            const el = elements[index];
+            yield* effect(1, () => {
+                const stroke = el.stroke;
+                const strokeWidth = Number(el.strokeWidth) || 0;
+                const borderStyle = el.borderStyle || 'solid';
 
-            // Grid elements: inherit outer border into grid cell border config
-            if (el.type === 'grid' && el.gridConfig && strokeWidth > 0 && stroke) {
-                const gc = el.gridConfig;
-                if (gc.gridBorderColor === undefined) gc.gridBorderColor = stroke;
-                if (gc.gridBorderWidth === undefined) gc.gridBorderWidth = strokeWidth;
-                if (gc.gridBorderStyle === undefined) gc.gridBorderStyle = borderStyle;
-            }
+                // Grid elements: inherit outer border into grid cell border config
+                if (el.type === 'grid' && el.gridConfig && strokeWidth > 0 && stroke) {
+                    const gc = el.gridConfig;
+                    if (gc.gridBorderColor === undefined) gc.gridBorderColor = stroke;
+                    if (gc.gridBorderWidth === undefined) gc.gridBorderWidth = strokeWidth;
+                    if (gc.gridBorderStyle === undefined) gc.gridBorderStyle = borderStyle;
+                }
 
-            // Rect/text elements: create borderSides from element stroke if not set
-            if ((el.type === 'rect' || el.type === 'text') && !el.borderSides && strokeWidth > 0 && stroke) {
-                const side = { width: strokeWidth, color: stroke, style: borderStyle };
-                el.borderSides = { top: { ...side }, right: { ...side }, bottom: { ...side }, left: { ...side } };
-            }
-        });
-    };
+                // Rect/text elements: create borderSides from element stroke if not set
+                if ((el.type === 'rect' || el.type === 'text') && !el.borderSides && strokeWidth > 0 && stroke) {
+                    const side = { width: strokeWidth, color: stroke, style: borderStyle };
+                    el.borderSides = { top: { ...side }, right: { ...side }, bottom: { ...side }, left: { ...side } };
+                }
+            });
+        }
+    }
 
     // Migrate across all variants
     if (migrated.variants) {
-        Object.keys(migrated.variants).forEach(variantId => {
+        for (const variantId of (yield* primitive('keys', () => Object.keys(migrated.variants)))) {
+            yield* effect(1, () => {});
             const variant = migrated.variants[variantId];
             if (variant.templates) {
-                Object.keys(variant.templates).forEach(templateId => {
-                    migrateElements(variant.templates[templateId]?.elements);
-                });
+                for (const templateId of (yield* primitive('keys', () => Object.keys(variant.templates)))) {
+                    yield* effect(1, () => {});
+                    yield* migrateElements(variant.templates[templateId]?.elements);
+                }
             }
-        });
+        }
     }
     // Also handle legacy flat templates structure
     if (migrated.templates) {
-        Object.keys(migrated.templates).forEach(templateId => {
-            migrateElements(migrated.templates[templateId]?.elements);
-        });
+        for (const templateId of (yield* primitive('keys', () => Object.keys(migrated.templates)))) {
+            yield* effect(1, () => {});
+            yield* migrateElements(migrated.templates[templateId]?.elements);
+        }
     }
 
     migrated.schemaVersion = 7;
@@ -308,26 +342,30 @@ function migrateV6ToV7(state: any): any {
  * - zIndex values are preserved untouched (it now means within-layer stacking, and with a
  *   single layer the migrated document renders identically). Idempotent.
  */
-function migrateV7ToV8(state: any): any {
+function* migrateV7ToV8Work(state: any, mode: MigrationMode): Work<any> {
     console.log('[Migration] Applying v7 → v8: Adding layer system (default "Layer 1" per template)');
-    const migrated = JSON.parse(JSON.stringify(state));
+    const migrated = yield* copyMigrationStateWork(state, mode);
 
-    const migrateTemplates = (templates: any) => {
+    function* migrateTemplates(templates: any): Work<void> {
         if (!templates || typeof templates !== 'object') return;
-        Object.keys(templates).forEach(templateId => {
+        for (const templateId of (yield* primitive('keys', () => Object.keys(templates)))) {
+            yield* effect(1, () => {});
             const tpl = templates[templateId];
             if (tpl && typeof tpl === 'object') {
-                templates[templateId] = ensureTemplateLayers(tpl);
+                templates[templateId] = yield* ensureTemplateLayersWork(tpl);
             }
-        });
-    };
+        }
+    }
 
     // Migrate across all variants
     if (migrated.variants) {
-        Object.values(migrated.variants).forEach((variant: any) => migrateTemplates(variant?.templates));
+        for (const [, variant] of (yield* enumerableEntriesWork<any>(migrated.variants))) {
+            yield* effect(1, () => {});
+            yield* migrateTemplates(variant?.templates);
+        }
     }
     // Also handle legacy flat templates structure
-    migrateTemplates(migrated.templates);
+    yield* migrateTemplates(migrated.templates);
 
     migrated.schemaVersion = 8;
     return migrated;
@@ -339,9 +377,9 @@ function migrateV7ToV8(state: any): any {
  * Changes:
  * - Adds optional generator provenance.
  */
-function migrateV8ToV9(state: any): any {
+function* migrateV8ToV9Work(state: any, mode: MigrationMode): Work<any> {
     console.log('[Migration] Applying v8 → v9: Adding optional generator provenance');
-    const migrated = JSON.parse(JSON.stringify(state));
+    const migrated = yield* copyMigrationStateWork(state, mode);
     migrated.schemaVersion = 9;
     return migrated;
 }
@@ -351,55 +389,71 @@ function migrateV8ToV9(state: any): any {
  *
  * Preserves legacy rendering while adding canonical text overflow settings.
  */
-function migrateV9ToV10(state: any): any {
+function* migrateV9ToV10Work(state: any, mode: MigrationMode): Work<any> {
     console.log('[Migration] Applying v9 → v10: Adding text overflow settings');
-    const migrated = JSON.parse(JSON.stringify(state));
+    const migrated = yield* copyMigrationStateWork(state, mode);
 
-    const migrateTemplates = (templates: any) => {
+    function* migrateTemplates(templates: any): Work<void> {
         if (!templates || typeof templates !== 'object') return;
-        Object.values(templates).forEach((template: any) => {
-            if (!Array.isArray(template?.elements)) return;
-            template.elements.forEach((element: any) => {
-                if (element.type === 'text') {
-                    element.textOverflow = 'visible';
-                    element.textWrap = true;
-                } else if (element.type === 'grid') {
-                    element.textOverflow = 'ellipsis';
-                    element.textWrap = false;
-                }
-            });
-        });
-    };
+        for (const [, template] of (yield* enumerableEntriesWork<any>(templates))) {
+            yield* effect(1, () => {});
+            if (!Array.isArray(template?.elements)) continue;
+            for (let index = 0, length = template.elements.length; index < length; index++) {
+                if (!(yield* effect(1, () => index in template.elements))) continue;
+                const element = template.elements[index];
+                yield* effect(1, () => {
+                    if (element.type === 'text') {
+                        element.textOverflow = 'visible';
+                        element.textWrap = true;
+                    } else if (element.type === 'grid') {
+                        element.textOverflow = 'ellipsis';
+                        element.textWrap = false;
+                    }
+                });
+            }
+        }
+    }
 
     if (migrated.variants && typeof migrated.variants === 'object') {
-        Object.values(migrated.variants).forEach((variant: any) => migrateTemplates(variant?.templates));
+        for (const [, variant] of (yield* enumerableEntriesWork<any>(migrated.variants))) {
+            yield* effect(1, () => {});
+            yield* migrateTemplates(variant?.templates);
+        }
     }
-    migrateTemplates(migrated.templates);
+    yield* migrateTemplates(migrated.templates);
 
     migrated.schemaVersion = 10;
     return migrated;
 }
 
-function migrateV10ToV11(state: any): any {
+function* migrateV10ToV11Work(state: any, mode: MigrationMode): Work<any> {
     console.log('[Migration] Applying v10 → v11: Adding text padding');
-    const migrated = JSON.parse(JSON.stringify(state));
+    const migrated = yield* copyMigrationStateWork(state, mode);
 
-    const migrateTemplates = (templates: any) => {
+    function* migrateTemplates(templates: any): Work<void> {
         if (!templates || typeof templates !== 'object') return;
-        Object.values(templates).forEach((template: any) => {
-            if (!Array.isArray(template?.elements)) return;
-            template.elements.forEach((element: any) => {
-                if (element.type === 'text') {
-                    element.textPadding = { ...ZERO_TEXT_PADDING };
-                }
-            });
-        });
-    };
+        for (const [, template] of (yield* enumerableEntriesWork<any>(templates))) {
+            yield* effect(1, () => {});
+            if (!Array.isArray(template?.elements)) continue;
+            for (let index = 0, length = template.elements.length; index < length; index++) {
+                if (!(yield* effect(1, () => index in template.elements))) continue;
+                const element = template.elements[index];
+                yield* effect(1, () => {
+                    if (element.type === 'text') {
+                        element.textPadding = { ...ZERO_TEXT_PADDING };
+                    }
+                });
+            }
+        }
+    }
 
     if (migrated.variants && typeof migrated.variants === 'object') {
-        Object.values(migrated.variants).forEach((variant: any) => migrateTemplates(variant?.templates));
+        for (const [, variant] of (yield* enumerableEntriesWork<any>(migrated.variants))) {
+            yield* effect(1, () => {});
+            yield* migrateTemplates(variant?.templates);
+        }
     }
-    migrateTemplates(migrated.templates);
+    yield* migrateTemplates(migrated.templates);
 
     migrated.schemaVersion = 11;
     return migrated;

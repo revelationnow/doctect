@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   WorkspaceStoreError,
   type LocalWorkspaceStore,
-  type WorkspaceCommand,
+  type SnapshotWorkspaceCommand as WorkspaceCommand,
   type WorkspaceProject,
   type WorkspaceSnapshot,
 } from '../services/localWorkspace/index';

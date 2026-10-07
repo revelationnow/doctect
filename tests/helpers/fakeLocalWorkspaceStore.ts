@@ -1,4 +1,6 @@
 import { vi, type Mock } from 'vitest';
+import { createWorkspaceCommandDispatcher, type WorkspaceCommandHandlers } from '../../services/localWorkspace/commandDispatcher';
+import type { WorkspaceCommit, SnapshotWorkspaceCommit } from '../../services/localWorkspace/contracts';
 import type {
   LocalWorkspaceStore,
   MigrationReceipt,
@@ -114,12 +116,13 @@ type BootstrapResponse =
 interface FakeStoreOptions {
   bootstrap?: BootstrapResponse | BootstrapResponse[];
   commit?: WorkspaceSnapshot | Promise<WorkspaceSnapshot>;
+  incremental?: Omit<WorkspaceCommandHandlers, 'snapshot'>;
   exportBundles?: Partial<Record<RecoverySource, Blob | Promise<Blob>>>;
 }
 
 export interface FakeLocalWorkspaceStore extends LocalWorkspaceStore {
   bootstrap: Mock<LocalWorkspaceStore['bootstrap']>;
-  commit: Mock<LocalWorkspaceStore['commit']>;
+  commit: WorkspaceCommit & Mock<WorkspaceCommit>;
   exportRecoveryBundle: Mock<LocalWorkspaceStore['exportRecoveryBundle']>;
   readonly observers: WorkspaceBootstrapObserver[];
   emitPhase(phase: WorkspaceBootstrapPhase, observerIndex?: number): void;
@@ -127,6 +130,14 @@ export interface FakeLocalWorkspaceStore extends LocalWorkspaceStore {
     result: Extract<WorkspaceBootstrapResult, { status: 'recovery' | 'unavailable' }>,
     observerIndex?: number,
   ): void;
+}
+
+/** Vitest's Mock type keeps only the final overload. Restore the overloads of
+ * the real typed dispatcher being spied on; do not fabricate receipt unions.
+ */
+export function mockWorkspaceCommit(snapshot: SnapshotWorkspaceCommit,
+  incremental: Omit<WorkspaceCommandHandlers, 'snapshot'> = {}): WorkspaceCommit & Mock<WorkspaceCommit> {
+  return vi.fn(createWorkspaceCommandDispatcher({ snapshot, ...incremental })) as WorkspaceCommit & Mock<WorkspaceCommit>;
 }
 
 export const fakeStore = (options: FakeStoreOptions = {}): FakeLocalWorkspaceStore => {
@@ -146,8 +157,7 @@ export const fakeStore = (options: FakeStoreOptions = {}): FakeLocalWorkspaceSto
       return Promise.reject(error);
     }
   });
-  const commit = vi.fn<LocalWorkspaceStore['commit']>(() =>
-    Promise.resolve(options.commit ?? workspaceSnapshot()));
+  const commit = mockWorkspaceCommit(() => Promise.resolve(options.commit ?? workspaceSnapshot()), options.incremental);
   const exportRecoveryBundle = vi.fn<LocalWorkspaceStore['exportRecoveryBundle']>(source =>
     Promise.resolve(
       options.exportBundles?.[source]

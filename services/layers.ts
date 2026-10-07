@@ -1,4 +1,6 @@
 import { Layer, PageTemplate, TemplateElement } from '../types';
+import { effect, primitive, runSync, type Work } from '../shared/cooperativeWork.js';
+import { copyEnumerableWork, stableSortWork } from '../shared/jsonWork.js';
 
 export const createLayerId = () => `layer_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -17,20 +19,61 @@ export const createDefaultLayer = (): Layer => ({
  * nothing needed fixing (safe to call on every load without causing state churn).
  */
 export function ensureTemplateLayers(template: PageTemplate): PageTemplate {
+    return runSync(ensureTemplateLayersWork(template));
+}
+
+export function* ensureTemplateLayersWork(template: PageTemplate): Work<PageTemplate> {
     const existing = Array.isArray(template.layers) ? template.layers : [];
-    const layers = existing.length > 0 ? existing : [createDefaultLayer()];
-    const layerIds = new Set(layers.map(l => l.id));
-    const fallbackId = [...layers].sort((a, b) => a.order - b.order)[0].id;
+    const layers = existing.length > 0 ? existing : [yield* effect(1, createDefaultLayer)];
+    const layerIds = new Set<string>();
+    for (let index = 0, length = layers.length; index < length; index++) {
+        yield* effect(1, () => { layerIds.add(index in layers ? layers[index].id : undefined); });
+    }
+    const sortable: Layer[] = [];
+    let finiteOrders = true;
+    for (let index = 0; index < layers.length; index++) {
+        yield* effect(1, () => {
+            const layer = layers[index];
+            sortable.push(layer);
+            const descriptor = layer && Object.getOwnPropertyDescriptor(layer, 'order');
+            if (!descriptor || !('value' in descriptor) || typeof descriptor.value !== 'number'
+                || !Number.isFinite(descriptor.value)) finiteOrders = false;
+        });
+    }
+    // Missing/NaN/coercing orders retain engine sort semantics and Get order.
+    // Only finite own numeric data properties take the resumable stable path.
+    const sorted = finiteOrders
+        ? yield* stableSortWork(sortable, (a, b) => effect(1, () => a.order - b.order))
+        : yield* primitive('sort', () => sortable.sort((a, b) => a.order - b.order));
+    const fallbackId = yield* effect(1, () => sorted[0].id);
     const elements = template.elements || [];
-    const needsElementFix = elements.some(el => !el.layerId || !layerIds.has(el.layerId));
+    if (!Array.isArray(elements)) throw new TypeError('Expected template elements array');
+    let needsElementFix = false;
+    for (let index = 0, length = elements.length; index < length; index++) {
+        needsElementFix = yield* effect(1, () => {
+            if (!(index in elements)) return false;
+            const element = elements[index];
+            return !element.layerId || !layerIds.has(element.layerId);
+        });
+        if (needsElementFix) break;
+    }
     if (existing.length > 0 && !needsElementFix) return template;
-    return {
-        ...template,
-        layers,
-        elements: elements.map(el =>
-            el.layerId && layerIds.has(el.layerId) ? el : { ...el, layerId: fallbackId }
-        ),
-    };
+    const result = yield* copyEnumerableWork(template);
+    result.layers = layers;
+    const length = elements.length, mapped: TemplateElement[] = new Array(length);
+    for (let index = 0; index < length; index++) {
+        const present = yield* effect(1, () => index in elements);
+        if (!present) continue;
+        const element = elements[index];
+        const valid = yield* effect(1, () => element.layerId && layerIds.has(element.layerId));
+        if (valid) mapped[index] = element;
+        else {
+            const repaired = yield* copyEnumerableWork(element);
+            yield* effect(1, () => { repaired.layerId = fallbackId; mapped[index] = repaired; });
+        }
+    }
+    result.elements = mapped;
+    return result;
 }
 
 /**

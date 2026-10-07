@@ -12,7 +12,11 @@ import {
   validateCustomPreset,
   validateMigratedState,
   validateWorkspaceProject,
+  prepareProjectStateWork, validateMigratedStateWork, validateWorkspaceProjectWork,
+  validatePreparedWorkspaceProject, validatePreparedWorkspaceProjectWork, validateCustomPresetWork, preparePendingImportWork,
+  checkMigratedStateWork, checkWorkspaceProjectWork, checkCustomPresetWork, checkPendingImportWork,
 } from '../../../services/localWorkspace/validation';
+import { makeWorkHarness } from '../../helpers/normalizationWorkHarness';
 import {
   LEGACY_KEYS,
   currentState,
@@ -53,6 +57,137 @@ const pendingImport = () => ({
   state: currentState(),
   cloud: { projectId: 'cloud-import', lastSyncedCommitId: 'commit-import' },
   createdAt: '2026-08-14T12:34:56.000Z',
+});
+
+describe('cooperative project preparation', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it.each(Array.from({ length: 12 }, (_, i) => i))('preserves schema %i preparation output and input', async version => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.25);
+    const raw = historicalState(version), before = structuredClone(raw);
+    const expected = prepareProjectState(raw, rejectWarnings);
+    const actual = await makeWorkHarness().runtime.run(prepareProjectStateWork(raw, rejectWarnings));
+    expect(actual).toEqual(expected); expect(raw).toEqual(before);
+    expect(actual.state).not.toBe(raw);
+  });
+
+  it('retains schema-11 hydration and strict pre-migration rejection', async () => {
+    const raw = currentState(); delete raw.variants.default.templates.page.elements[0].textPadding;
+    const h = makeWorkHarness();
+    expect(await h.runtime.run(prepareProjectStateWork(raw, rejectWarnings))).toEqual(prepareProjectState(raw, rejectWarnings));
+    (raw.variants.default.templates.page.elements[0] as any).textWrap = 'bad';
+    await expect(h.runtime.run(prepareProjectStateWork(raw, rejectWarnings))).rejects.toThrow('invalid before migration');
+  });
+
+  it('steps migrated-state validation without changing raw children', async () => {
+    const raw = currentState(); raw.nodes.root.children = Array(2000).fill('root');
+    const before = structuredClone(raw), h = makeWorkHarness();
+    expect(await h.runtime.run(validateMigratedStateWork(raw))).toEqual(raw);
+    expect(raw).toEqual(before); expect(h.runtime.snapshot().yields).toBeGreaterThan(0);
+    expect(await h.runtime.run(checkMigratedStateWork(raw))).toBeUndefined();
+  });
+
+  it.each(['project', 'prepared', 'preset', 'import'] as const)('preserves independent %s results and extensions', async kind => {
+    const raw: any = kind === 'preset' ? preset() : kind === 'import' ? pendingImport() : project();
+    const before = structuredClone(raw), h = makeWorkHarness();
+    const actual = kind === 'project' ? await h.runtime.run(validateWorkspaceProjectWork(raw))
+      : kind === 'prepared' ? await h.runtime.run(validatePreparedWorkspaceProjectWork(raw))
+      : kind === 'preset' ? await h.runtime.run(validateCustomPresetWork(raw, noExistingPresetIds()))
+      : await h.runtime.run(preparePendingImportWork(raw, rejectWarnings));
+    const expected = kind === 'project' ? validateWorkspaceProject(raw)
+      : kind === 'prepared' ? validatePreparedWorkspaceProject(raw)
+      : kind === 'preset' ? validateCustomPreset(raw, noExistingPresetIds()) : preparePendingImport(raw, rejectWarnings);
+    expect(actual).toEqual(expected); expect(actual).not.toBe(raw); expect(raw).toEqual(before);
+    const key = kind === 'import' ? 'state' : 'initialState';
+    expect((actual as any)[key]).not.toBe(raw[key]);
+    if (raw.retained) expect((actual as any).retained).not.toBe(raw.retained);
+  });
+
+  it.each(['project', 'preset', 'import'] as const)('checks %s on exactly one private state clone, without returning it', async kind => {
+    const raw: any = kind === 'project' ? project() : kind === 'preset' ? preset() : pendingImport();
+    const key = kind === 'import' ? 'state' : 'initialState';
+    delete raw[key].variants.default.templates.page.elements[0].textPadding;
+    const before = structuredClone(raw), clone = vi.spyOn(globalThis, 'structuredClone'), h = makeWorkHarness();
+    const program = kind === 'project' ? checkWorkspaceProjectWork(raw)
+      : kind === 'preset' ? checkCustomPresetWork(raw, noExistingPresetIds()) : checkPendingImportWork(raw, rejectWarnings);
+    expect(await h.runtime.run(program)).toBeUndefined();
+    expect(clone).toHaveBeenCalledTimes(1); expect(clone.mock.calls[0][0]).toBe(raw[key]);
+    expect(raw).toEqual(before); expect(h.runtime.snapshot().ownedBytes).toBe(0);
+    expect(h.runtime.snapshot().ownedHighWater).toBeGreaterThan(0);
+  });
+
+  it('matches alias duplication, nonfinite border conversion and random-ID order during owned checking', async () => {
+    const raw: any = { ...project(), initialState: historicalState(6) };
+    const templates = raw.initialState.variants.default.templates;
+    templates.alias = templates.page;
+    templates.page.elements.push({ type: 'rect', strokeWidth: 'Infinity', stroke: '#000' });
+    const before = structuredClone(raw);
+    let calls = 0; vi.spyOn(Math, 'random').mockImplementation(() => (++calls) / 100);
+    const expected = validateWorkspaceProject(raw); const expectedCalls = calls; calls = 0;
+    const clone = vi.spyOn(globalThis, 'structuredClone'), h = makeWorkHarness();
+    await expect(h.runtime.run(checkWorkspaceProjectWork(raw))).resolves.toBeUndefined();
+    expect(calls).toBe(expectedCalls); expect(expectedCalls).toBe(2);
+    expect((expected.initialState.variants.default.templates.page.elements[1] as any).borderSides.top.width).toBeNull();
+    expect(clone).toHaveBeenCalledTimes(1); expect(raw).toEqual(before);
+    expect(raw.initialState.variants.default.templates.alias).toBe(raw.initialState.variants.default.templates.page);
+    expect(h.runtime.snapshot().ownedBytes).toBe(0);
+  });
+
+  it('preserves warning retain/reject behavior in returning and discard paths', async () => {
+    const raw: any = { ...project(), initialState: historicalState(9) };
+    raw.initialState.generator.hierarchyScript = 42;
+    const h = makeWorkHarness();
+    const expected = prepareProjectState(raw.initialState, { warningPolicy: 'retain' });
+    expect(await h.runtime.run(prepareProjectStateWork(raw.initialState, { warningPolicy: 'retain' }))).toEqual(expected);
+    await expect(h.runtime.run(checkWorkspaceProjectWork(raw, { warningPolicy: 'retain' }))).resolves.toBeUndefined();
+    await expect(h.runtime.run(checkWorkspaceProjectWork(raw))).rejects.toThrow('Saved generator was detached:');
+    expect(h.runtime.snapshot().ownedBytes).toBe(0);
+  });
+
+  it.each(['failure', 'cancel'] as const)('releases working ownership on %s and leaves raw data unchanged', async kind => {
+    const raw = project(); raw.initialState.nodes.root.children = Array(2000).fill('root');
+    if (kind === 'failure') (raw.initialState.variants.default.templates.page.elements[0] as any).textWrap = 'invalid';
+    const before = structuredClone(raw), h = makeWorkHarness();
+    if (kind === 'cancel') h.observe(event => { if (event.counters.ownedBytes > 0) h.cancel(); });
+    const result = h.runtime.run(checkWorkspaceProjectWork(raw));
+    if (kind === 'failure') await expect(result).rejects.toThrow('invalid before migration');
+    else await expect(result).rejects.toMatchObject({ name: 'AbortError' });
+    expect(h.runtime.snapshot().ownedHighWater).toBeGreaterThan(0);
+    expect(h.runtime.snapshot().ownedBytes).toBe(0); expect(raw).toEqual(before);
+  });
+
+  it('releases the reservation when lifecycle loss occurs immediately after native cloning', async () => {
+    const raw = project(), before = structuredClone(raw), clone = globalThis.structuredClone, h = makeWorkHarness();
+    vi.spyOn(globalThis, 'structuredClone').mockImplementation(value => {
+      const result = clone(value); h.cancel(); return result;
+    });
+    await expect(h.runtime.run(checkWorkspaceProjectWork(raw))).rejects.toMatchObject({ name: 'AbortError' });
+    expect(h.runtime.snapshot().ownedHighWater).toBeGreaterThan(0);
+    expect(h.runtime.snapshot().ownedBytes).toBe(0); expect(raw).toEqual(before);
+  });
+
+  it('rejects wrapper accessors before cloning and preserves the JSON error cause', async () => {
+    const raw = project(), get = vi.fn(() => 1);
+    Object.defineProperty(raw, 'retained', { enumerable: true, get });
+    const clone = vi.spyOn(globalThis, 'structuredClone');
+    await expect(makeWorkHarness().runtime.run(checkWorkspaceProjectWork(raw)))
+      .rejects.toMatchObject({ message: expect.stringMatching(/^Workspace project must be JSON-compatible:/), cause: expect.any(TypeError) });
+    expect(clone).not.toHaveBeenCalled(); expect(get).not.toHaveBeenCalled();
+  });
+
+  it.each(['project', 'preset', 'import'] as const)('keeps wrapper error precedence for %s', async kind => {
+    const raw: any = kind === 'project' ? project() : kind === 'preset' ? preset() : pendingImport();
+    raw.id = '';
+    const h = makeWorkHarness();
+    const sync = () => kind === 'project' ? validateWorkspaceProject(raw)
+      : kind === 'preset' ? validateCustomPreset(raw, noExistingPresetIds()) : preparePendingImport(raw, rejectWarnings);
+    let expected: Error | undefined; try { sync(); } catch (error) { expected = error as Error; }
+    expect(expected).toBeInstanceOf(Error);
+    const program = kind === 'project' ? checkWorkspaceProjectWork(raw)
+      : kind === 'preset' ? checkCustomPresetWork(raw, noExistingPresetIds()) : checkPendingImportWork(raw, rejectWarnings);
+    await expect(h.runtime.run(program)).rejects.toThrow(expected!.message);
+    expect(h.runtime.snapshot().ownedBytes).toBe(0);
+  });
 });
 
 describe('foundational contracts and fixtures', () => {

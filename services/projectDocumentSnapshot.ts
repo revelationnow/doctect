@@ -11,16 +11,19 @@ export const snapshotDocument = (state: AppState): DocumentSnapshot => structure
     variants: state.variants,
     activeVariantId: state.activeVariantId,
     schemaVersion: state.schemaVersion,
-    ...(state.generator === undefined ? {} : { generator: state.generator }),
+    ...(Object.hasOwn(state, 'generator') ? { generator: state.generator } : {}),
     selectedNodeId: state.selectedNodeId,
     selectedNodeIds: state.selectedNodeIds,
     selectedTemplateId: state.selectedTemplateId,
     selectedTemplateIds: state.selectedTemplateIds,
     selectedElementIds: state.selectedElementIds,
-    activeLayerId: state.activeLayerId,
+    ...(Object.hasOwn(state, 'activeLayerId') ? { activeLayerId: state.activeLayerId } : {}),
 });
 
-export const restoreDocument = (state: AppState, snapshot: DocumentSnapshot): AppState => ({
-    ...state,
-    ...structuredClone(snapshot),
-});
+export const restoreDocument = (state: AppState, snapshot: DocumentSnapshot): AppState => {
+    const restored = { ...state, ...structuredClone(snapshot) };
+    for (const key of ['generator', 'activeLayerId'] as const) {
+        if (!Object.hasOwn(snapshot, key)) delete restored[key];
+    }
+    return restored;
+};

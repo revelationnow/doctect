@@ -5,6 +5,7 @@ import { useWorkspaceProjectWrites } from '../../hooks/useWorkspaceProjectWrites
 import {
   WorkspaceStoreError,
   type LocalWorkspaceStore,
+  type SnapshotWorkspaceCommit,
   type WorkspaceProject,
   type WorkspaceSnapshot,
 } from '../../services/localWorkspace/index';
@@ -14,6 +15,7 @@ import {
 } from '../../services/localWorkspace/projectAuthority';
 import type { ProjectLineage } from '../../services/localWorkspace/schema';
 import { createBlankProject } from '../../services/presets';
+import { mockWorkspaceCommit } from '../helpers/fakeLocalWorkspaceStore';
 
 interface Deferred<T> {
   promise: Promise<T>;
@@ -61,10 +63,10 @@ const snapshot = (currentProject = project('Original')): WorkspaceSnapshot => ({
 });
 
 const storeWithCommit = (
-  commit: LocalWorkspaceStore['commit'],
+  commit: SnapshotWorkspaceCommit,
 ): LocalWorkspaceStore & { commit: ReturnType<typeof vi.fn> } => ({
   bootstrap: vi.fn(),
-  commit: vi.fn(commit),
+  commit: mockWorkspaceCommit(commit),
   exportRecoveryBundle: vi.fn(),
 });
 

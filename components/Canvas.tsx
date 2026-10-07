@@ -14,6 +14,17 @@ import { SelectUnderMenu } from './canvas/SelectUnderMenu';
 import { useCanvasTextLayoutSession } from './canvas/useCanvasTextLayoutSession';
 import type { CanvasTextLayoutSession } from '../services/canvasTextLayout';
 import { readBrowserPreference } from '../services/browserPreferences';
+import type { EditorElementIntent } from '../services/document/contracts';
+
+export interface CanvasInteraction {
+    isCurrent(): boolean;
+    start(): void;
+    edit(intent: EditorElementIntent): void;
+    select(ids: string[]): void;
+    handoffToInline(): CanvasInteraction | undefined;
+    end(): void;
+    cancel(): void;
+}
 
 interface CanvasProps {
     template: PageTemplate;
@@ -29,6 +40,10 @@ interface CanvasProps {
     onSelectElements: (ids: string[]) => void;
     onZoom: (newScale: number) => void;
     onInteractionStart: () => void;
+    onInteractionEnd?: () => void;
+    onInteractionCancel?: () => void;
+    onEditElements?: (intent: EditorElementIntent) => void;
+    captureInteraction?: () => CanvasInteraction | undefined;
     onSwitchToSelect?: () => void;
     activeLayerId?: string;
     /** Previews greyscale export: renders the elements layer desaturated. */
@@ -182,7 +197,7 @@ const getConstrainedCreationBounds = (start: { x: number, y: number }, current: 
 
 
 export const Canvas: React.FC<CanvasProps> = ({
-    template,
+    template: sourceTemplate,
     elements,
     selectedElementIds,
     scale,
@@ -192,14 +207,28 @@ export const Canvas: React.FC<CanvasProps> = ({
     snapToGrid,
     showGrid,
     onUpdateElements,
-    onSelectElements,
+    onSelectElements: reportSelection,
     onZoom,
-    onInteractionStart,
+    onInteractionStart: legacyInteractionStart,
+    onInteractionEnd: legacyInteractionEnd,
+    onInteractionCancel: legacyInteractionCancel,
+    onEditElements: reportEditElements,
+    captureInteraction,
     onSwitchToSelect,
     activeLayerId,
     greyscalePreview,
     textLayoutSession: injectedTextLayoutSession,
 }) => {
+    // Historical non-record layer cells remain in the owner/export. Rendering
+    // and ID-based hit testing consume only usable records, never write them back.
+    const interaction = useRef<CanvasInteraction | undefined>(undefined);
+    const onInteractionStart = () => captureInteraction ? interaction.current?.start() : legacyInteractionStart();
+    const onInteractionEnd = captureInteraction ? () => interaction.current?.end() : legacyInteractionEnd;
+    const onInteractionCancel = captureInteraction ? () => interaction.current?.cancel() : legacyInteractionCancel;
+    const onEditElements = reportEditElements && ((intent: EditorElementIntent) => captureInteraction ? interaction.current?.edit(intent) : reportEditElements(intent));
+    const template = React.useMemo(() => onEditElements ? { ...sourceTemplate,
+        layers: sourceTemplate.layers?.filter(layer => layer && typeof layer === 'object' && !Array.isArray(layer) && typeof layer.id === 'string'),
+    } : sourceTemplate, [sourceTemplate, !!onEditElements]);
     const textLayoutSession = useCanvasTextLayoutSession(injectedTextLayoutSession);
     const containerRef = useRef<HTMLDivElement>(null);
     const outerContainerRef = useRef<HTMLDivElement>(null);
@@ -235,7 +264,14 @@ export const Canvas: React.FC<CanvasProps> = ({
     const [selectionBox, setSelectionBox] = useState<{ x: number, y: number, w: number, h: number } | null>(null);
 
     // Inline Editing State
-    const [editingElementId, setEditingElementId] = useState<string | null>(null);
+    const [inlineEditing, setInlineEditing] = useState<{
+        elementId: string; owner?: CanvasInteraction; hasSavedHistory: boolean;
+    } | null>(null);
+    const editingElementId = inlineEditing?.elementId ?? null;
+    const beginInlineEditing = (elementId: string, owner?: CanvasInteraction) => {
+        if (captureInteraction && !owner?.isCurrent()) return;
+        setInlineEditing({ elementId, owner, hasSavedHistory: false });
+    };
     const [selectUnderMenu, setSelectUnderMenu] = useState<{ x: number; y: number; stack: TemplateElement[] } | null>(null);
     const [menuHoverId, setMenuHoverId] = useState<string | null>(null);
 
@@ -459,10 +495,48 @@ export const Canvas: React.FC<CanvasProps> = ({
         return { x: el.x, y: el.y, w: el.w, h: el.h };
     };
 
+    // Emit only operation-owned geometry, never a stale complete content record.
+    const updateGeometry = (next: TemplateElement[], fields: (keyof TemplateElement)[], save = false) => {
+        if (!onEditElements) { onUpdateElements(next, save); return; }
+        const updates = next.flatMap((element, index) => element === elements[index] ? [] : [{ id: element.id,
+            patch: Object.fromEntries(fields.filter(field => Object.hasOwn(element, field)
+                && (field !== 'autoWidth' || element.type === 'text')).map(field => [field, element[field]])) }]);
+        onEditElements({ type: 'patch', updates });
+    };
+    const appendElements = (added: TemplateElement[], selected: string[], save = false) => {
+        if (onEditElements) { ownSelection.current = JSON.stringify(selected); onEditElements({ type: 'append', elements: added, selectedElementIds: selected }); }
+        else { onUpdateElements([...elements, ...added], save); onSelectElements(selected); }
+    };
+    const selectionKey = JSON.stringify(selectedElementIds);
+    const ownSelection = useRef(selectionKey);
+    const onSelectElements = (ids: string[]) => {
+        ownSelection.current = JSON.stringify(ids);
+        if (captureInteraction) interaction.current?.select(ids); else reportSelection(ids);
+    };
+    const cancelInteraction = () => {
+        if (editingElementId) return; // Inline text Escape accepts through OverlayTextEditor.
+        onInteractionCancel?.();
+        setNewShapeStart(null); setNewShapeCurrent(null); setIsSelecting(false); setSelectionBox(null);
+        setIsDragging(false); setIsResizing(false); setIsRotating(false); setIsPanning(false); setIsDraggingPivot(false);
+        hasSavedHistory.current = false; setInitialPositions({});
+        initialGroupElements.current = []; initialResizeStateRef.current = null;
+        clickCycleStackRef.current = null; shiftCycleRef.current = null;
+    };
+    useLayoutEffect(() => {
+        if (onEditElements && ownSelection.current !== selectionKey) {
+            if (inlineEditing) {
+                if (captureInteraction) inlineEditing.owner?.end(); else onInteractionEnd?.();
+                setInlineEditing(null);
+            }
+            else cancelInteraction();
+        }
+        ownSelection.current = selectionKey;
+    }, [selectionKey]);
     // Cancel operation on Escape key
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
+                if (onInteractionCancel) { cancelInteraction(); return; }
                 setNewShapeStart(null);
                 setNewShapeCurrent(null);
                 setIsSelecting(false);
@@ -475,7 +549,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, []);
+    }, [onInteractionCancel, editingElementId]);
 
     // Helper to calculate visual bounds handling persistent rotation
     const calculateVisualGroupBounds = (currentGroupBounds: TemplateElement, rotation: number) => {
@@ -528,7 +602,19 @@ export const Canvas: React.FC<CanvasProps> = ({
         return currentGroupBounds;
     };
 
+    const isEditablePointerEvent = (e: MouseEvent) => {
+        const target = e.target instanceof Element ? e.target : null;
+        // The overlay owns its whole click-to-focus box, not just editable text.
+        const inlineScope = target?.closest('[data-canvas-event-owner="inline-text"]');
+        if (inlineScope && e.currentTarget.contains(inlineScope)) return true;
+        const editable = target?.closest('[contenteditable]');
+        return !!editable && e.currentTarget.contains(editable)
+            && editable.matches('[contenteditable="true"], [contenteditable=""], [contenteditable="plaintext-only"]');
+    };
+
     const handleContextMenu = (e: MouseEvent) => {
+        if (isEditablePointerEvent(e)) return;
+        if (captureInteraction) interaction.current = captureInteraction();
         if (tool !== 'select') return;
         const coords = getMouseCoords(e);
         const stack = hitTestPoint(coords, elements, template.layers, nodes, currentNodeId);
@@ -538,6 +624,12 @@ export const Canvas: React.FC<CanvasProps> = ({
     };
 
     const handleMouseDown = (e: MouseEvent) => {
+        // Native caret/selection input is not a new Canvas interaction.
+        if (isEditablePointerEvent(e)) return;
+        if (captureInteraction) {
+            interaction.current = captureInteraction();
+            if (!interaction.current) return;
+        }
         // Reset history save flag for new interactions
         hasSavedHistory.current = false;
 
@@ -792,8 +884,8 @@ export const Canvas: React.FC<CanvasProps> = ({
                             initialPos[newId] = { x: el.x, y: el.y };
                         }
                     });
-                    onUpdateElements([...elements, ...clonedElements], true);
-                    onSelectElements(clonedIds);
+                    if (onEditElements) { onInteractionStart(); hasSavedHistory.current = true; }
+                    appendElements(clonedElements, clonedIds, true);
                 } else {
                     onSelectElements(newSelection);
                     elements.forEach(el => {
@@ -822,6 +914,7 @@ export const Canvas: React.FC<CanvasProps> = ({
     };
 
     const handleMouseMove = (e: MouseEvent) => {
+        if (captureInteraction && !interaction.current?.isCurrent()) return;
         if (isPanning && panStart && outerContainerRef.current) {
             const dx = e.clientX - panStart.x;
             const dy = e.clientY - panStart.y;
@@ -839,7 +932,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         }
 
         if (isDraggingPivot) {
-            if (!hasSavedHistory.current) {
+            if (!hasSavedHistory.current && (!onEditElements || selectedElementIds.length === 1)) {
                 onInteractionStart();
                 hasSavedHistory.current = true;
             }
@@ -883,12 +976,12 @@ export const Canvas: React.FC<CanvasProps> = ({
                     const relX = (coords.x - newX) / initialEl.w;
                     const relY = (coords.y - newY) / initialEl.h;
 
-                    onUpdateElements(elements.map(item => item.id === initialEl.id ? {
+                    updateGeometry(elements.map(item => item.id === initialEl.id ? {
                         ...item,
                         x: newX,
                         y: newY,
                         transformOrigin: { x: relX, y: relY }
-                    } : item), false);
+                    } : item), ['x', 'y', 'transformOrigin']);
                 }
             }
             return;
@@ -971,7 +1064,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                         rotation: (initial.rotation || 0) + delta
                     };
                 });
-                onUpdateElements(updatedElements, false);
+                updateGeometry(updatedElements, ['x', 'y', 'rotation']);
                 return;
             }
 
@@ -1009,7 +1102,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                     degrees = Math.round(degrees / 15) * 15;
                 }
 
-                onUpdateElements(elements.map(item => item.id === el.id ? { ...item, rotation: degrees } : item), false);
+                updateGeometry(elements.map(item => item.id === el.id ? { ...item, rotation: degrees } : item), ['rotation']);
                 return;
             }
         }
@@ -1034,7 +1127,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                 }
                 return el;
             });
-            onUpdateElements(updatedElements, false);
+            updateGeometry(updatedElements, ['x', 'y']);
 
             // Fix: Move custom pivot along with the group
             if (initialGroupPivotRef.current) {
@@ -1113,12 +1206,12 @@ export const Canvas: React.FC<CanvasProps> = ({
                 const dySeg = pEnd.y - pStart.y;
                 const newFlip = (dxSeg * dySeg) < 0;
 
-                onUpdateElements(elements.map(item => item.id === elId ? {
+                updateGeometry(elements.map(item => item.id === elId ? {
                     ...item,
                     x: newX, y: newY, w: newW, h: newH,
                     flip: newFlip,
                     rotation: 0
-                } : item), false);
+                } : item), ['x', 'y', 'w', 'h', 'flip', 'rotation']);
                 return;
             }
 
@@ -1193,7 +1286,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                         autoWidth: el.type === 'text' ? false : el.autoWidth
                     };
                 });
-                onUpdateElements(updatedElements, false);
+                updateGeometry(updatedElements, ['x', 'y', 'w', 'h', 'autoWidth']);
             } else {
                 // Single Element Update
                 const elId = selectedElementIds[0];
@@ -1240,20 +1333,24 @@ export const Canvas: React.FC<CanvasProps> = ({
                     const newCellW = (newW - ((colCount - 1) * (gapX || 0))) / colCount;
                     const newCellH = (newH - ((rowCount - 1) * (gapY || 0))) / rowCount;
 
-                    onUpdateElements(elements.map(item => item.id === elId ? {
+                    updateGeometry(elements.map(item => item.id === elId ? {
                         ...item, x: finalX, y: finalY, w: newCellW, h: newCellH
-                    } : item), false);
+                    } : item), ['x', 'y', 'w', 'h']);
                 } else {
-                    onUpdateElements(elements.map(item => item.id === elId ? {
+                    updateGeometry(elements.map(item => item.id === elId ? {
                         ...item, x: finalX, y: finalY, w: newW, h: newH,
                         autoWidth: item.type === 'text' ? false : item.autoWidth
-                    } : item), false);
+                    } : item), ['x', 'y', 'w', 'h', 'autoWidth']);
                 }
             }
         }
     };
 
     const handleMouseUp = (e: MouseEvent) => {
+        const owner = interaction.current;
+        if (captureInteraction && !owner?.isCurrent()) return;
+        // Keep this event's owner across synchronous consumer reentrancy.
+        const finishInteraction = captureInteraction ? () => owner?.end() : onInteractionEnd;
         if (isRotating && selectedElementIds.length > 1 && initialGroupBoundsRef.current) {
             // Initial relative rotation was 0 for group, so we add to the group's starting rotation
             // Use delta from initial interaction start
@@ -1314,7 +1411,8 @@ export const Canvas: React.FC<CanvasProps> = ({
                     rotation: (initial.rotation || 0) + delta
                 };
             });
-            onUpdateElements(updatedElements, true); // Save history
+            if (onEditElements && !hasSavedHistory.current) { onInteractionStart(); hasSavedHistory.current = true; }
+            updateGeometry(updatedElements, ['x', 'y', 'rotation'], true);
 
             setPersistentGroupRotation(finalRotation);
         }
@@ -1359,12 +1457,12 @@ export const Canvas: React.FC<CanvasProps> = ({
                         textColor: readBrowserPreference('doctect_last_textColor') || '#000000',
                         align: (readBrowserPreference('doctect_last_align') as 'left' | 'center' | 'right') || 'center',
                     };
-                    onUpdateElements([...elements, newEl], false);
-                    onSelectElements([newEl.id]);
-                    setEditingElementId(newEl.id);
+                    appendElements([newEl], [newEl.id]);
+                    beginInlineEditing(newEl.id, owner?.handoffToInline());
                 }
                 setNewShapeStart(null);
                 setNewShapeCurrent(null);
+                finishInteraction?.(); hasSavedHistory.current = false;
                 return;
             }
 
@@ -1433,10 +1531,9 @@ export const Canvas: React.FC<CanvasProps> = ({
                 flip: flip
             };
             // Pass false for saveHistory because we already called onInteractionStart manually above
-            onUpdateElements([...elements, newEl], false);
-            onSelectElements([newEl.id]);
+            appendElements([newEl], [newEl.id]);
             if (tool === 'text') {
-                setEditingElementId(newEl.id);
+                beginInlineEditing(newEl.id, owner?.handoffToInline());
             }
         } else if (isSelecting && selectionBox) {
             // Marquee (incl. a zero-area click) must respect layers: elements on hidden or
@@ -1486,6 +1583,8 @@ export const Canvas: React.FC<CanvasProps> = ({
         }
         clickCycleStackRef.current = null;
 
+        finishInteraction?.();
+        if (onEditElements) hasSavedHistory.current = false;
         setNewShapeStart(null);
         setNewShapeCurrent(null);
         setIsDragging(false);
@@ -1563,6 +1662,7 @@ export const Canvas: React.FC<CanvasProps> = ({
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onPointerCancel={cancelInteraction}
             onContextMenu={handleContextMenu}
         >
             {/* Inner container wrapper to handle centering vs scrolling */}
@@ -1590,7 +1690,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                             showHandles={selectedElementIds.includes(element.id) && selectedElementIds.length === 1}
                             onDoubleClick={() => {
                                 const layer = element.layerId ? template.layers?.find(item => item.id === element.layerId) : undefined;
-                                if (!layer?.locked) setEditingElementId(element.id);
+                                if (!layer?.locked) beginInlineEditing(element.id, captureInteraction?.());
                             }}
                             isEditing={editingElementId === element.id}
                             renderScale={scale}
@@ -1798,16 +1898,39 @@ export const Canvas: React.FC<CanvasProps> = ({
                             return null;
                         })()}
 
-                        {editingElementId && (() => {
-                            const el = elements.find(e => e.id === editingElementId);
+                        {inlineEditing && (() => {
+                            const el = elements.find(e => e.id === inlineEditing.elementId);
+                            // Overlay calls finish then switch synchronously on Escape.
+                            // Only an admitted finish may switch tools after ending its owner.
+                            let canSwitchToSelect = false;
                             if (el && el.type === 'text') {
                                 return (
                                     <OverlayTextEditor
                                         key={el.id}
                                         element={el}
-                                        onChange={(id, updates) => onUpdateElements(elements.map(e => e.id === id ? { ...e, ...updates } : e), false)}
-                                        onFinish={() => setEditingElementId(null)}
-                                        onSwitchToSelect={onSwitchToSelect}
+                                        onChange={(id, updates) => {
+                                            if (captureInteraction) {
+                                                const owner = inlineEditing.owner;
+                                                if (!owner?.isCurrent()) return;
+                                                owner.start();
+                                                owner.edit({ type: 'patch', updates: [{ id, patch: updates }] });
+                                            } else if (onEditElements) {
+                                                if (!inlineEditing.hasSavedHistory) {
+                                                    onInteractionStart(); inlineEditing.hasSavedHistory = true;
+                                                }
+                                                onEditElements({ type: 'patch', updates: [{ id, patch: updates }] });
+                                            } else onUpdateElements(elements.map(e => e.id === id ? { ...e, ...updates } : e), false);
+                                        }}
+                                        onFinish={() => {
+                                            canSwitchToSelect = !captureInteraction || !!inlineEditing.owner?.isCurrent();
+                                            if (captureInteraction) inlineEditing.owner?.end();
+                                            else if (onEditElements) onInteractionEnd?.();
+                                            setInlineEditing(current => current === inlineEditing ? null : current);
+                                        }}
+                                        onSwitchToSelect={() => {
+                                            if (canSwitchToSelect) onSwitchToSelect?.();
+                                            canSwitchToSelect = false;
+                                        }}
                                     />
                                 );
                             }

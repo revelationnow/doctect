@@ -1,7 +1,7 @@
 import { createBlankProject } from '../presets';
-import { createLocalWorkspaceStore } from './LocalWorkspaceStore';
+import { createNormalizedWorkspaceStore } from './NormalizedWorkspaceStore';
 
-export const localWorkspaceStore = createLocalWorkspaceStore({
+export const localWorkspaceStore = createNormalizedWorkspaceStore({
   get indexedDB() {
     return window.indexedDB;
   },

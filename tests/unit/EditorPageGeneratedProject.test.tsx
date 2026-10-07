@@ -5,11 +5,12 @@ import { EditorPage } from '../../pages/EditorPage';
 import {
     WorkspaceStoreError,
     type LocalWorkspaceStore,
-    type WorkspaceCommand,
+    type SnapshotWorkspaceCommand as WorkspaceCommand,
     type WorkspaceProject,
     type WorkspaceSnapshot,
 } from '../../services/localWorkspace/index';
 import { createBlankProject } from '../../services/presets';
+import { mockWorkspaceCommit } from '../helpers/fakeLocalWorkspaceStore';
 
 const trackEvent = vi.hoisted(() => vi.fn());
 const lastCreateResult = vi.hoisted(() => ({ current: undefined as boolean | undefined }));
@@ -83,7 +84,7 @@ const initialWorkspace = (): WorkspaceSnapshot => ({
 
 const makeStore = (initial: WorkspaceSnapshot, fail = false) => {
     let durable = structuredClone(initial);
-    const commit = vi.fn(async (command: WorkspaceCommand) => {
+    const commit = mockWorkspaceCommit(async (command: WorkspaceCommand) => {
         if (fail) throw new WorkspaceStoreError('Generated project was not saved.', 'quota');
         if (command.type === 'create-and-activate-project') {
             durable = {

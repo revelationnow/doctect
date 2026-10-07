@@ -17,13 +17,14 @@ import { createBlankProject } from '../../services/presets';
 import {
   WorkspaceStoreError,
   type LocalWorkspaceStore,
-  type WorkspaceCommand,
+  type SnapshotWorkspaceCommand as WorkspaceCommand,
   type WorkspaceCustomPreset,
   type WorkspaceProject,
   type WorkspaceSnapshot,
 } from '../../services/localWorkspace/index';
 import type { AppState } from '../../types';
 import { LEGACY_KEYS } from '../helpers/localWorkspaceFixtures';
+import { mockWorkspaceCommit } from '../helpers/fakeLocalWorkspaceStore';
 
 const trackEvent = vi.hoisted(() => vi.fn());
 const downloadJson = vi.hoisted(() => vi.fn());
@@ -330,7 +331,7 @@ const commandStore = (
   ) => Promise<WorkspaceSnapshot> | WorkspaceSnapshot | undefined,
 ) => {
   let durable = structuredClone(initialWorkspace);
-  const commit = vi.fn(async (command: WorkspaceCommand) => {
+  const commit = mockWorkspaceCommit(async (command: WorkspaceCommand) => {
     const next = applyCommand(durable, command);
     const intercepted = intercept?.(command, next);
     if (intercepted !== undefined) {
