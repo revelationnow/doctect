@@ -836,7 +836,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
         seedOwner = work.own((await work.run(rawValueWeightWork(initialState))).bytes);
         const incarnation = await work.run(effect(1, () => preparation.randomUUID()));
         const updatedAt = await work.run(effect(1, () => preparation.now())); kind = 'fresh';
-        sourceRows = { ...rows, projects: [{ id, project: { id, name: 'Untitled Project', initialState }, incarnation, storageRevision: 0, updatedAt }],
+        sourceRows = { ...rows, projects: [{ id, project: { id, name: 'Blank Project', initialState }, incarnation, storageRevision: 0, updatedAt }],
           workspace: [{ id: 'current', projectOrder: [id], activeProjectId: id, revision: 0 }] };
         }
       } else if (!await work.run(isRecognizedLedgerWork(rows.migrationLedger[0]))
