@@ -82,6 +82,9 @@ test.describe('Element Properties auto width and disclosure', () => {
         const pane = activePane(page);
         const undo = pane.getByTitle('Undo (Ctrl+Z)');
         const autoWidth = pane.getByLabel('Auto width', { exact: true });
+        // Element selection is session state and is not restored on open.
+        await canvasElement(page, 'literal').click();
+        await canvasElement(page, 'bound').click({ modifiers: ['Shift'] });
         await expect(autoWidth).toHaveAttribute('aria-checked', 'mixed');
         expect(await autoWidth.evaluate(input => input.indeterminate)).toBe(true);
         await expect(undo).toBeDisabled();
@@ -150,6 +153,7 @@ test.describe('Element Properties auto width and disclosure', () => {
         await expect(undo).toBeDisabled();
 
         await page.reload();
+        await canvasElement(page, 'literal').click();
         await expect(activePane(page).getByRole('button', { name: 'Geometry', exact: true })).toHaveAttribute('aria-expanded', 'true');
     });
 
