@@ -1,6 +1,6 @@
 import type { LocalWorkspaceEnvironment } from './LocalWorkspaceStore';
 import { createIndexedDbAdapter } from './indexedDbAdapter';
-import { createHistoricalBootstrap } from './historicalBootstrap';
+import { createHistoricalBootstrap, receiptFor } from './historicalBootstrap';
 import { normalizeWorkspace } from './normalized/migration';
 import { createWorkspaceWorkerClient, type WorkspaceWorkerFactory } from './workspaceWorkerClient';
 import { createWorkspaceStartupRepository } from './workspaceStartup';
@@ -10,7 +10,7 @@ import { captureStableLegacySnapshotWithDigest, monitorLegacyKeys } from './lega
 import { createLegacyRecoveryBundle, createIndexedDbRecoveryBundle, exportNormalizationRecovery } from './recovery';
 import { createWorkspaceRecoveryAdmission } from './workspaceRecoveryAdmission';
 import { WorkspaceStoreError, type LocalWorkspaceStore, type WorkspaceBootstrapResult, type WorkspaceBootstrapObserver,
-  type WorkspaceCommit, type WorkspaceCommand, type WorkspaceSnapshot } from './contracts';
+  type MigrationReceipt, type WorkspaceCommit, type WorkspaceCommand, type WorkspaceSnapshot } from './contracts';
 import type { NormalizedRepository } from './normalized/repository';
 
 const stores = new WeakMap<LocalWorkspaceStore, { session(): WorkspaceEditingSession | undefined; retry(): Promise<void> }>();
@@ -25,6 +25,9 @@ export function createNormalizedWorkspaceStore(environment: LocalWorkspaceEnviro
   let client = createWorkspaceWorkerClient(options.workerFactory), repository = createWorkspaceStartupRepository(client);
   let session: WorkspaceEditingSession | undefined, last: WorkspaceBootstrapResult | undefined, inFlight: Promise<WorkspaceBootstrapResult> | undefined;
   let sourceLifetime = new AbortController();
+  // Every ready result carries the migration receipt; the gate decides whether it was already seen.
+  let receipt: MigrationReceipt | undefined;
+  const ready = (snapshot: WorkspaceSnapshot): WorkspaceBootstrapResult => ({ status: 'ready', snapshot, ...(receipt ? { receipt } : {}) });
   let confirmation: { id: string; lifetime: AbortController; generation: number; snapshot: import('./legacyTypes').LegacySnapshot; digest: string } | undefined;
   const current = () => { if (disposed) throw new WorkspaceStoreError('Workspace store stopped.', 'authority-lost'); };
   const notify = (result: Blocking) => { last = result; for (const observer of observers) if (!observer.signal?.aborted) {
@@ -69,7 +72,7 @@ export function createNormalizedWorkspaceStore(environment: LocalWorkspaceEnviro
     if (retry && session && last?.status === 'ready') {
       try {
         if (await session.tryResumeAborted(sourceCurrent)) {
-          sourceCurrent(); last = { status: 'ready', snapshot: session.getSnapshot().workspace }; session.unblock(); return last;
+          sourceCurrent(); last = ready(session.getSnapshot().workspace); session.unblock(); return last;
         }
       } catch (error) { session.pause(); const result = nonready(error); last = result; return result; }
     }
@@ -119,7 +122,11 @@ export function createNormalizedWorkspaceStore(environment: LocalWorkspaceEnviro
         const acceptance = normalized.workspace.legacyAcceptance;
         if (acceptance.kind === 'accepted' && final.digest !== acceptance.digest
           || acceptance.kind === 'fresh' && Object.values(final.snapshot).some(value => value.present)) throw new WorkspaceStoreError('Legacy source changed before publication.', 'authority-lost');
-        session = candidate; last = { status: 'ready', snapshot: session.getSnapshot().workspace }; session.unblock(); return last;
+        // The one-time migration receipt is keyed by the accepted legacy source; the gate shows it once.
+        const ledger = acceptance.kind === 'accepted' ? await historical.readRecognizedLedger().catch(() => undefined) : undefined;
+        sourceCurrent();
+        receipt = ledger?.state === 'verified' ? receiptFor(ledger) : undefined;
+        session = candidate; last = ready(session.getSnapshot().workspace); session.unblock(); return last;
       } catch (error) { if (candidate !== session) candidate?.dispose(); else session?.pause(); throw error; }
     } catch (error) { const result = nonready(error); last = result; return result; }
     finally { adapter.close(); }
@@ -160,7 +167,7 @@ export function createNormalizedWorkspaceStore(environment: LocalWorkspaceEnviro
         notify({ status: 'recovery', recovery: { ...originalRecovery, recoveryId: environment.randomUUID(), message: 'New legacy changes need a new confirmation.' } });
         throw new WorkspaceStoreError('Recovery committed; newer legacy changes need confirmation.', 'authority-lost');
       }
-      session.unblock(); last = { status: 'ready', snapshot: accepted.snapshot }; return accepted.snapshot;
+      session.unblock(); last = ready(accepted.snapshot); return accepted.snapshot;
     }
     await session.commitStructural(command as Exclude<WorkspaceCommand, { type: 'save-project' }> & Parameters<WorkspaceEditingSession['commitStructural']>[0]);
     // Snapshot-shaped callers are explicit import/bootstrap boundaries, never editor autosaves.
@@ -171,7 +178,7 @@ export function createNormalizedWorkspaceStore(environment: LocalWorkspaceEnviro
       try { current(); observeLegacy(); } catch (error) { return Promise.resolve(nonready(error)); }
       if (observer && !observer.signal?.aborted) { observers.add(observer); observer.signal?.addEventListener('abort', () => observers.delete(observer), { once: true }); }
       if (inFlight) return inFlight;
-      if (last?.status === 'ready' && session?.hasWorkingOwners()) return snapshot().then(value => ({ status: 'ready', snapshot: value }));
+      if (last?.status === 'ready' && session?.hasWorkingOwners()) return snapshot().then(ready);
       // Reentry without a live editor never mounts its stale initializer.
       return initialize(Boolean(session), true);
     }, commit,

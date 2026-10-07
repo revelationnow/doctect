@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { WorkspaceBootstrapGateProps } from './WorkspaceBootstrapGate';
-import type { RecoverySource, WorkspaceBootstrapPhase, WorkspaceBootstrapResult, WorkspaceSnapshot } from '../../services/localWorkspace/contracts';
+import type { MigrationReceipt, RecoverySource, WorkspaceBootstrapPhase, WorkspaceBootstrapResult, WorkspaceSnapshot } from '../../services/localWorkspace/contracts';
+import { markMigrationReceiptSeen, wasMigrationReceiptSeen } from '../../services/browserPreferences';
+import { MigrationReceipt as MigrationReceiptScreen } from './MigrationReceipt';
 import { getNormalizedWorkspaceSession } from '../../services/localWorkspace/NormalizedWorkspaceStore';
 import { downloadBlob, downloadJson } from '../../services/browserDownload';
 import { WorkspaceBootstrapScreen } from './WorkspaceBootstrapScreen';
@@ -12,20 +14,31 @@ import { OPEN_WORKSPACE_PRESENTATION, RECOVERY_SOURCE_PRESENTATION } from './rec
 export function NormalizedWorkspaceBootstrapGate({ store, renderEditor }: WorkspaceBootstrapGateProps) {
   const [initial, setInitial] = useState<{ store: typeof store; snapshot: WorkspaceSnapshot; warnings: string[] }>();
   const [phase, setPhase] = useState<WorkspaceBootstrapPhase>('opening-local-storage');
+  const [receipt, setReceipt] = useState<{ receipt: MigrationReceipt; resume(): void }>();
   const [blocking, setBlocking] = useState<WorkspaceBlockingResult>();
   const [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(null), [activeExport, setActiveExport] = useState<RecoverySource | null>(null);
   const lifetime = useRef<AbortController | undefined>(undefined);
   const authorityVersion = useRef(0), attemptVersion = useRef(0);
   const failure = (value: unknown): WorkspaceBlockingResult => ({ status: 'unavailable', message: value instanceof Error ? value.message : 'Local workspace is unavailable.', availableExports: ['legacy-current'] });
-  async function start() {
+  /** `acknowledged` resumes a ready result held behind the migration receipt without bootstrapping again. */
+  async function start(acknowledged?: WorkspaceBootstrapResult) {
     const controller = lifetime.current; if (!controller || controller.signal.aborted) return;
     const authority = authorityVersion.current, attempt = ++attemptVersion.current;
     const current = () => !controller.signal.aborted && authorityVersion.current === authority && attemptVersion.current === attempt;
     setBusy(true); setError(null);
     try {
-      let result = await store.bootstrap({ signal: controller.signal, onPhase: value => { if (!controller.signal.aborted) setPhase(value); },
+      let result = acknowledged ?? await store.bootstrap({ signal: controller.signal, onPhase: value => { if (!controller.signal.aborted) setPhase(value); },
         onAuthorityLost: value => { if (!controller.signal.aborted) { authorityVersion.current++; setBlocking(value); } } });
       if (!current()) return;
+      if (!acknowledged && result.status === 'ready' && result.receipt && !wasMigrationReceiptSeen(result.receipt.id)) {
+        // Pending imports stay pending until the one-time receipt is acknowledged.
+        const held = result, shown = result.receipt;
+        setReceipt({ receipt: shown, resume() {
+          markMigrationReceiptSeen(shown.id); setReceipt(undefined);
+          void start(authorityVersion.current === authority ? held : undefined);
+        } });
+        return;
+      }
       if (result.status === 'ready') {
         const warnings: string[] = [];
         for (const pending of result.snapshot.pendingImports) {
@@ -40,7 +53,7 @@ export function NormalizedWorkspaceBootstrapGate({ store, renderEditor }: Worksp
     finally { if (!controller.signal.aborted && attemptVersion.current === attempt) setBusy(false); }
   }
   useEffect(() => {
-    const controller = new AbortController(); lifetime.current = controller; setBlocking(undefined); void start();
+    const controller = new AbortController(); lifetime.current = controller; setBlocking(undefined); setReceipt(undefined); void start();
     return () => controller.abort();
   }, [store]);
   const mounted = initial?.store === store ? initial : undefined;
@@ -65,6 +78,8 @@ export function NormalizedWorkspaceBootstrapGate({ store, renderEditor }: Worksp
       onExportOpenWorkspace={mounted ? () => { try { const value = getNormalizedWorkspaceSession(store)?.readWorkingWorkspace(); if (!value) throw Error('Open work unavailable.');
         downloadJson(value, OPEN_WORKSPACE_PRESENTATION.filename); } catch (value) { setError(value instanceof Error ? value.message : 'Download failed.'); } } : undefined}
       onRecoverAsCopies={blocking.status === 'recovery' && blocking.recovery.canRecoverLegacyAsCopies ? () => { void recover(); } : undefined} />
-      : !mounted && <WorkspaceBootstrapScreen phase={phase} />}
+      : !mounted && (receipt ? <MigrationReceiptScreen receipt={receipt.receipt} onContinue={receipt.resume}
+        onDownloadOriginal={() => { void exportSource('legacy-original'); }} isDownloading={activeExport === 'legacy-original'} downloadError={error} />
+        : <WorkspaceBootstrapScreen phase={phase} />)}
   </>;
 }
