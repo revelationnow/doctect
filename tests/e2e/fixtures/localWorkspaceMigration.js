@@ -118,7 +118,7 @@ export const createLegacyFailure = async (page, kind) => {
             message = 'Legacy project at index 0 is invalid';
             break;
         case 'future-schema':
-            projects[0].initialState.schemaVersion = 12;
+            projects[0].initialState.schemaVersion = 13;
             legacy.raw[LEGACY_KEYS.projects] = rawJson(projects);
             affectedItem = '0';
             message = 'future schema version';
