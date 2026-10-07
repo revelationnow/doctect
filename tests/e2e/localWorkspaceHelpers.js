@@ -154,20 +154,15 @@ export const setActiveProjectCloud = (page, cloud) => rewriteActiveProject(page,
     project.cloud = nextCloud;
 }, cloud);
 
+// Edits through the live normalized editing session, as the editor's own metadata path does.
 export const updateActiveProject = (page, changes) => page.evaluate(async nextChanges => {
     const { localWorkspaceStore } = await import('/services/localWorkspace/index.ts');
-    const { inheritInstalledProjectAuthority } = await import(
-        '/services/localWorkspace/projectAuthority.ts'
-    );
-    const result = await localWorkspaceStore.bootstrap();
-    if (result.status !== 'ready') throw new Error(`workspace ${result.status}`);
-    const current = result.snapshot.projects.find(
-        candidate => candidate.id === result.snapshot.activeProjectId,
-    );
-    if (!current) throw new Error('Active project not found while updating it.');
-    const project = { ...structuredClone(current), ...structuredClone(nextChanges) };
-    inheritInstalledProjectAuthority(project, current);
-    return localWorkspaceStore.commit({ type: 'save-project', project });
+    const { getNormalizedWorkspaceSession } = await import('/services/localWorkspace/NormalizedWorkspaceStore.ts');
+    const session = getNormalizedWorkspaceSession(localWorkspaceStore);
+    if (!session) throw new Error('No live workspace session while updating the active project.');
+    const { activeProjectId } = session.getSnapshot().workspace;
+    const saved = await session.updateProject(activeProjectId, project => ({ ...project, ...structuredClone(nextChanges) }));
+    if (!saved) throw new Error('Active project update was refused.');
 }, changes);
 
 export const waitForPersistedGenerator = async (page, expected) => {

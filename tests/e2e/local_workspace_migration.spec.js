@@ -14,6 +14,7 @@ import {
     downloadJson,
     holdVersionOneWorkspaceDatabase,
     inspectWorkspaceDatabase,
+    inspectNormalizedWorkspace,
     inspectHeldWorkspaceDatabase,
     installBootstrapPhaseHold,
     installBootstrapResultCapture,
@@ -118,7 +119,7 @@ test.describe('local workspace migration release gate', () => {
         expect(await readWorkspace(page)).toEqual(historical.expectedWorkspace);
         expect(await readLegacyRaw(page)).toEqual(historical.raw);
         const repaired = await inspectWorkspaceDatabase(page);
-        expect(repaired.version).toBe(2);
+        expect(repaired.version).toBe(3);
         expectIndexFreeSchema(repaired);
         expect(repaired.records.migrationLedger).toEqual([{
             ...historical.historicalLedger,
@@ -146,7 +147,7 @@ test.describe('local workspace migration release gate', () => {
         await expect(editorPane(page).first()).toBeVisible();
         await expect(recoveryAlert(page)).toHaveCount(0);
         const reloaded = await inspectWorkspaceDatabase(page);
-        expect(reloaded.version).toBe(2);
+        expect(reloaded.version).toBe(3);
         expect(reloaded.records.migrationLedger[0].expectedTargetDigest)
             .toBe(historical.expectedTargetDigest);
         for (const [id, incarnation] of Object.entries(repairedIncarnations)) {
@@ -186,13 +187,13 @@ test.describe('local workspace migration release gate', () => {
         const second = await readWorkspace(page);
         expect(second).toEqual(first);
         expect(second.projects.filter(project => project.id === pending.targetProjectId)).toHaveLength(1);
-        const inspection = await inspectWorkspaceDatabase(page);
-        const consumedRecord = inspection.records.projects.find(record => record.id === pending.targetProjectId);
-        expect(consumedRecord).toMatchObject({
+        const { manifest } = await inspectNormalizedWorkspace(page);
+        const consumedMember = manifest.members.find(member => member.projectId === pending.targetProjectId);
+        expect(consumedMember.consumedImport).toMatchObject({
             consumedImportId: pending.id,
             consumedImportCreatedAt: pending.createdAt,
         });
-        expect(consumedRecord.consumedImportDigest).toMatch(/^[a-f0-9]{64}$/);
+        expect(consumedMember.consumedImport.consumedImportDigest).toMatch(/^[a-f0-9]{64}$/);
         expect(await readLegacyRaw(page)).toEqual(legacy.raw);
     });
 
@@ -332,7 +333,7 @@ test.describe('local workspace migration release gate', () => {
             state: 'verified',
             ledgerRevision: 1,
         });
-        expect(verified.records.legacyBackup).toHaveLength(1);
+        expect((await inspectNormalizedWorkspace(resumedPage)).legacyBackups).toHaveLength(1);
         expect(await readLegacyRaw(resumedPage)).toEqual(legacy.raw);
         await resumedPage.close();
     });
@@ -373,9 +374,11 @@ test.describe('local workspace migration release gate', () => {
         expect(results.map(result => result.status)).toEqual(['ready', 'ready']);
         expect(results[0].snapshot).toEqual(results[1].snapshot);
         const inspection = await inspectWorkspaceDatabase(page);
+        const normalized = await inspectNormalizedWorkspace(page);
         expect(inspection.records.migrationLedger).toHaveLength(1);
-        expect(inspection.records.legacyBackup).toHaveLength(1);
-        expect(inspection.records.projects).toHaveLength(legacy.projects.length);
+        expect(normalized.legacyBackups).toHaveLength(1);
+        expect(normalized.normalizationLedger).toHaveLength(1);
+        expect(normalized.manifest.members).toHaveLength(legacy.projects.length);
         expect(inspection.records.migrationLedger[0]).toMatchObject({
             state: 'verified',
             ledgerRevision: 1,
@@ -409,7 +412,8 @@ test.describe('local workspace migration release gate', () => {
                 if (timing !== 'after-cutover') await releaseBootstrapPhaseHold(page);
 
                 await expect(recoveryAlert(page)).toBeVisible();
-                await expect(editorPane(page)).toHaveCount(0);
+                // A verified editor stays mounted, hidden and inert, under recovery.
+                await expect(editorPane(page).first()).toBeHidden();
                 await expect(page.locator('#workspace-recovery-heading')).toContainText(
                     /We couldn’t finish preparing your projects|We found two different saved project sets/,
                 );
@@ -439,14 +443,18 @@ test.describe('local workspace migration release gate', () => {
         await waitForLegacyStorageEvent(page);
 
         await expect(page.getByRole('heading', { name: 'We found two different saved project sets' })).toBeVisible();
-        await expect(editorPane(page)).toHaveCount(0);
+        await expect(editorPane(page).first()).toBeHidden();
         const currentBundle = await downloadJson(page, 'Download older-version projects');
-        const originalBundle = await downloadJson(page, 'Download projects from before the update');
-        const editorBundle = await downloadJson(page, 'Download editor projects');
+        const retainedBundle = await downloadJson(page, 'Download retained update source');
+        const editorBundle = await downloadJson(page, 'Download current saved projects');
         expect(legacyRawFromBundle(currentBundle)).toEqual(changed.raw);
-        expect(legacyRawFromBundle(originalBundle)).toEqual(legacy.raw);
+        expect(retainedBundle.format).toBe('doctect.normalization-source-recovery');
+        expect(retainedBundle.workspace.projects).toEqual(legacy.projects);
         expect(editorBundle.workspace).toEqual(durableBeforeRecovery);
 
+        // A live drift notice only pauses; re-admission independently validates
+        // both sets before it can offer recovery as copies.
+        await page.getByRole('button', { name: 'Try again' }).click();
         await page.getByRole('button', { name: 'Add changed projects without replacing anything' }).click();
         await page.getByRole('button', { name: 'Add separate copies' }).click();
         await expect(editorPane(page).first()).toBeVisible();
@@ -458,13 +466,13 @@ test.describe('local workspace migration release gate', () => {
         expect(recoveredProject.name).toBe('Recovered — Rollback changed project');
         expect(recoveredProject).not.toHaveProperty('cloud');
         expect(await readLegacyRaw(page)).toEqual(changed.raw);
-        const inspection = await inspectWorkspaceDatabase(page);
-        expect(inspection.records.projects).toHaveLength(2);
-        expect(inspection.records.legacyBackup).toHaveLength(2);
+        const normalized = await inspectNormalizedWorkspace(page);
+        expect(normalized.manifest.members).toHaveLength(2);
+        expect(normalized.legacyBackups).toHaveLength(2);
         await oldPage.close();
     });
 
-    test('second rollback write reopens recovery with a new persisted marker', async ({ page, context }) => {
+    test('second rollback write reopens recovery with a new recovery identity', async ({ page, context }) => {
         test.setTimeout(90_000);
         const legacy = await prepareValidLegacyWorkspace(page, {
             projectCount: 1,
@@ -473,6 +481,7 @@ test.describe('local workspace migration release gate', () => {
         });
         await page.goto('/app');
         await continueToEditor(page);
+        await installBootstrapResultCapture(page);
         const oldPage = await context.newPage();
         await oldPage.goto('/');
         const first = createChangedLegacyWorkspace(legacy, 'First rollback', 'first');
@@ -480,8 +489,11 @@ test.describe('local workspace migration release gate', () => {
         await writeLegacyRaw(oldPage, first.raw);
         await waitForLegacyStorageEvent(page);
         await expect(page.getByRole('heading', { name: 'We found two different saved project sets' })).toBeVisible();
-        const firstInspection = await inspectWorkspaceDatabase(page);
-        const firstRecoveryId = firstInspection.records.migrationLedger[0].unresolvedRecovery.id;
+        await page.getByRole('button', { name: 'Try again' }).click();
+        await expect(page.getByRole('button', { name: 'Add changed projects without replacing anything' })).toBeVisible();
+        const firstResult = await readCapturedBootstrapResult(page);
+        expect(firstResult.recovery).toMatchObject({ kind: 'split-brain', category: 'legacy-drift', canRecoverLegacyAsCopies: true });
+        const firstRecoveryId = firstResult.recovery.recoveryId;
         await page.getByRole('button', { name: 'Add changed projects without replacing anything' }).click();
         await page.getByRole('button', { name: 'Add separate copies' }).click();
         await expect(editorPane(page).first()).toBeVisible();
@@ -492,13 +504,11 @@ test.describe('local workspace migration release gate', () => {
         await waitForLegacyStorageEvent(page);
 
         await expect(page.getByRole('heading', { name: 'We found two different saved project sets' })).toBeVisible();
-        const inspection = await inspectWorkspaceDatabase(page);
-        const secondRecoveryId = inspection.records.migrationLedger[0].unresolvedRecovery.id;
-        expect(secondRecoveryId).not.toBe(firstRecoveryId);
-        expect(inspection.records.migrationLedger[0].unresolvedRecovery).toMatchObject({
-            id: secondRecoveryId,
-            kind: 'legacy-drift',
-        });
+        await page.getByRole('button', { name: 'Try again' }).click();
+        await expect(page.getByRole('button', { name: 'Add changed projects without replacing anything' })).toBeVisible();
+        const secondResult = await readCapturedBootstrapResult(page);
+        expect(secondResult.recovery).toMatchObject({ kind: 'split-brain', category: 'legacy-drift', canRecoverLegacyAsCopies: true });
+        expect(secondResult.recovery.recoveryId).not.toBe(firstRecoveryId);
         expect(await readLegacyRaw(page)).toEqual(second.raw);
         await oldPage.close();
     });
@@ -537,7 +547,7 @@ test.describe('local workspace migration release gate', () => {
 
     test('aggregate legacy JSON above 5 MiB and one project near LEGACY_STATE_BYTES migrate exactly', async ({ page }, testInfo) => {
         test.skip(!testInfo.project.name.startsWith('workspace-large-'), 'Dedicated large-storage project only.');
-        test.setTimeout(180_000);
+        test.setTimeout(480_000);
         const legacy = await prepareLargeLegacyWorkspace(page);
         const expectedSeedBytes = Object.values(legacy.raw).reduce(
             (total, value) => total + (value === null ? 0 : new TextEncoder().encode(value).byteLength),
@@ -549,14 +559,16 @@ test.describe('local workspace migration release gate', () => {
         expect(legacy.nearLimitStateBytes).toBeGreaterThan(LEGACY_STATE_BYTES - 2048);
         expect(legacy.nearLimitStateBytes).toBeLessThan(LEGACY_STATE_BYTES);
         await page.goto('/app');
-        await expect(receiptHeading(page)).toBeVisible();
+        // Bounded cooperative normalization of the full source is a one-time upgrade:
+        // measured ~51s in Chromium and ~190s in Firefox for this fixture.
+        await expect(receiptHeading(page)).toBeVisible({ timeout: 360_000 });
         const migrated = await readWorkspace(page);
         expect(migrated.projects).toEqual(legacy.projects);
         expect(migrated.activeProjectId).toBe(legacy.activeProjectId);
         expect(await readLegacyRaw(page)).toEqual(legacy.raw);
         await continueToEditor(page);
         await page.reload();
-        await expect(editorPane(page).first()).toBeVisible();
+        await expect(editorPane(page).first()).toBeVisible({ timeout: 30_000 });
         expect(await readWorkspace(page)).toEqual(migrated);
     });
 
@@ -601,34 +613,27 @@ test.describe('local workspace migration release gate', () => {
         await page.goto('/app');
         await continueToEditor(page);
 
-        const measurement = await page.evaluate(async ({ databaseName, projectId }) => {
-            const requestResult = request => new Promise((resolve, reject) => {
-                request.addEventListener('success', () => resolve(request.result), { once: true });
-                request.addEventListener('error', () => reject(request.error), { once: true });
-            });
-            const database = await requestResult(indexedDB.open(databaseName));
-            const transaction = database.transaction('projects', 'readonly');
-            const record = await requestResult(transaction.objectStore('projects').get(projectId));
-            database.close();
-            if (!record?.project) throw new Error('Near-limit project record is missing.');
+        const measurement = await page.evaluate(async ({ project }) => {
             const waitTask = () => new Promise(resolve => setTimeout(resolve, 0));
             const quantile = (values, fraction) => {
                 const sorted = [...values].sort((left, right) => left - right);
                 return sorted[Math.min(sorted.length - 1, Math.ceil(sorted.length * fraction) - 1)];
             };
+            // Baseline: one whole-project structured clone, the cost a full-document save would pay.
             const cloneSamples = [];
             for (let index = 0; index < 9; index += 1) {
                 const startedAt = performance.now();
-                const cloned = structuredClone(record.project);
+                const cloned = structuredClone(project);
                 await waitTask();
                 cloneSamples.push(performance.now() - startedAt);
-                if (cloned.id !== projectId) throw new Error('Clone baseline detached project identity.');
+                if (cloned.id !== project.id) throw new Error('Clone baseline detached project identity.');
             }
 
             const capture = globalThis.__workspaceProjectPreparationWorkers;
             capture.workers.length = 0;
             capture.requests = 0;
             capture.responses = 0;
+            capture.workspaceRequests.length = 0;
             capture.transactions.length = 0;
             const showGrid = document.querySelector('[data-testid="project-pane"] button[title="Show Grid"]');
             if (!(showGrid instanceof HTMLButtonElement)) throw new Error('Show Grid control is missing.');
@@ -650,62 +655,44 @@ test.describe('local workspace migration release gate', () => {
                 interactionP90Ms,
                 p90Ratio: interactionP90Ms / cloneP90Ms,
                 workersDuringInteraction: capture.workers.length,
-                requestsDuringInteraction: capture.requests,
-                responsesDuringInteraction: capture.responses,
+                preparationRequestsDuringInteraction: capture.requests,
             };
-        }, { databaseName: 'doctect-local-workspace', projectId: nearLimitProject.id });
+        }, { project: nearLimitProject });
 
         expect(measurement.cloneP90Ms).toBeGreaterThan(0);
         expect(measurement.interactionP90Ms).toBeGreaterThan(0);
         expect(measurement.p90Ratio).toBeLessThanOrEqual(4);
         expect(measurement.workersDuringInteraction).toBe(0);
-        expect(measurement.requestsDuringInteraction).toBe(0);
-        expect(measurement.responsesDuringInteraction).toBe(0);
+        expect(measurement.preparationRequestsDuringInteraction).toBe(0);
         await expect.poll(() => page.evaluate(() =>
-            globalThis.__workspaceProjectPreparationWorkers.requests)).toBe(1);
-        await expect(page.getByText('Saved locally', { exact: true })).toBeVisible();
+            globalThis.__workspaceProjectPreparationWorkers.workspaceRequests.length), { timeout: 30_000 }).toBeGreaterThan(0);
+        await expect(page.getByText('Saved locally', { exact: true })).toBeVisible({ timeout: 30_000 });
 
-        const saveCapture = await page.evaluate(() => ({
-            workers: globalThis.__workspaceProjectPreparationWorkers.workers,
-            requests: globalThis.__workspaceProjectPreparationWorkers.requests,
-            responses: globalThis.__workspaceProjectPreparationWorkers.responses,
-            transactions: globalThis.__workspaceProjectPreparationWorkers.transactions,
-        }));
+        const saveCapture = await page.evaluate(() => structuredClone(globalThis.__workspaceProjectPreparationWorkers));
         const proofMetrics = {
             nearLimitStateBytes: large.nearLimitStateBytes,
             cloneP90Ms: measurement.cloneP90Ms,
             interactionP90Ms: measurement.interactionP90Ms,
             p90Ratio: measurement.p90Ratio,
             workers: saveCapture.workers.length,
-            requests: saveCapture.requests,
-            responses: saveCapture.responses,
+            preparationRequests: saveCapture.requests,
+            workspaceRequests: saveCapture.workspaceRequests,
         };
         console.log('[built-worker-proof]', JSON.stringify(proofMetrics));
-        const workspaceTransactions = saveCapture.transactions.filter(transaction =>
-            transaction.database === 'doctect-local-workspace');
-        expect(saveCapture.workers).toHaveLength(1);
-        expect(saveCapture.workers[0]).toMatchObject({ type: 'module' });
-        expect(saveCapture.workers[0].url).toContain('projectPreparationWorker');
-        expect(saveCapture.requests).toBe(1);
-        expect(saveCapture.responses).toBe(1);
-        const writes = workspaceTransactions.filter(transaction => transaction.mode === 'readwrite');
-        const readbacks = workspaceTransactions.filter(transaction => transaction.mode === 'readonly');
-        expect(writes).toHaveLength(1);
-        expect([...writes[0].stores].sort()).toEqual(['migrationLedger', 'projects']);
-        expect(readbacks).toHaveLength(1);
-        expect([...readbacks[0].stores].sort())
-            .toEqual(['pendingImports', 'presets', 'projects', 'workspace']);
-
-        const inspection = await inspectWorkspaceDatabase(page);
-        expect(inspection.records.projects.find(record => record.id === nearLimitProject.id))
-            .toMatchObject({ storageRevision: 1, project: { initialState: { showGrid: true } } });
+        // Incremental persistence: no whole-project preparation and no page-thread
+        // workspace writes; the workspace worker owns every durable write.
+        expect(saveCapture.workers).toHaveLength(0);
+        expect(saveCapture.requests).toBe(0);
+        expect(saveCapture.workspaceRequests).toEqual(['preferences']);
+        expect(saveCapture.transactions.filter(transaction =>
+            transaction.database === 'doctect-local-workspace' && transaction.mode === 'readwrite')).toEqual([]);
         await testInfo.attach('workspace-built-editor-save.json', {
             body: Buffer.from(JSON.stringify({ ...measurement, saveCapture }, null, 2)),
             contentType: 'application/json',
         });
 
         await page.reload();
-        await expect(editorPane(page).first()).toBeVisible();
+        await expect(editorPane(page).first()).toBeVisible({ timeout: 30_000 });
         await expect(page.getByTitle('Show Grid')).toHaveClass(/bg-blue-600/);
 
         const changed = createChangedLegacyWorkspace(large, 'Built proof drift', 'built-proof');
@@ -715,8 +702,8 @@ test.describe('local workspace migration release gate', () => {
         await writeLegacyRaw(oldPage, changed.raw);
         await waitForLegacyStorageEvent(page);
         await expect(page.getByRole('heading', { name: 'We found two different saved project sets' })).toBeVisible();
-        await expect(editorPane(page)).toHaveCount(0);
-        const editorBundle = await downloadJson(page, 'Download editor projects');
+        await expect(editorPane(page).first()).toBeHidden();
+        const editorBundle = await downloadJson(page, 'Download current saved projects');
         expect(editorBundle.workspace.projects.find(project => project.id === nearLimitProject.id))
             .toMatchObject({ initialState: { showGrid: true } });
         await oldPage.close();

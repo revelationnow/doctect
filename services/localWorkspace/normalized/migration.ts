@@ -14,7 +14,7 @@ export interface NormalizationEnvironment {
   assertCurrent?(): void;
   signal?: AbortSignal;
   work?: WorkRuntime;
-  onProgress?(progress: { phase: 'discovering' | 'staging' | 'verifying' | 'activating' | 'active'; completed?: number; total?: number }): void;
+  onProgress?(progress: { phase: 'opening' | 'discovering' | 'staging' | 'verifying' | 'activating' | 'active'; completed?: number; total?: number }): void;
   checkpoint?(point: NormalizationCheckpoint): void;
 }
 export type NormalizationResult = (HistoricalNonReady & { normalizationExports: NormalizationRecoverySource[] }) | {
@@ -75,8 +75,9 @@ async function runNormalization(environment: NormalizationEnvironment, work: Wor
     work.assertCurrent();
   };
   try {
-    progress('discovering');
+    progress('opening');
     await work.wait(environment.ensurePhysicalLayout); work.setContext('discovery');
+    progress('discovering');
     const before = work.snapshot().legacyReadBytes;
     const capturedLegacy = await environment.historical.captureObservedLegacy(current, work);
     // Each successful capture measured three equal raw images. Prior generation
@@ -117,6 +118,7 @@ async function runNormalization(environment: NormalizationEnvironment, work: Wor
       throw new Error('Legacy source no longer matches normalization');
     }
     await fence(); let attempt = await session.reserve(); work.assertCurrent();
+    if (attempt.state === 'staging' && attempt.nextRecord < attempt.recordCount) progress('staging', attempt.nextRecord, attempt.recordCount);
     while (attempt.state === 'staging' && attempt.nextRecord < attempt.recordCount) {
       attempt = await session.stageNext(); work.assertCurrent();
       progress('staging', attempt.nextRecord, attempt.recordCount);

@@ -1,6 +1,6 @@
 import type { LocalWorkspaceEnvironment } from './LocalWorkspaceStore';
 import { createIndexedDbAdapter } from './indexedDbAdapter';
-import { createHistoricalBootstrap, receiptFor } from './historicalBootstrap';
+import { createHistoricalBootstrap, receiptFor, recovery } from './historicalBootstrap';
 import { normalizeWorkspace } from './normalized/migration';
 import { createWorkspaceWorkerClient, type WorkspaceWorkerFactory } from './workspaceWorkerClient';
 import { createWorkspaceStartupRepository } from './workspaceStartup';
@@ -69,6 +69,9 @@ export function createNormalizedWorkspaceStore(environment: LocalWorkspaceEnviro
     const sourceLease = sourceLifetime, sourceVersion = sourceGeneration;
     const sourceCurrent = () => { current(); if (sourceLease.signal.aborted || sourceLease !== sourceLifetime || sourceVersion !== sourceGeneration)
       throw new WorkspaceStoreError('Legacy source changed during editor admission.', 'authority-lost'); };
+    // An older tab rewrote legacy projects mid-upgrade: retryable against the new source, not a storage failure.
+    const legacyChanging = (): Blocking | undefined => !session && !disposed && (sourceLease.signal.aborted || sourceVersion !== sourceGeneration)
+      ? recovery('legacy-changing', { availableExports: ['legacy-current'] }) : undefined;
     if (retry && session && last?.status === 'ready') {
       try {
         if (await session.tryResumeAborted(sourceCurrent)) {
@@ -83,7 +86,7 @@ export function createNormalizedWorkspaceStore(environment: LocalWorkspaceEnviro
     const historical = createHistoricalBootstrap({ ...environment, adapter: () => adapter, generation: () => sourceGeneration });
     try {
       const normalized = await normalizeWorkspace({ repository, historical, ensurePhysicalLayout: () => adapter.open(), assertCurrent: sourceCurrent,
-        onProgress(value) { const phase = value.phase === 'discovering' ? 'checking-existing-projects' : value.phase === 'staging' ? 'copying-projects'
+        onProgress(value) { const phase = value.phase === 'opening' ? 'opening-local-storage' : value.phase === 'discovering' ? 'checking-existing-projects' : value.phase === 'staging' ? 'copying-projects'
           : value.phase === 'verifying' ? 'verifying-projects' : 'finishing-upgrade';
           for (const observer of observers) if (!observer.signal?.aborted) try { observer.onPhase?.(phase); } catch { /* Passive progress. */ }
         } });
@@ -109,7 +112,8 @@ export function createNormalizedWorkspaceStore(environment: LocalWorkspaceEnviro
         } catch { current(); /* A failed independent read cannot grant recovery admission. */ }
         const result: WorkspaceBootstrapResult = normalized.status === 'recovery' ? { status: 'recovery', recovery: { ...normalized.recovery,
           availableExports: ['legacy-current', ...normalized.normalizationExports.map(value => value.kind === 'normalized-active' ? 'normalized-active' as const : 'normalization-source' as const)] } }
-          : normalized.status === 'unavailable' && session ? nonready(new WorkspaceStoreError(normalized.message, 'unavailable')) : normalized;
+          : normalized.status === 'unavailable' && session ? nonready(new WorkspaceStoreError(normalized.message, 'unavailable'))
+          : normalized.status === 'unavailable' ? legacyChanging() ?? normalized : normalized;
         last = result; return result;
       }
       let candidate = session;
@@ -128,7 +132,7 @@ export function createNormalizedWorkspaceStore(environment: LocalWorkspaceEnviro
         receipt = ledger?.state === 'verified' ? receiptFor(ledger) : undefined;
         session = candidate; last = ready(session.getSnapshot().workspace); session.unblock(); return last;
       } catch (error) { if (candidate !== session) candidate?.dispose(); else session?.pause(); throw error; }
-    } catch (error) { const result = nonready(error); last = result; return result; }
+    } catch (error) { const result = legacyChanging() ?? nonready(error); last = result; return result; }
     finally { adapter.close(); }
   }
   async function snapshot(): Promise<WorkspaceSnapshot> {

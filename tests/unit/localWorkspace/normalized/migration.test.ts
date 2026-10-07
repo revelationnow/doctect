@@ -3429,7 +3429,8 @@ describe('adversarial normalization acceptance', () => {
         } });
       hook.mockRestore(); hashHook.mockRestore();
       expect(result.status).toBe('active'); expect(hashes).toBeGreaterThan(0); expect(writers).toBe(0);
-      expect(progress.length).toBeGreaterThan(1); expect(progress[0].completed).toBe(64);
+      // Copying is announced at the durable reserved position before the first chunk is staged.
+      expect(progress.length).toBeGreaterThan(2); expect(progress[0].completed).toBe(0); expect(progress[1].completed).toBe(64);
       expect(progress.at(-1)!.completed).toBe(progress.at(-1)!.total);
       expect(progress.every((entry, i) => i === 0 || entry.completed > progress[i - 1].completed)).toBe(true);
       expect((await physicalRows(h)).normalizationLedger[0]).toMatchObject({ nextRecord: progress.at(-1)!.total, state: 'active' });

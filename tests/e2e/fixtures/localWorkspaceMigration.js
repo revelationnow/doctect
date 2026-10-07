@@ -330,6 +330,31 @@ export const inspectWorkspaceDatabase = page => page.evaluate(async ({ databaseN
     }
 }, { databaseName: WORKSPACE_DB_NAME, stores: WORKSPACE_STORE_NAMES });
 
+// The v3 authority: the normalized manifest and ledger. Version-2 stores stay frozen as the historical source.
+export const inspectNormalizedWorkspace = page => page.evaluate(async databaseName => {
+    const database = await new Promise((resolve, reject) => {
+        const request = indexedDB.open(databaseName);
+        request.addEventListener('success', () => resolve(request.result), { once: true });
+        request.addEventListener('error', () => reject(request.error), { once: true });
+    });
+    try {
+        const read = (store, method, key) => new Promise((resolve, reject) => {
+            if (!database.objectStoreNames.contains(store)) return resolve(method === 'get' ? undefined : []);
+            const request = database.transaction(store, 'readonly').objectStore(store)[method](key);
+            request.addEventListener('success', () => resolve(request.result), { once: true });
+            request.addEventListener('error', () => reject(request.error), { once: true });
+        });
+        return {
+            version: database.version,
+            manifest: await read('workspace', 'get', 'current'),
+            normalizationLedger: await read('normalizationLedger', 'getAll'),
+            legacyBackups: (await read('legacyBackup', 'getAll')).filter(backup => backup.kind !== 'normalization-source'),
+        };
+    } finally {
+        database.close();
+    }
+}, WORKSPACE_DB_NAME);
+
 export const putWorkspaceRecord = (page, storeName, value) => page.evaluate(
     async ({ databaseName, targetStore, record }) => {
         const database = await new Promise((resolve, reject) => {
@@ -400,8 +425,7 @@ export const installBootstrapPhaseHold = (page, targetPhase) => page.evaluate(as
         const transaction = originalTransaction.apply(this, args);
         const mode = args[1] ?? 'readonly';
         const matchingMode = (target === 'checking-existing-projects' && mode === 'readonly')
-            || (target === 'copying-projects' && mode === 'readwrite')
-            || (target === 'verifying-projects' && mode === 'readonly');
+            || (target === 'copying-projects' && mode === 'readwrite');
         if (!selectedTransaction && currentPhase === target && matchingMode) {
             selectedTransaction = transaction;
         }
@@ -424,6 +448,18 @@ export const installBootstrapPhaseHold = (page, targetPhase) => page.evaluate(as
     subtlePrototype.digest = async function(...args) {
         await hold();
         return originalDigest.apply(this, args);
+    };
+
+    // Normalized copy and verification run in the workspace worker, out of reach
+    // of the page's IndexedDB prototypes: hold the next request sent during the phase.
+    const originalPostMessage = Worker.prototype.postMessage;
+    Worker.prototype.postMessage = function(...args) {
+        if (!released && currentPhase === target
+            && (target === 'copying-projects' || target === 'verifying-projects')) {
+            void hold().then(() => originalPostMessage.apply(this, args));
+            return;
+        }
+        return originalPostMessage.apply(this, args);
     };
 
     const originalBootstrap = localWorkspaceStore.bootstrap.bind(localWorkspaceStore);
@@ -461,18 +497,27 @@ export const installBootstrapResultCapture = page => page.evaluate(async () => {
 export const readCapturedBootstrapResult = page => page.evaluate(() =>
     window.__capturedWorkspaceBootstrapResult);
 
+// Crash on the first legacy read after the transaction that commits the
+// `copied` ledger completes, wherever the bootstrap reads legacy next.
 export const installCrashAfterCopied = page => page.evaluate(keys => {
-    const original = Storage.prototype.getItem;
-    let reads = 0;
-    Storage.prototype.getItem = function(key) {
-        if (this === localStorage && keys.includes(key)) {
-            reads += 1;
-            if (reads === 13) {
-                Storage.prototype.getItem = original;
-                throw new Error('Injected crash after committed copy.');
+    const originalGetItem = Storage.prototype.getItem;
+    let armed = false;
+    for (const method of ['put', 'add']) {
+        const original = IDBObjectStore.prototype[method];
+        IDBObjectStore.prototype[method] = function(value, key) {
+            if (this.name === 'migrationLedger' && value?.state === 'copied') {
+                this.transaction.addEventListener('complete', () => { armed = true; }, { once: true });
+                IDBObjectStore.prototype[method] = original;
             }
+            return original.call(this, value, key);
+        };
+    }
+    Storage.prototype.getItem = function(key) {
+        if (armed && this === localStorage && keys.includes(key)) {
+            Storage.prototype.getItem = originalGetItem;
+            throw new Error('Injected crash after committed copy.');
         }
-        return original.call(this, key);
+        return originalGetItem.call(this, key);
     };
 }, LEGACY_DOCUMENT_KEYS);
 
@@ -669,9 +714,12 @@ export const prepareNearLimitLegacyWorkspaceFromBuiltEditor = async page => {
     await resetLocalWorkspace(page);
     await page.goto('/app');
     await page.getByTestId('project-pane').first().waitFor();
-    const blankInspection = await inspectWorkspaceDatabase(page);
-    const baseState = blankInspection?.records.projects[0]?.project?.initialState;
-    if (!baseState) throw new Error('Built editor did not create a seed project state.');
+    // The built editor's own JSON download of its fresh seed project.
+    const downloadPromise = page.waitForEvent('download');
+    await page.locator('[data-testid="project-tab"]').first().getByTitle('Close Project', { exact: true }).click();
+    await page.getByRole('button', { name: 'Save JSON & Close', exact: true }).click();
+    const baseState = JSON.parse(await streamText(await (await downloadPromise).createReadStream()));
+    if (!baseState?.nodes || !baseState?.variants) throw new Error('Built editor did not create a seed project state.');
 
     await resetLocalWorkspace(page);
     const large = await createLargeLegacyWorkspace(page, baseState);
@@ -727,6 +775,7 @@ export const installProjectPreparationWorkerCapture = page => page.addInitScript
         workers: [],
         requests: 0,
         responses: 0,
+        workspaceRequests: [],
         transactions: [],
     };
     globalThis.__workspaceProjectPreparationWorkers = capture;
@@ -750,6 +799,8 @@ export const installProjectPreparationWorkerCapture = page => page.addInitScript
             const postMessage = worker.postMessage.bind(worker);
             worker.postMessage = (...postArgs) => {
                 if (postArgs[0]?.type === 'prepare-project') capture.requests += 1;
+                const workspaceRequest = postArgs[0]?.request?.type;
+                if (typeof workspaceRequest === 'string') capture.workspaceRequests.push(workspaceRequest);
                 return postMessage(...postArgs);
             };
             worker.addEventListener('message', event => {
