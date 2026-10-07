@@ -405,7 +405,7 @@ describe('The Sticker Press product guards', () => {
             if (hslFunc.test(content)) errors.push(`hsl()/hsla(): ${content.slice(0, 80)}`);
             if (forbiddenTag.test(content)) errors.push(`forbidden tag: ${content.slice(0, 80)}`);
             if (eventHandlerAttr.test(content)) errors.push(`on* handler attribute: ${content.slice(0, 80)}`);
-            (content.match(/#[0-9a-f]+/gi) ?? []).forEach(hex => {
+            (content.match(/#[0-9a-f]+/gi) ?? ([] as string[])).forEach(hex => {
                 const digits = hex.length - 1;
                 if (digits !== 3 && digits !== 6) errors.push(`${digits}-digit hex '${hex}': ${content.slice(0, 80)}`);
             });

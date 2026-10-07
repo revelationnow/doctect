@@ -22,6 +22,9 @@ export default defineConfig(({ mode }) => {
     test: {
       globals: true,
       environment: 'jsdom',
+      // Many suites do seconds of real work (gallery samples, normalized storage,
+      // PDF generation); under default parallel workers they exceed the 5s default.
+      testTimeout: 30_000,
       setupFiles: './tests/setup.ts',
       // '**/node_modules/**' (not just the bare 'node_modules' segment) so vitest doesn't
       // recurse into a nested checkout's own node_modules - e.g. a git worktree living under

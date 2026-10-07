@@ -10,6 +10,18 @@ import {
 describe('recovery source presentation', () => {
   it('explains every durable and open-work project set with unique actions', () => {
     expect(RECOVERY_SOURCE_PRESENTATION).toEqual({
+      'normalized-active': {
+        title: 'Current saved projects',
+        explanation: 'Independently verified projects in the incremental local workspace.',
+        actionLabel: 'Download current saved projects',
+        filename: 'doctect-normalized-projects.json',
+      },
+      'normalization-source': {
+        title: 'Projects retained during the local update',
+        explanation: 'Unchanged source retained before the incremental workspace was created. It is not a current saved version.',
+        actionLabel: 'Download retained update source',
+        filename: 'doctect-normalization-source.json',
+      },
       'indexeddb-workspace': {
         title: 'Projects saved by this editor',
         explanation: 'Project set stored by the current Doctect editor.',
@@ -38,7 +50,7 @@ describe('recovery source presentation', () => {
     expect(new Set([
       ...Object.values(RECOVERY_SOURCE_PRESENTATION).map(item => item.actionLabel),
       OPEN_WORKSPACE_PRESENTATION.actionLabel,
-    ]).size).toBe(4);
+    ]).size).toBe(6);
   });
 
   it('pins helper and action-error language', () => {

@@ -80,7 +80,7 @@ export const CODE_MAP = {
         { id: 'sandbox-parse', file: 'services/generatorSandbox.ts', start: 'const parseMessage = (message: unknown, requestToken: string)', lines: 21 },
         { id: 'migration-trigger', file: 'server/migrations/index.js', start: "id: '012_session_suspension_guard',", lines: 30 },
         { id: 'publish-route', file: 'server/routes/projects.js', start: "router.post('/api/projects/:id/publish'", lines: 26 },
-        { id: 'validate-appstate', file: 'shared/validateAppState.js', start: 'export const validateAppState = (state)', lines: 24 },
+        { id: 'validate-appstate', file: 'shared/validateAppState.js', start: 'function* validateAppStateTraversal(state, mode, synchronous, measuredBytes)', lines: 34 },
         { id: 'email-seal', file: 'server/email.js', start: '// Fail-safe: no RESEND_API_KEY', lines: 14 },
         { id: 'auth-hooks', file: 'server/auth.js', start: 'databaseHooks: {', lines: 30 },
         { id: 'spa-fallback', file: 'server/app.js', start: '// Must pass a relative filename', lines: 8 },
@@ -125,7 +125,7 @@ export const CODE_MAP = {
         { id: 'validate-appstate', title: 'validateAppState — the one gate every stored AppState passes',
           tagline: 'Create, commit, merge: three server call sites, one shared structural validator.',
           sections: [
-            { text: 'The browser-safe implementation lives in shared/validateAppState.js; server/validateAppState.js is a compatibility re-export. Shape checks, a 5 MB cap, and node/element count caps are enforced before anything is stored. The server has exactly three call sites, one per path that accepts an AppState from a client: project create, commits, and the merge endpoint’s produced result (a merge that validates badly refuses rather than writing). Publish is deliberately NOT one of them: it takes listing fields and an If-Match head, never a state, and pins a commit that was already validated on the way in.', anchorId: 'validate-appstate' },
+            { text: 'The browser-safe implementation lives in shared/validateAppState.js; server/validateAppState.js is a compatibility re-export. One generator traversal backs both the synchronous validateAppState and the local-workspace worker’s cooperative validateAppStateWork. Shape checks, a 5 MB cap, and node/element count caps are enforced before anything is stored. The server has exactly three call sites, one per path that accepts an AppState from a client: project create, commits, and the merge endpoint’s produced result (a merge that validates badly refuses rather than writing). Publish is deliberately NOT one of them: it takes listing fields and an If-Match head, never a state, and pins a commit that was already validated on the way in.', anchorId: 'validate-appstate' },
             { text: 'It deliberately validates structure, not semantics: unknown extra fields ride along (that tolerance is what let layers/overflow/padding ship without server lockstep), while the client-side schema migration owns upgrading old documents.' },
           ] },
         { id: 'dotenv-seals', title: 'The dotenv seals — deleting a variable is an invitation',

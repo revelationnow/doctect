@@ -70,15 +70,20 @@ describe('generator provenance metadata', () => {
   });
 
   it('never passes a whole script to TextEncoder in cooperative validation', async () => {
-    const encode = TextEncoder.prototype.encode;
+    const encode = TextEncoder.prototype.encode, encodeInto = TextEncoder.prototype.encodeInto;
     let widest = 0;
     vi.spyOn(TextEncoder.prototype, 'encode').mockImplementation(function (value: string) {
       widest = Math.max(widest, value.length);
       return encode.call(this, value);
     });
+    vi.spyOn(TextEncoder.prototype, 'encodeInto').mockImplementation(function (value: string, target: Uint8Array) {
+      widest = Math.max(widest, value.length);
+      return encodeInto.call(this, value, target);
+    });
     const value = { ...source, templateScript: 'x'.repeat(64 * 1024) };
     expect((await makeWorkHarness().runtime.run(validateGeneratorProvenanceWork(value))).ok).toBe(true);
-    expect(widest).toBeGreaterThan(0); expect(widest).toBeLessThanOrEqual(16);
+    // utf8LengthWork counts bounded 512-code-unit fragments.
+    expect(widest).toBeGreaterThan(0); expect(widest).toBeLessThanOrEqual(512);
   });
 
   it('keeps native byte counting on the synchronous loader instead of tiny-step dispatch', () => {
