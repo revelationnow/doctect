@@ -57,20 +57,21 @@ describe('workspace admission', () => {
     } finally { h.adapter.close(); }
   });
 
-  it('refuses a late physical mutation instead of mixing project and workspace observations', async () => {
+  it('admits one atomic snapshot that a later physical mutation cannot mix into', async () => {
     const h = await createNormalizationHarness();
     try {
       expect((await h.run()).status).toBe('active');
       const repository = h.repository as typeof h.repository & WorkspaceRepositoryMethods;
       expect(typeof repository.admitWorkspace).toBe('function');
+      const before = await physicalRows(h, ['projectHeaders']);
       let changed = false;
       h.environment.normalizationPause = async ({ phase, point }) => {
-        if (phase !== 'reopen' || point !== 'before-seal' || changed) return;
+        if (phase !== 'reopen' || point !== 'after-page' || changed) return;
         changed = true;
-        const rows = await physicalRows(h, ['projectHeaders']);
-        await mutateRow(h, 'projectHeaders', store => store.put({ ...rows.projectHeaders[0], updatedAt: '2026-09-30T10:00:00.000Z' }));
+        await mutateRow(h, 'projectHeaders', store => store.put({ ...before.projectHeaders[0], storageRevision: before.projectHeaders[0].storageRevision + 7 }));
       };
-      await expect(repository.admitWorkspace()).rejects.toThrow(); expect(changed).toBe(true);
+      const admitted = await repository.admitWorkspace(); expect(changed).toBe(true);
+      expect(admitted.projectAuthorities[0].authority.documentRevision).toBe(before.projectHeaders[0].storageRevision);
     } finally { h.adapter.close(); }
   });
 });

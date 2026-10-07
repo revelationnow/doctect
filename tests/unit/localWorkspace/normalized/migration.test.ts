@@ -297,7 +297,7 @@ it('metadata proof survives active migration reopen while retained source stays 
   } finally { h.adapter.close(); }
 });
 
-it.each(['bind', 'export'] as const)('selected admission %s uses one bounded seal and no repeated native proof hashes', async consumer => {
+it.each(['export'] as ('bind' | 'export')[])('selected admission %s uses one bounded seal and no repeated native proof hashes', async consumer => {
   const h = await activeReadFixture(); let seals = 0; let pages = 0;
   const hashes = vi.spyOn(h.environment, 'hash'); const scans = vi.spyOn(FakeObjectStore.prototype, 'getAll');
   try {
@@ -402,7 +402,7 @@ it.each(['initial', 'already-active'] as const)('normalizer reuses coupled activ
   } finally { h.adapter.close(); }
 });
 
-it.each(['bind', 'export'] as const)('selected admission %s rejects an unselected target changed before seal', async consumer => {
+it.each(['export'] as ('bind' | 'export')[])('selected admission %s rejects an unselected target changed before seal', async consumer => {
   const first = makeIncrementalProject(1); const other = { ...structuredClone(first), id: 'other-project' };
   const h = await createNormalizationHarness({ legacyValues: { [LEGACY_KEYS.projects]: JSON.stringify([first, other]) } });
   let fired = false;
@@ -422,6 +422,25 @@ it.each(['bind', 'export'] as const)('selected admission %s rejects an unselecte
     await expect(consume()).rejects.toBeDefined();
     await mutateRow(h, 'projectNodes', store => store.put(original));
     await expect(consume()).resolves.toBeDefined();
+  } finally { h.adapter.close(); }
+});
+
+it('trusted bind reads only the selected project in one transaction without a seal', async () => {
+  const first = makeIncrementalProject(1); const other = { ...structuredClone(first), id: 'other-project' };
+  const h = await createNormalizationHarness({ legacyValues: { [LEGACY_KEYS.projects]: JSON.stringify([first, other]) } });
+  let seals = 0; let pages = 0;
+  try {
+    expect((await h.run()).status).toBe('active');
+    const selected = await activeImage(h); expect(selected.scope.projectId).toBe(first.id);
+    const original = (await physicalRows(h)).projectNodes.find(row => row.key[1] === other.id)!;
+    await mutateRow(h, 'projectNodes', store => store.put({ ...original, value: { ...original.value, title: 'unselected-change' } }));
+    h.environment.normalizationPause = point => {
+      if (point.phase !== 'reopen') return;
+      if (point.point === 'before-seal') seals++;
+      if (point.point === 'after-page') pages++;
+    };
+    await expect(h.repository.bindAdmittedProject(selected)).resolves.toMatchObject({ documentRevision: 0 });
+    expect(seals).toBe(0); expect(pages).toBe(1);
   } finally { h.adapter.close(); }
 });
 

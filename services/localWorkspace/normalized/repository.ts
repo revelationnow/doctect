@@ -561,6 +561,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
   }
   function createNormalizationSession(work: WorkRuntime): {
     session: NormalizationPreparationSession; retained(): Promise<NormalizationSource>; selected(scope: ProjectScope): Promise<SelectedActiveRead | undefined>;
+    trustedSelected(scope: ProjectScope): Promise<SelectedActiveRead | undefined>;
     workspaceAdmission(editingCustody?: Ownership): Promise<WorkspaceAdmissionRead | undefined>;
     recoveryCapture(): Promise<WorkspaceCapture>;
     source(): Promise<NormalizationSource>;
@@ -1197,6 +1198,122 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
       releasePreparation(); return result;
       } finally { reconstructor.dispose(); }
     }
+    /** Editor/workspace admission of an already activated generation. Activation
+     * verified the migration once; ordinary opens trust that ledger and read the
+     * current records in one readonly transaction (an atomic snapshot, so no
+     * seal is needed). Every project is still reconstructed and checked with the
+     * plain codec/validateAppState path. Proof chains, source archives and
+     * backups are not re-derived here; export and recovery keep the full read. */
+    // Exhausts the current quantum so progress replies and cancellation can run
+    // between the large synchronous steps of a trusted open.
+    const checkpoint = () => work.run(effect(1024, () => {}));
+    const trustedFailure = (message: string): never => {
+      const failure = new RepositoryConflict('verification-failed'); failure.message = message; throw failure;
+    };
+    /** One readonly transaction over the active generation; `only` limits project
+     * stores to that member's key range. */
+    async function trustedCapture(only?: ProjectScope) {
+      releasePreparation(); expectedMarker = undefined; markerOwner?.release(); markerOwner = undefined;
+      work.assertCurrent();
+      const names = ['normalizationLedger', 'workspace', 'presets', 'pendingImports', ...stores] as const;
+      const rows = new Map<string, unknown[]>();
+      const range = only && IDBKeyRange.bound([only.storageGeneration, only.projectId], [only.storageGeneration, only.projectId, []]);
+      const { db } = await open();
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const tx = db.transaction([...names], 'readonly');
+          tx.oncomplete = () => resolve(); tx.onabort = () => reject(tx.error ?? new Error('Active read aborted'));
+          for (const name of names) {
+            const request = tx.objectStore(name).getAll(range && stores.includes(name as ProjectStoreName) ? range : undefined);
+            request.onsuccess = () => { rows.set(name, request.result); };
+          }
+        });
+      } finally { db.close(); }
+      await pause('after-page'); await checkpoint();
+      const markers = rows.get('normalizationLedger')!;
+      if (markers.length === 0) return undefined;
+      requireContract(markers.length === 1, 'Unrecognized normalization attempt');
+      const marker = markers[0] as NormalizationAttempt;
+      validateNormalizationLedger(marker);
+      if (marker.state !== 'active') return undefined;
+      const workspaceRows = rows.get('workspace')!;
+      if (workspaceRows.length !== 1) trustedFailure('Invalid active workspace');
+      let workspace: NormalizedWorkspaceManifest;
+      try { workspace = runSync(validateWorkspaceManifestWork(workspaceRows[0])); } catch { return trustedFailure('Invalid active workspace'); }
+      if (workspace.storageGeneration !== marker.storageGeneration) trustedFailure('Workspace activation mismatch');
+
+      const images = new Map<string, NormalizedProject>();
+      for (const member of workspace.members) if (!only || member.projectId === only.projectId) images.set(member.projectId,
+        image({ storageGeneration: workspace.storageGeneration, projectId: member.projectId, incarnation: member.incarnation }));
+      for (const store of stores) for (const raw of rows.get(store)!) {
+        const record = raw as PhysicalRecord; const project = images.get(record.key[1]);
+        if (!project) return trustedFailure('Unexpected normalization project membership');
+        const scope = prefix(project.scope);
+        if (record.key[0] !== scope[0] || store !== 'projectHeaders' && record.key[2] !== scope[2]) trustedFailure('Unexpected normalization scope');
+        setRecord(project, store, record);
+      }
+      return { marker, workspace, images, rows };
+    }
+    async function trustedProject(records: NormalizedProject) {
+      await checkpoint();
+      const { header, preferences } = pair(records);
+      let external: WorkspaceProject;
+      try { external = reconstructProject(records); } catch (error) { return trustedFailure(`Invalid active project: ${String((error as Error)?.message ?? error)}`); }
+      const foldsRecord = records.projectExtensions.get(recordKey([...prefix(records.scope), 'folds']))!;
+      const foldRecordDigest = await hash(frameRecord('projectExtensions', foldsRecord));
+      if (preferences.revision && foldRecordDigest !== preferences.foldRecordDigest) trustedFailure('Fold record mismatch');
+      return { external, preferences, stamp: authority(header, preferences), foldRecordDigest, foldsRecord };
+    }
+    async function trustedSelected(scope: ProjectScope): Promise<SelectedActiveRead | undefined> {
+      const captured = await trustedCapture(scope);
+      if (!captured) return undefined;
+      const records = captured.images.get(scope.projectId);
+      if (!records || records.scope.incarnation !== scope.incarnation) return undefined;
+      const { external, preferences, stamp, foldRecordDigest } = await trustedProject(records);
+      return { records, admission: { external, preferences, stamp, foldRecordDigest } };
+    }
+    async function trustedWorkspaceAdmission(editingCustody?: Ownership): Promise<WorkspaceAdmissionRead | undefined> {
+      const captured = await trustedCapture();
+      if (!captured) return undefined;
+      const { marker, workspace, images, rows } = captured;
+      const fail = trustedFailure;
+
+      const projectAuthorities: { scope: ProjectScope; authority: AuthorityStamp }[] = [];
+      const editingProjects: WorkspaceProject[] = [], editingOwners: Owner[] = [];
+      for (const member of workspace.members) {
+        const records = images.get(member.projectId)!;
+        const { external, preferences, stamp, foldRecordDigest, foldsRecord } = await trustedProject(records);
+        projectAuthorities.push({ scope: { ...records.scope }, authority: { ...stamp } });
+        if (!editingCustody) continue;
+        editingProjects.push(external);
+        editingOwners.push({ records, references: buildReferenceIndex(partitionState(external.initialState).document),
+          folds: createFoldOverlayIndex(preferences, foldsRecord), stamp, lastVerified: { ...stamp }, valid: true,
+          ...(preferences.revision === 0 && preferences.commitProof === null ? { initialFoldRecordDigest: foldRecordDigest } : {}) });
+      }
+
+      const ordered = <T extends { position: number }>(name: 'presets' | 'pendingImports', descriptors: readonly { id: string; position: number }[]): T[] => {
+        const live = [...rows.get(name)! as T[]].sort((a, b) => a.position - b.position);
+        if (live.length !== descriptors.length) fail('Active ancillary membership mismatch');
+        live.forEach((row, index) => {
+          const descriptor = descriptors[index], id = (row as { id?: unknown }).id;
+          if (typeof id !== 'string' || id !== descriptor.id || row.position !== descriptor.position) fail('Active ancillary descriptor mismatch');
+        });
+        return live;
+      };
+      const presets = ordered<{ position: number; preset: WorkspaceSnapshot['customPresets'][number] }>('presets', workspace.presets);
+      const pendingImports = ordered<StoredPendingImport>('pendingImports', workspace.pendingImports);
+      work.assertCurrent();
+
+      const result: WorkspaceAdmissionRead = { authority: marker as ActiveAuthority, workspace,
+        catalog: runSync(projectWorkspaceCatalogWork(workspace)), projectAuthorities };
+      if (editingCustody) {
+        const snapshot: WorkspaceSnapshot = { projects: editingProjects, activeProjectId: workspace.activeProjectId,
+          customPresets: presets.map(row => row.preset), pendingImports: pendingImports.map(row => row.pendingImport) };
+        result.editing = { owners: editingOwners, active: { authority: result.authority, workspace, snapshot,
+          source: { kind: marker.sourceKind, acceptedLegacyDigest: workspace.legacyAcceptance.kind === 'accepted' ? workspace.legacyAcceptance.digest : null } } };
+      }
+      return result;
+    }
     async function retainedRead(allowFresh = false): Promise<NormalizationSource> {
       releasePreparation();
       const hint = await pointMarker();
@@ -1402,7 +1519,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
     };
     return { session, retained: () => operation('retained', () => retainedRead()),
       source: () => operation('prepare', () => retainedRead(true)), stagedRead, strictTransition, strictReserve, strictStage,
-      workspaceAdmission: editingCustody => operation('reopen', () => activeRead(undefined, true, editingCustody)),
+      workspaceAdmission: editingCustody => operation('reopen', () => trustedWorkspaceAdmission(editingCustody)),
       recoveryCapture: () => operation('reopen', async () => {
         retainActiveCapture = true;
         const active = await activeRead(undefined, true);
@@ -1415,7 +1532,8 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
           rows.length = 0; selections.length = 0; scopes.length = 0; dispose();
         } } satisfies WorkspaceCapture;
       }),
-      selected: (scope: ProjectScope) => operation('reopen', () => activeRead(scope)) };
+      selected: (scope: ProjectScope) => operation('reopen', () => activeRead(scope)),
+      trustedSelected: (scope: ProjectScope) => operation('reopen', () => trustedSelected(scope)) };
   }
 
   async function withRead<T>(provided: WorkRuntime | undefined, read: (context: ReturnType<typeof createNormalizationSession>) => Promise<T>): Promise<T> {
@@ -2254,7 +2372,8 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
     requireContract(active && active.authority.storageGeneration === storageGeneration, 'ingress-required');
     return active.snapshot;
   }
-  async function read(scope: ProjectScope, addresses: readonly PhysicalAddress[], phase: RepositoryOperation['phase'], bulk = false): Promise<{
+  async function read(scope: ProjectScope, addresses: readonly PhysicalAddress[], phase: RepositoryOperation['phase'], bulk = false,
+    trusted = false): Promise<{
     records: NormalizedProject; seen: Set<string>; admission?: BulkAdmission;
   }> {
     const { db, id } = await open(); const records = image(scope); const seen = new Set<string>();
@@ -2265,7 +2384,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
     const values: { operation: RepositoryOperation; value: unknown }[] = [];
     try {
       if (bulk && sourceStores.some(store => db.objectStoreNames.contains(store))) {
-        const active = await withRead(undefined, context => context.selected(scope));
+        const active = await withRead(undefined, context => trusted ? context.trustedSelected(scope) : context.selected(scope));
         const project = active?.records;
         if (!project || project.scope.storageGeneration !== scope.storageGeneration || project.scope.incarnation !== scope.incarnation)
           throw new RepositoryConflict('ingress-required');
@@ -2953,7 +3072,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
       Object.values(exactFields(input, ['storageGeneration', 'projectId', 'incarnation'])).forEach(value => requireContract(typeof value === 'string' && value.length > 0, 'Invalid scope'));
       const scope = { ...input };
       return serial(scope, async () => {
-        const result = await read(scope, [], 'ingress-read', true), records = result.records;
+        const result = await read(scope, [], 'ingress-read', true, true), records = result.records;
         const { external, preferences, stamp, foldRecordDigest } = result.admission ?? await verifyBulk(records);
         owners.set(ownerKey(scope), { records, stamp, lastVerified: { ...stamp }, valid: true,
           ...(preferences.revision === 0 && preferences.commitProof === null ? { initialFoldRecordDigest: foldRecordDigest } : {}),
@@ -2968,7 +3087,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
       project = { ...project, scope: { ...project.scope } };
       return serial(project.scope, async () => {
         reconstructProject(project);
-        const result = await read(project.scope, [], 'ingress-read', true); const fresh = result.records;
+        const result = await read(project.scope, [], 'ingress-read', true, true); const fresh = result.records;
         for (const store of stores) {
           if (fresh[store].size !== project[store].size) throw new RepositoryConflict('verification-failed');
           for (const [key, record] of project[store]) {

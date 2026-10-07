@@ -103,9 +103,13 @@ it('coupled facade read-only exports do not mint editing admission', async () =>
 it('coupled startup cancellation closes its paused owner and permits a fresh authenticated attempt', async () => {
   const { createWorkspaceStartupRepository, takeStartupEditingAdmission } = await Object.values(modules)[0]();
   const work = makeWorkHarness().runtime;
+  // Hold the trusted read long enough for the worker to publish a progress reply.
+  h.environment.normalizationPause = point => point.phase === 'reopen' && point.point === 'after-page'
+    ? new Promise(resolve => setTimeout(resolve, 80)) : undefined;
   const repository = createWorkspaceStartupRepository(client, { forEditing: true, onProgress() { work.dispose(); } });
   const session = repository.openNormalizationSession(work);
   await expect(session.reopen()).rejects.toMatchObject({ name: 'AbortError' }); await session.dispose();
+  h.environment.normalizationPause = undefined;
   const next = createWorkspaceStartupRepository(client, { forEditing: true }).openNormalizationSession(makeWorkHarness().runtime);
   const active = await next.reopen(); await next.dispose();
   expect(takeStartupEditingAdmission(client, active!.snapshot)).toBeDefined();
@@ -195,11 +199,11 @@ it('coupled client stop synchronously releases registered startup payload custod
   client.dispose(); expect(releases).toBe(1); client.dispose(); expect(releases).toBe(1); remove();
 });
 
-it('coupled repository releases startup custody on cancellation before seal without installing project owners', async () => {
+it('coupled repository releases startup custody on cancellation after the active read without installing project owners', async () => {
   const work = makeWorkHarness(); let reached = false;
   const marker = (await physicalRows(h, ['normalizationLedger'])).normalizationLedger[0];
   h.environment.normalizationPause = point => {
-    if (point.phase === 'reopen' && point.point === 'before-seal') { reached = true; work.cancel(); }
+    if (point.phase === 'reopen' && point.point === 'after-page') { reached = true; work.cancel(); }
   };
   await expect(h.repository.openEditingWorkspace(work.runtime)).rejects.toMatchObject({ name: 'AbortError' });
   expect(reached).toBe(true); expect(work.runtime.snapshot().ownedHighWater).toBeGreaterThan(0);
