@@ -20,7 +20,7 @@ import { verifyProjectBirth } from './projectBaseline';
 import { captureBulkDocumentBatch, frameBulkDocumentBatch, hashBulkDocumentRequest, prepareBulkProject,
   verifyBulkProjectBaseline, verifyBulkProjectProof, type PreparedBulkProject } from './bulkProject';
 import { diffWorkspaceCatalogWork, projectWorkspaceCatalogWork } from '../workspaceCatalog';
-import { captureWorkspaceBatch, frameWorkspaceBatch, hashWorkspaceRequest, prepareWorkspaceMutation, verifyWorkspacePostconditions, WorkspaceCommandConflict,
+import { captureWorkspaceBatch, frameWorkspaceBatch, hashTrustedWorkspaceRequest, hashWorkspaceRequest, prepareWorkspaceMutation, verifyWorkspacePostconditions, WorkspaceCommandConflict,
   type CapturedWorkspaceCommand, type PreparedWorkspaceMutation, type WorkspaceAdmission, type WorkspaceBatch,
   type WorkspaceCatalog, type WorkspaceCommandResult, type WorkspaceInspection, type WorkspaceRepositoryAdmission,
   type WorkspaceRepositoryFence, type WorkspaceRepositoryMethods } from './workspaceCommands';
@@ -28,7 +28,7 @@ import { WORKSPACE_MIGRATION_ID, type LegacyBackupRecord, type NormalizationSour
 import type { WorkspaceRepositoryRecovery, WorkspaceRecoveryPreparation } from './workspaceRecovery';
 import { appendCommitWindow, authority, canonicalTimestamp, denseDataArray, exactFields, frameBatch, frameManifest, frameRecord,
   jsonBytes, privateId, requireContract, safeCounter, sameAuthority, validDigest, validateIdentity,
-  dataObjectWork, denseDataArrayWork, exactFieldsWork, isBulkCommitProof, manifestFrame, recordFrame } from './commitProof';
+  dataObject, dataObjectWork, denseDataArrayWork, exactFieldsWork, isBulkCommitProof, manifestFrame, recordFrame } from './commitProof';
 import { createFoldOverlayIndex, createFoldOverlayIndexWork, finalizePreparedChanges, preflightFoldPublication, prepareAuthoritativeFoldRefresh,
   prepareFoldOverlayChanges, publishFoldOverlayChanges, referenceProjection, validateIncrementalChanges,
   type FoldOverlayIndex, type NormalizedFoldEffect, type PreparedChanges, type ValidationContext } from './validateChanges';
@@ -60,7 +60,7 @@ export type WorkspaceStoreName = ProjectStoreName | 'workspace' | 'presets' | 'p
 export interface WorkspaceRepositoryOperation {
   phase: 'prepare-read' | 'cas-read' | 'write' | 'verify-read' | 'inspect-read';
   transactionId: number; connectionId: number; store: WorkspaceStoreName;
-  method: 'get' | 'openCursor' | 'add' | 'put' | 'delete'; key?: IDBValidKey;
+  method: 'get' | 'getAll' | 'openCursor' | 'add' | 'put' | 'delete'; key?: IDBValidKey;
 }
 export interface WorkspaceRepositoryFault {
   phase: 'before-cas' | 'after-cas' | 'before-put' | 'after-put' | 'before-delete' | 'after-delete'
@@ -87,6 +87,8 @@ export interface NormalizedEnvironment {
   onPublication?(publication: { scope: ProjectScope; authority: AuthorityStamp; kind: 'local' | 'remote' }): void;
   workspaceFault?(point: WorkspaceRepositoryFault): void;
   onWorkspaceOperation?(operation: WorkspaceRepositoryOperation): void;
+  /** Worker-only: coalesce cooperative task yields into slices of this many ms. */
+  yieldSliceMs?: number;
   workspaceReadResult?(operation: WorkspaceRepositoryOperation, value: unknown): unknown;
 }
 export interface NormalizedRepository extends WorkspaceRepositoryMethods {
@@ -1825,6 +1827,51 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
     } catch (error) { lease?.release(); throw error; }
   }
 
+  /** Same rows as captureWorkspaceRows from one readonly transaction. IndexedDB gives
+   * it a consistent snapshot, so the capture needs no closing seal. */
+  async function captureWorkspaceRowsAtomic(plan: { selections: WorkspaceSelection[]; scopes: ProjectScope[] }, work: WorkRuntime,
+    phase: WorkspaceRepositoryOperation['phase']): Promise<WorkspaceCapture> {
+    let lease: Ownership | undefined, db: IDBDatabase | undefined; const operations: WorkspaceRepositoryOperation[] = [];
+    try {
+      await work.run(effect(1, () => { lease = work.own(0, true); }));
+      const opened = await open(); db = opened.db; work.assertCurrent();
+      const raw: { key: IDBValidKey; value: unknown }[][] = plan.selections.map(() => []);
+      await work.wait(() => new Promise<void>((resolve, reject) => {
+        const tx = db!.transaction([...new Set(plan.selections.map(selection => selection.store))], 'readonly');
+        const id = ++transactionId; let failure: unknown;
+        plan.selections.forEach((selection, index) => {
+          const store = tx.objectStore(selection.store);
+          if (selection.key !== undefined) {
+            operations.push({ phase, transactionId: id, connectionId: opened.id, store: selection.store, method: 'get', key: selection.key });
+            const request = store.get(selection.key);
+            request.onsuccess = () => { if (request.result !== undefined) raw[index].push({ key: selection.key!, value: request.result }); };
+          } else {
+            operations.push({ phase, transactionId: id, connectionId: opened.id, store: selection.store, method: 'getAll' });
+            const range = workspaceRange(selection), keys = store.getAllKeys(range), values = store.getAll(range);
+            values.onsuccess = () => {
+              try {
+                requireContract(keys.result.length === values.result.length, 'Workspace capture membership changed');
+                keys.result.forEach((key, position) => raw[index].push({ key, value: values.result[position] }));
+              } catch (error) { failure = error; tx.abort(); }
+            };
+          }
+        });
+        tx.oncomplete = () => resolve(); tx.onabort = () => reject(failure ?? tx.error ?? Error('Workspace capture aborted'));
+      }));
+      work.note('pageTransactions');
+      const rows = await work.run(effect(1, () => plan.selections.map((selection, index) => raw[index].map(row => {
+        const value = environment.workspaceReadResult ? environment.workspaceReadResult(operations[index], row.value) : row.value;
+        const fields = dataObject(value), key = stores.includes(selection.store as ProjectStoreName) ? fields.key : fields.id;
+        requireContract(environment.indexedDB.cmp(row.key, key as IDBValidKey) === 0, 'Workspace physical key mismatch');
+        const bytes = runSync(rawValueWeightWork(value)).bytes, keyBytes = runSync(rawValueWeightWork(row.key)).bytes;
+        lease!.grow(bytes + keyBytes + 24); work.note('candidateRows'); work.note('candidateBytes', bytes);
+        return { key: row.key, value, bytes };
+      }))));
+      return { ...plan, rows, release: () => { lease!.release(); } };
+    } catch (error) { lease?.release(); throw error; }
+    finally { db?.close(); publishWorkspaceOperations(operations); }
+  }
+
   async function workspaceCommandCapture(capture: WorkspaceCapture, work: WorkRuntime): Promise<CapturedWorkspaceCommand & { marker: ActiveAuthority }> {
     try {
     let manifest: NormalizedWorkspaceManifest | undefined, marker: ActiveAuthority | undefined;
@@ -2060,7 +2107,8 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
         input = await capturedPromise; work.assertCurrent();
         state.recovery?.dispose();
         record.bytes = await work.run(frameBytesWork(canonicalFrame({ identity: record.identity, before: record.before, digest: '0'.repeat(64) })));
-        record.digest = await hashWorkspaceRequest(input.batch, work);
+        // The worker trusts its own request framing: native twin, computed once per commit.
+        const requestDigest = record.digest = await hashTrustedWorkspaceRequest(input.batch, hash);
         const remembered = state.attempts.get(record.identity.commandId);
         if (remembered && (!remembered.digest || remembered.digest !== record.digest)) throw new RepositoryConflict('identity-mismatch');
         requireContract(input.batch.storageGeneration === state.authority.storageGeneration, 'Workspace generation changed');
@@ -2086,7 +2134,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
             projects: verified.projects, presets: verified.presets, pendingImports: verified.pendingImports };
         }
         requireContract(admittedBefore, 'Workspace authority regressed');
-        prepared = await prepareWorkspaceMutation(current, input.batch, environment.now(), work);
+        prepared = await prepareWorkspaceMutation(current, input.batch, environment.now(), work, undefined, { requestDigest, hash });
         for (const added of prepared.addProjects) {
           const previous = current.projects.find(project => project.scope.projectId === added.scope.projectId && project.scope.incarnation === added.scope.incarnation);
           requireContract(previous, 'Missing new project absence capture');
@@ -2105,11 +2153,12 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
         capture.release(); capture = undefined;
         work.setContext('verify', 'target', 'proof');
         environment.workspaceFault?.({ phase: 'before-readback' });
-        capture = await captureWorkspaceRows(await workspaceSelections(input.batch, prepared.manifest, work), work, 'verify-read');
+        capture = await captureWorkspaceRowsAtomic(await workspaceSelections(input.batch, prepared.manifest, work), work, 'verify-read');
         const after = await workspaceCommandCapture(capture, work);
         requireContract(await work.run(equalFrameWork(canonicalFrame(after.marker), canonicalFrame(state.authority))), 'Workspace activation changed after commit');
-        const verified = await verifyWorkspacePostconditions(input.batch, after, prepared.manifest.lastCommit!, work);
-        await sealWorkspaceCapture(capture, work); environment.workspaceFault?.({ phase: 'after-readback' }); work.assertCurrent();
+        const verified = await verifyWorkspacePostconditions(input.batch, after, prepared.manifest.lastCommit!, work,
+          { requestDigest, written: prepared.addProjects });
+        environment.workspaceFault?.({ phase: 'after-readback' }); work.assertCurrent();
         state.workspace = after.manifest;
         return { type: 'workspace-committed', outcome: verified.outcome, receipt: verified.receipt, delta: prepared.delta,
           projects: verified.projects, presets: verified.presets, pendingImports: verified.pendingImports };

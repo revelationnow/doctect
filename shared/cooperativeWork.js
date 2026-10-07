@@ -21,6 +21,14 @@ const metricNames = new Set(metrics);
 const executors = new WeakSet();
 const visitLimit = 1024;
 const byteLimit = 65536;
+// 0 keeps one task yield per quantum. A dedicated worker can coalesce quantum
+// boundaries into time slices: accounting is unchanged, only the task wait is skipped.
+let defaultYieldSliceMs = 0;
+
+export function setDefaultWorkYieldSlice(ms) {
+  if (typeof ms !== 'number' || !Number.isFinite(ms) || ms < 0) throw new RangeError('Invalid yield slice');
+  defaultYieldSliceMs = ms;
+}
 
 function enumValue(values, value) {
   if (!values.has(value)) throw new TypeError('Invalid work protocol enum');
@@ -112,10 +120,13 @@ function createTaskScheduler() {
   let timer;
   let pending;
   let disposed = false;
+  const sliceMs = defaultYieldSliceMs;
+  let sliceStart = sliceMs ? performance.now() : 0;
   function finish() {
     const task = pending;
     pending = undefined;
     timer = undefined;
+    if (sliceMs) sliceStart = performance.now();
     channel?.port1.unref?.();
     channel?.port2.unref?.();
     task?.resolve();
@@ -124,6 +135,7 @@ function createTaskScheduler() {
     yieldTask() {
       if (disposed) return Promise.reject(abortError());
       if (pending) return Promise.reject(new Error('Task already pending'));
+      if (sliceMs && performance.now() - sliceStart < sliceMs) return Promise.resolve();
       return new Promise((resolve, reject) => {
         pending = { resolve, reject };
         try {

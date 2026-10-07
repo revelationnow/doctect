@@ -55,5 +55,6 @@ export function effect<T>(visits: number, run: () => T, utf8Bytes?: number,
 export function primitive<T>(kind: NativeKind, run: () => T): Work<T>;
 export function retainWork(bytes: number): Work<Ownership>;
 export function runSync<T>(program: Work<T>): T;
+export function setDefaultWorkYieldSlice(ms: number): void;
 export function createWorkRuntime(control: WorkControl): WorkRuntime;
 export function assertWorkRuntime(value: unknown): asserts value is WorkRuntime;

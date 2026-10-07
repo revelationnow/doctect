@@ -1,24 +1,26 @@
 import type { SnapshotWorkspaceCommand, WorkspaceCustomPreset, WorkspacePendingImport } from '../contracts';
 import type { AuthorityStamp, NormalizedProject, ProjectScope } from './schema';
 import type { ImportDescriptor, PresetDescriptor, WorkspaceCommandIdentity, WorkspaceReceipt, WorkspaceStamp } from './workspaceManifest';
-import { assertWorkRuntime, effect, primitive, type Ownership, type Work, type WorkRuntime } from '../../../shared/cooperativeWork.js';
-import { canonicalBytesWork, compareStringsWork, copyEnumerableWork, rawValueWeightWork, stableSortWork } from '../../../shared/jsonWork.js';
-import { authority, canonicalTimestamp, denseDataArrayWork, exactFieldsWork, privateId, requireContract, safeCounter, validDigest } from './commitProof';
+import { assertWorkRuntime, effect, primitive, runSync, type Ownership, type Work, type WorkRuntime } from '../../../shared/cooperativeWork.js';
+import { canonicalBytesWork, canonicalText, compareStringsWork, copyEnumerableWork, rawValueWeightWork, stableSortWork } from '../../../shared/jsonWork.js';
+import { authority, canonicalTimestamp, denseDataArrayWork, exactFieldsWork, frameRecord, privateId, requireContract, safeCounter, validDigest } from './commitProof';
 import { canonicalFrame, envelopeFrame, equalFrameWork, hashFrame, orderedFrame } from './work';
-import { decomposeProjectWork, reconstructProjectWork } from './codec';
-import { createProjectBirthDigests, verifyProjectBirth } from './projectBaseline';
+import { decomposeProject, decomposeProjectWork, reconstructProjectWork } from './codec';
+import { createProjectBirthDigests, createTrustedProjectBirthDigests, verifyProjectBirth } from './projectBaseline';
 import { deriveWorkspaceIncarnation, validateWorkspaceManifestWork, workspaceManifestCoreFrame,
   type NormalizedWorkspaceManifest, type WorkspaceMember, type WorkspaceBirthOrigin } from './workspaceManifest';
 import { appendWorkspaceReceipt, verifyWorkspaceReceipts, workspaceReceiptFrame } from './workspaceCommitProof';
 import { diffWorkspaceCatalogWork, projectWorkspaceCatalogWork } from '../workspaceCatalog';
 import { checkCustomPresetWork, checkMigratedStateWork, checkPendingImportWork,
-  preparePendingImportWork, validateCustomPresetWork, validateWorkspaceProjectWork } from '../validation';
+  preparePendingImportWork, validateCustomPresetWork, validateWorkspaceProject, validateWorkspaceProjectWork } from '../validation';
 import type { WorkspaceImportAttemptProvenance, WorkspaceProject } from '../contracts';
 import type { StoredPendingImport, StoredPreset, StoredImportAttemptProvenance } from '../schema';
 import { NORMALIZED_STORE_NAMES, type ProjectHeader, type ProjectStoreName } from './schema';
 import { frameRecoverySource, prepareWorkspaceRecoveryCopies, recoveryBackupId, validateRecoverySource, type WorkspaceRecoveryIntent } from './workspaceRecovery';
 import type { RecoveryPreparationEnvironment } from '../recovery';
 import type { LegacyBackupRecord } from '../schema';
+
+const projectStores = NORMALIZED_STORE_NAMES.filter((name): name is ProjectStoreName => name !== 'normalizationLedger');
 
 export type WorkspaceLifecycleIntent = Exclude<SnapshotWorkspaceCommand, { type: 'save-project' | 'recover-legacy-as-copies' }>;
 export type WorkspaceTarget = { readonly type: 'member'; readonly scope: ProjectScope }
@@ -209,28 +211,45 @@ export async function captureWorkspaceBatch(value: unknown, work: WorkRuntime): 
   } catch (error) { owner?.release(); throw error; }
 }
 
+function requestParts(batch: WorkspaceBatch): { metadata: object; payloads: [string, unknown][] } {
+  const intent = batch.intent;
+  switch (intent.type) {
+    case 'create-and-activate-project': return { metadata: { type: intent.type }, payloads: [['project', intent.project]] };
+    case 'close-project': return { metadata: { type: intent.type, projectId: intent.projectId, successor: intent.successor !== undefined },
+      payloads: intent.successor !== undefined ? [['successor', intent.successor]] : [] };
+    case 'save-custom-preset': return { metadata: { type: intent.type }, payloads: [['preset', intent.preset]] };
+    case 'stage-import': return { metadata: { type: intent.type, ...(intent.attemptProvenance !== undefined ? { attemptProvenance: intent.attemptProvenance } : {}) },
+      payloads: [['pendingImport', intent.pendingImport]] };
+    case 'replace-staged-import': return { metadata: { type: intent.type, expected: intent.expected, attemptProvenance: intent.replacement.attemptProvenance },
+      payloads: [['pendingImport', intent.replacement.pendingImport]] };
+    case 'recover-legacy-as-copies': return { metadata: { type: intent.type, recoveryId: intent.recoveryId, sourceDigest: intent.sourceDigest },
+      payloads: [['source', intent.source]] };
+    default: return { metadata: intent, payloads: [] };
+  }
+}
+const requestFrameValue = (batch: WorkspaceBatch, metadata: object, payloads: [string, string][]) =>
+  ['doctect-workspace-request-v1', batch.storageGeneration, batch.identity, batch.expected, batch.targets, metadata, payloads];
+
 export async function hashWorkspaceRequest(batch: WorkspaceBatch, work: WorkRuntime): Promise<string> {
   await work.run(capturedFrameWork(batch));
-  const intent = batch.intent; let metadata: object = intent; const payloads: [string, string][] = [];
-  const payload = async (name: string, value: unknown) => {
+  const { metadata, payloads } = requestParts(batch), digests: [string, string][] = [];
+  for (const [name, value] of payloads) {
     // Ordered JSON framing must not erase invalid values into another request's identity.
     await work.run(canonicalBytesWork(value));
-    payloads.push([name, await hashFrame(work, 'proof', orderedFrame(value))]);
-  };
-  switch (intent.type) {
-    case 'create-and-activate-project': metadata = { type: intent.type }; await payload('project', intent.project); break;
-    case 'close-project': metadata = { type: intent.type, projectId: intent.projectId, successor: intent.successor !== undefined };
-      if (intent.successor !== undefined) await payload('successor', intent.successor); break;
-    case 'save-custom-preset': metadata = { type: intent.type }; await payload('preset', intent.preset); break;
-    case 'stage-import': metadata = { type: intent.type, ...(intent.attemptProvenance !== undefined ? { attemptProvenance: intent.attemptProvenance } : {}) };
-      await payload('pendingImport', intent.pendingImport); break;
-    case 'replace-staged-import': metadata = { type: intent.type, expected: intent.expected, attemptProvenance: intent.replacement.attemptProvenance };
-      await payload('pendingImport', intent.replacement.pendingImport); break;
-    case 'recover-legacy-as-copies': metadata = { type: intent.type, recoveryId: intent.recoveryId, sourceDigest: intent.sourceDigest };
-      await payload('source', intent.source); break;
+    digests.push([name, await hashFrame(work, 'proof', orderedFrame(value))]);
   }
-  return hashFrame(work, 'proof', canonicalFrame(['doctect-workspace-request-v1', batch.storageGeneration,
-    batch.identity, batch.expected, batch.targets, metadata, payloads]));
+  return hashFrame(work, 'proof', canonicalFrame(requestFrameValue(batch, metadata, digests)));
+}
+/** Native twin for the worker's own commit; tests pin equality with hashWorkspaceRequest. */
+export async function hashTrustedWorkspaceRequest(batch: WorkspaceBatch, hash: (text: string) => Promise<string>): Promise<string> {
+  runSync(capturedFrameWork(batch));
+  const { metadata, payloads } = requestParts(batch), digests: [string, string][] = [];
+  for (const [name, value] of payloads) {
+    canonicalText(value);
+    // Canonical validation above admits only plain JSON data, which JSON.stringify frames in ordered form.
+    digests.push([name, await hash(JSON.stringify(value))]);
+  }
+  return hash(canonicalText(requestFrameValue(batch, metadata, digests)));
 }
 
 function* findWork<T>(values: readonly T[], id: string, key: (value: T) => string): Work<T | undefined> {
@@ -325,8 +344,10 @@ async function postconditionDigest(batch: WorkspaceBatch, manifest: NormalizedWo
   }]));
 }
 
+/** The worker's own commit: request digest already computed, native hashing for new projects. */
+export interface TrustedWorkspacePreparation { requestDigest: string; hash(text: string): Promise<string> }
 export async function prepareWorkspaceMutation(captured: CapturedWorkspaceCommand, batch: WorkspaceBatch, now: string,
-  work: WorkRuntime, recoveryEnvironment?: RecoveryPreparationEnvironment): Promise<PreparedWorkspaceMutation> {
+  work: WorkRuntime, recoveryEnvironment?: RecoveryPreparationEnvironment, trusted?: TrustedWorkspacePreparation): Promise<PreparedWorkspaceMutation> {
   assertWorkRuntime(work); canonicalTimestamp(now); const owner = work.own(0);
   let recoveryCopies: Awaited<ReturnType<typeof prepareWorkspaceRecoveryCopies>> | undefined;
   try {
@@ -338,20 +359,22 @@ export async function prepareWorkspaceMutation(captured: CapturedWorkspaceComman
       pendingImports: await work.run(copyListWork(captured.manifest.pendingImports, owner)) };
     const addProjects: NormalizedProject[] = [], removeProjects: ProjectScope[] = [];
     const putPresets: StoredPreset[] = [], deletePresetIds: string[] = [], putImports: StoredPendingImport[] = [], deleteImportIds: string[] = [];
-    const requestDigest = await hashWorkspaceRequest(batch, work);
+    const requestDigest = trusted?.requestDigest ?? await hashWorkspaceRequest(batch, work);
     const member = (id: string) => work.run(findWork(next.members, id, value => value.projectId));
     const addProject = async (raw: WorkspaceProject, consumedImport: WorkspaceMember['consumedImport'] = {}) => {
-      const project = await work.run(validateWorkspaceProjectWork(raw, { warningPolicy: 'reject' }));
+      const project = trusted ? validateWorkspaceProject(raw, { warningPolicy: 'reject' })
+        : await work.run(validateWorkspaceProjectWork(raw, { warningPolicy: 'reject' }));
       requireContract(!(await member(project.id)), 'Project ID is occupied');
       const scope = { storageGeneration: next.storageGeneration, projectId: project.id,
          incarnation: await deriveWorkspaceIncarnation(next.storageGeneration, next.revision, addProjects.length, work) };
-      const records = await work.run(decomposeProjectWork(project, scope));
+      const records = trusted ? decomposeProject(project, scope) : await work.run(decomposeProjectWork(project, scope));
       const origin: WorkspaceBirthOrigin = { kind: 'workspace-command', identity: { ...batch.identity }, requestDigest,
         workspaceRevision: next.revision, memberOrdinal: addProjects.length, createdAt: now,
         authority: { documentRevision: 0, preferenceRevision: 0, foldStructureGeneration: 0 } };
       records.projectHeaders.values().next().value!.workspaceBirth = origin;
-      const birth = { ...origin, digests: await createProjectBirthDigests(records, work) };
-      owner.grow((await work.run(rawValueWeightWork(records))).bytes);
+      const birth = { ...origin, digests: trusted ? await createTrustedProjectBirthDigests(records, trusted.hash)
+        : await createProjectBirthDigests(records, work) };
+      owner.grow((trusted ? runSync(rawValueWeightWork(records)) : await work.run(rawValueWeightWork(records))).bytes);
       (next.members as WorkspaceMember[]).push({ projectId: project.id, incarnation: scope.incarnation, birth, consumedImport });
       addProjects.push(records); next.activeProjectId = project.id;
     };
@@ -558,7 +581,7 @@ const outcomeTags: Record<WorkspaceBatch['intent']['type'], readonly WorkspaceCo
 
 /** Checks fresh after-state; never reconstructs an old workspace or treats receipt presence as sufficient. */
 export async function verifyWorkspacePostconditions(batch: WorkspaceBatch, current: CapturedWorkspaceCommand,
-  receipt: WorkspaceReceipt, work: WorkRuntime): Promise<WorkspaceInspectedResult> {
+  receipt: WorkspaceReceipt, work: WorkRuntime, trusted?: { requestDigest: string; written: readonly NormalizedProject[] }): Promise<WorkspaceInspectedResult> {
   assertWorkRuntime(work); const owner = work.own(0);
   try {
     await validateCapture(current, batch, work, false);
@@ -566,7 +589,7 @@ export async function verifyWorkspacePostconditions(batch: WorkspaceBatch, curre
     requireContract(await same(work, receipt.identity, batch.identity) && await same(work, receipt.before, batch.expected)
       && await same(work, receipt.after, { revision: manifest.revision, coreDigest: manifest.coreDigest })
       && await same(work, receipt, manifest.lastCommit), 'Workspace receipt is not current');
-    requireContract(receipt.requestDigest === await hashWorkspaceRequest(batch, work), 'Workspace request identity mismatch');
+    requireContract(receipt.requestDigest === (trusted?.requestDigest ?? await hashWorkspaceRequest(batch, work)), 'Workspace request identity mismatch');
     let outcome: WorkspaceCommandResult['outcome'] | undefined;
     for (const tag of outcomeTags[batch.intent.type]) {
       if (await postconditionDigest(batch, manifest, tag, work) === receipt.postconditionDigest) {
@@ -587,6 +610,19 @@ export async function verifyWorkspacePostconditions(batch: WorkspaceBatch, curre
       requireContract(header && preferences, 'Missing created project pair');
       if (header.storageRevision !== 0 || preferences.revision !== 0 || header.foldStructureGeneration !== 0) {
         throw new WorkspaceCommandConflict('authority-changed');
+      }
+      const written = trusted?.written.find(project => project.scope.projectId === id && project.scope.incarnation === member.incarnation);
+      if (written) {
+        // This commit wrote these records and digested them for the birth; the atomic readback must equal them exactly.
+        for (const store of projectStores) {
+          requireContract(records[store].size === written[store].size, 'Created project readback mismatch');
+          for (const [key, record] of written[store]) {
+            const stored = records[store].get(key);
+            requireContract(stored !== undefined && frameRecord(store, stored) === frameRecord(store, record), 'Created project readback mismatch');
+          }
+        }
+        await work.run(effect(1, () => { owner.grow(80); projects.push({ scope: { ...records.scope }, authority: authority(header, preferences), records }); }));
+        return;
       }
       await verifyProjectBirth(records, member, work);
       const external = await work.run(reconstructProjectWork(records));

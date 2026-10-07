@@ -8,7 +8,7 @@ import { WorkspaceCommandConflict, type WorkspaceRepositoryAdmission, type Works
 import type { WorkspaceRepositoryRecovery } from './workspaceRecovery';
 import { createWorkspaceStartupOwner } from './startup';
 import { isStartupType, type WorkspaceStartupRequest } from '../workspaceStartupProtocol';
-import { createWorkRuntime, effect } from '../../../shared/cooperativeWork.js';
+import { createWorkRuntime, effect, setDefaultWorkYieldSlice } from '../../../shared/cooperativeWork.js';
 import { rawValueWeightWork } from '../../../shared/jsonWork.js';
 
 export interface WorkspaceWorkerHandler {
@@ -31,6 +31,7 @@ function failureCode(error: unknown): RepositoryFailureCode {
 
 /** One ordering owner, shared by the module worker and isolated inline transport. */
 export function createWorkspaceWorkerHandler(environment: NormalizedEnvironment): WorkspaceWorkerHandler {
+  if (environment.yieldSliceMs !== undefined) setDefaultWorkYieldSlice(environment.yieldSliceMs);
   const repository = createNormalizedRepository(environment);
   let admitted = new Map<string, { scope: ProjectScope; admissionId: number }>();
   interface WorkspaceOwner { generation: string; token: WorkspaceRepositoryAdmission; valid: boolean; fence?: WorkspaceRepositoryFence;

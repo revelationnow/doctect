@@ -3,7 +3,7 @@ import { MessageChannel as NodeMessageChannel } from 'node:worker_threads';
 import { createHash } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-  assertWorkRuntime, createWorkRuntime, effect, primitive, retainWork, runSync,
+  assertWorkRuntime, createWorkRuntime, effect, primitive, retainWork, runSync, setDefaultWorkYieldSlice,
   type Counters, type FrameKind, type Metric, type NativeKind, type Operation, type Ownership,
   type Phase, type StoreClass, type Work, type WorkControl, type WorkEvent, type WorkRuntime,
 } from '../../../../shared/cooperativeWork.js';
@@ -1525,5 +1525,31 @@ describe('plain ordered JSON traversal', () => {
     await expect(h.runtime.run(output.program)).rejects.toMatchObject({ name: 'AbortError' });
     expect(output.program.next().done).toBe(true);
     expect(h.runtime.snapshot().visits).toBeLessThanOrEqual(1024);
+  });
+});
+
+describe('default yield slices', () => {
+  afterEach(() => setDefaultWorkYieldSlice(0));
+  const program = function* () { for (let index = 0; index < 8; index++) yield* effect(1024, () => {}); return 'done'; };
+  const drain = async () => {
+    const runtime = createWorkRuntime({ assertCurrent() {} });
+    let timerRan = false; const timer = setTimeout(() => { timerRan = true; }, 0);
+    try { return { value: await runtime.run(program()), timerRan, yields: runtime.snapshot().yields }; }
+    finally { clearTimeout(timer); runtime.dispose(); }
+  };
+
+  it('keeps one task yield per quantum by default', async () => {
+    const result = await drain();
+    expect(result).toMatchObject({ value: 'done', yields: 7 });
+  });
+
+  it('coalesces task yields inside a slice without changing quantum accounting', async () => {
+    setDefaultWorkYieldSlice(60_000);
+    const result = await drain();
+    expect(result).toEqual({ value: 'done', timerRan: false, yields: 7 });
+  });
+
+  it.each([-1, Number.NaN, Infinity, '4'])('rejects an invalid slice %s', value => {
+    expect(() => setDefaultWorkYieldSlice(value as number)).toThrow(RangeError);
   });
 });

@@ -1,13 +1,14 @@
 import { expect, it } from 'vitest';
 import { decomposeProject, reconstructProject } from '../../../../services/localWorkspace/normalized/codec';
-import { createProjectBirthDigests, projectBirthFrame, verifyProjectBirth } from '../../../../services/localWorkspace/normalized/projectBaseline';
+import { createProjectBirthDigests, createTrustedProjectBirthDigests, projectBirthFrame, projectBirthFrameText, verifyProjectBirth } from '../../../../services/localWorkspace/normalized/projectBaseline';
 import { deriveWorkspaceIncarnation, type WorkspaceBirthOrigin, type WorkspaceMember } from '../../../../services/localWorkspace/normalized/workspaceManifest';
 import { hashFrame } from '../../../../services/localWorkspace/normalized/work';
 import { validateWorkspaceBirthOriginWork } from '../../../../services/localWorkspace/normalized/commitProof';
 import { makeIncrementalProject } from '../../../helpers/incrementalFixtures';
 import { makeWorkHarness } from '../../../helpers/normalizationWorkHarness';
 import { testHash } from '../../../helpers/incrementalStoreHarness';
-import { createWorkRuntime, type WorkRuntime } from '../../../../shared/cooperativeWork.js';
+import { createWorkRuntime, runSync, type WorkRuntime } from '../../../../shared/cooperativeWork.js';
+import { createPlannerProject } from '../../../../services/presets';
 
 async function fixture() {
   const project = makeIncrementalProject(2); const w = makeWorkHarness('reopen');
@@ -120,4 +121,35 @@ it('releases projection reservation when a guard aborts immediately after alloca
     await expect(createProjectBirthDigests(h.image, runtime)).rejects.toMatchObject({ name: 'AbortError' });
     expect(aborted).toBe(true); expect(runtime.snapshot().ownedBytes).toBe(0);
   } finally { runtime.dispose(); }
+});
+
+const sha256Hex = async (text: string) => Array.from(new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))),
+  byte => byte.toString(16).padStart(2, '0')).join('');
+const drained = (image: Parameters<typeof projectBirthFrame>[0], part: Parameters<typeof projectBirthFrame>[1]) => {
+  const fragments: string[] = [];
+  runSync(projectBirthFrame(image, part)(function* (fragment: string) { fragments.push(fragment); }));
+  return fragments.join('');
+};
+
+it.each([
+  ['incremental fixture', () => makeIncrementalProject(2)],
+  ['2026 planner preset', () => ({ id: 'planner', name: 'Planner 2026', initialState: createPlannerProject() })],
+  ['unicode and escapes', () => {
+    const project = makeIncrementalProject(1); const root = project.initialState.nodes[project.initialState.rootId];
+    root.title = 'Café 雪 😀 lone \ud800 tail \udc00 "quote" \\ back\nline\u0001';
+    root.data = { ...root.data, '😀 key': 'value ', '': '' };
+    return project;
+  }],
+])('trusted birth digests are byte-identical to the metered frames: %s', { timeout: 120_000 }, async (_name, make) => {
+  const project = make(); const w = makeWorkHarness('reopen');
+  const scope = { storageGeneration: 'g1', projectId: project.id, incarnation: await deriveWorkspaceIncarnation('g1', 1, 0, w.runtime) };
+  const image = decomposeProject(project, scope);
+  for (const part of ['image', 'document', 'preferences', 'folds'] as const) expect(projectBirthFrameText(image, part)).toBe(drained(image, part));
+  expect(await createTrustedProjectBirthDigests(image, sha256Hex)).toEqual(await createProjectBirthDigests(image, w.runtime));
+});
+
+it('trusted birth frame rejects a record stored under a mismatched key', async () => {
+  const h = await fixture(); const [key, record] = h.image.projectNodes.entries().next().value!;
+  h.image.projectNodes.delete(key); h.image.projectNodes.set(`${key} `, record);
+  expect(() => projectBirthFrameText(h.image, 'image')).toThrow('Mismatched birth record key');
 });

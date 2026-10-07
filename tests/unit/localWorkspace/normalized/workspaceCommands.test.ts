@@ -10,6 +10,7 @@ import { NORMALIZED_STORE_NAMES, type NormalizedProject, type ProjectStoreName }
 import { makeWorkHarness } from '../../../helpers/normalizationWorkHarness';
 import { makeIncrementalProject } from '../../../helpers/incrementalFixtures';
 import { testHash } from '../../../helpers/incrementalStoreHarness';
+import { createPlannerProject } from '../../../../services/presets';
 
 describe('workspace admission', () => {
   it('returns authentic metadata and both lane stamps from the same sealed capture', async () => {
@@ -299,6 +300,23 @@ describe('workspace command preparation', () => {
         } finally { deleted.release(); }
       } finally { second.release(); }
     } finally { first.release(); }
+  });
+
+  it.each([
+    ['planner create', () => ({ type: 'create-and-activate-project', project: { id: 'planner', name: 'Planner 2026', initialState: createPlannerProject() } })],
+    ['unicode create', () => {
+      const project = makeIncrementalProject(1); const root = project.initialState.nodes[project.initialState.rootId];
+      root.title = 'Café 雪 😀 lone \ud800 tail \udc00 "quote" \\ back\nline\u0001'; root.data = { ...root.data, '😀 key': 'value\u2028', '': '' };
+      return { type: 'create-and-activate-project', project };
+    }],
+    ['stage import', () => ({ type: 'stage-import', pendingImport: { id: 'import', targetProjectId: 'target', name: 'Import',
+      state: makeIncrementalProject(2).initialState, createdAt: h.preparation.now() }, attemptProvenance: { sourceKeyDigest: testHash('key'), payloadDigest: testHash('payload') } })],
+    ['consume import', () => ({ type: 'consume-import', importId: 'import' })],
+  ] as [string, () => WorkspaceLifecycleIntent][])('trusted request digest equals the metered digest: %s', async (_name, intent) => {
+    const request = batch(intent()), w = makeWorkHarness();
+    const sha256Hex = async (text: string) => Array.from(new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))),
+      byte => byte.toString(16).padStart(2, '0')).join('');
+    expect(await commands.hashTrustedWorkspaceRequest(request, sha256Hex)).toBe(await commands.hashWorkspaceRequest(request, w.runtime));
   });
 
   it('replaces staged provenance in place and recognizes a new identical retry attempt', async () => {

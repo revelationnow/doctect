@@ -5,6 +5,9 @@ import { createBlankProject } from '../presets';
 const handler = createWorkspaceWorkerHandler({
   indexedDB: self.indexedDB,
   databaseName: WORKSPACE_DB_NAME,
+  // Nothing renders on this thread; one task yield per 1024-visit quantum spent
+  // much of a large project create waiting on its own wakeups.
+  yieldSliceMs: 8,
   now: () => new Date().toISOString(),
   normalization: { crypto: self.crypto, now: () => new Date().toISOString(), randomUUID: () => self.crypto.randomUUID(), createBlankProject },
   async hash(input) {
