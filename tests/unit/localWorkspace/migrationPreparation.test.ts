@@ -176,10 +176,10 @@ describe('initial migration preparation', () => {
       ...deterministicEnvironment({ crypto: { subtle: { digest } } as unknown as Crypto }), work: h.runtime,
     });
     expect(observed).toEqual(expected);
-    expect(observed.sourceDigest).toBe('3ed43ee2d859761e2347cdeb50882b771321d4ec6f566866776931f574c53b53');
-    expect(observed.targetDigest).toBe('036eb872a7bb8cd682e85e02c07556dc5330af3d8223d4a0a64e1cb6533ce81a');
+    expect(observed.sourceDigest).toBe('b1ee9ab1939828767fb3eee840570df98221c63a00f4e26064032c30f00bc528');
+    expect(observed.targetDigest).toBe('ad3545a694cece57928ac9f891d490173d520fbb964e4143a588c090ea949b1f');
     expect(observed.ledger.projectFingerprints).toEqual([{
-      sourceIndex: 0, id: 'project-a', digest: 'b105c302af9772dbcc5fbe5eace28175dfda0c7c9a5e81f6dce9032f5660ff68',
+      sourceIndex: 0, id: 'project-a', digest: '278d68e7a5b393f80abdf78095fea81cb3ddccb82f0a19edd03bac34e450019e',
     }]);
     expect(observed.projects.map(record => record.id)).toEqual(['project-a']);
     expect(source).toEqual(before);

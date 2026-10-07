@@ -45,7 +45,7 @@ const candidate = async () => {
 describe('version-1 lineage repair preparation', () => {
   it('cooperatively preserves exact originals and independently hashes both reconstructed snapshots', async () => {
     const fixture = await candidate();
-    expect(fixture.ledger.expectedTargetDigest).toBe('036eb872a7bb8cd682e85e02c07556dc5330af3d8223d4a0a64e1cb6533ce81a');
+    expect(fixture.ledger.expectedTargetDigest).toBe('ad3545a694cece57928ac9f891d490173d520fbb964e4143a588c090ea949b1f');
     const before = structuredClone(fixture.records);
     const expected = await prepareLineageRepair(fixture.ledger, fixture.records, {
       crypto: webcrypto as unknown as Crypto, randomUUID: () => 'repair-incarnation-a',

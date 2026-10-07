@@ -182,7 +182,7 @@ function* migrateWithModeWork(state: any, mode: MigrationMode): Work<AppState> {
     }
 
     if (version < 12) {
-        migratedState = migrateV11ToV12(migratedState);
+        migratedState = yield* migrateV11ToV12Work(migratedState, mode);
         version = 12;
     }
 
@@ -471,9 +471,9 @@ function* migrateV10ToV11Work(state: any, mode: MigrationMode): Work<any> {
  * bump exists so older app versions refuse documents that may use 'grid'
  * instead of rendering them as an empty fill and saving that back.
  */
-function migrateV11ToV12(state: any): any {
+function* migrateV11ToV12Work(state: any, mode: MigrationMode): Work<any> {
     console.log('[Migration] Applying v11 → v12: Adding grid pattern type');
-    const migrated = JSON.parse(JSON.stringify(state));
+    const migrated = yield* copyMigrationStateWork(state, mode);
     migrated.schemaVersion = 12;
     return migrated;
 }

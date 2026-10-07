@@ -14,7 +14,7 @@ import { historicalState } from '../helpers/localWorkspaceFixtures';
 afterEach(() => vi.restoreAllMocks());
 
 describe('cooperative versioned loader', () => {
-  it.each(Array.from({ length: 12 }, (_, i) => i))('preserves schema %i output, source and ID order', async version => {
+  it.each(Array.from({ length: 13 }, (_, i) => i))('preserves schema %i output, source and ID order', async version => {
     const raw = historicalState(version), before = structuredClone(raw);
     let calls = 0;
     vi.spyOn(Math, 'random').mockImplementation(() => (++calls) / 100);
@@ -23,10 +23,10 @@ describe('cooperative versioned loader', () => {
     const result = await makeWorkHarness().runtime.run(loadProjectStateWork(raw, 'plain'));
     expect(result).toEqual(expected); expect(calls).toBe(expectedCalls);
     expect(raw).toEqual(before); expect(result.state).not.toBe(raw);
-    expect(result.state.schemaVersion).toBe(11);
+    expect(result.state.schemaVersion).toBe(12);
   });
 
-  it.each(Array.from({ length: 12 }, (_, i) => i))('owned schema %i omits whole-state clones and retains unaffected nodes', async version => {
+  it.each(Array.from({ length: 13 }, (_, i) => i))('owned schema %i omits whole-state clones and retains unaffected nodes', async version => {
     const raw = historicalState(version);
     vi.spyOn(Math, 'random').mockReturnValue(0.25);
     const expected = loadProjectState(raw), working = structuredClone(raw), nodes = working.nodes;
@@ -50,7 +50,7 @@ describe('cooperative versioned loader', () => {
   });
 
   it('distinguishes direct future-version identity from loader clone independence', () => {
-    const raw: any = { schemaVersion: 12, extension: { x: 1 } };
+    const raw: any = { schemaVersion: 13, extension: { x: 1 } };
     expect(runSync(migrateStateWork(raw, 'plain'))).toBe(raw);
     expect(runSync(migrateOwnedStateWork(raw))).toBe(raw);
     const loaded = runSync(loadProjectStateWork(raw, 'plain'));
@@ -104,7 +104,7 @@ describe('cooperative versioned loader', () => {
   it.each(['old', 1, true])('retains v7 Object.values boxing for malformed variants %s', variants => {
     // Historical migration leaves these values for the later validator to reject.
     const source = { schemaVersion: 7, variants };
-    expect(runSync(migrateStateWork(source, 'plain'))).toEqual({ schemaVersion: 11, variants });
+    expect(runSync(migrateStateWork(source, 'plain'))).toEqual({ schemaVersion: 12, variants });
   });
 });
 

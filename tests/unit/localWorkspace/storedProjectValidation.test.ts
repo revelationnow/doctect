@@ -91,7 +91,7 @@ it.each(['state-alias', 'wrapper-backlink', 'boundary-backlink'] as const)('pres
 const invalid: [string, (raw: any) => void][] = [
   ['missing schema', raw => { delete raw.initialState.schemaVersion; }],
   ['old schema', raw => { raw.initialState.schemaVersion = 10; }],
-  ['future schema', raw => { raw.initialState.schemaVersion = 12; }],
+  ['future schema', raw => { raw.initialState.schemaVersion = 13; }],
   ['negative schema', raw => { raw.initialState.schemaVersion = -1; }],
   ['fractional schema', raw => { raw.initialState.schemaVersion = 10.5; }],
   ['string schema', raw => { raw.initialState.schemaVersion = '11'; }],
