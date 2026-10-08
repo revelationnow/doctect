@@ -117,9 +117,10 @@ function PhoneEditorLayout({ sidebar, canvas, properties, touchActions, navigati
                 {canvas}
                 {detent === 'peek' && (
                     // All nine tools stay reachable at phone widths: the row wraps inside the pill
-                    // (two rows below ~420px) instead of scrolling Fit off the edge.
+                    // instead of scrolling Fit off the edge. `w-max` sizes the pill to the full row,
+                    // capped by max-w, so it wraps only as much as the screen requires.
                     <div data-testid="touch-tool-pill"
-                        className="absolute left-1/2 z-20 max-w-[calc(100vw-16px)] -translate-x-1/2 rounded-2xl border bg-white/95 px-1 shadow-lg"
+                        className="absolute left-1/2 z-20 w-max max-w-[calc(100vw-16px)] -translate-x-1/2 rounded-2xl border bg-white/95 px-1 shadow-lg"
                         style={{ bottom: SHEET_PEEK_PX + 12 }}>
                         <TouchToolButtons actions={touchActions} showFit wrap />
                     </div>
