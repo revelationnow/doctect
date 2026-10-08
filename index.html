@@ -73,6 +73,40 @@
       .delay-300 { animation-delay: 300ms; }
       .delay-500 { animation-delay: 500ms; }
       .delay-700 { animation-delay: 700ms; }
+
+      /* touch-editor:start */
+      /* Rules apply only when the editor runs on a touch-first device: FormFactorProvider sets
+         data-form-factor="phone" | "tablet" on <html> and removes it on desktop / unmount. */
+      [data-form-factor] button,
+      [data-form-factor] [role="button"],
+      [data-form-factor] select {
+        min-height: 44px;
+        min-width: 44px;
+      }
+      [data-form-factor] input,
+      [data-form-factor] select,
+      [data-form-factor] textarea {
+        font-size: 16px;
+      }
+      [data-form-factor] .opacity-0[class~="group-hover:opacity-100"]:not(.pointer-events-none) {
+        opacity: 1;
+      }
+      [data-form-factor] .hidden[class~="group-hover:flex"] {
+        display: flex;
+      }
+      [data-form-factor="phone"] :has(> .editor-dialog-panel),
+      [data-form-factor] :has(> .editor-dialog-panel.generator-dialog-panel) {
+        padding: 0;
+      }
+      [data-form-factor="phone"] .editor-dialog-panel,
+      [data-form-factor] .editor-dialog-panel.generator-dialog-panel {
+        width: 100vw;
+        max-width: none;
+        height: 100dvh;
+        max-height: none;
+        border-radius: 0;
+      }
+      /* touch-editor:end */
     </style>
   <script type="importmap">
 {
