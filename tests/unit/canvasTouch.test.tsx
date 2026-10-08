@@ -487,12 +487,29 @@ describe('Canvas touch mode: inline edit commit, no tap-cycling, long-press on t
             elements, selectedElementIds: ['c'], captureInteraction: editor.capture, onEditElements: vi.fn(),
         });
         pointer(elementNode('c'), 'pointerdown', 1, 60, 50);
+        pointer(elementNode('c'), 'pointermove', 1, 65, 55); // within the tap slop: the drag has moved 'c'
+        expect(find(editor.working(), 'c')).toMatchObject({ x: 45, y: 35 });
         act(() => { vi.advanceTimersByTime(600); });
         expect(getByTestId('select-under-menu')).toBeTruthy();
-        pointer(elementNode('c'), 'pointerup', 1, 60, 50);
-        expect(find(editor.working(), 'c')).toMatchObject({ x: 40, y: 30 });
+        pointer(elementNode('c'), 'pointerup', 1, 65, 55);
+        expect(find(editor.working(), 'c')).toMatchObject({ x: 40, y: 30 }); // reverted by the cancel
         expect(editor.calls).toMatchObject({ end: 0, cancel: 1 });
         expect(editor.calls.selects).toEqual([['c']]); // the direct down's keep-selection only; nothing cycled
+    });
+
+    it('resizes after holding a touch handle zone instead of opening the select-under menu', () => {
+        vi.useFakeTimers();
+        const { props, container, queryByTestId } = renderCanvas({ selectedElementIds: ['a'], elements: [rect('a', 20, 20), rect('c', 40, 30)] });
+        const handle = container.querySelector('[data-resize-handle="se"]') as HTMLElement;
+        pointer(handle, 'pointerdown', 1, 120, 80);
+        act(() => { vi.advanceTimersByTime(600); }); // press-and-hold before dragging the handle
+        expect(queryByTestId('select-under-menu')).toBeNull();
+        pointer(handle, 'pointermove', 1, 150, 100);
+        pointer(handle, 'pointerup', 1, 150, 100);
+        const resized = vi.mocked(props.onUpdateElements).mock.calls.at(-1)![0].find((el: TemplateElement) => el.id === 'a');
+        expect(resized.w).toBeGreaterThan(100);
+        expect(resized.h).toBeGreaterThan(60);
+        expect(queryByTestId('select-under-menu')).toBeNull();
     });
 
     it('draws with a shape tool after a held press instead of treating the hold as a long press', () => {

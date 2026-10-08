@@ -1713,8 +1713,9 @@ export const Canvas: React.FC<CanvasProps> = ({
             const owner = selectThroughTap([top.id], true);
             if (owner) beginEditing(top, owner.inline);
         },
-        // Long press is a select-tool gesture; with a shape tool the finger is a (possibly held) drag.
-        canLongPress: () => tool === 'select',
+        // Long press is a select-tool gesture; with a shape tool, or on a resize handle, the finger is
+        // a (possibly held) drag.
+        canLongPress: ({ target }) => tool === 'select' && !(target as Element | null)?.closest?.('[data-resize-handle]'),
         onLongPress: ({ clientX, clientY }) => {
             if (tool !== 'select') return;
             commitInlineEditing();
