@@ -24,8 +24,9 @@ page header hides the Cloud and Account menus below `sm`, so on phones they cann
 
 ## Non-goals
 
-- Touch marquee multi-select, modifier-key behaviours (Alt/Shift/Ctrl), rotation handles,
-  alignment/distribute on touch.
+- Touch marquee multi-select, modifier-key behaviours (Alt/Shift/Ctrl), rotation handles.
+  (Tap-based multi-select and alignment/distribute on touch were added by the 2026-10-08
+  follow-ups; see "Select multiple" under Tablet.)
 - Keyboard-shortcut hints on touch.
 - Phone-optimised code editing in the Generator beyond the pane toggle and full-screen layout.
 - Changing narrow *desktop* windows — they keep today's layout (see Form-factor detection).
@@ -177,8 +178,12 @@ New touch-only components call the same `actions`; desktop JSX is untouched.
 - The editor bar and `EditorToolbar` collapse into one row: ☰, tools, undo/redo, Export PDF, ⋯ for
   the rest. No floating pill.
 
-Alignment/distribute requires two or more selected elements, which touch cannot produce in this
-scope, so it is not shown on touch.
+Alignment/distribute requires two or more selected elements. The 2026-10-08 follow-ups added a
+**Select multiple** toggle beside Select in the tool strip (phone pill and tablet toolbar; session
+state, never persisted, off whenever the tool is not Select): while it is on, canvas taps, Layers
+rows and long-press picks toggle elements in and out of the selection and empty-canvas taps are
+inert. The ⋯ sheet then gains **Clear selection** (in the Selection group) and, at two or more
+selected, an **Arrange** group running the desktop toolbar's align/distribute handlers.
 
 ## Dialogs, panels, hover-only controls
 

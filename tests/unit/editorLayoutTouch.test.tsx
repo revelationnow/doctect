@@ -94,12 +94,13 @@ describe('EditorLayout touch branches', () => {
         expect(listeners.size).toBe(0);
     });
 
-    it('phone pill offers all nine tools including Fit by wrapping, never by horizontal scrolling', () => {
+    it('phone pill offers all ten controls (tools, Select multiple, Fit) by wrapping, never by horizontal scrolling', () => {
         render(<EditorLayout formFactor="phone" {...slots} touchActions={makeActions()} navigationKey="n1" selectionLabel="Page · Root" />);
         const pill = screen.getByTestId('touch-tool-pill');
         expect(pill.className).not.toMatch(/overflow-x/);
         expect(pill.firstElementChild!.className).toMatch(/\bflex-wrap\b/);
-        expect(within(pill).getAllByRole('button')).toHaveLength(9);
+        expect(within(pill).getAllByRole('button')).toHaveLength(10);
+        expect(within(pill).getByRole('button', { name: 'Select multiple' })).toBeTruthy();
         expect(within(pill).getByRole('button', { name: 'Fit page to width' })).toBeTruthy();
         // R33: the quick format bar reads the pill as bottom chrome through this tag.
         expect(pill.getAttribute('data-touch-chrome')).toBe('tool-pill');

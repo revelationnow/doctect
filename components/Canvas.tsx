@@ -9,6 +9,7 @@ import { OverlayTextEditor } from './canvas/OverlayTextEditor';
 import { SelectionHandles } from './canvas/SelectionHandles';
 import { resolveActiveLayerId, nextZIndexInLayer } from '../services/layers';
 import { hitTestPoint } from '../services/hitTest';
+import { toggleSelection } from '../services/selection';
 import { ZERO_TEXT_PADDING } from '../services/textPadding';
 import { SelectUnderMenu } from './canvas/SelectUnderMenu';
 import { useCanvasTextLayoutSession } from './canvas/useCanvasTextLayoutSession';
@@ -56,6 +57,8 @@ interface CanvasProps {
     inputMode?: 'mouse' | 'touch';
     /** Touch "fit": whenever this changes to a truthy value, the page width is fitted via onZoom. */
     fitSignal?: number;
+    /** Touch "Select multiple": taps and long-press picks toggle elements in and out of the selection; empty-canvas taps are inert. */
+    multiSelect?: boolean;
 }
 
 const MIN_DRAG_THRESHOLD = 5;
@@ -237,6 +240,7 @@ export const Canvas: React.FC<CanvasProps> = ({
     textLayoutSession: injectedTextLayoutSession,
     inputMode = 'mouse',
     fitSignal,
+    multiSelect = false,
 }) => {
     const isTouch = inputMode === 'touch';
     // Historical non-record layer cells remain in the owner/export. Rendering
@@ -1722,7 +1726,17 @@ export const Canvas: React.FC<CanvasProps> = ({
             commitInlineEditing(); // taps inside the editor never reach here (data-touch-gesture-ignore)
             if (tool !== 'select') return; // hand-tool clicks never select on desktop either
             const top = topElementAt(clientX, clientY);
+            // Select multiple: a tap toggles the element like a Ctrl/Cmd-click; empty canvas is inert.
+            if (multiSelect) { if (top) selectThroughTap(toggleSelection(selectedElementIds, top.id)); return; }
             selectThroughTap(top ? [top.id] : []);
+        },
+        // A clean press over a selected element is a direct drag that never moved, so it bypasses
+        // onTap; with Select multiple on it toggles the element under the finger too, after
+        // handleMouseUp has ended the drag's interaction. A handle press is a resize, not a pick.
+        onDirectTap: ({ clientX, clientY, target }) => {
+            if (!multiSelect || tool !== 'select' || (target as Element | null)?.closest?.('[data-resize-handle]')) return;
+            const top = topElementAt(clientX, clientY);
+            if (top) selectThroughTap(toggleSelection(selectedElementIds, top.id));
         },
         onDoubleTap: ({ clientX, clientY }) => {
             if (tool !== 'select') return;
@@ -1866,7 +1880,11 @@ export const Canvas: React.FC<CanvasProps> = ({
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
+            // Touch: the gesture hook owns the finger (pointer capture, pointerup/cancel). A cancelled
+            // pointerdown suppresses compat mouse clicks but not mouse boundary events, and Chrome's
+            // hover re-evaluation after a layout change (a group drag pushing an element past the page
+            // edge) reports a mouseleave mid-gesture, which must not end the drag.
+            onMouseLeave={isTouch ? undefined : handleMouseUp}
             onPointerCancel={isTouch ? e => { if (e.pointerType !== 'touch') cancelInteraction(); } : cancelInteraction}
             onContextMenu={handleContextMenu}
         >
@@ -2215,10 +2233,9 @@ export const Canvas: React.FC<CanvasProps> = ({
                         // handleMouseUp (the right button's own, or the compat mouseup of a row tap),
                         // so re-capture here or the selection never reaches the incremental editor.
                         if (captureInteraction && !interaction.current?.isCurrent()) interaction.current = captureInteraction();
-                        if (additive) {
-                            onSelectElements(selectedElementIds.includes(id)
-                                ? selectedElementIds.filter(x => x !== id)
-                                : [...selectedElementIds, id]);
+                        // Shift-click, or any pick while touch Select multiple is on, toggles into the selection.
+                        if (additive || multiSelect) {
+                            onSelectElements(toggleSelection(selectedElementIds, id));
                         } else {
                             onSelectElements([id]);
                         }

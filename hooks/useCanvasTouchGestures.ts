@@ -16,6 +16,12 @@ export interface TouchGestureHandlers {
      */
     onDirectCancel?: (event: PointerEvent) => void;
     onTap: (point: TouchPoint) => void;
+    /**
+     * A direct press that ended within the tap slop (the finger landed on something claimDirectDrag
+     * claimed and never dragged it). onDirectDown/onDirectUp have already run for it; onTap is not
+     * called, since those handlers saw the press. Like onTap, the first half of a double tap only.
+     */
+    onDirectTap?: (point: TouchPoint) => void;
     onDoubleTap: (point: TouchPoint) => void;
     onLongPress: (point: TouchPoint) => void;
     /**
@@ -77,7 +83,7 @@ export function useCanvasTouchGestures(
             longPressTimer = null;
         };
 
-        const registerTap = (point: TouchPoint, notify: boolean) => {
+        const registerTap = (point: TouchPoint, direct: boolean) => {
             endedWithTap = true;
             const now = Date.now();
             if (lastTap && now - lastTap.time <= DOUBLE_TAP_MS
@@ -87,7 +93,8 @@ export function useCanvasTouchGestures(
                 return;
             }
             lastTap = { x: point.clientX, y: point.clientY, time: now };
-            if (notify) handlersRef.current.onTap(point);
+            if (direct) handlersRef.current.onDirectTap?.(point);
+            else handlersRef.current.onTap(point);
         };
 
         const finishIfIdle = () => {
@@ -207,12 +214,12 @@ export function useCanvasTouchGestures(
             if (mode === 'direct') {
                 handlersRef.current.onDirectUp(event);
                 if (start && Math.hypot(event.clientX - start.clientX, event.clientY - start.clientY) <= TAP_SLOP_PX) {
-                    registerTap(start, false);
+                    registerTap(start, true);
                 }
                 mode = 'done';
             } else if (mode === 'pending' && start) {
                 clearLongPress();
-                registerTap(start, true);
+                registerTap(start, false);
                 mode = 'done';
             } else if (mode === 'pinch' && pointers.size < 2) {
                 mode = 'done';

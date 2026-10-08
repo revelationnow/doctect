@@ -7,6 +7,7 @@ export const makeActions = (overrides: Partial<TouchEditorActions> = {}): TouchE
     greyscale: false, toggleGreyscale: vi.fn(), openJson: vi.fn(), openGenerator: vi.fn(), savePreset: vi.fn(),
     importSvg: vi.fn(), insertSvgPlaceholder: vi.fn(), snapToGrid: false, toggleSnap: vi.fn(),
     showGrid: false, toggleGrid: vi.fn(), tool: 'select', setTool: vi.fn(), fitToWidth: vi.fn(),
-    hasSelection: false, duplicateSelection: vi.fn(), deleteSelection: vi.fn(), preview: null,
+    hasSelection: false, duplicateSelection: vi.fn(), deleteSelection: vi.fn(), clearSelection: vi.fn(),
+    multiSelect: false, toggleMultiSelect: vi.fn(), canAlign: false, align: vi.fn(), preview: null,
     ...overrides,
 });

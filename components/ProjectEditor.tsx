@@ -25,6 +25,8 @@ import { trackEvent } from '../services/analytics';
 import { resolveActiveLayerId, nextZIndexInLayer, createDefaultLayer, moveElementsToLayer, getElementLabel } from '../services/layers';
 import { listPreviewNodes } from '../services/previewNodes';
 import type { TouchEditorActions } from './editor-layout/touchActions';
+import { useTouchMultiSelect } from './editor-layout/useTouchMultiSelect';
+import { alignSelectedElements, type AlignType } from '../services/alignElements';
 import { PLACEHOLDER_SVG, createPlacedSvgElement } from '../services/svgEditing';
 import { DocumentSnapshot, restoreDocument, snapshotDocument } from '../services/projectDocumentSnapshot';
 import type { GeneratedProject } from '../services/validateGeneratedProject';
@@ -1077,6 +1079,8 @@ function useLegacyEditor({ projectId, projectName, initialState, isActive, onNam
         currentTemplate, effectivePreviewNodeId, saveToHistory, handleUpdateTemplateElements,
         deleteElements: (ids: string[]) => { saveToHistory(); handleDeleteElements(ids); },
         duplicateElements: () => { saveToHistory(); handleDuplicate(); },
+        // The desktop toolbar's legacy align handler, shared with the touch Arrange menu.
+        alignElements: (type: AlignType) => setState(s => alignSelectedElements(s, type)),
         handleUpdateTemplate, layersExpanded, toggleLayers: () => setLayersExpanded(v => !v),
         showScriptGenModal, handleApplyGenerated, onCreateGeneratedProject, showSavePresetModal, handleSavePreset,
         showNewVariantModal, setShowNewVariantModal, handleCreateVariant, getActiveTemplates, selectNodeTarget,
@@ -1600,7 +1604,7 @@ function IncrementalProjectEditor(props: CommonProjectEditorProps & { incrementa
         onEditElements, captureInteraction,
         onInteractionEnd: () => run(finishGroups),
         onInteractionCancel: () => run(() => { const id = group.current; if (id) editor.cancelGroup(id); finishGroups(); }),
-        handleUpdateTemplateElements, deleteElements, duplicateElements: () => { paste(true); }, handleUpdateTemplate,
+        handleUpdateTemplateElements, deleteElements, duplicateElements: () => { paste(true); }, alignElements: align, handleUpdateTemplate,
         layersExpanded: editor.preferences.panelsExpanded.layers ?? false, toggleLayers: () => setPanelExpanded('layers', !(editor.getCurrent().preferences.panelsExpanded.layers ?? false)),
         showScriptGenModal, handleApplyGenerated, onCreateGeneratedProject: props.onCreateGeneratedProject,
         showSavePresetModal, handleSavePreset, showNewVariantModal, setShowNewVariantModal,
@@ -1624,7 +1628,7 @@ function ProjectEditorView({
     handleSelectTemplate, handleAddTemplate, handleDeleteTemplates, handleDuplicateTemplates, handleUpdateTemplateName,
     handleSelectVariant, handleAddVariant, handleRenameVariant, handleDeleteVariant, handleDuplicateVariant,
     setResizingPanel, setShowScriptGenModal, setShowSavePresetModal, handleImportSvg, handleInsertSvgPlaceholder,
-    currentTemplate, effectivePreviewNodeId, saveToHistory, handleUpdateTemplateElements, deleteElements, duplicateElements,
+    currentTemplate, effectivePreviewNodeId, saveToHistory, handleUpdateTemplateElements, deleteElements, duplicateElements, alignElements,
     handleUpdateTemplate, layersExpanded, toggleLayers, showScriptGenModal, handleApplyGenerated, onCreateGeneratedProject,
     showSavePresetModal, handleSavePreset, showNewVariantModal, setShowNewVariantModal, handleCreateVariant,
     getActiveTemplates, selectNodeTarget, deleteConfirmState, setDeleteConfirmState, executeDeleteNode,
@@ -1634,6 +1638,8 @@ function ProjectEditorView({
     const isTouch = formFactor !== 'desktop';
     // Touch zoom is session-local: it never reaches the persisted scale preference.
     const touchViewport = useTouchViewport();
+    // "Select multiple" is session-only too, held here above the canvas (which remounts on context changes).
+    const { multiSelect, toggleMultiSelect } = useTouchMultiSelect({ tool: state.tool, enabled: isTouch, setTool: tool => setSession({ tool }) });
     const editorBar = (
         <div className="min-h-[40px] py-1 bg-white border-b flex flex-wrap items-center justify-between px-4 z-20 flex-shrink-0">
             <div className="text-xs text-slate-400 font-mono">
@@ -1749,6 +1755,7 @@ function ProjectEditorView({
             onSwitchToSelect={() => setSession({ tool: 'select' })}
             inputMode={isTouch ? 'touch' : 'mouse'}
             fitSignal={isTouch ? touchViewport.fitSignal : undefined}
+            multiSelect={multiSelect}
         />
     );
     const propertiesElement = (
@@ -1778,6 +1785,7 @@ function ProjectEditorView({
                         onUpdateElements={(els, save) => handleUpdateTemplateElements(els, save)}
                         onSelectElements={(ids) => setSession({ selectedElementIds: ids })}
                         onSetActiveLayer={(layerId) => setSession({ activeLayerId: layerId })}
+                        multiSelect={multiSelect}
                     />
                 </CollapsibleSection>
             ) : null}
@@ -1811,6 +1819,10 @@ function ProjectEditorView({
         hasSelection: state.selectedElementIds.length > 0,
         duplicateSelection: duplicateElements,
         deleteSelection: () => deleteElements(state.selectedElementIds),
+        clearSelection: () => setSession({ selectedElementIds: [] }),
+        multiSelect, toggleMultiSelect,
+        canAlign: state.selectedElementIds.length > 1,
+        align: alignElements,
         preview: previewChoice && { ...previewChoice, onSelect: id => setSession({ templatePreviewNodeId: id }) },
     };
     const selectedElements = (currentTemplate?.elements ?? []).filter(el => state.selectedElementIds.includes(el.id));

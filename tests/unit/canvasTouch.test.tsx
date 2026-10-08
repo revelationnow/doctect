@@ -785,3 +785,122 @@ describe('Canvas touch mode: quick format bar and keyboard-aware editing', () =>
         expect(bar()).not.toBeNull();
     });
 });
+
+describe('Canvas touch Select multiple', () => {
+    it('adds a tapped element, ignores empty canvas and never commits anything', () => {
+        const { props, elementNode, surface } = renderCanvas({ multiSelect: true, selectedElementIds: ['a'] });
+        tap(elementNode('b'), 1, 210, 210); // clear of 'a': a pending tap
+        expect(props.onSelectElements).toHaveBeenLastCalledWith(['a', 'b']);
+        tap(surface, 2, 450, 650);
+        expect(props.onSelectElements).toHaveBeenCalledTimes(1);
+        expect(props.onUpdateElements).not.toHaveBeenCalled();
+    });
+
+    it('removes a selected element on a clean press (a direct drag that never moved)', () => {
+        const { props, elementNode } = renderCanvas({ multiSelect: true, selectedElementIds: ['a', 'b'] });
+        tap(elementNode('a'), 1, 30, 30);
+        expect(props.onSelectElements).toHaveBeenLastCalledWith(['b']);
+        expect(props.onUpdateElements).not.toHaveBeenCalled();
+        expect(props.onInteractionStart).not.toHaveBeenCalled();
+    });
+
+    it('leaves a press on a group resize handle to the resize path', () => {
+        const { props, container } = renderCanvas({ multiSelect: true, selectedElementIds: ['a', 'b'] });
+        const handle = container.querySelector('[data-resize-handle="se"]')!;
+        tap(handle, 1, 300, 260);
+        expect(vi.mocked(props.onSelectElements).mock.calls.every(([ids]) => ids.length === 2)).toBe(true);
+    });
+
+    it('replaces the selection as before while the mode is off', () => {
+        const { props, elementNode, surface } = renderCanvas({ multiSelect: false, selectedElementIds: ['a'] });
+        tap(elementNode('b'), 1, 210, 210);
+        expect(props.onSelectElements).toHaveBeenLastCalledWith(['b']);
+        tap(surface, 2, 450, 650);
+        expect(props.onSelectElements).toHaveBeenLastCalledWith([]);
+    });
+
+    it('toggles through captured interactions on the incremental path, ending each one', () => {
+        const editor = makeEditorStub([rect('a', 20, 20), rect('b', 200, 200)]);
+        const { props, elementNode, surface } = renderCanvas({
+            multiSelect: true, selectedElementIds: ['a'], captureInteraction: editor.capture, onEditElements: vi.fn(),
+        });
+        tap(elementNode('b'), 1, 210, 210);
+        expect(editor.calls.selects).toEqual([['a', 'b']]);
+        expect(editor.calls.end).toBe(1);
+        tap(surface, 2, 450, 650);
+        expect(editor.calls.selects).toEqual([['a', 'b']]);
+        expect(props.onSelectElements).not.toHaveBeenCalled();
+    });
+
+    it('removes on a clean direct press on the incremental path once the press\'s own interaction has ended', () => {
+        const editor = makeEditorStub([rect('a', 20, 20), rect('b', 200, 200)]);
+        const { elementNode } = renderCanvas({
+            multiSelect: true, selectedElementIds: ['a', 'b'], captureInteraction: editor.capture, onEditElements: vi.fn(),
+        });
+        tap(elementNode('a'), 1, 30, 30);
+        expect(editor.calls.selects.at(-1)).toEqual(['b']);
+        expect(editor.calls).toMatchObject({ start: 0, end: 2, cancel: 0, intents: [] });
+    });
+
+    it('adds the element picked from the long-press menu', () => {
+        vi.useFakeTimers();
+        const elements = [rect('a', 20, 20), rect('c', 40, 30)];
+        const { props, elementNode, getByTestId, queryByTestId } = renderCanvas({ multiSelect: true, selectedElementIds: ['c'], elements });
+        pointer(elementNode('c'), 'pointerdown', 1, 60, 50);
+        act(() => { vi.advanceTimersByTime(600); });
+        pointer(elementNode('c'), 'pointerup', 1, 60, 50);
+        compatClick(getByTestId('select-under-menu').querySelector('[data-menu-element-id="a"]')!, 70, 60);
+        expect(props.onSelectElements).toHaveBeenLastCalledWith(['c', 'a']);
+        expect(queryByTestId('select-under-menu')).toBeNull(); // a plain pick still closes the menu
+    });
+});
+
+describe('Canvas touch group drag', () => {
+    it('moves every selected element with a one-finger drag on any of them, saving history once (legacy path)', () => {
+        const { props, elementNode } = renderCanvas({ selectedElementIds: ['a', 'b'] });
+        pointer(elementNode('b'), 'pointerdown', 1, 210, 210);
+        pointer(elementNode('b'), 'pointermove', 1, 240, 230);
+        pointer(elementNode('b'), 'pointerup', 1, 240, 230);
+        const moved = vi.mocked(props.onUpdateElements).mock.calls.at(-1)![0] as TemplateElement[];
+        expect(find(moved, 'a')).toMatchObject({ x: 50, y: 40 });
+        expect(find(moved, 'b')).toMatchObject({ x: 230, y: 220 });
+        expect(props.onInteractionStart).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignores a mouseleave on the container mid-drag on touch, which still ends a mouse drag', () => {
+        // Chrome reports mouse boundary events for a touch even when pointerdown was cancelled, and a
+        // group move that pushes an element past the page edge makes it re-evaluate hover mid-gesture.
+        const editor = makeEditorStub([rect('a', 20, 20), rect('b', 200, 200)]);
+        const { elementNode, surface } = renderCanvas({ selectedElementIds: ['a', 'b'], captureInteraction: editor.capture, onEditElements: vi.fn() });
+        pointer(elementNode('a'), 'pointerdown', 1, 30, 30);
+        pointer(elementNode('a'), 'pointermove', 1, 40, 30);
+        fireEvent.mouseLeave(surface);
+        pointer(elementNode('a'), 'pointermove', 1, 60, 50);
+        expect(editor.calls.end).toBe(0);
+        pointer(elementNode('a'), 'pointerup', 1, 60, 50);
+        expect(editor.calls).toMatchObject({ start: 1, end: 1, cancel: 0 });
+        expect(find(editor.committed(), 'a')).toMatchObject({ x: 50, y: 40 });
+        expect(find(editor.committed(), 'b')).toMatchObject({ x: 230, y: 220 });
+
+        const mouse = makeEditorStub([rect('a', 20, 20), rect('b', 200, 200)]);
+        const desktop = renderCanvas({ inputMode: 'mouse', selectedElementIds: ['a', 'b'], captureInteraction: mouse.capture, onEditElements: vi.fn() });
+        fireEvent.mouseDown(desktop.elementNode('a'), { clientX: 30, clientY: 30, button: 0 });
+        fireEvent.mouseMove(desktop.surface, { clientX: 40, clientY: 30 });
+        fireEvent.mouseLeave(desktop.surface);
+        expect(mouse.calls.end).toBe(1); // desktop: leaving the canvas still ends the drag
+    });
+
+    it('moves every selected element in one interaction with one patch intent per move (incremental path)', () => {
+        const editor = makeEditorStub([rect('a', 20, 20), rect('b', 200, 200)]);
+        const { elementNode } = renderCanvas({ selectedElementIds: ['a', 'b'], captureInteraction: editor.capture, onEditElements: vi.fn() });
+        pointer(elementNode('a'), 'pointerdown', 1, 30, 30);
+        pointer(elementNode('a'), 'pointermove', 1, 60, 50);
+        pointer(elementNode('a'), 'pointerup', 1, 60, 50);
+        expect(editor.calls).toMatchObject({ start: 1, end: 1, cancel: 0 });
+        const patches = editor.calls.intents.filter(intent => intent.type === 'patch');
+        expect(patches).toHaveLength(1);
+        expect(patches[0].type === 'patch' && patches[0].updates.map(update => update.id).sort()).toEqual(['a', 'b']);
+        expect(find(editor.committed(), 'a')).toMatchObject({ x: 50, y: 40 });
+        expect(find(editor.committed(), 'b')).toMatchObject({ x: 230, y: 220 });
+    });
+});

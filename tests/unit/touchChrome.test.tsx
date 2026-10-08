@@ -21,10 +21,10 @@ const chrome: EditorChrome = {
 beforeEach(() => vi.clearAllMocks());
 
 describe('TouchToolButtons', () => {
-    it('offers select, hand, text, shapes and fit, and marks the active tool', () => {
+    it('offers select, select multiple, hand, text, shapes and fit, and marks the active tool', () => {
         const actions = makeActions({ tool: 'text' });
         render(<TouchToolButtons actions={actions} showFit />);
-        for (const name of ['Select', 'Pan', 'Text', 'Rectangle', 'Ellipse', 'Triangle', 'Line', 'Grid', 'Fit page to width']) {
+        for (const name of ['Select', 'Select multiple', 'Pan', 'Text', 'Rectangle', 'Ellipse', 'Triangle', 'Line', 'Grid', 'Fit page to width']) {
             expect(screen.getByRole('button', { name })).toBeTruthy();
         }
         expect(screen.getByRole('button', { name: 'Text' }).getAttribute('aria-pressed')).toBe('true');
@@ -38,6 +38,24 @@ describe('TouchToolButtons', () => {
         render(<TouchToolButtons actions={makeActions()} />);
         expect(screen.queryByRole('button', { name: 'Fit page to width' })).toBeNull();
         expect(screen.getByRole('button', { name: 'Select' }).getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('shows Select multiple as a 44px pressed toggle beside Select', () => {
+        const actions = makeActions({ multiSelect: true });
+        render(<TouchToolButtons actions={actions} />);
+        const toggle = screen.getByRole('button', { name: 'Select multiple' });
+        expect(toggle.getAttribute('aria-pressed')).toBe('true');
+        expect(toggle.className).toMatch(/\bh-11\b/);
+        expect(toggle.className).toMatch(/\bw-11\b/);
+        expect(toggle.previousElementSibling).toBe(screen.getByRole('button', { name: 'Select' }));
+        fireEvent.click(toggle);
+        expect(actions.toggleMultiSelect).toHaveBeenCalledTimes(1);
+        expect(actions.setTool).not.toHaveBeenCalled();
+    });
+
+    it('renders the toggle unpressed while Select multiple is off', () => {
+        render(<TouchToolButtons actions={makeActions({ multiSelect: false })} />);
+        expect(screen.getByRole('button', { name: 'Select multiple' }).getAttribute('aria-pressed')).toBe('false');
     });
 });
 
@@ -81,6 +99,35 @@ describe('OverflowMenu', () => {
     it('hides the selection group with nothing selected', () => {
         render(<OverflowMenu open onClose={vi.fn()} actions={makeActions()} chrome={null} />);
         expect(screen.queryByRole('button', { name: 'Duplicate selection' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Clear selection' })).toBeNull();
+    });
+
+    it('offers Clear selection with the selection group, closing the sheet', () => {
+        const onClose = vi.fn();
+        const actions = makeActions({ hasSelection: true });
+        render(<OverflowMenu open onClose={onClose} actions={actions} chrome={null} />);
+        fireEvent.click(screen.getByRole('button', { name: 'Clear selection' }));
+        expect(actions.clearSelection).toHaveBeenCalledTimes(1);
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows the Arrange group only once two or more elements are selected', () => {
+        const { unmount } = render(<OverflowMenu open onClose={vi.fn()} actions={makeActions({ hasSelection: true, canAlign: false })} chrome={null} />);
+        expect(screen.queryByRole('heading', { name: 'Arrange' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Align left' })).toBeNull();
+        unmount();
+        const onClose = vi.fn();
+        const actions = makeActions({ hasSelection: true, canAlign: true });
+        render(<OverflowMenu open onClose={onClose} actions={actions} chrome={null} />);
+        expect(screen.getByRole('heading', { name: 'Arrange' })).toBeTruthy();
+        const labels = ['Align left', 'Align center', 'Align right', 'Align top', 'Align middle', 'Align bottom', 'Distribute horizontally', 'Distribute vertically'];
+        const types = ['left', 'center', 'right', 'top', 'middle', 'bottom', 'dist-h', 'dist-v'];
+        labels.forEach((label, index) => {
+            fireEvent.click(screen.getByRole('button', { name: label }));
+            expect(actions.align).toHaveBeenLastCalledWith(types[index]);
+        });
+        expect(actions.align).toHaveBeenCalledTimes(8);
+        expect(onClose).toHaveBeenCalledTimes(8); // one-shot actions close the sheet
     });
 
     it('renders nothing while closed', () => {

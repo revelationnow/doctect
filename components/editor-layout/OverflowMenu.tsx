@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import type { TouchEditorActions } from './touchActions';
 import type { EditorChrome } from './EditorChromeContext';
+import { ALIGN_ACTIONS } from '../../services/alignElements';
 
 /** Elements that use Escape themselves (the preview-node select closes its own dropdown). */
 const EDITABLE_SELECTOR = 'input, textarea, select, [contenteditable]:not([contenteditable="false"])';
@@ -78,6 +79,16 @@ export function OverflowMenu({ open, onClose, actions, chrome }: {
                     <Group title="Selection">
                         <Item label="Duplicate selection" onClick={run(actions.duplicateSelection)} />
                         <Item label="Delete selection" onClick={run(actions.deleteSelection)} />
+                        {/* The only way to empty the selection while "Select multiple" is on (empty-canvas taps are inert then). */}
+                        <Item label="Clear selection" onClick={run(actions.clearSelection)} />
+                    </Group>
+                )}
+                {actions.canAlign && (
+                    // The desktop toolbar's align/distribute row, which appears there at two or more selected.
+                    <Group title="Arrange">
+                        {ALIGN_ACTIONS.map(({ type, label }) => (
+                            <Item key={type} label={label} onClick={run(() => actions.align(type))} />
+                        ))}
                     </Group>
                 )}
                 <Group title="Export">

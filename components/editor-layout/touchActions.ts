@@ -1,3 +1,5 @@
+import type { AlignType } from '../../services/alignElements';
+
 export interface PreviewNodeChoice { options: { id: string; title: string }[]; selectedId: string; onSelect: (id: string) => void; }
 export interface TouchEditorActions {
     undo: () => void; redo: () => void; canUndo: boolean; canRedo: boolean;
@@ -8,6 +10,10 @@ export interface TouchEditorActions {
     snapToGrid: boolean; toggleSnap: () => void; showGrid: boolean; toggleGrid: () => void;
     tool: string; setTool: (tool: string) => void;
     fitToWidth: () => void;
-    hasSelection: boolean; duplicateSelection: () => void; deleteSelection: () => void;
+    hasSelection: boolean; duplicateSelection: () => void; deleteSelection: () => void; clearSelection: () => void;
+    /** Session-only "Select multiple" mode: taps and Layers rows toggle elements in and out of the selection. */
+    multiSelect: boolean; toggleMultiSelect: () => void;
+    /** Align/distribute (the desktop toolbar's handlers); `canAlign` once two or more elements are selected. */
+    canAlign: boolean; align: (type: AlignType) => void;
     preview: PreviewNodeChoice | null;
 }

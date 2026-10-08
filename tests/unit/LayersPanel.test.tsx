@@ -235,6 +235,14 @@ describe('element-row multi-select (ctrl/cmd toggle, shift range)', () => {
         expect(onSelectElements.mock.calls.at(-1)![0]).toEqual(['r1']);
     });
 
+    it('a plain click toggles the row like ctrl-click while touch Select multiple is on', () => {
+        const { getByTestId, onSelectElements } = renderPanel(elements, layers, { selectedElementIds: ['r1'], multiSelect: true });
+        fireEvent.click(getByTestId('element-row-t1'));
+        expect(onSelectElements.mock.calls.at(-1)![0]).toEqual(['r1', 't1']);
+        fireEvent.click(getByTestId('element-row-r1'));
+        expect(onSelectElements.mock.calls.at(-1)![0]).toEqual([]);
+    });
+
     it('shift-click selects the display-order range from the last clicked row', () => {
         const { getByTestId, onSelectElements } = renderPanel(elements, layers);
         fireEvent.click(getByTestId('element-row-e1'));            // anchor

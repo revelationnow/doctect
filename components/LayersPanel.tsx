@@ -7,6 +7,7 @@ import {
 import { Layer, PageTemplate, TemplateElement } from '../types';
 import { addLayer, getElementLabel, moveElementsToLayer, moveLayerToIndex, removeLayerFromTemplate } from '../services/layers';
 import type { LayerEditAction } from '../services/document/editOperations';
+import { toggleSelection } from '../services/selection';
 import { useFormFactor } from './editor-layout/FormFactorContext';
 
 export interface LayerPanelActions {
@@ -31,11 +32,13 @@ interface LayersPanelProps {
     onSelectElements: (ids: string[]) => void;
     onSetActiveLayer: (layerId: string) => void;
     layerActions?: LayerPanelActions;
+    /** Touch "Select multiple": a plain element-row click toggles the element, as Ctrl/Cmd-click does. */
+    multiSelect?: boolean;
 }
 
 export const LayersPanel: React.FC<LayersPanelProps> = ({
     template, selectedElementIds, activeLayerId,
-    onUpdateTemplate, onUpdateElements, onSelectElements, onSetActiveLayer, layerActions,
+    onUpdateTemplate, onUpdateElements, onSelectElements, onSetActiveLayer, layerActions, multiSelect = false,
 }) => {
     const layers = (template.layers ?? []).flatMap((layer, position) =>
         layerActions && (!layer || typeof layer !== 'object' || Array.isArray(layer)) ? [] : [{ ...layer, position }])
@@ -91,11 +94,9 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
     // Element-row click: plain = single select (sets range anchor); ctrl/cmd = toggle;
     // shift = display-order range from the anchor.
     const handleRowClick = (e: React.MouseEvent, id: string) => {
-        if (e.ctrlKey || e.metaKey) {
+        if (multiSelect || e.ctrlKey || e.metaKey) {
             rowAnchorRef.current = id;
-            onSelectElements(selectedElementIds.includes(id)
-                ? selectedElementIds.filter(x => x !== id)
-                : [...selectedElementIds, id]);
+            onSelectElements(toggleSelection(selectedElementIds, id));
             return;
         }
         if (e.shiftKey && rowAnchorRef.current && rowAnchorRef.current !== id) {

@@ -136,6 +136,30 @@ describe('useCanvasTouchGestures', () => {
         expect(h.onPan).not.toHaveBeenCalled();
     });
 
+    it('reports a clean direct press as a direct tap, never as a tap, and only as the first half of a double tap', () => {
+        const h = { ...makeHandlers(true), onDirectTap: vi.fn() };
+        const { getByTestId } = render(<Harness handlers={h} />);
+        const s = getByTestId('surface');
+        pointer(s, 'pointerdown', 1, 10, 10);
+        pointer(s, 'pointerup', 1, 12, 11);
+        expect(h.onDirectDown).toHaveBeenCalledTimes(1);
+        expect(h.onDirectUp).toHaveBeenCalledTimes(1);
+        expect(h.onDirectTap).toHaveBeenCalledWith(expect.objectContaining({ clientX: 10, clientY: 10 }));
+        expect(h.onTap).not.toHaveBeenCalled();
+        // A direct press that dragged is no tap of either kind.
+        pointer(s, 'pointerdown', 2, 50, 50);
+        pointer(s, 'pointermove', 2, 80, 50);
+        pointer(s, 'pointerup', 2, 80, 50);
+        expect(h.onDirectTap).toHaveBeenCalledTimes(1);
+        // Two clean direct presses inside the double-tap window are a double tap, not two direct taps.
+        act(() => { vi.advanceTimersByTime(DOUBLE_TAP_MS + 1); });
+        pointer(s, 'pointerdown', 3, 10, 10); pointer(s, 'pointerup', 3, 10, 10);
+        pointer(s, 'pointerdown', 4, 12, 12); pointer(s, 'pointerup', 4, 12, 12);
+        expect(h.onDirectTap).toHaveBeenCalledTimes(2);
+        expect(h.onDoubleTap).toHaveBeenCalledTimes(1);
+        expect(h.onTap).not.toHaveBeenCalled();
+    });
+
     it('cancels a direct drag and switches to pinch when a second finger lands', () => {
         const h = { ...makeHandlers(true), onDirectCancel: vi.fn() };
         const { getByTestId } = render(<Harness handlers={h} />);

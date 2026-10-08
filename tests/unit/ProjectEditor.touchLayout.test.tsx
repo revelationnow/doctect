@@ -145,6 +145,58 @@ describe('phone layout wired through the legacy editor', () => {
         expect(sheetTitle()).toBe('2 elements');
     });
 
+    it('runs Select multiple as a session mode of the Select tool that reaches the canvas', () => {
+        renderLegacy('phone', { selectedElementIds: ['r1'] });
+        const toggle = () => screen.getByRole('button', { name: 'Select multiple' });
+        expect(toggle().getAttribute('aria-pressed')).toBe('false');
+        expect(canvasProps.multiSelect).toBe(false);
+        fireEvent.click(toggle());
+        expect(toggle().getAttribute('aria-pressed')).toBe('true');
+        expect(canvasProps.multiSelect).toBe(true);
+        // Switching to a shape tool turns it off; turning it off keeps the selection.
+        fireEvent.click(screen.getByRole('button', { name: 'Rectangle' }));
+        expect(canvasProps.multiSelect).toBe(false);
+        expect(toggle().getAttribute('aria-pressed')).toBe('false');
+        expect(canvasProps.selectedElementIds).toEqual(['r1']);
+        // Turning it on from a shape tool switches back to Select.
+        fireEvent.click(toggle());
+        expect(canvasProps.tool).toBe('select');
+        expect(canvasProps.multiSelect).toBe(true);
+        fireEvent.click(toggle());
+        expect(canvasProps.multiSelect).toBe(false);
+        expect(canvasProps.selectedElementIds).toEqual(['r1']);
+    });
+
+    it('arranges a multi-selection from the overflow menu with the desktop align handler and clears it', () => {
+        const state = legacyState();
+        state.variants.default.templates.page.elements = [rect('r1'), { ...rect('r2'), x: 120, y: 90 }];
+        // Hierarchy view: the shown template is the node's, not state.selectedTemplateId (empty here).
+        renderLegacy('phone', { ...state, selectedElementIds: ['r1', 'r2'] });
+        openOverflow();
+        expect(screen.getByRole('heading', { name: 'Arrange' })).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: 'Align left' }));
+        expect(screen.queryByRole('dialog', { name: 'More actions' })).toBeNull();
+        expect(legacyElements().map(element => [element.x, element.y])).toEqual([[10, 10], [10, 90]]);
+        expect(canvasProps.selectedElementIds).toEqual(['r1', 'r2']);
+        openOverflow();
+        fireEvent.click(screen.getByRole('button', { name: 'Align bottom' }));
+        expect(legacyElements().map(element => element.y)).toEqual([90, 90]);
+        openOverflow();
+        fireEvent.click(screen.getByRole('button', { name: 'Clear selection' }));
+        expect(canvasProps.selectedElementIds).toEqual([]);
+        expect(sheetTitle()).toBe('Page · Root');
+        openOverflow();
+        expect(screen.queryByRole('heading', { name: 'Arrange' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Clear selection' })).toBeNull();
+    });
+
+    it('hides Arrange with a single element selected', () => {
+        renderLegacy('phone', { selectedElementIds: ['r1'] });
+        openOverflow();
+        expect(screen.getByRole('button', { name: 'Clear selection' })).toBeTruthy();
+        expect(screen.queryByRole('heading', { name: 'Arrange' })).toBeNull();
+    });
+
     it('mirrors the desktop snap and grid toggles', () => {
         renderLegacy('phone');
         expect(canvasProps.snapToGrid).toBe(true);
@@ -269,6 +321,38 @@ describe('phone layout wired through the incremental editor', () => {
         expect(canvasProps.elements).toHaveLength(2);
         fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
         expect(canvasProps.elements.map((element: TemplateElement) => element.id)).toEqual(['title']);
+    });
+
+    it('arranges a multi-selection through document edits, undoable in one step', () => {
+        const { onDocumentEdit, onPreferencesChange } = renderIncremental('phone');
+        act(() => canvasProps.onSelectElements(['title']));
+        openOverflow();
+        fireEvent.click(screen.getByRole('button', { name: 'Duplicate selection' }));
+        const ids = canvasProps.elements.map((element: TemplateElement) => element.id);
+        expect(ids).toHaveLength(2);
+        const before = canvasProps.elements.map((element: TemplateElement) => element.x);
+        expect(before[0]).not.toBe(before[1]); // the duplicate is offset
+        act(() => canvasProps.onSelectElements(ids));
+        expect(sheetTitle()).toBe('2 elements');
+        onDocumentEdit.mockClear();
+        openOverflow();
+        fireEvent.click(screen.getByRole('button', { name: 'Align left' }));
+        const left = Math.min(...before);
+        expect(canvasProps.elements.map((element: TemplateElement) => element.x)).toEqual([left, left]);
+        expect(onDocumentEdit).toHaveBeenCalled();
+        expect(canvasProps.selectedElementIds).toEqual(ids);
+        fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+        expect(canvasProps.elements.map((element: TemplateElement) => element.x)).toEqual(before);
+        // Select multiple is session state: never a preference, never a document edit.
+        onDocumentEdit.mockClear();
+        fireEvent.click(screen.getByRole('button', { name: 'Select multiple' }));
+        expect(canvasProps.multiSelect).toBe(true);
+        expect(onDocumentEdit).not.toHaveBeenCalled();
+        expect(onPreferencesChange.mock.calls.every(([patch]) => !Object.hasOwn(patch, 'multiSelect'))).toBe(true);
+        openOverflow();
+        fireEvent.click(screen.getByRole('button', { name: 'Clear selection' }));
+        expect(canvasProps.selectedElementIds).toEqual([]);
+        expect(canvasProps.multiSelect).toBe(true); // clearing does not leave the mode
     });
 
     it('routes tool changes to the session and snap/grid to the preferences lane', () => {

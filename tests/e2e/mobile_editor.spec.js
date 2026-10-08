@@ -250,18 +250,19 @@ test('phone top bar controls do not overlap', async ({ page }, testInfo) => {
     }
 });
 
-test('phone tool pill keeps all nine tools, Fit included, inside the viewport', async ({ page }, testInfo) => {
+test('phone tool pill keeps all ten controls, Select multiple and Fit included, inside the viewport', async ({ page }, testInfo) => {
     test.skip(!isPhone(testInfo), 'phone only');
     const pill = page.getByTestId('touch-tool-pill');
     const tools = pill.getByRole('button');
     for (const { width, height } of await phoneWidths(page)) {
         await page.setViewportSize({ width, height });
-        await expect(tools).toHaveCount(9);
+        await expect(tools).toHaveCount(10);
+        await expect(pill.getByRole('button', { name: 'Select multiple' })).toBeVisible();
         await expect(pill.getByRole('button', { name: 'Fit page to width' })).toBeVisible();
         const screen = { x: 0, y: 0, width, height };
         const pillBox = await pill.boundingBox();
         expect(within(pillBox, screen), `pill inside the ${width}px viewport`).toBe(true);
-        for (let i = 0; i < 9; i++) {
+        for (let i = 0; i < 10; i++) {
             const b = await tools.nth(i).boundingBox();
             expect(b.width, `tool ${i} width at ${width}px`).toBeGreaterThanOrEqual(44);
             expect(b.height, `tool ${i} height at ${width}px`).toBeGreaterThanOrEqual(44);
@@ -523,6 +524,69 @@ test('phone overflow menu offers Home, Gallery and Docs', async ({ page }, testI
         await expect(link).toBeVisible();
         await expect(link).toHaveAttribute('href', href);
     }
+});
+
+test('Select multiple: taps build the selection, a drag moves all of it, Arrange aligns it', async ({ page, browserName }, testInfo) => {
+    const phone = isPhone(testInfo);
+    const fingers = new Fingers(page, browserName);
+    const pane = activePane(page);
+    await fitPage(page);
+    const rect = pane.locator('[data-element-id="box"]');
+    const tall = pane.locator('[data-element-id="tall"]');
+    const handles = pane.locator('[data-resize-handle]');
+    // Phone labels the sheet "2 elements"; tablet's docked panel shows the multi-edit banner.
+    const twoSelected = phone ? page.getByRole('button', { name: 'Resize properties sheet' }) : page.getByText('2 items selected');
+    const expectTwoSelected = () => phone ? expect(twoSelected).toContainText('2 elements') : expect(twoSelected).toBeVisible();
+
+    const toggle = page.getByRole('button', { name: 'Select multiple' });
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+
+    const rectStart = await box(rect);
+    const tallStart = await box(tall);
+    await page.touchscreen.tap(rectStart.x, rectStart.y);
+    await page.touchscreen.tap(tallStart.x, tallStart.y);
+    await expectTwoSelected();
+    await page.touchscreen.tap(6, rectStart.y); // the gutter beside the page: inert while the toggle is on
+    await expectTwoSelected();
+
+    // Dragging either selected element moves both by the same amount.
+    await fingers.drag(rectStart, { x: rectStart.x + 40, y: rectStart.y + 30 });
+    await expect.poll(async () => (await box(rect)).b.x).toBeGreaterThan(rectStart.b.x + 20);
+    const rectMoved = await box(rect);
+    const tallMoved = await box(tall);
+    expect(Math.abs((tallMoved.b.x - tallStart.b.x) - (rectMoved.b.x - rectStart.b.x))).toBeLessThan(2);
+    expect(Math.abs((tallMoved.b.y - tallStart.b.y) - (rectMoved.b.y - rectStart.b.y))).toBeLessThan(2);
+    expect(rectMoved.b.y).toBeGreaterThan(rectStart.b.y + 10);
+    await expectTwoSelected();
+
+    // Arrange → Align left: the text column lines up with the rect, the leftmost, which stays put.
+    await page.getByRole('button', { name: 'More actions' }).click();
+    const menu = overflowMenu(page);
+    await expect(menu.getByRole('heading', { name: 'Arrange' })).toBeVisible();
+    await menu.getByRole('button', { name: 'Align left' }).click();
+    await expect(menu).toBeHidden();
+    await expect.poll(async () => Math.abs((await box(tall)).b.x - (await box(rect)).b.x)).toBeLessThan(2);
+    expect(Math.abs((await box(rect)).b.x - rectMoved.b.x)).toBeLessThan(2);
+    await expectTwoSelected();
+
+    // Tapping a selected element takes it out; turning the toggle off keeps what is left; Clear
+    // selection in ⋯ empties it, after which Arrange is gone.
+    const tallAligned = await box(tall);
+    await page.touchscreen.tap(tallAligned.x, tallAligned.y + 120); // the column, below the rect
+    if (phone) await expect(twoSelected).not.toContainText('2 elements');
+    await expect(page.getByText('2 items selected')).toHaveCount(0);
+    await expect(handles.first()).toBeVisible(); // one element still selected
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    await expect(handles.first()).toBeVisible();
+    await page.getByRole('button', { name: 'More actions' }).click();
+    await expect(menu.getByRole('heading', { name: 'Arrange' })).toHaveCount(0);
+    await menu.getByRole('button', { name: 'Clear selection' }).click();
+    await expect(menu).toBeHidden();
+    await expect(handles).toHaveCount(0);
+    if (phone) await expect(twoSelected).toContainText('Page ·');
 });
 
 test('numeric fields get touch −/+ steppers that fit the viewport, tap once, hold to repeat and undo per nudge', async ({ page, browserName }, testInfo) => {

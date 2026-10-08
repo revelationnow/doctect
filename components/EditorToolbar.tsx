@@ -3,12 +3,13 @@ import { MousePointer2, Hand, Type, Square, Circle, Triangle, Minus, Grid3X3, Ma
 import clsx from 'clsx';
 import { AppState, AppNode } from '../types';
 import type { EditorScalarPreferencePatch } from '../services/document/contracts';
+import { alignSelectedElements, type AlignType } from '../services/alignElements';
 
 export interface ToolbarActions {
     onToolChange(tool: AppState['tool']): void;
     onPreferencesChange(patch: EditorScalarPreferencePatch): void;
     onPreviewNodeChange(nodeId: string): void;
-    onAlign(type: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom' | 'dist-h' | 'dist-v'): void;
+    onAlign(type: AlignType): void;
 }
 
 type EditorToolbarProps = ({ setState: React.Dispatch<React.SetStateAction<AppState>>; actions?: never }
@@ -62,124 +63,11 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({ state, setState, a
         return state.rootId;
     }, [state.viewMode, state.templatePreviewNodeId, state.selectedTemplateId, state.nodes, state.rootId, nodesForCurrentTemplate]);
 
-    const handleAlign = (type: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom' | 'dist-h' | 'dist-v') => {
+    // Legacy path: the computation lives in services/alignElements so the touch Arrange menu runs
+    // the very same handler (ProjectEditor's view model exposes it as `alignElements`).
+    const handleAlign = (type: AlignType) => {
         if (actions) { actions.onAlign(type); return; }
-        const { selectedElementIds, selectedTemplateId, activeVariantId, variants } = state;
-        if (selectedElementIds.length < 2) return;
-
-        const templates = variants[activeVariantId]?.templates || {};
-        const template = templates[selectedTemplateId];
-        if (!template) return;
-
-        // Find selected elements from the array
-        const selectedElements = template.elements.filter(el => selectedElementIds.includes(el.id));
-        if (selectedElements.length < 2) return;
-
-        let finalElements = [...template.elements];
-
-        if (type === 'left') {
-            const minX = Math.min(...selectedElements.map(el => el.x));
-            finalElements = finalElements.map(el =>
-                selectedElementIds.includes(el.id) ? { ...el, x: minX } : el
-            );
-        } else if (type === 'right') {
-            const maxRight = Math.max(...selectedElements.map(el => el.x + el.w));
-            finalElements = finalElements.map(el =>
-                selectedElementIds.includes(el.id) ? { ...el, x: maxRight - el.w } : el
-            );
-        } else if (type === 'center') {
-            const minX = Math.min(...selectedElements.map(el => el.x));
-            const maxRight = Math.max(...selectedElements.map(el => el.x + el.w));
-            const centerX = (minX + maxRight) / 2;
-            finalElements = finalElements.map(el =>
-                selectedElementIds.includes(el.id) ? { ...el, x: centerX - (el.w / 2) } : el
-            );
-        } else if (type === 'top') {
-            const minY = Math.min(...selectedElements.map(el => el.y));
-            finalElements = finalElements.map(el =>
-                selectedElementIds.includes(el.id) ? { ...el, y: minY } : el
-            );
-        } else if (type === 'bottom') {
-            const maxBottom = Math.max(...selectedElements.map(el => el.y + el.h));
-            finalElements = finalElements.map(el =>
-                selectedElementIds.includes(el.id) ? { ...el, y: maxBottom - el.h } : el
-            );
-        } else if (type === 'middle') {
-            const minY = Math.min(...selectedElements.map(el => el.y));
-            const maxBottom = Math.max(...selectedElements.map(el => el.y + el.h));
-            const centerY = (minY + maxBottom) / 2;
-            finalElements = finalElements.map(el =>
-                selectedElementIds.includes(el.id) ? { ...el, y: centerY - (el.h / 2) } : el
-            );
-        } else if (type === 'dist-h') {
-            const sorted = [...selectedElements].sort((a, b) => a.x - b.x);
-            const minX = sorted[0].x;
-            const maxRight = sorted[sorted.length - 1].x + sorted[sorted.length - 1].w;
-            const totalWidth = sorted.reduce((sum, el) => sum + el.w, 0);
-            const totalGap = (maxRight - minX) - totalWidth;
-            const gap = totalGap / (sorted.length - 1);
-
-            // Map of Id -> New X
-            const newXById: Record<string, number> = {};
-            let currentX = minX;
-            sorted.forEach((el, i) => {
-                if (i === 0) {
-                    newXById[el.id] = el.x; // Keep first fixed? Usually distribute keeps first/last fixed.
-                    currentX += el.w + gap;
-                    return;
-                }
-                newXById[el.id] = currentX;
-                currentX += el.w + gap;
-            });
-            // Ensure last is fixed exactly to avoid float drift? 
-            // In typical distribute: First and Last define the range.
-            newXById[sorted[sorted.length - 1].id] = sorted[sorted.length - 1].x;
-
-            finalElements = finalElements.map(el =>
-                newXById[el.id] !== undefined ? { ...el, x: newXById[el.id] } : el
-            );
-
-        } else if (type === 'dist-v') {
-            const sorted = [...selectedElements].sort((a, b) => a.y - b.y);
-            const minY = sorted[0].y;
-            const maxBottom = sorted[sorted.length - 1].y + sorted[sorted.length - 1].h;
-            const totalHeight = sorted.reduce((sum, el) => sum + el.h, 0);
-            const totalGap = (maxBottom - minY) - totalHeight;
-            const gap = totalGap / (sorted.length - 1);
-
-            const newYById: Record<string, number> = {};
-            let currentY = minY;
-            sorted.forEach((el, i) => {
-                if (i === 0) {
-                    currentY += el.h + gap;
-                    return;
-                }
-                newYById[el.id] = currentY;
-                currentY += el.h + gap;
-            });
-            newYById[sorted[sorted.length - 1].id] = sorted[sorted.length - 1].y;
-
-            finalElements = finalElements.map(el =>
-                newYById[el.id] !== undefined ? { ...el, y: newYById[el.id] } : el
-            );
-        }
-
-        setState(s => ({
-            ...s,
-            variants: {
-                ...s.variants,
-                [s.activeVariantId]: {
-                    ...s.variants[s.activeVariantId],
-                    templates: {
-                        ...s.variants[s.activeVariantId].templates,
-                        [selectedTemplateId]: {
-                            ...template,
-                            elements: finalElements
-                        }
-                    }
-                }
-            }
-        }));
+        setState(s => alignSelectedElements(s, type));
     };
 
     return (
