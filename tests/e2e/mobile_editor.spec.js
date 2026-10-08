@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { seedNativeProject } from './localWorkspaceHelpers.js';
+import { apiSignUpAndVerify } from './helpers.js';
+import { readActiveProject, seedNativeProject } from './localWorkspaceHelpers.js';
 import { layoutFixture as fixture } from './fixtures/layoutFixture.js';
+
+const API_BASE = process.env.E2E_API_BASE || 'http://localhost:3001';
 
 // Touch editor flows on phone and tablet emulation (the mobile-* projects in playwright.config.cjs).
 // The desktop projects ignore this file; desktop_layout_guard.spec.js pins the desktop editor.
@@ -820,4 +823,124 @@ test('back gesture closes the open overlay and keeps the editor; any other close
     await page.goBack();
     await expect(page).toHaveURL(/\/$/);
     await expect(pane).toHaveCount(0);
+});
+
+// Task 21: a coarse-pointer viewport whose shorter side is under 640px is a phone whichever way it
+// is held, so a phone turned sideways keeps the phone layout — and so does the tablet project at
+// these sizes, where the rule is the same. Both devices start portrait: the first resize rotates.
+test('landscape phone keeps the phone layout, with the top bar, a one-row pill, the sheet and the canvas usable', async ({ page }, testInfo) => {
+    const html = page.locator('html');
+    const device = await viewport(page);
+    const pane = activePane(page);
+    const bar = topBar(page);
+    const pill = page.getByTestId('touch-tool-pill');
+    const sheet = page.getByTestId('properties-sheet');
+    const grabber = page.getByRole('button', { name: 'Resize properties sheet' });
+    for (const { width, height } of [{ width: 844, height: 390 }, { width: 740, height: 360 }]) {
+        await page.setViewportSize({ width, height });
+        const size = `${width}×${height}`;
+        const screen = { x: 0, y: 0, width, height };
+        await expect(html).toHaveAttribute('data-form-factor', 'phone');
+
+        // Top bar: every control on screen, the project switcher among them.
+        for (const name of ['Open pages and templates', 'Mobile', 'Undo', 'Redo', 'More actions']) {
+            await onScreen(bar.getByRole('button', { name }), screen, `${name} at ${size}`);
+        }
+        await expect(bar.getByRole('status')).toBeVisible();
+
+        // Pill: all ten tools in a single row, floating above the sheet's peek row.
+        await expect(pill.getByRole('button')).toHaveCount(10);
+        const pillBox = await onScreen(pill, screen, `tool pill at ${size}`);
+        expect(pillBox.height, `one-row pill at ${size}`).toBeLessThan(2 * 44);
+        const peek = await onScreen(sheet, screen, `properties sheet at ${size}`);
+        expect(peek.height, `sheet at peek at ${size}`).toBe(SHEET_PEEK_PX);
+        expect(pillBox.y + pillBox.height, `pill clears the sheet at ${size}`).toBeLessThanOrEqual(peek.y);
+
+        // Canvas: a band of page stays between the bar and the pill, and a tap in it still selects.
+        const barBox = await bar.boundingBox();
+        expect(pillBox.y - (barBox.y + barBox.height), `canvas band at ${size}`).toBeGreaterThanOrEqual(120);
+        await fitPage(page);
+        const rect = pane.locator('[data-element-id="box"]');
+        const b = await rect.boundingBox();
+        // Just inside the box's top-left corner: the page is scrolled to its top, and the box's
+        // centre may already sit under the pill at these heights.
+        await page.touchscreen.tap(b.x + 20, b.y + 20);
+        await expect(pane.locator('[data-resize-handle="se"]')).toBeVisible();
+
+        // Sheet: half height (after its 200ms height transition) shows the properties inside the
+        // viewport; back to peek afterwards.
+        await grabber.click();
+        await expect.poll(async () => Math.abs((await sheet.boundingBox()).height - height / 2), `half sheet height at ${size}`).toBeLessThanOrEqual(1);
+        await onScreen(sheet, screen, `half sheet at ${size}`);
+        await onScreen(page.getByTestId('properties-sheet-content'), screen, `sheet content at ${size}`);
+        await grabber.click(); // full
+        await grabber.click(); // peek
+        await expect.poll(async () => (await sheet.boundingBox()).height).toBe(SHEET_PEEK_PX);
+        expect(await horizontalOverflow(page), `no horizontal scroll at ${size}`).toBeLessThanOrEqual(0);
+        await page.touchscreen.tap(6, b.y + 20); // the gutter beside the page: deselects for the next size
+        await expect(pane.locator('[data-resize-handle]')).toHaveCount(0);
+    }
+    // Back at the device's own size the layout is the device's again.
+    await page.setViewportSize(device);
+    await expect(html).toHaveAttribute('data-form-factor', isPhone(testInfo) ? 'phone' : 'tablet');
+});
+
+// Task 21: the phone sheet shows Cloud and Account as rows of its own (no trigger, no popover
+// opening over the groups below), driven by the same handlers as the header's menus.
+test('phone overflow menu lists Cloud and Account as rows, and Save to cloud runs from its row', async ({ page }, testInfo) => {
+    test.skip(!isPhone(testInfo), 'phone only: tablet keeps cloud and account in the page header');
+    const menu = overflowMenu(page);
+    const { width, height } = await viewport(page);
+    const screen = { x: 0, y: 0, width, height };
+    // The sheet scrolls (max 85dvh) and these groups sit below its fold: bring each row into view,
+    // then expect a 44px row inside the viewport, to within a pixel (a row scrolled to the sheet's
+    // bottom edge can overhang it by a sub-pixel fraction under the integer scroll offset).
+    const row = async (locator, label) => {
+        await expect(locator, label).toBeVisible();
+        await expect.poll(async () => {
+            await locator.scrollIntoViewIfNeeded();
+            const b = await locator.boundingBox();
+            const inside = b.x >= -1 && b.y >= -1 && b.x + b.width <= screen.width + 1 && b.y + b.height <= screen.height + 1;
+            return { inside, tall: b.height >= 44 };
+        }, label).toEqual({ inside: true, tall: true });
+    };
+
+    // Signed out: both groups are sign-in rows (links), not the header's trigger buttons.
+    await page.getByRole('button', { name: 'More actions' }).click();
+    await expect(menu.getByRole('heading', { name: 'Cloud' })).toBeVisible();
+    await expect(menu.getByRole('heading', { name: 'Account' })).toBeVisible();
+    await expect(menu.getByTitle('Cloud')).toHaveCount(0);
+    await expect(menu.getByTitle('Account')).toHaveCount(0);
+    await row(menu.getByRole('link', { name: 'Sign in to save to cloud' }), 'cloud sign-in row');
+    await row(menu.getByRole('link', { name: 'Sign in', exact: true }), 'account sign-in row');
+    await page.getByTestId('overflow-menu-backdrop').click();
+    await expect(menu).toBeHidden();
+
+    // Signed in (through the API: the page's request context shares the browser's cookies), the
+    // rows carry the signed-in actions, and Save to cloud runs from its row with the usual prompt.
+    const unique = `${Date.now()}${testInfo.workerIndex}`;
+    await apiSignUpAndVerify(page.request, API_BASE, {
+        email: `phone-cloud-${unique}@test.dev`, name: 'Phone Cloud', username: `phonecloud_${unique}`,
+    });
+    await page.reload();
+    await expect(activePane(page).getByTestId('editor-canvas')).toBeVisible();
+    await page.getByRole('button', { name: 'More actions' }).click();
+    const save = menu.getByRole('button', { name: 'Save to cloud (new)' });
+    await row(save, 'Save to cloud row');
+    await expect(menu.getByText(`Signed in as phonecloud_${unique}`)).toBeVisible();
+    await row(menu.getByRole('link', { name: 'My profile' }), 'My profile row');
+    await row(menu.getByRole('button', { name: 'Sign out' }), 'Sign out row');
+    page.once('dialog', dialog => dialog.accept('From the phone')); // the commit-message prompt
+    const [createRes] = await Promise.all([
+        page.waitForResponse(res => res.url().includes('/api/projects') && res.request().method() === 'POST', { timeout: 15000 }),
+        save.click(),
+    ]);
+    expect(createRes.ok()).toBeTruthy();
+    const created = await createRes.json();
+    await expect(menu).toBeHidden(); // a completed one-shot action closes the sheet, as it would close the popover
+    await expect.poll(async () => (await readActiveProject(page)).cloud)
+        .toEqual({ projectId: created.project.id, lastSyncedCommitId: created.commit.id });
+    await page.getByRole('button', { name: 'More actions' }).click();
+    await row(menu.getByRole('button', { name: 'Save to cloud', exact: true }), 'Save to cloud row once linked');
+    await row(menu.getByRole('button', { name: 'Version history' }), 'Version history row');
 });

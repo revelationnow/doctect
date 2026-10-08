@@ -1,9 +1,11 @@
-import React, { useLayoutEffect, useRef } from 'react';
+import React, { useLayoutEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
+import clsx from 'clsx';
 import type { TouchEditorActions } from './touchActions';
 import type { EditorChrome } from './EditorChromeContext';
 import { useBackDismiss } from './useBackDismiss';
+import { MENU_ROW_CLASS, MenuListContext, type MenuListHost } from './MenuListContext';
 import { ALIGN_ACTIONS } from '../../services/alignElements';
 
 /** Elements that use Escape themselves (the preview-node select closes its own dropdown). */
@@ -13,7 +15,7 @@ const isEditableTarget = (target: EventTarget | null): boolean =>
 
 const Item = ({ label, onClick, checked, disabled }: { label: string; onClick: () => void; checked?: boolean; disabled?: boolean }) => (
     <button type="button" onClick={onClick} disabled={disabled} aria-pressed={checked}
-        className="flex min-h-11 w-full items-center justify-between px-4 text-left text-sm text-slate-700 disabled:opacity-40">
+        className={clsx(MENU_ROW_CLASS, 'justify-between disabled:opacity-40')}>
         <span>{label}</span>
         {/* Visual echo of aria-pressed; hidden from the name so toggles stay reachable by label. */}
         {checked !== undefined && <span aria-hidden="true" className="text-xs text-slate-400">{checked ? 'On' : 'Off'}</span>}
@@ -53,6 +55,9 @@ export function OverflowMenu({ open, onClose, actions, chrome }: {
     useLayoutEffect(() => { onCloseRef.current = onClose; });
     // Touch: the back gesture closes the sheet; any other close consumes its history entry.
     useBackDismiss(open, onClose);
+    // Cloud and Account render as rows of this sheet rather than as the header's popovers, and a
+    // completed action or a followed link in them closes the sheet like its own one-shot rows.
+    const listHost = useMemo<MenuListHost>(() => ({ onDismiss: () => onCloseRef.current() }), []);
 
     useLayoutEffect(() => {
         if (!open) return;
@@ -131,15 +136,16 @@ export function OverflowMenu({ open, onClose, actions, chrome }: {
                 </Group>
                 {chrome && (
                     <>
-                        <Group title="Cloud"><div className="px-4 py-2">{chrome.cloudMenu}</div></Group>
-                        <Group title="Account"><div className="px-4 py-2">{chrome.accountMenu}</div></Group>
+                        <MenuListContext.Provider value={listHost}>
+                            <Group title="Cloud">{chrome.cloudMenu}</Group>
+                            <Group title="Account">{chrome.accountMenu}</Group>
+                        </MenuListContext.Provider>
                         {chrome.navigation && chrome.navigation.length > 0 && (
                             // Router links, like the desktop header: the unsaved-work blocker applies.
                             // The sheet closes first so a blocker dialog is not hidden beneath it.
                             <Group title="Navigate">
                                 {chrome.navigation.map(target => (
-                                    <Link key={target.to} to={target.to} onClick={onClose}
-                                        className="flex min-h-11 w-full items-center px-4 text-sm text-slate-700">
+                                    <Link key={target.to} to={target.to} onClick={onClose} className={MENU_ROW_CLASS}>
                                         {target.label}
                                     </Link>
                                 ))}

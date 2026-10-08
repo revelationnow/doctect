@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { AppState } from '../types';
 import { loadProjectState } from '../services/loadProjectState';
 import { X, Save, AlertTriangle, FileJson, CheckCircle, Braces, AlignLeft, ListTree, FileText, Plus, Copy, MoreHorizontal } from 'lucide-react';
@@ -55,6 +55,22 @@ export const JsonModal: React.FC<JsonModalProps> = ({ isOpen, onClose, currentSt
     };
     // Touch back gesture: asks before discarding unapplied changes; cancelling restores the entry.
     useBackDismiss(isOpen, requestClose);
+    // Escape closes the editor on every form factor, asking the same way. On window, since nothing
+    // in the dialog takes focus on open (the textarea's own handler covers Tab only, and the editor
+    // bar's shortcuts already stand down while this dialog is open). An Escape a child has handled
+    // (defaultPrevented) is left alone; a handled one is marked so no other overlay acts on it.
+    const requestCloseRef = useRef(requestClose);
+    useLayoutEffect(() => { requestCloseRef.current = requestClose; });
+    useEffect(() => {
+        if (!isOpen) return;
+        const onKey = (event: KeyboardEvent) => {
+            if (event.key !== 'Escape' || event.defaultPrevented) return;
+            event.preventDefault();
+            requestCloseRef.current();
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [isOpen]);
 
     // Handle scrolling to newly added items
     useEffect(() => {

@@ -7,6 +7,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { EditorPage } from '../../pages/EditorPage';
 import { createNormalizedAppHarness } from '../helpers/normalizedAppHarness';
 import { overlayDepthOf } from '../../components/editor-layout/useBackDismiss';
+import { PHONE_QUERY } from '../../hooks/useEditorFormFactor';
 
 // Router interop of the touch overlays' back gesture on the real editor page (normalized store,
 // data router, `useBlocker`): with unsaved work, back from an overlay entry closes the overlay
@@ -19,7 +20,7 @@ vi.mock('../../services/analytics', () => ({ trackEvent: vi.fn() }));
 
 const installMatchMedia = (coarse: boolean) => {
     (window as any).matchMedia = (query: string) => ({
-        matches: query === '(pointer: coarse)' ? coarse : query === '(max-width: 639px)' ? coarse : false,
+        matches: query === '(pointer: coarse)' ? coarse : query === PHONE_QUERY ? coarse : false,
         media: query, addEventListener() {}, removeEventListener() {},
     });
 };

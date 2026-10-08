@@ -10,6 +10,8 @@ import { mockWorkspaceCommit } from '../helpers/fakeLocalWorkspaceStore';
 const formFactor = vi.hoisted(() => ({ current: 'desktop' as 'desktop' | 'tablet' | 'phone' }));
 const closeModal = vi.hoisted(() => ({ current: undefined as any }));
 const newProjectModal = vi.hoisted(() => ({ current: undefined as any }));
+/** Every chrome object the active pane was handed, one per render, oldest first. */
+const seenChrome = vi.hoisted(() => ({ list: [] as any[] }));
 
 vi.mock('../../hooks/useEditorFormFactor', () => ({ useEditorFormFactor: () => formFactor.current }));
 // The active editor pane renders whatever page chrome the context hands it, so the test can see
@@ -20,6 +22,7 @@ vi.mock('../../components/ProjectEditor', async () => {
         ProjectEditor: ({ projectId, isActive }: { projectId: string; isActive: boolean }) => {
             const chrome = useEditorChrome();
             if (!isActive) return <div data-testid={`editor-${projectId}`} />;
+            seenChrome.list.push(chrome);
             return (
                 <div data-testid={`editor-${projectId}`}>
                     {chrome ? (
@@ -68,10 +71,10 @@ const makeStore = (initial: WorkspaceSnapshot) => {
     return { store, commit };
 };
 
-const renderPage = () => {
+const renderPage = (initialWarnings: string[] = []) => {
     const initial = workspace();
     const { store, commit } = makeStore(initial);
-    const router = createMemoryRouter([{ path: '/app', element: <EditorPage store={store} initialWorkspace={initial} initialWarnings={[]} /> }], { initialEntries: ['/app'] });
+    const router = createMemoryRouter([{ path: '/app', element: <EditorPage store={store} initialWorkspace={initial} initialWarnings={initialWarnings} /> }], { initialEntries: ['/app'] });
     render(<RouterProvider router={router} />);
     return { commit };
 };
@@ -80,6 +83,7 @@ beforeEach(() => {
     formFactor.current = 'desktop';
     closeModal.current = undefined;
     newProjectModal.current = undefined;
+    seenChrome.list.length = 0;
 });
 afterEach(() => cleanup());
 
@@ -113,6 +117,24 @@ describe('EditorPage page chrome on touch', () => {
         expect(newProjectModal.current.isOpen).toBe(false);
         fireEvent.click(screen.getByRole('button', { name: 'chrome new project' }));
         expect(newProjectModal.current.isOpen).toBe(true);
+    });
+
+    it('memoises the chrome: an unrelated page re-render keeps the same object, a project change replaces it', async () => {
+        formFactor.current = 'phone';
+        renderPage(['An old project warning']);
+        const first = seenChrome.list.at(-1);
+        expect(first).toBeTruthy();
+        // Dismissing the warning re-renders the page shell and the panes, but shows the same chrome.
+        fireEvent.click(screen.getByRole('button', { name: 'Dismiss project load warnings' }));
+        expect(screen.queryByText('An old project warning')).toBeNull();
+        expect(seenChrome.list.length).toBeGreaterThan(1);
+        expect(seenChrome.list.at(-1)).toBe(first);
+        // Its callbacks still reach the live handlers: the activation below goes through.
+        fireEvent.click(screen.getByRole('button', { name: 'chrome select b' }));
+        await waitFor(() => expect(screen.getByTestId('chrome-active').textContent).toBe('project-b'));
+        expect(seenChrome.list.at(-1)).not.toBe(first);
+        expect(seenChrome.list.at(-1).activeProjectId).toBe('project-b');
+        expect(seenChrome.list.at(-1).navigation).toBe(first.navigation);
     });
 
     it.each(['desktop', 'tablet'] as const)('keeps the page header with the tab strip on %s', (value) => {

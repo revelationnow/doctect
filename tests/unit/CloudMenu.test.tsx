@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { CloudMenu } from '../../components/cloud/CloudMenu';
+import { MenuListContext } from '../../components/editor-layout/MenuListContext';
 import { cloudApi, ApiError } from '../../services/cloudApi';
 import type { WorkspaceProject } from '../../services/localWorkspace/index';
 
@@ -191,5 +192,70 @@ describe('CloudMenu', () => {
 
         view.rerender(menu(project, onLinkCloud));
         expect(screen.getByRole('button', { name: 'Retry local link' })).toBeVisible();
+    });
+});
+
+// Task 21: inside a MenuListContext host (the phone ⋯ sheet) the same items render as rows with no
+// trigger; a completed one-shot action dismisses the host, an action that opens a modal does not.
+describe('CloudMenu as sheet rows', () => {
+    beforeEach(() => vi.restoreAllMocks());
+
+    const renderRows = (menuProject: WorkspaceProject = project, onLinkCloud = vi.fn(async () => true)) => {
+        const onDismiss = vi.fn();
+        render(
+            <MenuListContext.Provider value={{ onDismiss }}>
+                <MemoryRouter initialEntries={['/app']}>
+                    <Routes>
+                        <Route path="/app" element={<CloudMenu project={menuProject} onLinkCloud={onLinkCloud} onRestoreState={vi.fn(async () => true)} />} />
+                        <Route path="/login" element={<div>LOGIN_MARKER</div>} />
+                    </Routes>
+                </MemoryRouter>
+            </MenuListContext.Provider>,
+        );
+        return { onDismiss, onLinkCloud };
+    };
+
+    it('shows the sign-in row at once, as a 44px link that dismisses the host when followed', () => {
+        mockUseSession.mockReturnValue({ data: null });
+        const { onDismiss } = renderRows();
+        expect(screen.queryByTitle('Cloud')).not.toBeInTheDocument();
+        const link = screen.getByRole('link', { name: 'Sign in to save to cloud' });
+        expect(link).toHaveAttribute('href', '/login');
+        expect(link.className).toMatch(/\bmin-h-11\b/);
+        fireEvent.click(link);
+        expect(onDismiss).toHaveBeenCalledTimes(1);
+        expect(screen.getByText('LOGIN_MARKER')).toBeInTheDocument();
+    });
+
+    it('saves to the cloud from its row with the usual handlers and then dismisses the host', async () => {
+        mockUseSession.mockReturnValue({ data: { user: { username: 'planner_pro' } } });
+        const createProject = vi.spyOn(cloudApi, 'createProject').mockResolvedValue({
+            project: { id: 'cloud-created' }, commit: { id: 'head-created' },
+        } as any);
+        vi.spyOn(window, 'prompt').mockReturnValue('From the phone');
+        const { onDismiss, onLinkCloud } = renderRows();
+        const save = screen.getByRole('button', { name: 'Save to cloud (new)' });
+        expect(save.className).toMatch(/\bmin-h-11\b/);
+        fireEvent.click(save);
+        await waitFor(() => expect(onDismiss).toHaveBeenCalledTimes(1));
+        expect(createProject).toHaveBeenCalledTimes(1);
+        expect(onLinkCloud).toHaveBeenCalledWith({ projectId: 'cloud-created', lastSyncedCommitId: 'head-created' });
+    });
+
+    it('keeps the host open to show a failed save, and for a modal it opens itself', async () => {
+        mockUseSession.mockReturnValue({ data: { user: { username: 'planner_pro' } } });
+        const linked = { ...project, cloud: { projectId: 'cloud-1', lastSyncedCommitId: 'head-1' } };
+        vi.spyOn(cloudApi, 'getProject').mockResolvedValue({ id: 'cloud-1', headCommitId: 'head-1' } as any);
+        vi.spyOn(cloudApi, 'saveCommit').mockRejectedValue(new ApiError(500, 'Save failed badly', 'SERVER'));
+        vi.spyOn(cloudApi, 'listCommits').mockResolvedValue([]);
+        vi.spyOn(window, 'prompt').mockReturnValue('Update');
+        const { onDismiss } = renderRows(linked);
+        fireEvent.click(screen.getByRole('button', { name: 'Save to cloud' }));
+        expect(await screen.findByText('Save failed badly')).toBeVisible();
+        expect(onDismiss).not.toHaveBeenCalled();
+        // Version history renders its modal from this menu: dismissing the host would unmount it.
+        fireEvent.click(screen.getByRole('button', { name: 'Version history' }));
+        expect(await screen.findByRole('heading', { name: 'Version history' })).toBeInTheDocument();
+        expect(onDismiss).not.toHaveBeenCalled();
     });
 });

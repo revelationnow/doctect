@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes, useNavigationType } from 'react-router-dom';
 import { AccountMenu } from '../../components/AccountMenu';
+import { MenuListContext } from '../../components/editor-layout/MenuListContext';
 
 const api = vi.hoisted(() => ({ me: vi.fn() }));
 const auth = vi.hoisted(() => ({ signOut: vi.fn() }));
@@ -132,5 +133,70 @@ describe('AccountMenu', () => {
         expect(await screen.findByRole('alert')).toHaveTextContent('Unable to sign out. Try again.');
         expect(screen.queryByText(/LOGIN_PAGE/)).toBeNull();
         expect(api.me).toHaveBeenCalledTimes(1);
+    });
+});
+
+// Task 21: inside a MenuListContext host (the phone ⋯ sheet) the links and Sign out render as rows
+// with no trigger; following a link dismisses the host first, Sign out keeps its handler.
+describe('AccountMenu as sheet rows', () => {
+    beforeEach(() => {
+        api.me.mockReset();
+        auth.signOut.mockReset();
+        sessionState.value = { data: null, isPending: false };
+    });
+
+    const renderRows = () => {
+        const onDismiss = vi.fn();
+        render(
+            <MenuListContext.Provider value={{ onDismiss }}>
+                <MemoryRouter initialEntries={['/app']}>
+                    <Routes>
+                        <Route path="/app" element={<AccountMenu />} />
+                        <Route path="/gallery" element={<div>GALLERY_PAGE</div>} />
+                        <Route path="/login" element={<LoginDestination />} />
+                    </Routes>
+                </MemoryRouter>
+            </MenuListContext.Provider>,
+        );
+        return onDismiss;
+    };
+
+    it('lists the account links and Sign out as 44px rows at once, naming the account instead of a trigger', async () => {
+        api.me.mockResolvedValue(user('user', 'planner_pro'));
+        const onDismiss = renderRows();
+        expect(await screen.findByText('Signed in as planner_pro')).toBeInTheDocument();
+        expect(screen.queryByTitle('Account')).toBeNull();
+        for (const name of ['My profile', 'Gallery', 'My projects', 'Account settings']) {
+            expect(screen.getByRole('link', { name }).className, name).toMatch(/\bmin-h-11\b/);
+        }
+        expect(screen.queryByRole('link', { name: 'Moderation' })).toBeNull();
+        expect(screen.getByRole('link', { name: 'My profile' })).toHaveAttribute('href', '/u/planner_pro');
+        expect(screen.getByRole('button', { name: 'Sign out' }).className).toMatch(/\bmin-h-11\b/);
+        fireEvent.click(screen.getByRole('link', { name: 'Gallery' }));
+        expect(onDismiss).toHaveBeenCalledTimes(1);
+        expect(screen.getByText('GALLERY_PAGE')).toBeInTheDocument();
+    });
+
+    it('offers Moderation to an admin and signs out through the same handler without dismissing the host', async () => {
+        const logout = deferred<void>();
+        auth.signOut.mockReturnValueOnce(logout.promise);
+        api.me.mockResolvedValueOnce(user('admin')).mockResolvedValueOnce(null);
+        const onDismiss = renderRows();
+        expect((await screen.findByRole('link', { name: 'Moderation' })).getAttribute('href')).toBe('/admin/moderation');
+        fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+        expect(auth.signOut).toHaveBeenCalledTimes(1);
+        await act(async () => { logout.resolve(); await logout.promise; });
+        expect(await screen.findByText('LOGIN_PAGE:REPLACE')).toBeInTheDocument();
+        expect(onDismiss).not.toHaveBeenCalled();
+    });
+
+    it('shows a Sign in row when signed out, which dismisses the host when followed', async () => {
+        api.me.mockResolvedValue(null);
+        const onDismiss = renderRows();
+        const link = await screen.findByRole('link', { name: 'Sign in' });
+        expect(link.className).toMatch(/\bmin-h-11\b/);
+        expect(link).toHaveAttribute('href', '/login');
+        fireEvent.click(link);
+        expect(onDismiss).toHaveBeenCalledTimes(1);
     });
 });

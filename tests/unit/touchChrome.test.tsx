@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeActions } from '../helpers/touchActions';
@@ -9,6 +9,7 @@ import { PhoneTopBar } from '../../components/editor-layout/PhoneTopBar';
 import { TabletToolbar } from '../../components/editor-layout/TabletToolbar';
 import { ProjectSwitcher } from '../../components/editor-layout/ProjectSwitcher';
 import { EditorChromeContext, EditorChrome } from '../../components/editor-layout/EditorChromeContext';
+import { useMenuListHost } from '../../components/editor-layout/MenuListContext';
 
 const chrome: EditorChrome = {
     projects: [{ id: 'a', name: 'Planner' }, { id: 'b', name: 'Notebook' }], activeProjectId: 'a',
@@ -71,6 +72,43 @@ describe('OverflowMenu', () => {
         expect(actions.openGenerator).toHaveBeenCalled();
         expect(screen.getByText('cloud-menu')).toBeTruthy();
         expect(screen.getByText('account-menu')).toBeTruthy();
+    });
+
+    it('hosts the cloud and account slots as sheet rows whose completed actions close the sheet', () => {
+        // CloudMenu / AccountMenu switch to their row rendering under this host (their own tests
+        // cover the rows); here a probe stands in for them. Slots outside the sheet get no host.
+        const Probe = ({ name }: { name: string }) => {
+            const host = useMenuListHost();
+            return <button type="button" onClick={() => host?.onDismiss()}>{host ? `${name} rows` : `${name} popover`}</button>;
+        };
+        const onClose = vi.fn();
+        render(
+            <>
+                <Probe name="outside" />
+                <OverflowMenu open onClose={onClose} actions={makeActions()}
+                    chrome={{ ...chrome, cloudMenu: <Probe name="cloud" />, accountMenu: <Probe name="account" /> }} />
+            </>,
+        );
+        expect(screen.getByRole('button', { name: 'outside popover' })).toBeTruthy();
+        const dialog = screen.getByRole('dialog', { name: 'More actions' });
+        expect(within(dialog).getByRole('heading', { name: 'Cloud' }).nextElementSibling).toBe(within(dialog).getByRole('button', { name: 'cloud rows' }));
+        expect(within(dialog).getByRole('heading', { name: 'Account' }).nextElementSibling).toBe(within(dialog).getByRole('button', { name: 'account rows' }));
+        fireEvent.click(within(dialog).getByRole('button', { name: 'cloud rows' }));
+        expect(onClose).toHaveBeenCalledTimes(1);
+        fireEvent.click(within(dialog).getByRole('button', { name: 'account rows' }));
+        expect(onClose).toHaveBeenCalledTimes(2);
+    });
+
+    it('dismisses through the latest onClose when the host closure changes after opening', () => {
+        const Probe = () => { const host = useMenuListHost(); return <button type="button" onClick={() => host?.onDismiss()}>dismiss</button>; };
+        const first = vi.fn();
+        const second = vi.fn();
+        const withProbe = { ...chrome, cloudMenu: <Probe /> };
+        const { rerender } = render(<OverflowMenu open onClose={first} actions={makeActions()} chrome={withProbe} />);
+        rerender(<OverflowMenu open onClose={second} actions={makeActions()} chrome={withProbe} />);
+        fireEvent.click(screen.getByRole('button', { name: 'dismiss' }));
+        expect(first).not.toHaveBeenCalled();
+        expect(second).toHaveBeenCalledTimes(1);
     });
 
     it('adds a final Navigate group of router links when the chrome provides page routes', () => {

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Link, useBlocker } from 'react-router-dom';
 import type { BlockerFunction } from 'react-router-dom';
 import { AlertTriangle, Coffee, Github, Square, X } from 'lucide-react';
@@ -67,6 +67,13 @@ const projectJsonFilename = (project: WorkspaceProject): string => {
 const commandErrorMessage = (error: unknown): string => (
   error instanceof Error ? error.message : 'Local workspace command failed.'
 );
+
+/** The save status shown while a project has no recorded save state yet. */
+const SAVED_LOCALLY: React.ComponentProps<typeof LocalSaveStatus>['state'] = { status: 'saved' };
+/** The header's page links (Home, Gallery, Docs), for the phone overflow's Navigate group. */
+const PAGE_NAVIGATION: NonNullable<EditorChrome['navigation']> = [
+  { label: 'Home', to: '/' }, { label: 'Gallery', to: '/gallery' }, { label: 'Docs', to: '/docs' },
+];
 
 type PageWrites = Omit<WorkspaceProjectWrites, 'commitStructural'> & {
   commitStructural(command: StructuralWorkspaceCommand, expectedAuthorityEpoch?: number): Promise<unknown>;
@@ -358,10 +365,19 @@ function EditorPageShell({
   };
 
   // The phone top bar replaces this header; it gets the same tab, save, cloud and account pieces.
-  const chrome: EditorChrome = {
+  // Memoised on the data it shows, so the touch chrome does not re-render with every page render:
+  // the handlers above are plain closures rebuilt each render, so the chrome's callbacks reach
+  // them through `latest` at call time (what a freshly rendered header would call) instead of
+  // pinning one render's copies.
+  const latest = useRef({ handleActivateProject, downloadProjectJson, handleLinkCloud, handleRestoreState, retryProject });
+  useLayoutEffect(() => {
+    latest.current = { handleActivateProject, downloadProjectJson, handleLinkCloud, handleRestoreState, retryProject };
+  });
+  const activeSaveState = activeProject ? saveStates.get(activeProject.id) ?? SAVED_LOCALLY : null;
+  const chrome = useMemo<EditorChrome>(() => ({
     projects,
     activeProjectId,
-    onSelectProject: projectId => { void handleActivateProject(projectId); },
+    onSelectProject: projectId => { void latest.current.handleActivateProject(projectId); },
     onCloseProject: projectId => {
       const authorityEpoch = authorityEpochs.get(projectId);
       if (authorityEpoch === undefined) return;
@@ -371,23 +387,23 @@ function EditorPageShell({
       setCommandError(null);
       setShowNewProjectModal(true);
     },
-    saveStatus: activeProject ? (
+    saveStatus: activeProject && activeSaveState ? (
       <LocalSaveStatus
-        state={saveStates.get(activeProject.id) ?? { status: 'saved' }}
-        onRetry={() => retryProject(activeProject.id)}
-        onDownload={() => downloadProjectJson(activeProject)}
+        state={activeSaveState}
+        onRetry={() => latest.current.retryProject(activeProject.id)}
+        onDownload={() => latest.current.downloadProjectJson(activeProject)}
       />
     ) : null,
     cloudMenu: activeProject ? (
       <CloudMenu
         project={activeProject}
         getWorkingProject={editing ? () => editing.readProject(activeProject.id, authorityEpochs.get(activeProject.id)) : undefined}
-        onLinkCloud={cloud => handleLinkCloud(
+        onLinkCloud={cloud => latest.current.handleLinkCloud(
           activeProject.id,
           authorityEpochs.get(activeProject.id) ?? 0,
           cloud,
         )}
-        onRestoreState={(state, cloud) => handleRestoreState(
+        onRestoreState={(state, cloud) => latest.current.handleRestoreState(
           activeProject.id,
           authorityEpochs.get(activeProject.id) ?? 0,
           state,
@@ -396,9 +412,8 @@ function EditorPageShell({
       />
     ) : null,
     accountMenu: <AccountMenu />,
-    // The header's page links (Home, Gallery, Docs), for the phone overflow's Navigate group.
-    navigation: [{ label: 'Home', to: '/' }, { label: 'Gallery', to: '/gallery' }, { label: 'Docs', to: '/docs' }],
-  };
+    navigation: PAGE_NAVIGATION,
+  }), [projects, activeProjectId, activeProject, authorityEpochs, activeSaveState, editing]);
 
   return (
     <FormFactorProvider value={formFactor}>

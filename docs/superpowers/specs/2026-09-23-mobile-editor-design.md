@@ -39,7 +39,7 @@ page header hides the Cloud and Account menus below `sm`, so on phones they cann
 | Capability level | Light edits now, structured for full touch editing later — expanded during review to include move, resize, text/shape creation and a quick formatting bar |
 | Devices | Phones and tablets |
 | Phone layout | Full-screen canvas + properties bottom sheet + sidebar drawer |
-| Layout trigger | Touch-primary device first (`(pointer: coarse)`), then width picks phone vs tablet |
+| Layout trigger | Touch-primary device first (`(pointer: coarse)`), then the viewport's shorter side picks phone vs tablet |
 | Architecture | Layout-slot shell (`EditorLayout`) reusing existing panels; not CSS-only, not a forked mobile editor |
 | Generator on touch | Template and Hierarchy become separate views with a toggle |
 | Sequencing | Spec and plan now; implementation starts from `main` after `feat/incremental-local-persistence` merges |
@@ -51,7 +51,9 @@ page header hides the Cloud and Account menus below `sm`, so on phones they cann
 Returns `'desktop' | 'tablet' | 'phone'`:
 
 - `matchMedia('(pointer: coarse)')` false → always `desktop`, regardless of width.
-- Coarse pointer and viewport width `< 640px` → `phone`; otherwise → `tablet`.
+- Coarse pointer and the viewport's *shorter* side `< 640px` → `phone`, i.e.
+  `(max-width: 639px), (max-height: 639px)`, so a phone held in landscape (844×390) keeps the phone
+  layout; coarse pointer otherwise → `tablet`.
 - Subscribes to both media queries so rotation and resizes update it.
 - Sets `data-form-factor="<value>"` on `document.documentElement` for `tablet` and `phone` only;
   the attribute is absent on desktop. All touch CSS is scoped under it, so desktop CSS is unaffected.
