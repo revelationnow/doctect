@@ -943,4 +943,27 @@ test('phone overflow menu lists Cloud and Account as rows, and Save to cloud run
     await page.getByRole('button', { name: 'More actions' }).click();
     await row(menu.getByRole('button', { name: 'Save to cloud', exact: true }), 'Save to cloud row once linked');
     await row(menu.getByRole('button', { name: 'Version history' }), 'Version history row');
+
+    // A Cloud modal opened from the sheet takes its own back entry above the sheet's: back closes
+    // the modal alone and the sheet stays; closing it with its button returns to the sheet too.
+    const history = page.getByRole('heading', { name: 'Version history' });
+    await menu.getByRole('button', { name: 'Version history' }).click();
+    await expect(history).toBeVisible();
+    await expect.poll(() => overlayDepth(page)).toBe(2);
+    await page.goBack();
+    await expect(history).toBeHidden();
+    await expect(menu).toBeVisible();
+    await expect.poll(() => overlayDepth(page)).toBe(1);
+    expect(pathname(page)).toBe('/app');
+    await menu.getByRole('button', { name: 'Version history' }).click();
+    await expect(history).toBeVisible();
+    await expect.poll(() => overlayDepth(page)).toBe(2);
+    await page.getByRole('button', { name: 'Close version history' }).click();
+    await expect(history).toBeHidden();
+    await expect(menu).toBeVisible();
+    await expect.poll(() => overlayDepth(page)).toBe(1);
+    await page.getByTestId('overflow-menu-backdrop').click();
+    await expect(menu).toBeHidden();
+    await expect.poll(() => overlayDepth(page)).toBe(0);
+    expect(pathname(page)).toBe('/app');
 });

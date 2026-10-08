@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, GitPullRequest } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cloudApi, ApiError } from '../../services/cloudApi';
+import { useBackDismiss } from '../editor-layout/useBackDismiss';
 
 interface ProposeChangesModalProps {
     sourceProjectId: string;
@@ -14,6 +15,9 @@ export function ProposeChangesModal({ sourceProjectId, onClose }: ProposeChanges
     const [description, setDescription] = useState('');
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    // Touch: the back gesture closes this dialog alone (the ⋯ sheet it was opened from stays), as
+    // its Close button does.
+    useBackDismiss(true, onClose);
 
     const submit = async () => {
         if (!title.trim()) { setError('A title is required.'); return; }

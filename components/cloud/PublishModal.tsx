@@ -5,6 +5,7 @@ import { computePageOrder } from '../../services/pdfService';
 import { generateThumbnails } from '../../services/thumbnailService';
 import { PreviewPagePicker } from './PreviewPagePicker';
 import type { WorkspaceProject } from '../../services/localWorkspace/index';
+import { useBackDismiss } from '../editor-layout/useBackDismiss';
 
 interface PublishModalProps {
     project: WorkspaceProject;
@@ -31,6 +32,9 @@ export function PublishModal({ project, cloudProjectId, onClose, onPublished }: 
     const descriptionRef = useRef<HTMLTextAreaElement>(null);
     const previousFocus = useRef<HTMLElement | null>(null);
     currentProjectId.current = cloudProjectId;
+    // Touch: the back gesture closes this dialog alone (the ⋯ sheet it was opened from stays), as
+    // its Close button does.
+    useBackDismiss(true, onClose);
 
     useEffect(() => {
         previousFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;

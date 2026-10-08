@@ -5,6 +5,7 @@ import { computePageOrder } from '../../services/pdfService';
 import { generateThumbnails } from '../../services/thumbnailService';
 import { PreviewPagePicker } from './PreviewPagePicker';
 import type { AppState } from '../../types';
+import { useBackDismiss } from '../editor-layout/useBackDismiss';
 
 interface EditListingModalProps {
     projectId: string;
@@ -52,6 +53,9 @@ export function EditListingModal({ projectId, onClose, onSaved }: EditListingMod
     const [attempt, setAttempt] = useState(0);
     const dialogRef = useRef<HTMLDivElement>(null);
     const previousFocus = useRef<HTMLElement | null>(null);
+    // Touch: the back gesture closes this dialog alone (the ⋯ sheet it was opened from stays), as
+    // its Close button does.
+    useBackDismiss(true, onClose);
 
     // The dialog itself takes focus rather than a field, because the form does not exist yet
     // while the listing loads -- and without focus inside it, the Escape handler below would

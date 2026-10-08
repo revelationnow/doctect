@@ -79,6 +79,21 @@ describe('JsonModal Escape', () => {
         expect(own.defaultPrevented).toBe(true);
     });
 
+    it('leaves an Escape alone that comes from a <select>, which closes its own dropdown with it', () => {
+        const onClose = renderModal('desktop');
+        // The visual editor's "Add" type picker: expand the root node and start adding a property.
+        fireEvent.click(screen.getByText('Root'));
+        fireEvent.click(screen.getAllByRole('button', { name: 'Add Property' })[0]); // the node's own; its data object has one too
+        const select = screen.getByRole('combobox');
+        expect(select.tagName).toBe('SELECT');
+        const fromSelect = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true, bubbles: true });
+        act(() => { select.dispatchEvent(fromSelect); });
+        expect(onClose).not.toHaveBeenCalled();
+        expect(fromSelect.defaultPrevented).toBe(false);
+        escape(); // from anywhere else it still closes (the open add form has changed nothing)
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
     it('ignores other keys and does nothing once closed', () => {
         const onClose = vi.fn();
         const { rerender } = render(<JsonModal isOpen currentState={state} onSave={vi.fn()} onClose={onClose} />);

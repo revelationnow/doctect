@@ -1,6 +1,6 @@
 import React from 'react';
 import { act, render, renderHook } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { detectFormFactor, PHONE_QUERY, useEditorFormFactor } from '../../hooks/useEditorFormFactor';
 import { FormFactorProvider, useFormFactor } from '../../components/editor-layout/FormFactorContext';
 
@@ -83,6 +83,80 @@ describe('useEditorFormFactor', () => {
         expect(result.current).toBe('desktop');
         act(() => media.set({ width: 1200, height: 400 }));
         expect(result.current).toBe('desktop');
+    });
+
+    // Ruling R40: the layout must not swap under a user who is typing. A soft keyboard that
+    // resizes the viewport flips the (max-height) term on a tablet; the change waits for focus
+    // to leave editable elements and the queries are read afresh then.
+    describe('while the user is typing (R40)', () => {
+        const field = <T extends HTMLElement>(tag: string) => {
+            const element = document.createElement(tag) as T;
+            document.body.appendChild(element);
+            return element;
+        };
+        afterEach(() => { document.body.innerHTML = ''; });
+
+        it('holds a height-only change while an input has focus, and applies it once the input blurs', () => {
+            const media = installMatchMedia({ coarse: true, width: 1280, height: 800 });
+            const input = field<HTMLInputElement>('input');
+            const { result } = renderHook(() => useEditorFormFactor());
+            expect(result.current).toBe('tablet');
+            act(() => input.focus());
+            act(() => media.set({ height: 500 })); // the keyboard opened
+            expect(result.current).toBe('tablet');
+            act(() => input.blur());
+            expect(result.current).toBe('phone');
+            expect(document.documentElement.hasAttribute('data-form-factor')).toBe(false); // the hook alone sets nothing
+        });
+
+        it('keeps holding while focus moves between fields, textarea, select and contenteditable included', () => {
+            const media = installMatchMedia({ coarse: true, width: 1280, height: 800 });
+            const input = field<HTMLInputElement>('input');
+            const textarea = field<HTMLTextAreaElement>('textarea');
+            const select = field<HTMLSelectElement>('select');
+            const editable = field<HTMLDivElement>('div');
+            editable.setAttribute('contenteditable', 'true');
+            editable.tabIndex = 0;
+            const { result } = renderHook(() => useEditorFormFactor());
+            act(() => input.focus());
+            act(() => media.set({ height: 500 }));
+            for (const next of [textarea, select, editable]) {
+                act(() => next.focus());
+                expect(result.current, next.tagName).toBe('tablet');
+            }
+            const button = field<HTMLButtonElement>('button');
+            act(() => button.focus()); // leaving the fields for a control applies the change
+            expect(result.current).toBe('phone');
+        });
+
+        it('reads the queries afresh when focus leaves: a keyboard closed again by then changes nothing', () => {
+            const media = installMatchMedia({ coarse: true, width: 1280, height: 800 });
+            const input = field<HTMLInputElement>('input');
+            const { result } = renderHook(() => useEditorFormFactor());
+            act(() => input.focus());
+            act(() => media.set({ height: 500 }));
+            act(() => media.set({ height: 800 })); // the keyboard closed before the field blurred
+            expect(result.current).toBe('tablet');
+            act(() => input.blur());
+            expect(result.current).toBe('tablet');
+        });
+
+        it('does not hold a change that arrives while a non-editable element has focus, and drops its listener on unmount', () => {
+            const media = installMatchMedia({ coarse: true, width: 1280, height: 800 });
+            const button = field<HTMLButtonElement>('button');
+            const input = field<HTMLInputElement>('input');
+            const { result, unmount } = renderHook(() => useEditorFormFactor());
+            act(() => button.focus());
+            act(() => media.set({ height: 500 }));
+            expect(result.current).toBe('phone');
+            act(() => input.focus());
+            act(() => media.set({ height: 800 }));
+            expect(result.current).toBe('phone'); // held
+            const removed = vi.spyOn(document, 'removeEventListener');
+            unmount();
+            expect(removed.mock.calls.some(([type]) => type === 'focusout')).toBe(true);
+            removed.mockRestore();
+        });
     });
 });
 

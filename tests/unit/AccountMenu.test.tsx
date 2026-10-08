@@ -164,7 +164,8 @@ describe('AccountMenu as sheet rows', () => {
     it('lists the account links and Sign out as 44px rows at once, naming the account instead of a trigger', async () => {
         api.me.mockResolvedValue(user('user', 'planner_pro'));
         const onDismiss = renderRows();
-        expect(await screen.findByText('Signed in as planner_pro')).toBeInTheDocument();
+        const caption = await screen.findByText('Signed in as planner_pro');
+        expect(caption.className).toMatch(/\btext-sm\b/); // set in the rows' size, not the popover's
         expect(screen.queryByTitle('Account')).toBeNull();
         for (const name of ['My profile', 'Gallery', 'My projects', 'Account settings']) {
             expect(screen.getByRole('link', { name }).className, name).toMatch(/\bmin-h-11\b/);
@@ -188,6 +189,18 @@ describe('AccountMenu as sheet rows', () => {
         await act(async () => { logout.resolve(); await logout.promise; });
         expect(await screen.findByText('LOGIN_PAGE:REPLACE')).toBeInTheDocument();
         expect(onDismiss).not.toHaveBeenCalled();
+    });
+
+    it('colours the authority-failure rows red in the row layout, with no default row colour to lose to', async () => {
+        api.me.mockRejectedValueOnce(new Error('Authority unavailable'));
+        renderRows();
+        expect(await screen.findByRole('alert')).toHaveTextContent('Unable to verify account authority.');
+        for (const name of ['Retry', 'Sign out']) {
+            const row = screen.getByRole('button', { name });
+            expect(row.className, name).toMatch(/\bmin-h-11\b/);
+            expect(row.className, name).toMatch(/\btext-red-700\b/);
+            expect(row.className, name).not.toMatch(/\btext-slate-700\b/);
+        }
     });
 
     it('shows a Sign in row when signed out, which dismisses the host when followed', async () => {

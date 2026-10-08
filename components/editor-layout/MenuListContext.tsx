@@ -15,5 +15,12 @@ export interface MenuListHost { onDismiss: () => void }
 export const MenuListContext = createContext<MenuListHost | null>(null);
 export const useMenuListHost = (): MenuListHost | null => useContext(MenuListContext);
 
-/** Row styling shared by the sheet's own items and the menus' list rendering (44px tall, 16px text). */
-export const MENU_ROW_CLASS = 'flex min-h-11 w-full items-center gap-2 px-4 text-left text-sm text-slate-700';
+/**
+ * Row layout shared by the sheet's own items and the menus' list rendering (44px tall, 16px text),
+ * with no text colour: for rows that set their own, since Tailwind resolves two text colours on
+ * one element by its stylesheet order, not the class order, so an override next to `text-slate-700`
+ * would not apply.
+ */
+export const MENU_ROW_BASE_CLASS = 'flex min-h-11 w-full items-center gap-2 px-4 text-left text-sm';
+/** The default row: the base layout in the sheet's text colour. */
+export const MENU_ROW_CLASS = `${MENU_ROW_BASE_CLASS} text-slate-700`;

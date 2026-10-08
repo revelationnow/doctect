@@ -1,8 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import React, { useState } from 'react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { act, cleanup, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { MemoryRouter, Routes, Route, createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { CloudMenu } from '../../components/cloud/CloudMenu';
 import { MenuListContext } from '../../components/editor-layout/MenuListContext';
+import { OverflowMenu } from '../../components/editor-layout/OverflowMenu';
+import { FormFactorProvider } from '../../components/editor-layout/FormFactorContext';
+import { BackDismissProvider, overlayDepthOf } from '../../components/editor-layout/useBackDismiss';
+import type { EditorChrome } from '../../components/editor-layout/EditorChromeContext';
+import { makeActions } from '../helpers/touchActions';
 import { cloudApi, ApiError } from '../../services/cloudApi';
 import type { WorkspaceProject } from '../../services/localWorkspace/index';
 
@@ -257,5 +263,116 @@ describe('CloudMenu as sheet rows', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Version history' }));
         expect(await screen.findByRole('heading', { name: 'Version history' })).toBeInTheDocument();
         expect(onDismiss).not.toHaveBeenCalled();
+    });
+
+    it('colours the forked-from and reload rows themselves, in the row layout, with no default row colour to lose to', async () => {
+        mockUseSession.mockReturnValue({ data: { user: { username: 'planner_pro' } } });
+        const linked = { ...project, cloud: { projectId: 'cloud-1', lastSyncedCommitId: 'head-1' } };
+        vi.spyOn(cloudApi, 'getProject').mockResolvedValue({ id: 'cloud-1', headCommitId: 'head-1', forkedFromProjectId: 'upstream-1' } as any);
+        vi.spyOn(cloudApi, 'saveCommit').mockRejectedValue(new ApiError(409, 'changed', 'PROJECT_HEAD_CHANGED'));
+        vi.spyOn(window, 'prompt').mockReturnValue('Update');
+        renderRows(linked);
+        const forked = await screen.findByRole('link', { name: /forked from upstream/ });
+        expect(forked).toHaveAttribute('href', '/gallery/upstream-1');
+        expect(forked.className).toMatch(/\bmin-h-11\b/);
+        expect(forked.className).toMatch(/\btext-slate-500\b/);
+        expect(forked.className).not.toMatch(/\btext-slate-700\b/);
+        fireEvent.click(screen.getByRole('button', { name: 'Save to cloud' }));
+        const reload = await screen.findByRole('button', { name: 'Reload cloud version' });
+        expect(reload.className).toMatch(/\bmin-h-11\b/);
+        expect(reload.className).toMatch(/\btext-blue-700\b/);
+        expect(reload.className).not.toMatch(/\btext-slate-700\b/);
+    });
+});
+
+// Task 21 fix round 1 (review Minor #5): a Cloud modal opened from the phone ⋯ sheet takes its own
+// back-gesture entry above the sheet's, so back closes the modal alone and the sheet stays; closing
+// the modal any other way consumes that entry and returns to the sheet.
+describe('Cloud modals opened from the sheet', () => {
+    beforeEach(() => vi.restoreAllMocks());
+    afterEach(() => { cleanup(); document.documentElement.removeAttribute('data-form-factor'); });
+
+    const linked = { ...project, cloud: { projectId: 'cloud-1', lastSyncedCommitId: 'head-1' } };
+    const chrome: Omit<EditorChrome, 'cloudMenu'> = {
+        projects: [{ id: 'local-1', name: 'Test Project' }], activeProjectId: 'local-1',
+        onSelectProject: vi.fn(), onCloseProject: vi.fn(), onNewProject: vi.fn(), saveStatus: null, accountMenu: null,
+    };
+    function Host() {
+        const [menu, setMenu] = useState(false);
+        return (
+            <>
+                <button type="button" onClick={() => setMenu(true)}>More actions</button>
+                <OverflowMenu open={menu} onClose={() => setMenu(false)} actions={makeActions()} chrome={{
+                    ...chrome,
+                    cloudMenu: <CloudMenu project={linked} onLinkCloud={vi.fn(async () => true)} onRestoreState={vi.fn(async () => true)} />,
+                }} />
+            </>
+        );
+    }
+    const mountOnPhone = () => {
+        const router = createMemoryRouter([
+            { path: '/app', element: <FormFactorProvider value="phone"><BackDismissProvider><Host /></BackDismissProvider></FormFactorProvider> },
+            { path: '/', element: <div>home route</div> },
+        ], { initialEntries: ['/', '/app'], initialIndex: 1 });
+        render(<RouterProvider router={router} />);
+        return {
+            router,
+            depth: () => overlayDepthOf(router.state.location),
+            back: () => act(() => { void router.navigate(-1); }),
+            sheet: () => screen.queryByRole('dialog', { name: 'More actions' }),
+            history: () => screen.queryByRole('heading', { name: 'Version history' }),
+        };
+    };
+    const signedIn = () => {
+        mockUseSession.mockReturnValue({ data: { user: { username: 'planner_pro' } } });
+        vi.spyOn(cloudApi, 'getProject').mockResolvedValue({ id: 'cloud-1', headCommitId: 'head-1' } as any);
+    };
+
+    it('back closes Version history only and keeps the sheet; its Close button returns to the sheet with the entry consumed', async () => {
+        signedIn();
+        vi.spyOn(cloudApi, 'listCommits').mockResolvedValue([]);
+        const { router, depth, back, sheet, history } = mountOnPhone();
+        fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
+        expect(depth()).toBe(1);
+        fireEvent.click(within(sheet()!).getByRole('button', { name: 'Version history' }));
+        expect(await screen.findByRole('heading', { name: 'Version history' })).toBeInTheDocument();
+        expect(sheet()).not.toBeNull();
+        expect(depth()).toBe(2);
+
+        back();
+        expect(history()).toBeNull();
+        expect(sheet()).not.toBeNull();
+        expect(depth()).toBe(1);
+        expect(router.state.location.pathname).toBe('/app');
+
+        fireEvent.click(within(sheet()!).getByRole('button', { name: 'Version history' }));
+        expect(await screen.findByRole('heading', { name: 'Version history' })).toBeInTheDocument();
+        expect(depth()).toBe(2);
+        fireEvent.click(screen.getByRole('button', { name: 'Close version history' }));
+        expect(history()).toBeNull();
+        expect(sheet()).not.toBeNull();
+        await waitFor(() => expect(depth()).toBe(1));
+
+        back();
+        expect(sheet()).toBeNull();
+        expect(depth()).toBe(0);
+        expect(router.state.location.pathname).toBe('/app');
+    });
+
+    it('refuses back while a version is loading, like the Close button, and restores the entry', async () => {
+        signedIn();
+        vi.spyOn(cloudApi, 'listCommits').mockResolvedValue([{ id: 'c1', message: 'Initial save', createdAt: new Date().toISOString() }] as any);
+        vi.spyOn(cloudApi, 'getCommit').mockReturnValue(new Promise(() => {}));
+        vi.spyOn(window, 'confirm').mockReturnValue(true);
+        const { depth, back, sheet, history } = mountOnPhone();
+        fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
+        fireEvent.click(within(sheet()!).getByRole('button', { name: 'Version history' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'Restore' }));
+        expect(screen.getByRole('button', { name: 'Close version history' })).toBeDisabled();
+        expect(depth()).toBe(2);
+        back();
+        expect(history()).not.toBeNull();
+        expect(sheet()).not.toBeNull();
+        await waitFor(() => expect(depth()).toBe(2));
     });
 });

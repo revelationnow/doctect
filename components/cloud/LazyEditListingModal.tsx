@@ -1,4 +1,5 @@
 import React, { Suspense, lazy, useEffect } from 'react';
+import { useBackDismiss } from '../editor-layout/useBackDismiss';
 
 // EditListingModal statically imports services/thumbnailService, which pulls in pdfjs-dist and
 // sets its worker at module scope -- so it cannot be tree-shaken back out.
@@ -47,9 +48,11 @@ function useDismissOnEscape(onClose: () => void) {
 }
 
 // A full-screen overlay with no way out is a trap if the chunk is slow or never arrives, so
-// this one closes on a backdrop click and on Escape like the dialog it stands in for.
+// this one closes on a backdrop click, on Escape and on the touch back gesture like the dialog
+// it stands in for (the dialog takes the overlay's history entry over when it mounts).
 function LoadingOverlay({ onClose }: { onClose: () => void }) {
     useDismissOnEscape(onClose);
+    useBackDismiss(true, onClose);
     return (
         <div role="status" onClick={onClose}
             className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center text-white text-sm">
@@ -60,6 +63,7 @@ function LoadingOverlay({ onClose }: { onClose: () => void }) {
 
 function ChunkErrorOverlay({ error, onClose }: { error: Error; onClose: () => void }) {
     useDismissOnEscape(onClose);
+    useBackDismiss(true, onClose);
     return (
         <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-4" onClick={onClose}>
             <div role="alert" onClick={e => e.stopPropagation()}

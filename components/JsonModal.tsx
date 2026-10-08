@@ -58,13 +58,16 @@ export const JsonModal: React.FC<JsonModalProps> = ({ isOpen, onClose, currentSt
     // Escape closes the editor on every form factor, asking the same way. On window, since nothing
     // in the dialog takes focus on open (the textarea's own handler covers Tab only, and the editor
     // bar's shortcuts already stand down while this dialog is open). An Escape a child has handled
-    // (defaultPrevented) is left alone; a handled one is marked so no other overlay acts on it.
+    // (defaultPrevented) is left alone; a handled one is marked so no other overlay acts on it. So
+    // is one from a <select> (the visual editor's "Add" type pickers), which uses Escape to close
+    // its own dropdown, as the sheet and drawer overlays already do.
     const requestCloseRef = useRef(requestClose);
     useLayoutEffect(() => { requestCloseRef.current = requestClose; });
     useEffect(() => {
         if (!isOpen) return;
         const onKey = (event: KeyboardEvent) => {
             if (event.key !== 'Escape' || event.defaultPrevented) return;
+            if (event.target instanceof Element && event.target.closest('select') !== null) return;
             event.preventDefault();
             requestCloseRef.current();
         };

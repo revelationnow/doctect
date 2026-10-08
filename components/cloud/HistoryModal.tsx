@@ -4,6 +4,7 @@ import { cloudApi, CommitMeta, ApiError } from '../../services/cloudApi';
 import { loadProjectState } from '../../services/loadProjectState';
 import { IMPORT_STAGE_ERROR_MESSAGE } from '../../services/importProject';
 import type { AppState } from '../../types';
+import { useBackDismiss } from '../editor-layout/useBackDismiss';
 
 type HistoryModalProps =
     { cloudProjectId: string; onClose: () => void } &
@@ -49,6 +50,9 @@ export function HistoryModal(props: HistoryModalProps) {
     const close = () => {
         if (!busyRef.current) onClose();
     };
+    // Touch: the back gesture closes this dialog alone (the ⋯ sheet it was opened from stays),
+    // and is refused while a version is loading, exactly like the Close button.
+    useBackDismiss(true, () => (busyRef.current ? false : onClose()));
 
     const select = async (commitId: string, action: RowAction) => {
         // Restoring overwrites whatever's currently open in the editor, so it gets a confirm

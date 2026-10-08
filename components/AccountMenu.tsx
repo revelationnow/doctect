@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import { User, LogOut, Image, Settings, FolderOpen, Shield } from 'lucide-react';
 import { signOut } from '../lib/auth-client';
 import { useCurrentUser } from '../hooks/useCurrentUser';
-import { MENU_ROW_CLASS, useMenuListHost } from './editor-layout/MenuListContext';
+import { MENU_ROW_BASE_CLASS, MENU_ROW_CLASS, useMenuListHost } from './editor-layout/MenuListContext';
 
 /**
  * The header's Account trigger and popover. Inside a `MenuListContext` host (the phone ⋯ sheet)
@@ -48,8 +48,8 @@ export function AccountMenu() {
             return (
                 <div role="alert">
                     <div className="px-4 py-2 text-sm text-red-700">Unable to verify account authority.</div>
-                    <button type="button" onClick={() => void refresh()} className={clsx(MENU_ROW_CLASS, 'font-semibold text-red-700')}>Retry</button>
-                    <button type="button" onClick={() => void handleSignOut()} className={clsx(MENU_ROW_CLASS, 'font-semibold text-red-700')}>Sign out</button>
+                    <button type="button" onClick={() => void refresh()} className={clsx(MENU_ROW_BASE_CLASS, 'font-semibold text-red-700')}>Retry</button>
+                    <button type="button" onClick={() => void handleSignOut()} className={clsx(MENU_ROW_BASE_CLASS, 'font-semibold text-red-700')}>Sign out</button>
                     {logoutError && <div className="px-4 py-2 text-sm text-red-700">Unable to sign out. Try again.</div>}
                 </div>
             );
@@ -96,8 +96,8 @@ export function AccountMenu() {
     if (list) {
         return (
             <div ref={ref}>
-                {/* Stands in for the trigger's label, which names the account on the header. */}
-                <div className="px-4 py-2 text-xs text-slate-500">{username ? `Signed in as ${username}` : 'No username set yet'}</div>
+                {/* Stands in for the trigger's label, which names the account on the header; set in the rows' size. */}
+                <div className="px-4 py-2 text-sm text-slate-500">{username ? `Signed in as ${username}` : 'No username set yet'}</div>
                 {items}
             </div>
         );

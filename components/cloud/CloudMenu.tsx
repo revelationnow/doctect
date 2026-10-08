@@ -9,7 +9,7 @@ import { HistoryModal } from './HistoryModal';
 import { PublishModal } from './PublishModal';
 import { ProposeChangesModal } from './ProposeChangesModal';
 import { LazyEditListingModal } from './LazyEditListingModal';
-import { MENU_ROW_CLASS, useMenuListHost } from '../editor-layout/MenuListContext';
+import { MENU_ROW_BASE_CLASS, MENU_ROW_CLASS, useMenuListHost } from '../editor-layout/MenuListContext';
 import type { WorkspaceProject } from '../../services/localWorkspace/index';
 
 interface CloudMenuProps {
@@ -172,7 +172,7 @@ export function CloudMenu({ project, getWorkingProject, onLinkCloud, onRestoreSt
             )}
             {cloudProject?.forkedFromProjectId && (
                 <Link to={`/gallery/${cloudProject.forkedFromProjectId}`} onClick={follow}
-                    className={list ? clsx(MENU_ROW_CLASS, 'text-slate-500') : 'block px-3 py-1.5 text-[11px] text-slate-400 hover:bg-slate-50'}>
+                    className={list ? clsx(MENU_ROW_BASE_CLASS, 'text-slate-500') : 'block px-3 py-1.5 text-[11px] text-slate-400 hover:bg-slate-50'}>
                     ↳ forked from upstream — view source
                 </Link>
             )}
@@ -197,7 +197,7 @@ export function CloudMenu({ project, getWorkingProject, onLinkCloud, onRestoreSt
             {saveConflict && (
                 <button disabled={busy} onClick={reloadCloudVersion}
                     className={list
-                        ? clsx(MENU_ROW_CLASS, 'font-medium text-blue-700 disabled:opacity-40')
+                        ? clsx(MENU_ROW_BASE_CLASS, 'font-medium text-blue-700 disabled:opacity-40')
                         : 'w-full text-left px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50'}>
                     Reload cloud version
                 </button>
