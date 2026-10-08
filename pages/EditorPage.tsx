@@ -1,5 +1,6 @@
-import React, { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Link, useBlocker } from 'react-router-dom';
+import type { BlockerFunction } from 'react-router-dom';
 import { AlertTriangle, Coffee, Github, Square, X } from 'lucide-react';
 import clsx from 'clsx';
 import { ProjectEditor } from '../components/ProjectEditor';
@@ -19,6 +20,7 @@ import {
 import { useIncrementalProjectWrites } from '../hooks/useIncrementalProjectWrites';
 import { useEditorFormFactor } from '../hooks/useEditorFormFactor';
 import { FormFactorProvider } from '../components/editor-layout/FormFactorContext';
+import { BackDismissProvider, isSameRouteNavigation } from '../components/editor-layout/useBackDismiss';
 import { EditorChromeContext, type EditorChrome } from '../components/editor-layout/EditorChromeContext';
 import { getNormalizedWorkspaceSession, isNormalizedWorkspaceStore } from '../services/localWorkspace/NormalizedWorkspaceStore';
 import type { WorkspaceEditingSession } from '../services/localWorkspace/workspaceEditingSession';
@@ -134,7 +136,10 @@ function EditorPageShell({
   );
   const editorShellRef = useRef<HTMLDivElement>(null);
   const presetCommandBusyRef = useRef(false);
-  const blocker = useBlocker(hasUnsavedWork);
+  // Touch overlay entries are navigations between two /app locations: never a reason to prompt.
+  const blocker = useBlocker(useCallback<BlockerFunction>(({ currentLocation, nextLocation }) => (
+    hasUnsavedWork && !isSameRouteNavigation(currentLocation, nextLocation)
+  ), [hasUnsavedWork]));
   const navigationBlocked = blocker.state === 'blocked';
   const formFactor = useEditorFormFactor();
 
@@ -397,6 +402,7 @@ function EditorPageShell({
 
   return (
     <FormFactorProvider value={formFactor}>
+    <BackDismissProvider hold={navigationBlocked}>
     <EditorChromeContext.Provider value={chrome}>
     <div
       ref={editorShellRef}
@@ -593,6 +599,7 @@ function EditorPageShell({
       />
     )}
     </EditorChromeContext.Provider>
+    </BackDismissProvider>
     </FormFactorProvider>
   );
 }

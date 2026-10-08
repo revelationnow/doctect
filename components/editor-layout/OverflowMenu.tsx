@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import type { TouchEditorActions } from './touchActions';
 import type { EditorChrome } from './EditorChromeContext';
+import { useBackDismiss } from './useBackDismiss';
 import { ALIGN_ACTIONS } from '../../services/alignElements';
 
 /** Elements that use Escape themselves (the preview-node select closes its own dropdown). */
@@ -50,6 +51,8 @@ export function OverflowMenu({ open, onClose, actions, chrome }: {
     // Latest onClose without re-running the open/close effect when the parent passes a new closure.
     const onCloseRef = useRef(onClose);
     useLayoutEffect(() => { onCloseRef.current = onClose; });
+    // Touch: the back gesture closes the sheet; any other close consumes its history entry.
+    useBackDismiss(open, onClose);
 
     useLayoutEffect(() => {
         if (!open) return;

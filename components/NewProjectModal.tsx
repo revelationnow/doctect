@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { BookOpen, Calendar, FilePlus, Star, Trash2, X } from 'lucide-react';
 import type { WorkspaceCustomPreset } from '../services/localWorkspace';
 import type { PresetDefinition, ProjectPreset } from '../services/presets';
+import { useBackDismiss } from './editor-layout/useBackDismiss';
 
 export interface NewProjectModalProps {
   isOpen: boolean;
@@ -85,6 +86,15 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   useLayoutEffect(() => {
     if (deleteId) deleteDialogRef.current?.focus();
   }, [deleteId]);
+
+  // Touch back gesture, mirroring Escape: a pending delete confirmation closes first (the dialog
+  // keeps its entry), a busy command keeps the dialog, otherwise the dialog closes.
+  useBackDismiss(isOpen, () => {
+    if (interactionBusy || actionRef.current) return false;
+    if (deleteId) { setDeleteId(null); return false; }
+    onClose();
+    return true;
+  });
 
   if (!isOpen) return null;
 

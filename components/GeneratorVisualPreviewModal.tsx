@@ -8,6 +8,7 @@ import {
 } from '../services/generatorVisualPreview';
 import type { GeneratorPreviewPayload, TemplatePreviewDescriptor } from '../services/generatorVisualPreview';
 import { ReadOnlyPagePreview } from './canvas/ReadOnlyPagePreview';
+import { useBackDismiss } from './editor-layout/useBackDismiss';
 
 export interface GeneratorVisualPreviewModalProps {
   payload: GeneratorPreviewPayload;
@@ -251,6 +252,16 @@ export const GeneratorVisualPreviewModal: React.FC<GeneratorVisualPreviewModalPr
     }
     trapFocus(event, dialogRef.current);
   };
+
+  // Touch back gesture: the lightbox or the naming form closes first (the preview keeps its
+  // entry), a project creation in flight keeps the preview, otherwise it closes like Escape.
+  useBackDismiss(true, () => {
+    if (creatingRef.current) return false;
+    if (lightboxIndex !== null) { closeLightbox(); return false; }
+    if (naming) { closeNaming(); return false; }
+    onBack();
+    return true;
+  });
 
   const renderPreview = (descriptor: TemplatePreviewDescriptor, scale: number) => (
     <PreviewErrorBoundary key={`${descriptor.variantId}-${descriptor.templateId}`} templateName={descriptor.template.name}>

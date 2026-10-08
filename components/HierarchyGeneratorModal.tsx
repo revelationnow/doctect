@@ -12,6 +12,7 @@ import { FONTS } from '../constants/editor';
 import { GeneratorVisualPreviewModal } from './GeneratorVisualPreviewModal';
 import clsx from 'clsx';
 import { useFormFactor } from './editor-layout/FormFactorContext';
+import { useBackDismiss } from './editor-layout/useBackDismiss';
 import { generatorErrorPane, GeneratorPane } from '../services/generatorErrorPane';
 
 interface HierarchyGeneratorModalProps {
@@ -2115,13 +2116,16 @@ const HierarchyGeneratorSession: React.FC<HierarchyGeneratorSessionProps> = ({
     setShowVisualPreview(false);
   };
 
-  const handleClose = () => {
-    if (isDirty && !window.confirm('Discard draft generator changes?')) return;
+  const handleClose = (): boolean => {
+    if (isDirty && !window.confirm('Discard draft generator changes?')) return false;
     abortPreview();
     previewRequestRef.current += 1;
     setShowVisualPreview(false);
     onClose();
+    return true;
   };
+  // Touch back gesture: same confirmation as Close; a cancelled prompt keeps the dialog and its entry.
+  useBackDismiss(true, handleClose);
 
   const previewGenerator = async () => {
     const templateBytes = utf8Bytes(templateScript);

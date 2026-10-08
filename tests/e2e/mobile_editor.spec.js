@@ -692,3 +692,121 @@ test('numeric fields get touch −/+ steppers that fit their scroller, tap once,
         await expect(field('Y')).toHaveValue(String(after));
     }
 });
+
+// Task 20: the browser/phone back gesture closes the open overlay and stays in the editor.
+// Overlays are same-URL router entries; `history.state.usr` is the router's `location.state`.
+const overlayDepth = page => page.evaluate(() => (history.state && history.state.usr && history.state.usr.touchOverlays) || 0);
+const pathname = page => new URL(page.url()).pathname;
+const leavePrompt = page => page.getByRole('alertdialog', { name: 'Leave editor?' });
+
+test('back gesture closes the open overlay and keeps the editor; any other close consumes the entry', async ({ page, browserName }, testInfo) => {
+    const phone = isPhone(testInfo);
+    const pane = activePane(page);
+    const canvas = pane.getByTestId('editor-canvas');
+    // A property on the live canvas node: a remount would hand back a fresh node without it.
+    await canvas.evaluate(node => { node.__backDismissProbe = true; });
+    const probeIntact = () => canvas.evaluate(node => node.__backDismissProbe === true);
+    const undo = page.getByRole('button', { name: 'Undo' });
+
+    // An edit first, so the editor holds state the overlays must not disturb, and so that work
+    // may still be unsaved while the overlays open and close: the unsaved-work prompt must never
+    // appear for an overlay entry.
+    const fingers = new Fingers(page, browserName);
+    const rect = pane.locator('[data-element-id="box"]');
+    const start = await box(rect);
+    await page.touchscreen.tap(start.x, start.y);
+    await fingers.drag(start, { x: start.x + 40, y: start.y + 30 });
+    await expect.poll(async () => (await box(rect)).b.x).toBeGreaterThan(start.b.x + 20);
+    const moved = (await box(rect)).b;
+    await expect(undo).toBeEnabled();
+    const editorIntact = async () => {
+        expect(await probeIntact(), 'the canvas node survived (no remount)').toBe(true);
+        const now = (await box(rect)).b;
+        expect(Math.abs(now.x - moved.x)).toBeLessThan(2);
+        expect(Math.abs(now.y - moved.y)).toBeLessThan(2);
+        await expect(undo).toBeEnabled();
+        await expect(leavePrompt(page)).toHaveCount(0);
+        expect(pathname(page)).toBe('/app');
+    };
+
+    // ⋯ → JSON: the sheet closes itself when it launches a dialog, so the dialog takes over the
+    // one entry; back closes the dialog and nothing of the sheet remains.
+    await openFromOverflow(page, 'JSON');
+    const json = page.getByRole('heading', { name: 'Project JSON Editor' });
+    await expect(json).toBeVisible();
+    await expect(overflowMenu(page)).toBeHidden();
+    expect(await overlayDepth(page)).toBe(1);
+    await page.goBack();
+    await expect(json).toBeHidden();
+    await expect(overflowMenu(page)).toBeHidden();
+    await expect.poll(() => overlayDepth(page)).toBe(0);
+    await editorIntact();
+
+    // Closing with the X button consumes the entry instead of leaving it behind.
+    await openFromOverflow(page, 'JSON');
+    await expect(json).toBeVisible();
+    expect(await overlayDepth(page)).toBe(1);
+    await page.getByRole('button', { name: 'Close JSON editor' }).click();
+    await expect(json).toBeHidden();
+    await expect.poll(() => overlayDepth(page)).toBe(0);
+    await editorIntact();
+
+    // The ⋯ sheet on its own.
+    await page.getByRole('button', { name: 'More actions' }).click();
+    await expect(overflowMenu(page)).toBeVisible();
+    await expect.poll(() => overlayDepth(page)).toBe(1);
+    await page.goBack();
+    await expect(overflowMenu(page)).toBeHidden();
+    await editorIntact();
+
+    // The pages drawer.
+    await page.getByRole('button', { name: 'Open pages and templates' }).click();
+    const drawer = page.getByRole('dialog', { name: 'Pages and templates' });
+    await expect(drawer).toBeVisible();
+    await expect.poll(() => overlayDepth(page)).toBe(1);
+    await page.goBack();
+    await expect(drawer).toBeHidden();
+    await editorIntact();
+
+    if (phone) {
+        // The project switcher.
+        await topBar(page).getByRole('button', { name: 'Mobile' }).click();
+        const menu = page.getByRole('menu');
+        await expect(menu).toBeVisible();
+        await expect.poll(() => overlayDepth(page)).toBe(1);
+        await page.goBack();
+        await expect(menu).toBeHidden();
+        await editorIntact();
+    }
+
+    // Unapplied JSON changes: back asks first. Cancelling keeps the dialog and restores its
+    // entry; agreeing closes it.
+    await openFromOverflow(page, 'JSON');
+    await expect(json).toBeVisible();
+    const jsonPanel = page.locator('.editor-dialog-panel', { has: json }); // the tool pill has a Text tool too
+    await jsonPanel.getByRole('button', { name: 'Text' }).click();
+    const textarea = jsonPanel.locator('textarea');
+    await textarea.fill(`${await textarea.inputValue()}\n`);
+    const prompts = [];
+    page.on('dialog', dialog => {
+        prompts.push(dialog.message());
+        void (prompts.length === 1 ? dialog.dismiss() : dialog.accept());
+    });
+    await page.goBack();
+    await expect.poll(() => prompts).toEqual(['Discard JSON changes?']);
+    await expect(json).toBeVisible();
+    await expect.poll(() => overlayDepth(page)).toBe(1);
+    expect(pathname(page)).toBe('/app');
+    await page.goBack();
+    await expect.poll(() => prompts).toEqual(['Discard JSON changes?', 'Discard JSON changes?']);
+    await expect(json).toBeHidden();
+    await expect.poll(() => overlayDepth(page)).toBe(0);
+    await editorIntact();
+
+    // Nothing open: back leaves the editor exactly as before. The work is saved first, so no
+    // unsaved-work prompt is due (that interplay is pinned by EditorPage.backDismiss.test.tsx).
+    await expect(page.getByText('Saved locally')).toBeVisible();
+    await page.goBack();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(pane).toHaveCount(0);
+});

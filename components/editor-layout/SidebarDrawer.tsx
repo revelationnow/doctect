@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useBackDismiss } from './useBackDismiss';
 
 /** Elements that use Escape themselves (e.g. the Sidebar's rename input cancels its edit). */
 const EDITABLE_SELECTOR = 'input, textarea, select, [contenteditable]:not([contenteditable="false"])';
@@ -15,6 +16,8 @@ const isEditableTarget = (target: EventTarget | null): boolean =>
 export function SidebarDrawer({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
     const panelRef = useRef<HTMLDivElement>(null);
     const opener = useRef<HTMLElement | null>(null);
+    // Touch: the back gesture closes the drawer; picking a page (the owner closing it) consumes its entry.
+    useBackDismiss(open, onClose);
 
     useEffect(() => {
         if (!open) return;

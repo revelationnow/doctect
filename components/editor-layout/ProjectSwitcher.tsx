@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Plus, X } from 'lucide-react';
 import type { EditorChrome } from './EditorChromeContext';
+import { useBackDismiss } from './useBackDismiss';
 
 const MENU_WIDTH_PX = 256;
 const MENU_GAP_PX = 4;
@@ -23,6 +24,8 @@ export function ProjectSwitcher({ chrome }: { chrome: EditorChrome }) {
     const active = chrome.projects.find(project => project.id === chrome.activeProjectId);
 
     const close = () => setPosition(null);
+    // Touch: the back gesture closes the menu; a choice or an outside tap consumes its entry.
+    useBackDismiss(open, close);
     const toggle = () => {
         if (open) { close(); return; }
         const rect = trigger.current?.getBoundingClientRect();

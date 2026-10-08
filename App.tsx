@@ -128,10 +128,12 @@ function AppRoutes() {
 }
 
 function PageTracker() {
-  const location = useLocation();
+  // A page view is a URL change. Navigations that only change location.state (the touch
+  // editor's overlay history entries on /app) are not views.
+  const { pathname, search, hash } = useLocation();
   React.useEffect(() => {
-    trackEvent('page_view', { path: location.pathname });
-  }, [location]);
+    trackEvent('page_view', { path: pathname });
+  }, [pathname, search, hash]);
   return null;
 }
 

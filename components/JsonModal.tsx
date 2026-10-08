@@ -7,6 +7,8 @@ import clsx from 'clsx';
 import { JsonTreeItem, NodeOption } from './json/JsonTreeItem';
 import { MainCollectionItem } from './json/MainCollectionItem';
 import { useFormFactor } from './editor-layout/FormFactorContext';
+import { useBackDismiss } from './editor-layout/useBackDismiss';
+import { confirmDiscardJsonChanges } from './json/discardJsonChanges';
 
 interface JsonModalProps {
     isOpen: boolean;
@@ -27,17 +29,32 @@ export const JsonModal: React.FC<JsonModalProps> = ({ isOpen, onClose, currentSt
     const [scrollToId, setScrollToId] = useState<string | null>(null);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    // The formatted JSON as opened; the editor is dirty while its current content differs.
+    const baselineRef = useRef('');
 
     // Initialize state when opening
     useEffect(() => {
         if (isOpen) {
             const formatted = JSON.stringify(currentState, null, 2);
+            baselineRef.current = formatted;
             setJsonString(formatted);
             setJsonObject(JSON.parse(JSON.stringify(currentState))); // Deep copy
             setError(null);
             setSuccessMsg(null);
         }
     }, [isOpen, currentState]);
+
+    const hasUnappliedChanges = (): boolean => (
+        (mode === 'text' ? jsonString : JSON.stringify(jsonObject, null, 2)) !== baselineRef.current
+    );
+    /** Close unless unapplied changes exist and the user keeps them; false when the dialog stays. */
+    const requestClose = (): boolean => {
+        if (hasUnappliedChanges() && !confirmDiscardJsonChanges()) return false;
+        onClose();
+        return true;
+    };
+    // Touch back gesture: asks before discarding unapplied changes; cancelling restores the entry.
+    useBackDismiss(isOpen, requestClose);
 
     // Handle scrolling to newly added items
     useEffect(() => {
