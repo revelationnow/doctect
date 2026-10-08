@@ -16,6 +16,7 @@ import { Download, Code, Undo2, Redo2, Loader2, Contrast, Layers } from 'lucide-
 import { EditorToolbar, type ToolbarActions } from './EditorToolbar';
 import { EditorLayout } from './editor-layout/EditorLayout';
 import { useFormFactor } from './editor-layout/FormFactorContext';
+import { useTouchViewport } from './editor-layout/useTouchViewport';
 import { SavePresetModal } from './SavePresetModal';
 import { NewVariantModal, NewVariantConfig } from './NewVariantModal';
 import { reflowTemplates } from '../services/reflow';
@@ -1627,6 +1628,9 @@ function ProjectEditorView({
     onEditElements, onInteractionEnd, onInteractionCancel, captureInteraction,
 }: EditorViewModel) {
     const formFactor = useFormFactor();
+    const isTouch = formFactor !== 'desktop';
+    // Touch zoom is session-local: it never reaches the persisted scale preference.
+    const touchViewport = useTouchViewport();
     const editorBar = (
         <div className="min-h-[40px] py-1 bg-white border-b flex flex-wrap items-center justify-between px-4 z-20 flex-shrink-0">
             <div className="text-xs text-slate-400 font-mono">
@@ -1723,7 +1727,7 @@ function ProjectEditorView({
             template={currentTemplate}
             elements={currentTemplate?.elements || []}
             selectedElementIds={state.selectedElementIds}
-            scale={state.scale}
+            scale={isTouch ? touchViewport.scale : state.scale}
             tool={state.tool}
             nodes={state.nodes}
             currentNodeId={effectivePreviewNodeId}
@@ -1738,8 +1742,10 @@ function ProjectEditorView({
             onEditElements={onEditElements}
             onUpdateElements={(els, save) => handleUpdateTemplateElements(els, save)}
             onSelectElements={(ids) => setSession({ selectedElementIds: ids })}
-            onZoom={(scale) => setPreferences({ scale })}
+            onZoom={isTouch ? touchViewport.setScale : (scale) => setPreferences({ scale })}
             onSwitchToSelect={() => setSession({ tool: 'select' })}
+            inputMode={isTouch ? 'touch' : 'mouse'}
+            fitSignal={isTouch ? touchViewport.fitSignal : undefined}
         />
     );
     const propertiesElement = (
