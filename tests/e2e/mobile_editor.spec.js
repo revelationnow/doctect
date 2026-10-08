@@ -15,9 +15,11 @@ const horizontalOverflow = page => page.evaluate(() => document.documentElement.
 const SHEET_PEEK_PX = 72; // PropertiesSheet.SHEET_PEEK_PX
 const SHEET_FULL_INSET_PX = 56; // PropertiesSheet full detent: calc(100dvh - 56px)
 
-// The desktop guard's fixture plus a text column spanning most of the page: once selected, its
-// format bar has no room above it and clamps to the bottom of the visible band, where the phone
-// tool pill lives. It sits right of the guard's elements so their taps are unaffected.
+// The desktop guard's fixture plus two elements of its own, placed so the guard elements' own taps
+// are unaffected: a text column spanning most of the page (once selected, its format bar has no
+// room above it and clamps to the bottom of the visible band, where the phone tool pill lives), and
+// a small rect over the top-left corner of the guard's box, clear of the box's centre (a long press
+// on the badge finds two stacked elements).
 const mobileFixture = structuredClone(fixture);
 mobileFixture.variants.default.templates.page.elements.push({
     id: 'tall', type: 'text', layerId: 'base', x: 380, y: 20, w: 200, h: 800, rotation: 0,
@@ -25,6 +27,9 @@ mobileFixture.variants.default.templates.page.elements.push({
     fontSize: 18, fontFamily: 'helvetica', fontWeight: 'normal', fontStyle: 'normal',
     textColor: '#000000', textOverflow: 'clip', textWrap: true,
     textPadding: { top: 0, right: 0, bottom: 0, left: 0 },
+}, {
+    id: 'badge', type: 'rect', layerId: 'base', x: 70, y: 90, w: 60, h: 60, rotation: 0,
+    fill: '#fde68a', stroke: '#000000', strokeWidth: 1, opacity: 1,
 });
 
 const box = async locator => {
@@ -42,9 +47,8 @@ const overlaps = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b
  * browser produces the same `pointerType: 'touch'` events a device does, with live pointer ids.
  * Elsewhere PointerEvents are dispatched at the element under the finger, which is what the hook
  * consumes; the browser refuses pointer capture for such a pointer (NotFoundError), which the hook
- * tolerates. That path is validated by forcing it on mobile-phone-chromium: the whole spec passes.
- * Each CDP call carries the full set of fingers still down: the browser derives press/move/release
- * per finger from the difference to the previous call.
+ * tolerates. Each CDP call carries the full set of fingers still down: the browser derives
+ * press/move/release per finger from the difference to the previous call.
  */
 class Fingers {
     constructor(page, browserName) {
@@ -268,11 +272,14 @@ test('phone tool pill keeps all nine tools, Fit included, inside the viewport', 
     }
 });
 
-/** Refit the page to the current width (the layout refits on rotation, not on a plain resize). */
-const fitPage = async (page, width) => {
-    const canvas = activePane(page).getByTestId('editor-canvas');
+/** Refit the page to the canvas container (the layout refits on rotation, not on a plain resize). */
+const fitPage = async page => {
+    const pane = activePane(page);
+    const canvas = pane.getByTestId('editor-canvas');
+    const outer = pane.locator('.canvas-scroll-container');
     await page.getByRole('button', { name: 'Fit page to width' }).click();
-    await expect.poll(async () => Math.abs((await canvas.boundingBox()).width - (width - 32))).toBeLessThanOrEqual(1);
+    await expect.poll(async () => Math.abs((await canvas.boundingBox()).width - ((await outer.evaluate(el => el.clientWidth)) - 32)))
+        .toBeLessThanOrEqual(1);
 };
 
 test('phone quick format bar clamps above the tool pill, never over it', async ({ page }, testInfo) => {
@@ -282,7 +289,7 @@ test('phone quick format bar clamps above the tool pill, never over it', async (
     const pill = page.getByTestId('touch-tool-pill');
     for (const { width, height } of await phoneWidths(page)) {
         await page.setViewportSize({ width, height });
-        await fitPage(page, width);
+        await fitPage(page);
         const tall = await box(pane.locator('[data-element-id="tall"]'));
         await page.touchscreen.tap(tall.x, tall.y);
         await expect(bar).toBeVisible();
@@ -304,7 +311,7 @@ test('phone canvas scrolls the page bottom clear of the tool pill', async ({ pag
     const pill = page.getByTestId('touch-tool-pill');
     for (const { width, height } of await phoneWidths(page)) {
         await page.setViewportSize({ width, height });
-        await fitPage(page, width);
+        await fitPage(page);
         await outer.evaluate(el => { el.scrollTop = el.scrollHeight; });
         const p = await pill.boundingBox();
         await expect.poll(async () => { const c = await canvas.boundingBox(); return c.y + c.height; }, `page bottom above the pill at ${width}px`)
@@ -312,10 +319,37 @@ test('phone canvas scrolls the page bottom clear of the tool pill', async ({ pag
     }
 });
 
+test('long press over stacked elements opens a menu sized to its rows', async ({ page, browserName }) => {
+    // The menu renders beside the page's content wrapper, inside the same scroll container, so the
+    // phone's scroll room for the tool pill (bottom padding on the wrapper) must never reach it.
+    const fingers = new Fingers(page, browserName);
+    const pane = activePane(page);
+    await fitPage(page);
+    const badge = await box(pane.locator('[data-element-id="badge"]'));
+    const menu = page.getByTestId('select-under-menu');
+    await fingers.down(1, badge.x, badge.y);
+    await expect(menu).toBeVisible(); // opens LONG_PRESS_MS after the finger lands, before it lifts
+    await fingers.up(1, badge.x, badge.y);
+    await expect(menu).toBeVisible(); // the release after a long press is inert
+    const rows = menu.locator('[data-menu-element-id]');
+    await expect(rows).toHaveCount(2);
+    expect(await rows.evaluateAll(els => els.map(el => el.getAttribute('data-menu-element-id')))).toEqual(expect.arrayContaining(['badge', 'box']));
+    const fit = await menu.evaluate(el => {
+        const own = el.getBoundingClientRect();
+        const last = el.lastElementChild.getBoundingClientRect();
+        return { paddingBottom: parseFloat(getComputedStyle(el).paddingBottom), underLastRow: own.bottom - last.bottom, overflow: el.scrollHeight - el.clientHeight };
+    });
+    expect(fit.paddingBottom, 'menu bottom padding').toBeLessThanOrEqual(8);
+    expect(fit.underLastRow, 'blank space under the last row').toBeLessThanOrEqual(8);
+    expect(fit.overflow, 'no row needs scrolling').toBeLessThanOrEqual(0);
+    await page.touchscreen.tap(6, badge.y); // a tap outside closes it
+    await expect(menu).toBeHidden();
+});
+
 test('layer colour swatches stay reachable', async ({ page }, testInfo) => {
     if (isPhone(testInfo)) {
         await page.getByRole('button', { name: 'Resize properties sheet' }).click();
-        await expect(page.getByTestId('properties-sheet').locator(':scope > div').last()).toBeVisible();
+        await expect(page.getByTestId('properties-sheet-content')).toBeVisible();
     }
     const toggle = page.getByTestId('layers-section').getByRole('button', { name: 'Layers' });
     if (await toggle.getAttribute('aria-expanded') !== 'true') await toggle.click();

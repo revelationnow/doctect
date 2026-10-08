@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { EditorLayout } from '../../components/editor-layout/EditorLayout';
+import { EditorLayout, PILL_INSET_VAR } from '../../components/editor-layout/EditorLayout';
 import { makeActions } from '../helpers/touchActions';
 
 const slots = {
@@ -116,14 +116,14 @@ describe('EditorLayout touch branches', () => {
             render(<EditorLayout formFactor="phone" {...slots} touchActions={makeActions()} navigationKey="n1" selectionLabel="Page · Root" />);
             const wrapper = screen.getByTestId('canvas').parentElement!;
             const pill = screen.getByTestId('touch-tool-pill');
-            expect(wrapper.style.getPropertyValue('--touch-pill-inset')).toBe('12px'); // jsdom lays out 0px tall
+            expect(wrapper.style.getPropertyValue(PILL_INSET_VAR)).toBe('12px'); // jsdom lays out 0px tall
             expect(observed.map(entry => entry.target)).toEqual([pill]);
             Object.defineProperty(pill, 'offsetHeight', { configurable: true, value: 92 }); // two rows at phone width
             act(() => observed[0].callback());
-            expect(wrapper.style.getPropertyValue('--touch-pill-inset')).toBe('104px');
+            expect(wrapper.style.getPropertyValue(PILL_INSET_VAR)).toBe('104px');
             fireEvent.click(screen.getByRole('button', { name: 'Resize properties sheet' })); // half: pill unmounts
             expect(screen.queryByTestId('touch-tool-pill')).toBeNull();
-            expect(wrapper.style.getPropertyValue('--touch-pill-inset')).toBe('0px');
+            expect(wrapper.style.getPropertyValue(PILL_INSET_VAR)).toBe('0px');
         } finally {
             delete (globalThis as any).ResizeObserver;
         }

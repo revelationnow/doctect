@@ -61,6 +61,8 @@ interface CanvasProps {
 const MIN_DRAG_THRESHOLD = 5;
 const CREATION_TOOLS = ['rect', 'ellipse', 'triangle', 'text', 'grid', 'line'];
 export const TOUCH_CANVAS_GUTTER = 16;
+/** Marks the page's content wrapper inside the scroll container; the phone touch CSS pads it for the tool pill. */
+export const CANVAS_CONTENT_ATTR = 'data-canvas-content';
 export const TOUCH_DEFAULT_SIZE: Record<string, { w: number; h: number }> = {
     rect: { w: 120, h: 80 }, ellipse: { w: 120, h: 80 }, triangle: { w: 120, h: 100 },
     grid: { w: 240, h: 120 }, line: { w: 120, h: 0 },
@@ -1868,8 +1870,9 @@ export const Canvas: React.FC<CanvasProps> = ({
             onPointerCancel={isTouch ? e => { if (e.pointerType !== 'touch') cancelInteraction(); } : cancelInteraction}
             onContextMenu={handleContextMenu}
         >
-            {/* Inner container wrapper to handle centering vs scrolling */}
-            <div className={isTouch ? 'm-auto p-4 min-w-fit min-h-fit' : 'm-auto p-12 min-w-fit min-h-fit'}>
+            {/* Inner container wrapper to handle centering vs scrolling. CANVAS_CONTENT_ATTR marks it for
+                the phone touch CSS, which pads only this wrapper (not the select-under menu beside it). */}
+            <div {...{ [CANVAS_CONTENT_ATTR]: '' }} className={isTouch ? 'm-auto p-4 min-w-fit min-h-fit' : 'm-auto p-12 min-w-fit min-h-fit'}>
                 <ReadOnlyPagePreview
                     ref={containerRef}
                     testId="editor-canvas"

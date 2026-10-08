@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { CANVAS_CONTENT_ATTR } from '../../components/Canvas';
+import { PILL_INSET_VAR } from '../../components/editor-layout/EditorLayout';
 
 // Guards the touch-only CSS in index.html: every rule lives inside the marked block and is scoped
 // under [data-form-factor] (set on <html> only for phone/tablet), and the hover-revealed controls in
@@ -73,6 +75,17 @@ describe('touch CSS', () => {
         expect(block).toContain('group-hover:flex');
         expect(block).toContain('.editor-dialog-panel');
         expect(rules).toMatch(/\[data-form-factor\] \[data-micro-stepper\]\s*\{\s*display:\s*none\s*!important;\s*\}/);
+    });
+
+    it('pads only the canvas content wrapper for the phone tool pill, by the names the layout and Canvas export', () => {
+        const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const scrollRoom = new RegExp(
+            `\\[data-form-factor="phone"\\] \\[${escape(CANVAS_CONTENT_ATTR)}\\]\\s*\\{\\s*padding-bottom:\\s*calc\\(1rem \\+ var\\(${escape(PILL_INSET_VAR)}, 0px\\)\\);\\s*\\}`,
+        );
+        expect(rules).toMatch(scrollRoom);
+        // The scroll container's other direct child is the long-press select-under menu, which must
+        // keep its own padding: never pad by position.
+        expect(rules).not.toMatch(/\.canvas-scroll-container\s*>/);
     });
 
     it('only uses hover-reveal patterns the touch CSS knows about', () => {

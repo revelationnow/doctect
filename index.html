@@ -130,8 +130,10 @@
       }
       /* Phone canvas: scroll room under the page equal to the floating tool pill plus its gap
          (--touch-pill-inset, measured by the phone layout), so the page bottom can be scrolled
-         clear of the pill instead of ending beneath it. */
-      [data-form-factor="phone"] .canvas-scroll-container > div {
+         clear of the pill instead of ending beneath it. Only the page's content wrapper carries
+         data-canvas-content: the long-press select-under menu is the scroll container's other
+         child and keeps its own padding. */
+      [data-form-factor="phone"] [data-canvas-content] {
         padding-bottom: calc(1rem + var(--touch-pill-inset, 0px));
       }
       /* Layer colour swatches: at 44px each the strip is wider than the space right of the chip,

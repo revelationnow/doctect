@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Canvas, type CanvasInteraction } from '../../components/Canvas';
+import { Canvas, CANVAS_CONTENT_ATTR, type CanvasInteraction } from '../../components/Canvas';
 import type { EditorElementIntent } from '../../services/document/contracts';
 import type { PageTemplate, TemplateElement } from '../../types';
 
@@ -301,10 +301,16 @@ describe('Canvas touch creation and gestures', () => {
 
     it('opens the select-under menu on long press over stacked elements', () => {
         vi.useFakeTimers();
-        const { elementNode, getByTestId } = renderCanvas({ elements: [rect('a', 20, 20), rect('c', 40, 30)] });
+        const { elementNode, getByTestId, surface } = renderCanvas({ elements: [rect('a', 20, 20), rect('c', 40, 30)] });
         pointer(elementNode('c'), 'pointerdown', 1, 60, 50);
         act(() => { vi.advanceTimersByTime(600); });
-        expect(getByTestId('select-under-menu')).toBeTruthy();
+        const menu = getByTestId('select-under-menu');
+        expect(menu).toBeTruthy();
+        // The menu is the scroll container's child beside the page's content wrapper, not inside it;
+        // only the wrapper carries the mark the phone CSS pads for the tool pill.
+        expect(menu.parentElement).toBe(surface);
+        expect(menu.hasAttribute(CANVAS_CONTENT_ATTR)).toBe(false);
+        expect(surface.querySelector(`:scope > [${CANVAS_CONTENT_ATTR}] [data-testid="editor-canvas"]`)).not.toBeNull();
         vi.useRealTimers();
     });
 
