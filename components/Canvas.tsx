@@ -15,6 +15,7 @@ import { useCanvasTextLayoutSession } from './canvas/useCanvasTextLayoutSession'
 import type { CanvasTextLayoutSession } from '../services/canvasTextLayout';
 import { readBrowserPreference } from '../services/browserPreferences';
 import type { EditorElementIntent } from '../services/document/contracts';
+import { useCanvasTouchGestures, TouchGestureHandlers } from '../hooks/useCanvasTouchGestures';
 
 export interface CanvasInteraction {
     isCurrent(): boolean;
@@ -49,9 +50,12 @@ interface CanvasProps {
     /** Previews greyscale export: renders the elements layer desaturated. */
     greyscalePreview?: boolean;
     textLayoutSession?: CanvasTextLayoutSession;
+    /** 'touch' routes one-finger gestures through the mouse handlers; default 'mouse' is the unchanged desktop path. */
+    inputMode?: 'mouse' | 'touch';
 }
 
 const MIN_DRAG_THRESHOLD = 5;
+const CREATION_TOOLS = ['rect', 'ellipse', 'triangle', 'text', 'grid', 'line'];
 
 // Helper: Convert degrees to radians
 const toRad = (deg: number) => deg * Math.PI / 180;
@@ -218,7 +222,9 @@ export const Canvas: React.FC<CanvasProps> = ({
     activeLayerId,
     greyscalePreview,
     textLayoutSession: injectedTextLayoutSession,
+    inputMode = 'mouse',
 }) => {
+    const isTouch = inputMode === 'touch';
     // Historical non-record layer cells remain in the owner/export. Rendering
     // and ID-based hit testing consume only usable records, never write them back.
     const interaction = useRef<CanvasInteraction | undefined>(undefined);
@@ -420,13 +426,12 @@ export const Canvas: React.FC<CanvasProps> = ({
     }, [scale]);
 
 
-    const getMouseCoords = (e: MouseEvent) => {
+    const clientToCanvas = (clientX: number, clientY: number) => {
         if (!containerRef.current) return { x: 0, y: 0 };
         const rect = containerRef.current.getBoundingClientRect();
-        let x = (e.clientX - rect.left) / scale;
-        let y = (e.clientY - rect.top) / scale;
-        return { x, y };
+        return { x: (clientX - rect.left) / scale, y: (clientY - rect.top) / scale };
     };
+    const getMouseCoords = (e: MouseEvent) => clientToCanvas(e.clientX, e.clientY);
 
     const snapVal = (val: number) => snapToGrid ? Math.round(val / effectiveGridSize) * effectiveGridSize : val;
 
@@ -651,7 +656,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         const coords = getMouseCoords(e);
 
         // 2. Creation Mode
-        if (['rect', 'ellipse', 'triangle', 'text', 'grid', 'line'].includes(tool)) {
+        if (CREATION_TOOLS.includes(tool)) {
             const snappedCoords = { x: snapVal(coords.x), y: snapVal(coords.y) };
             setNewShapeStart(snappedCoords);
             setNewShapeCurrent(snappedCoords);
@@ -1600,6 +1605,42 @@ export const Canvas: React.FC<CanvasProps> = ({
         setPanStart(null);
     };
 
+    // Touch mode: one-finger direct manipulation is routed into the mouse handlers above so
+    // move/resize/creation reuse the desktop code and the interaction lifecycle unchanged.
+    const asMouse = (event: PointerEvent) => event as unknown as MouseEvent;
+    const topElementAt = (clientX: number, clientY: number) =>
+        hitTestPoint(clientToCanvas(clientX, clientY), elements, template.layers, nodes, currentNodeId)[0];
+
+    const touchHandlers: TouchGestureHandlers = {
+        claimDirectDrag: event => {
+            if (CREATION_TOOLS.includes(tool)) return true;
+            if (tool !== 'select') return false;
+            const target = event.target as HTMLElement;
+            if (target.closest('[data-resize-handle]')) return singleSelectedTransformable;
+            if (selectedElementIds.length === 0) return false;
+            const stack = hitTestPoint(clientToCanvas(event.clientX, event.clientY), elements, template.layers, nodes, currentNodeId);
+            return stack.some(el => selectedElementIds.includes(el.id));
+        },
+        onDirectDown: event => handleMouseDown(asMouse(event)),
+        onDirectMove: event => handleMouseMove(asMouse(event)),
+        onDirectUp: event => handleMouseUp(asMouse(event)),
+        onTap: ({ clientX, clientY }) => {
+            if (tool !== 'select' && tool !== 'hand') return;
+            const top = topElementAt(clientX, clientY);
+            onSelectElements(top ? [top.id] : []);
+        },
+        onDoubleTap: () => {},            // Task 7
+        onLongPress: () => {},            // Task 7
+        onPan: (dx, dy) => {
+            const outer = outerContainerRef.current;
+            if (!outer) return;
+            outer.scrollLeft -= dx;
+            outer.scrollTop -= dy;
+        },
+        onPinch: () => {},                // Task 7
+    };
+    useCanvasTouchGestures(outerContainerRef, touchHandlers, isTouch);
+
     const renderCreationPreview = () => {
         if (!newShapeStart || !newShapeCurrent) return null;
 
@@ -1657,7 +1698,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         <div
             ref={outerContainerRef}
             className={clsx("w-full h-full bg-slate-200 overflow-auto flex relative select-none canvas-scroll-container")}
-            style={{ cursor: containerCursor }}
+            style={{ cursor: containerCursor, ...(isTouch ? { touchAction: 'none', WebkitTouchCallout: 'none' } : {}) }}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -1666,7 +1707,7 @@ export const Canvas: React.FC<CanvasProps> = ({
             onContextMenu={handleContextMenu}
         >
             {/* Inner container wrapper to handle centering vs scrolling */}
-            <div className="m-auto p-12 min-w-fit min-h-fit">
+            <div className={isTouch ? 'm-auto p-4 min-w-fit min-h-fit' : 'm-auto p-12 min-w-fit min-h-fit'}>
                 <ReadOnlyPagePreview
                     ref={containerRef}
                     testId="editor-canvas"
@@ -1991,7 +2032,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                                     {/* Handles (Use existing component, it has pointer-events-auto).
                                         Suppressed when the element's layer is locked or hidden — a
                                         locked/hidden element is selectable via the panel but not editable. */}
-                                    {selectedElementIds.length === 1 && isElementTransformable(el) && <SelectionHandles element={el} />}
+                                    {selectedElementIds.length === 1 && isElementTransformable(el) && <SelectionHandles element={el} touchScale={isTouch ? scale : undefined} />}
                                 </div>
                             );
                         })}

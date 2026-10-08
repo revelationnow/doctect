@@ -3,7 +3,10 @@ import React from 'react';
 import { TemplateElement } from '../../types';
 import { RotateCw } from 'lucide-react';
 
-export const SelectionHandles: React.FC<{ element: TemplateElement }> = ({ element }) => {
+export const TOUCH_HANDLE_PX = 44;
+
+export const SelectionHandles: React.FC<{ element: TemplateElement; touchScale?: number }> = ({ element, touchScale }) => {
+    if (touchScale !== undefined) return <TouchSelectionHandles element={element} scale={touchScale} />;
     return (
         <div className="pointer-events-auto">
             {/* Standard Resize Handles (Not for lines) */}
@@ -71,6 +74,38 @@ export const SelectionHandles: React.FC<{ element: TemplateElement }> = ({ eleme
             </div>
             {/* Connection Line to Rotate Handle */}
             <div className="absolute left-1/2 -top-10 h-10 w-px bg-blue-500 z-10 -translate-x-1/2 pointer-events-none" />
+        </div>
+    );
+};
+
+// Touch variant: each handle is a transparent 44-screen-px square carrying data-resize-handle,
+// centred on the visual handle; the visual is pointer-events-none so the square is the event target.
+// No rotate or pivot handles on touch (out of scope).
+const TouchSelectionHandles: React.FC<{ element: TemplateElement; scale: number }> = ({ element, scale }) => {
+    const size = TOUCH_HANDLE_PX / (scale > 0 ? scale : 1);
+    const zone = (handle: string, left: string, top: string) => (
+        <div
+            key={handle}
+            data-resize-handle={handle}
+            className="absolute z-20"
+            style={{ left, top, width: size, height: size, transform: 'translate(-50%, -50%)' }}
+        >
+            <div className="pointer-events-none absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-sm border-2 border-blue-500 bg-white" />
+        </div>
+    );
+    if (element.type === 'line') {
+        return (
+            <div className="pointer-events-auto">
+                {zone('start', '0%', element.flip ? '100%' : '0%')}
+                {zone('end', '100%', element.flip ? '0%' : '100%')}
+            </div>
+        );
+    }
+    return (
+        <div className="pointer-events-auto">
+            {zone('nw', '0%', '0%')}{zone('n', '50%', '0%')}{zone('ne', '100%', '0%')}
+            {zone('w', '0%', '50%')}{zone('e', '100%', '50%')}
+            {zone('sw', '0%', '100%')}{zone('s', '50%', '100%')}{zone('se', '100%', '100%')}
         </div>
     );
 };
