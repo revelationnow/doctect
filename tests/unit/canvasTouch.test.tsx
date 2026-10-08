@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, fireEvent, render } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Canvas, type CanvasInteraction } from '../../components/Canvas';
 import type { EditorElementIntent } from '../../services/document/contracts';
@@ -535,5 +535,184 @@ describe('Canvas touch mode: inline edit commit, no tap-cycling, long-press on t
         // The content under the old midpoint, ((150 + 50) / 1, (100 + 30) / 1) = (200, 130), must now sit
         // under the new midpoint (200, 100) at scale 2: scroll = (200 * 2 - 200, 130 * 2 - 100).
         expect(pos).toEqual({ left: 200, top: 160 });
+    });
+});
+
+describe('Canvas touch mode: quick format bar and keyboard-aware editing', () => {
+    afterEach(() => vi.useRealTimers());
+    const bar = () => screen.queryByRole('toolbar', { name: 'Text formatting' });
+    const barButton = (name: string) => screen.getByRole('button', { name });
+    const gridElement = (id: string): TemplateElement => ({
+        id, type: 'grid', x: 20, y: 100, w: 60, h: 30, rotation: 0, layerId: 'l1', fill: '', stroke: '#000000',
+        strokeWidth: 1, opacity: 1, fontSize: 12, gridConfig: { cols: 2, gapX: 2, gapY: 2, sourceType: 'current' },
+    });
+
+    it('shows the bar for a single selected text or grid element in touch mode only', () => {
+        const elements = [textElement('t', 20, 20), gridElement('g'), rect('a', 300, 300)];
+        const { props, rerender } = renderCanvas({ elements, selectedElementIds: ['t'] });
+        expect(bar()).not.toBeNull();
+        rerender(<Canvas {...props} selectedElementIds={['g']} />);
+        expect(bar()).not.toBeNull();
+        rerender(<Canvas {...props} selectedElementIds={['a']} />);
+        expect(bar()).toBeNull();
+        rerender(<Canvas {...props} selectedElementIds={['t', 'a']} />);
+        expect(bar()).toBeNull();
+        rerender(<Canvas {...props} selectedElementIds={[]} />);
+        expect(bar()).toBeNull();
+        rerender(<Canvas {...props} selectedElementIds={['t']} inputMode="mouse" />);
+        expect(bar()).toBeNull();
+    });
+
+    it('commits a bold tap as one edit intent through a captured interaction (incremental path)', () => {
+        const elements = [textElement('t', 20, 20), rect('b', 300, 300)];
+        const editor = makeEditorStub(elements);
+        const { props } = renderCanvas({ elements, selectedElementIds: ['t'], captureInteraction: editor.capture, onEditElements: vi.fn() });
+        compatClick(barButton('Bold'));
+        expect(editor.calls.intents).toEqual([{ type: 'patch', updates: [{ id: 't', patch: { fontWeight: 'bold' } }] }]);
+        expect(editor.calls).toMatchObject({ start: 1, end: 1, cancel: 0, selects: [] });
+        expect(find(editor.committed(), 't')).toMatchObject({ fontWeight: 'bold' });
+        expect(props.onUpdateElements).not.toHaveBeenCalled();
+        expect(props.onEditElements).not.toHaveBeenCalled();
+        // A second tap is its own interaction and its own history step.
+        compatClick(barButton('Align center'));
+        expect(editor.calls.intents.at(-1)).toEqual({ type: 'patch', updates: [{ id: 't', patch: { align: 'center' } }] });
+        expect(editor.calls).toMatchObject({ start: 2, end: 2, cancel: 0 });
+    });
+
+    it('commits a bold tap through onUpdateElements with history on the legacy path', () => {
+        const { props } = renderCanvas({ elements: [textElement('t', 20, 20)], selectedElementIds: ['t'] });
+        compatClick(barButton('Bold'));
+        expect(props.onUpdateElements).toHaveBeenCalledTimes(1);
+        const [next, save] = vi.mocked(props.onUpdateElements).mock.calls[0];
+        expect(find(next, 't')).toMatchObject({ fontWeight: 'bold', text: 'Hello' });
+        expect(save).toBe(true);
+        expect(props.onSelectElements).not.toHaveBeenCalled();
+    });
+
+    it('does not remove the bar from the DOM, even transiently, on a tap on the element, the canvas or the bar', () => {
+        const elements = [textElement('t', 20, 20), rect('b', 300, 300)];
+        const { elementNode, surface } = renderCanvas({ elements, selectedElementIds: ['t'] });
+        const node = bar()!;
+        const observer = new MutationObserver(() => {});
+        observer.observe(node.parentElement!, { childList: true });
+        tap(elementNode('t'), 1, 40, 30);      // direct press on the selected element
+        tap(surface, 2, 450, 650);              // press on empty canvas
+        compatClick(barButton('Italic'));       // press on the bar itself
+        expect(bar()).toBe(node);
+        expect(observer.takeRecords().flatMap(record => Array.from(record.removedNodes))).not.toContain(node);
+        observer.disconnect();
+    });
+
+    it('hides the bar only while a pan, a direct drag past the tap slop, or a pinch is in progress', () => {
+        const elements = [textElement('t', 20, 20), rect('b', 300, 300)];
+        const { elementNode, surface } = renderCanvas({ elements, selectedElementIds: ['t'] });
+        pointer(surface, 'pointerdown', 1, 450, 650);
+        expect(bar()).not.toBeNull();
+        pointer(surface, 'pointermove', 1, 450, 600); // pan
+        expect(bar()).toBeNull();
+        pointer(surface, 'pointerup', 1, 450, 600);
+        expect(bar()).not.toBeNull();
+
+        pointer(elementNode('t'), 'pointerdown', 2, 40, 30);
+        pointer(elementNode('t'), 'pointermove', 2, 43, 33); // within the slop: still a possible tap
+        expect(bar()).not.toBeNull();
+        pointer(elementNode('t'), 'pointermove', 2, 80, 60); // a real drag of the selected element
+        expect(bar()).toBeNull();
+        pointer(elementNode('t'), 'pointerup', 2, 80, 60);
+        expect(bar()).not.toBeNull();
+
+        pointer(surface, 'pointerdown', 3, 100, 100);
+        pointer(surface, 'pointerdown', 4, 200, 100);
+        pointer(surface, 'pointermove', 4, 300, 100); // pinch
+        expect(bar()).toBeNull();
+        pointer(surface, 'pointerup', 3, 100, 100);
+        pointer(surface, 'pointerup', 4, 300, 100);
+        expect(bar()).not.toBeNull();
+    });
+
+    it('positions the bar from the element rect and re-measures on canvas scroll', () => {
+        const { elementNode, surface } = renderCanvas({ elements: [textElement('t', 20, 20)], selectedElementIds: ['t'] });
+        const rectSpy = vi.spyOn(elementNode('t'), 'getBoundingClientRect')
+            .mockReturnValue({ left: 100, top: 300, bottom: 340, right: 300, width: 200, height: 40 } as DOMRect);
+        act(() => { surface.dispatchEvent(new Event('scroll')); });
+        expect(bar()!.style.top).toBe(`${300 - 48 - 8}px`);
+        rectSpy.mockReturnValue({ left: 100, top: 20, bottom: 60, right: 300, width: 200, height: 40 } as DOMRect);
+        act(() => { surface.dispatchEvent(new Event('scroll')); });
+        expect(bar()!.style.top).toBe(`${60 + 8}px`);
+    });
+
+    it('keeps an open inline edit alive and routes the format tap through its session (incremental path)', () => {
+        const elements = [textElement('t', 20, 20), rect('b', 300, 300)];
+        const editor = makeEditorStub(elements);
+        const { container, elementNode, surface, props, rerender } = renderCanvas({ elements, captureInteraction: editor.capture, onEditElements: vi.fn() });
+        doubleTap(elementNode('t'), 40, 30);
+        const editable = inlineEditor(container)!;
+        expect(editable).not.toBeNull();
+        // Selection is a controlled prop here: mirror the select the stub received so the bar has its target.
+        rerender(<Canvas {...props} selectedElementIds={['t']} />);
+        expect(inlineEditor(container)).toBe(editable);
+        const ends = editor.calls.end;
+        compatClick(barButton('Bold'));
+        expect(inlineEditor(container)).toBe(editable);
+        expect(document.activeElement).toBe(editable);
+        expect(editor.calls.intents).toEqual([{ type: 'patch', updates: [{ id: 't', patch: { fontWeight: 'bold' } }] }]);
+        expect(editor.calls.end).toBe(ends); // the inline session stays open ...
+        expect(find(editor.working(), 't')).toMatchObject({ fontWeight: 'bold' });
+        expect(find(editor.committed(), 't')).not.toHaveProperty('fontWeight');
+        tap(surface, 3, 450, 650); // ... and commits the formatting with the edit when it finishes
+        expect(inlineEditor(container)).toBeNull();
+        expect(find(editor.committed(), 't')).toMatchObject({ fontWeight: 'bold' });
+        expect(editor.calls.cancel).toBe(0);
+    });
+
+    it('scrolls the edited element above the on-screen keyboard', () => {
+        const listeners: Record<string, () => void> = {};
+        Object.defineProperty(window, 'visualViewport', { configurable: true, value: {
+            offsetTop: 0, height: 300,
+            addEventListener: (type: string, fn: () => void) => { listeners[type] = fn; },
+            removeEventListener: () => {},
+        } });
+        const text: TemplateElement = {
+            id: 't', type: 'text', x: 20, y: 20, w: 200, h: 40, rotation: 0, layerId: 'l1', fill: '', stroke: '',
+            strokeWidth: 0, opacity: 1, text: 'Hi', fontSize: 16, fontFamily: 'helvetica', textOverflow: 'clip', textWrap: true,
+        };
+        const { surface, elementNode } = renderCanvas({ elements: [text] });
+        trackScroll(surface);
+        vi.spyOn(elementNode('t'), 'getBoundingClientRect').mockReturnValue({ top: 500, bottom: 540, left: 0, right: 200, width: 200, height: 40 } as DOMRect);
+        for (let i = 0; i < 2; i++) {
+            pointer(elementNode('t'), 'pointerdown', i + 1, 40, 30);
+            pointer(elementNode('t'), 'pointerup', i + 1, 40, 30);
+        }
+        expect(surface.scrollTop).toBe(540 - (300 - 16));
+        delete (window as any).visualViewport;
+    });
+
+    it('re-runs the keyboard scroll when the visual viewport resizes, and only in touch mode', () => {
+        const listeners: Record<string, () => void> = {};
+        const removed: string[] = [];
+        Object.defineProperty(window, 'visualViewport', { configurable: true, value: {
+            offsetTop: 0, height: 300,
+            addEventListener: (type: string, fn: () => void) => { listeners[type] = fn; },
+            removeEventListener: (type: string) => { removed.push(type); },
+        } });
+        const { surface, elementNode, unmount } = renderCanvas({ elements: [textElement('t', 20, 20)] });
+        const pos = trackScroll(surface);
+        const rectSpy = vi.spyOn(elementNode('t'), 'getBoundingClientRect')
+            .mockReturnValue({ top: 100, bottom: 140, left: 0, right: 200, width: 200, height: 40 } as DOMRect);
+        doubleTap(elementNode('t'), 40, 30);
+        expect(pos.top).toBe(0); // already visible: nothing to do
+        rectSpy.mockReturnValue({ top: 400, bottom: 440, left: 0, right: 200, width: 200, height: 40 } as DOMRect);
+        act(() => { listeners.resize(); }); // the keyboard shrank the viewport
+        expect(pos.top).toBe(440 - (300 - 16));
+        unmount();
+        expect(removed).toContain('resize');
+
+        const mouse = renderCanvas({ inputMode: 'mouse', elements: [textElement('t', 20, 20)] });
+        const mousePos = trackScroll(mouse.surface);
+        vi.spyOn(mouse.elementNode('t'), 'getBoundingClientRect').mockReturnValue({ top: 500, bottom: 540, left: 0, right: 200, width: 200, height: 40 } as DOMRect);
+        fireEvent.doubleClick(mouse.elementNode('t'), { clientX: 40, clientY: 30 });
+        expect(inlineEditor(mouse.container)).not.toBeNull();
+        expect(mousePos.top).toBe(0);
+        delete (window as any).visualViewport;
     });
 });

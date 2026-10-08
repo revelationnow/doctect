@@ -16,6 +16,8 @@ import type { CanvasTextLayoutSession } from '../services/canvasTextLayout';
 import { readBrowserPreference } from '../services/browserPreferences';
 import type { EditorElementIntent } from '../services/document/contracts';
 import { useCanvasTouchGestures, TouchGestureHandlers } from '../hooks/useCanvasTouchGestures';
+import { QuickFormatBar } from './canvas/QuickFormatBar';
+import { useKeepEditedElementVisible, useQuickFormatAnchor, useTouchGestureActivity } from './canvas/useQuickFormatBar';
 
 export interface CanvasInteraction {
     isCurrent(): boolean;
@@ -296,6 +298,21 @@ export const Canvas: React.FC<CanvasProps> = ({
         if (captureInteraction) session.owner?.end();
         else if (onEditElements) onInteractionEnd?.();
         setInlineEditing(current => current === session ? null : current);
+    };
+    // Edits made during an inline session (the overlay's text changes; quick-format taps while the
+    // keyboard is up) commit through the session's own owner, so the session stays one history step.
+    const patchInlineSession = (session: InlineEditingSession, id: string, updates: Partial<TemplateElement>) => {
+        if (captureInteraction) {
+            const owner = session.owner;
+            if (!owner?.isCurrent()) return;
+            owner.start();
+            owner.edit({ type: 'patch', updates: [{ id, patch: updates }] });
+        } else if (onEditElements) {
+            if (!session.hasSavedHistory) {
+                onInteractionStart(); session.hasSavedHistory = true;
+            }
+            onEditElements({ type: 'patch', updates: [{ id, patch: updates }] });
+        } else onUpdateElements(elements.map(e => e.id === id ? { ...e, ...updates } : e), false);
     };
     // Touch taps never move focus (the gesture hook cancels pointerdown), so a tap outside the
     // inline editor commits the edit explicitly: blurring the focused editor runs the overlay's
@@ -1741,7 +1758,32 @@ export const Canvas: React.FC<CanvasProps> = ({
             zoomAroundClientPoint(centerX, centerY, next);
         },
     };
-    useCanvasTouchGestures(outerContainerRef, touchHandlers, isTouch);
+    const gesture = useTouchGestureActivity();
+    useCanvasTouchGestures(outerContainerRef, gesture.track(touchHandlers), isTouch);
+
+    // Quick format bar (touch only): floats over a single selected text/grid element, hidden while a
+    // gesture moves the content. A tap commits like any discrete canvas change — its own captured
+    // interaction (one history step per tap) through the same helpers a drag uses — unless the
+    // target is being edited inline, in which case the patch joins that session and the keyboard
+    // stays up; the bar itself never moves focus (see QuickFormatBar).
+    const formatTarget = isTouch && selectedElementIds.length === 1
+        ? elements.find(el => el.id === selectedElementIds[0] && (el.type === 'text' || el.type === 'grid'))
+        : undefined;
+    const formatAnchor = useQuickFormatAnchor(outerContainerRef, formatTarget?.id ?? null, !gesture.active, [scale, elements]);
+    useKeepEditedElementVisible(outerContainerRef, editingElementId, isTouch);
+    const applyQuickFormat = (updates: Partial<TemplateElement>) => {
+        if (!formatTarget) return;
+        const id = formatTarget.id;
+        if (inlineEditing?.elementId === id) { patchInlineSession(inlineEditing, id, updates); return; }
+        commitInlineEditing(); // a session on another element (legacy path only) must end before a fresh capture orphans it
+        if (captureInteraction) {
+            interaction.current = captureInteraction();
+            if (!interaction.current) return;
+        }
+        if (onEditElements) onInteractionStart();
+        updateGeometry(elements.map(el => el.id === id ? { ...el, ...updates } : el), Object.keys(updates) as (keyof TemplateElement)[], true);
+        if (onEditElements) onInteractionEnd?.();
+    };
 
     const renderCreationPreview = () => {
         if (!newShapeStart || !newShapeCurrent) return null;
@@ -2048,19 +2090,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                                     <OverlayTextEditor
                                         key={el.id}
                                         element={el}
-                                        onChange={(id, updates) => {
-                                            if (captureInteraction) {
-                                                const owner = inlineEditing.owner;
-                                                if (!owner?.isCurrent()) return;
-                                                owner.start();
-                                                owner.edit({ type: 'patch', updates: [{ id, patch: updates }] });
-                                            } else if (onEditElements) {
-                                                if (!inlineEditing.hasSavedHistory) {
-                                                    onInteractionStart(); inlineEditing.hasSavedHistory = true;
-                                                }
-                                                onEditElements({ type: 'patch', updates: [{ id, patch: updates }] });
-                                            } else onUpdateElements(elements.map(e => e.id === id ? { ...e, ...updates } : e), false);
-                                        }}
+                                        onChange={(id, updates) => patchInlineSession(inlineEditing, id, updates)}
                                         onFinish={() => {
                                             canSwitchToSelect = !captureInteraction || !!inlineEditing.owner?.isCurrent();
                                             finishInlineEditing(inlineEditing);
@@ -2145,6 +2175,10 @@ export const Canvas: React.FC<CanvasProps> = ({
                         )}
                 </ReadOnlyPagePreview>
             </div>
+
+            {formatTarget && formatAnchor && !gesture.active && (
+                <QuickFormatBar element={formatTarget} anchor={formatAnchor} onChange={applyQuickFormat} />
+            )}
 
             {selectUnderMenu && (
                 <SelectUnderMenu
