@@ -1,6 +1,8 @@
 import React from 'react';
 import { ChevronDown, ChevronUp, Link2 } from 'lucide-react';
 import { TEXT_PADDING_SIDES, type TextPaddingSide } from '../../services/textPadding';
+import { TouchStepper, useHoldRepeat } from './TouchStepper';
+import { useFormFactor } from '../editor-layout/FormFactorContext';
 
 export type TextPaddingSelection = Record<TextPaddingSide, number | 'mixed'>;
 
@@ -36,19 +38,13 @@ export const TextPaddingControls: React.FC<TextPaddingControlsProps> = ({
     const tooltipId = React.useId();
     const draftsRef = React.useRef<Partial<Record<TextPaddingSide, string>>>({});
     const onCommitRef = React.useRef(onCommit);
-    const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
-    const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+    const repeat = useHoldRepeat();
+    const stopRepeat = repeat.stop;
+    const touch = useFormFactor() !== 'desktop';
 
     React.useEffect(() => {
         onCommitRef.current = onCommit;
     }, [onCommit]);
-
-    const stopRepeat = React.useCallback(() => {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        intervalRef.current = null;
-        timeoutRef.current = null;
-    }, []);
 
     React.useEffect(() => {
         stopRepeat();
@@ -56,8 +52,6 @@ export const TextPaddingControls: React.FC<TextPaddingControlsProps> = ({
         setDrafts({});
         draftsRef.current = {};
     }, [selectionKey, stopRepeat]);
-
-    React.useEffect(() => stopRepeat, [stopRepeat]);
 
     const setDraft = (side: TextPaddingSide, value: string) => {
         const next = { ...draftsRef.current, [side]: value };
@@ -85,23 +79,21 @@ export const TextPaddingControls: React.FC<TextPaddingControlsProps> = ({
 
     const startRepeat = (side: TextPaddingSide, delta: number) => {
         if (disabled) return;
-        stopRepeat();
-        nudge(side, delta);
-        timeoutRef.current = setTimeout(() => {
-            intervalRef.current = setInterval(() => nudge(side, delta), 50);
-        }, 300);
+        repeat.start(() => nudge(side, delta));
     };
 
     return (
         <div
-            className={`group relative flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 ${disabled ? 'cursor-help' : ''}`}
+            className={touch
+                ? `group relative flex flex-wrap items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 ${disabled ? 'cursor-help' : ''}`
+                : `group relative flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 ${disabled ? 'cursor-help' : ''}`}
             data-testid="text-padding-controls"
             tabIndex={disabled ? 0 : undefined}
             aria-describedby={disabled ? tooltipId : undefined}
         >
             <span className="mr-auto text-[10px] font-medium text-slate-500">Padding</span>
             <label
-                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded border border-slate-200 bg-white focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-400 ${
+                className={`flex ${touch ? 'h-11 w-11' : 'h-7 w-7'} shrink-0 items-center justify-center rounded border border-slate-200 bg-white focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-400 ${
                     disabled
                         ? 'cursor-not-allowed text-slate-300'
                         : 'cursor-pointer text-slate-500 hover:bg-slate-50'
@@ -126,6 +118,54 @@ export const TextPaddingControls: React.FC<TextPaddingControlsProps> = ({
                 const value = Object.hasOwn(drafts, side)
                     ? drafts[side]!
                     : values[side] === 'mixed' ? '' : String(values[side]);
+                const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+                    const raw = event.target.value;
+                    setDraft(side, raw);
+                    if (raw.trim() === '') return;
+                    const parsed = Number(raw);
+                    if (Number.isFinite(parsed)) onCommit(side, Math.max(0, parsed), linked);
+                };
+                const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+                    if (event.key === 'ArrowUp') {
+                        event.preventDefault();
+                        nudge(side, 1);
+                    } else if (event.key === 'ArrowDown') {
+                        event.preventDefault();
+                        nudge(side, -1);
+                    }
+                };
+                if (touch) {
+                    // Phone and tablet: one full-width row per side, with the −/+ at 44px and the
+                    // input at 16px; the four-up desktop row has no room for three touch targets each.
+                    return (
+                        <div key={side} className="flex basis-full items-center gap-2">
+                            <span aria-hidden="true" className={`w-14 shrink-0 text-xs ${disabled ? 'text-slate-300' : 'text-slate-500'}`}>
+                                {LABELS[side]}
+                            </span>
+                            <TouchStepper
+                                name={`${side} padding`}
+                                repeat={repeat}
+                                disabled={disabled}
+                                onNudge={delta => nudge(side, delta)}
+                                className="min-w-0 flex-1"
+                            >
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="any"
+                                    aria-label={`Padding ${side}`}
+                                    className="h-11 w-full min-w-0 rounded border border-slate-200 bg-white px-2 text-center text-base text-slate-700 [appearance:textfield] focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400 disabled:cursor-not-allowed disabled:text-slate-400 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                    value={value}
+                                    placeholder={values[side] === 'mixed' ? 'Mixed' : undefined}
+                                    disabled={disabled}
+                                    onChange={onChange}
+                                    onKeyDown={onKeyDown}
+                                    onBlur={() => clearDraft(side)}
+                                />
+                            </TouchStepper>
+                        </div>
+                    );
+                }
                 return (
                     <div key={side} className="group/stepper relative min-w-0 flex-1">
                         <label
@@ -145,22 +185,8 @@ export const TextPaddingControls: React.FC<TextPaddingControlsProps> = ({
                                 value={value}
                                 placeholder={values[side] === 'mixed' ? 'Mixed' : undefined}
                                 disabled={disabled}
-                                onChange={event => {
-                                    const raw = event.target.value;
-                                    setDraft(side, raw);
-                                    if (raw.trim() === '') return;
-                                    const parsed = Number(raw);
-                                    if (Number.isFinite(parsed)) onCommit(side, Math.max(0, parsed), linked);
-                                }}
-                                onKeyDown={event => {
-                                    if (event.key === 'ArrowUp') {
-                                        event.preventDefault();
-                                        nudge(side, 1);
-                                    } else if (event.key === 'ArrowDown') {
-                                        event.preventDefault();
-                                        nudge(side, -1);
-                                    }
-                                }}
+                                onChange={onChange}
+                                onKeyDown={onKeyDown}
                                 onBlur={() => clearDraft(side)}
                             />
                         </label>

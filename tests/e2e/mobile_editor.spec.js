@@ -524,3 +524,56 @@ test('phone overflow menu offers Home, Gallery and Docs', async ({ page }, testI
         await expect(link).toHaveAttribute('href', href);
     }
 });
+
+test('numeric fields get touch −/+ steppers that fit the viewport, tap once, hold to repeat and undo per nudge', async ({ page, browserName }, testInfo) => {
+    const pane = activePane(page);
+    const start = await box(pane.locator('[data-element-id="box"]'));
+    await page.touchscreen.tap(start.x, start.y);
+    await expect(pane.locator('[data-resize-handle="se"]')).toBeVisible();
+    if (isPhone(testInfo)) {
+        const grabber = page.getByRole('button', { name: 'Resize properties sheet' });
+        await grabber.click(); // half
+        await grabber.click(); // full
+    }
+    const decrease = page.getByRole('button', { name: 'Decrease X' });
+    const increase = page.getByRole('button', { name: 'Increase X' });
+    const input = page.getByLabel('X', { exact: true });
+    await increase.scrollIntoViewIfNeeded();
+
+    const { width, height } = await viewport(page);
+    const screen = { x: 0, y: 0, width, height };
+    for (const control of [decrease, increase]) {
+        const b = await control.boundingBox();
+        expect(b.width).toBeGreaterThanOrEqual(44);
+        expect(b.height).toBeGreaterThanOrEqual(44);
+        expect(within(b, screen)).toBe(true);
+    }
+    const field = await input.boundingBox();
+    expect(field.height).toBeGreaterThanOrEqual(44);
+    expect(within(field, screen)).toBe(true);
+    expect(await input.evaluate(el => getComputedStyle(el).fontSize)).toBe('16px');
+    expect(await page.locator('[data-micro-stepper]').count()).toBe(0);
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+
+    // A real touch tap (pointerdown, pointerup, then click) nudges exactly once, without focusing
+    // the input (which would raise the on-screen keyboard).
+    const before = Number(await input.inputValue());
+    const plus = await box(increase);
+    await page.touchscreen.tap(plus.x, plus.y);
+    await expect(input).toHaveValue(String(before + 1));
+    expect(await input.evaluate(el => document.activeElement === el)).toBe(false);
+
+    // Holding repeats after the initial delay; releasing stops it.
+    const fingers = new Fingers(page, browserName);
+    await fingers.down(1, plus.x, plus.y);
+    await page.waitForTimeout(600);
+    await fingers.up(1, plus.x, plus.y);
+    await expect.poll(async () => Number(await input.inputValue())).toBeGreaterThan(before + 3);
+    const held = Number(await input.inputValue());
+    await page.waitForTimeout(300);
+    await expect(input).toHaveValue(String(held));
+
+    // Every nudge is its own undo step.
+    await page.getByRole('button', { name: 'Undo' }).click();
+    await expect(input).toHaveValue(String(held - 1));
+});

@@ -13,6 +13,8 @@ import { DEFAULT_TEXT_FONT_SIZE, resolveTextFontSize } from '../../services/text
 import { CollapsibleSection } from '../CollapsibleSection';
 import { resolveTextPadding, type TextPaddingSide } from '../../services/textPadding';
 import { TextPaddingControls, type TextPaddingSelection } from './TextPaddingControls';
+import { TouchStepper, useHoldRepeat } from './TouchStepper';
+import { useFormFactor } from '../editor-layout/FormFactorContext';
 import { writeBrowserPreference } from '../../services/browserPreferences';
 
 // Font family mapping for CSS (used for font dropdown preview)
@@ -186,40 +188,46 @@ const SmartInput = ({
         }
     };
 
-    // Repeat logic
-    const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
-    const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+    // Repeat logic: every tick reads the latest onNudge, since the owner's update callback is
+    // rebuilt after each committed nudge and a stale one would re-apply from an old base.
     const onNudgeRef = React.useRef(onNudge);
-
-    // Keep ref updated
     React.useEffect(() => {
         onNudgeRef.current = onNudge;
     }, [onNudge]);
-
-    const stopRepeat = () => {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        intervalRef.current = null;
-        timeoutRef.current = null;
-    };
-
+    const repeat = useHoldRepeat();
+    const nudgeLatest = (delta: number) => onNudgeRef.current(delta);
+    const stopRepeat = repeat.stop;
     const startRepeat = (direction: 'up' | 'down') => {
-        stopRepeat();
         const delta = direction === 'up' ? step : -step;
-
-        // Immediate action
-        onNudgeRef.current(delta);
-
-        // Delay then repeat
-        timeoutRef.current = setTimeout(() => {
-            intervalRef.current = setInterval(() => {
-                onNudgeRef.current(delta);
-            }, 50); // Speed of repeat
-        }, 300); // Initial delay before repeat
+        repeat.start(() => onNudgeRef.current(delta));
     };
 
-    // Cleanup on unmount
-    React.useEffect(() => stopRepeat, []);
+    const touch = useFormFactor() !== 'desktop';
+    const inputId = React.useId();
+
+    if (touch) {
+        // Phone and tablet: 44px −/+ beside a 44px, 16px input, on a row of its own since the
+        // desktop grids (four or two columns) are too narrow for three touch targets per cell.
+        return (
+            <div className={`col-span-full ${className}`}>
+                <label htmlFor={inputId} className="mb-1 block text-xs text-slate-500">{label}</label>
+                <TouchStepper name={label} step={step} repeat={repeat} onNudge={nudgeLatest}>
+                    <input
+                        id={inputId}
+                        type="number"
+                        value={displayValue}
+                        onChange={(e) => onChange(parseFloat(e.target.value))}
+                        onKeyDown={handleKeyDown}
+                        className="h-11 w-full min-w-0 rounded border px-2 text-center text-base [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        placeholder="Mixed"
+                        min={min}
+                        max={max}
+                        step={step}
+                    />
+                </TouchStepper>
+            </div>
+        );
+    }
 
     return (
         <div className={`relative group ${className}`}>
@@ -279,6 +287,8 @@ export const SingleElementEditor: React.FC<SingleElementEditorProps> = ({
     const [showFontPicker, setShowFontPicker] = useState(false);
     const [fontSearch, setFontSearch] = useState('');
     const textOverflowControlId = React.useId();
+    // Touch steppers take a full grid row, so the Z-Index row (stepper + arrange buttons) does too.
+    const touch = useFormFactor() !== 'desktop';
     const setAutoWidthCheckboxRef = React.useCallback((checkbox: HTMLInputElement | null) => {
         if (checkbox) checkbox.indeterminate = autoWidthSelection === 'mixed';
     }, [autoWidthSelection]);
@@ -860,7 +870,7 @@ export const SingleElementEditor: React.FC<SingleElementEditorProps> = ({
                         onNudge={d => onUpdate(prev => ({ rotation: (Number(prev.rotation) || 0) + d }))}
                     />
 
-                    <div className="col-span-2 flex items-end gap-1">
+                    <div className={touch ? 'col-span-full flex items-end gap-1' : 'col-span-2 flex items-end gap-1'}>
                         <SmartInput
                             label="Z-Index"
                             value={element.zIndex}

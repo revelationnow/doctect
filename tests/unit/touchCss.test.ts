@@ -5,7 +5,8 @@ import { PILL_INSET_VAR } from '../../components/editor-layout/EditorLayout';
 
 // Guards the touch-only CSS in index.html: every rule lives inside the marked block and is scoped
 // under [data-form-factor] (set on <html> only for phone/tablet), and the hover-revealed controls in
-// HOVER_FILES only use patterns the block makes visible on touch, or are micro-steppers it hides.
+// HOVER_FILES only use patterns the block makes visible on touch, or are desktop-only micro-steppers
+// (STEPPER_FILES render a TouchStepper in their place on touch; touchStepper.test.tsx covers that).
 
 const html = readFileSync('index.html', 'utf8');
 const START = '/* touch-editor:start */';
@@ -35,9 +36,9 @@ type Finding = { line: number; literal: string };
 
 /**
  * Every string or template literal (plain, clsx, ternary, template, named group) that hides an
- * element until group hover and is neither covered by a block rule nor inside a marked micro-stepper
- * (the mark must sit on the literal's lines or the MARK_WINDOW lines above it). Classes are matched
- * per literal, so keep a control's hide and reveal classes in the same literal.
+ * element until group hover and is neither covered by a block rule nor inside a marked desktop-only
+ * micro-stepper (the mark must sit on the literal's lines or the MARK_WINDOW lines above it).
+ * Classes are matched per literal, so keep a control's hide and reveal classes in the same literal.
  */
 function uncoveredHoverReveals(source: string, pairs: Array<[string, string]>): Finding[] {
     const lines = source.split('\n');
@@ -68,13 +69,14 @@ describe('touch CSS', () => {
         expect(html.replace(block, '')).not.toMatch(/data-form-factor/);
     });
 
-    it('declares 44px targets, 16px form controls, hover reveal, micro-stepper and dialog rules', () => {
+    it('declares 44px targets, 16px form controls, hover reveal and dialog rules', () => {
         expect(block).toMatch(/min-height:\s*44px/);
         expect(block).toMatch(/font-size:\s*16px/);
         expect(block).toContain('group-hover:opacity-100');
         expect(block).toContain('group-hover:flex');
         expect(block).toContain('.editor-dialog-panel');
-        expect(rules).toMatch(/\[data-form-factor\] \[data-micro-stepper\]\s*\{\s*display:\s*none\s*!important;\s*\}/);
+        // Touch renders TouchStepper instead of the micro-steppers, so no rule hides (or sizes) them.
+        expect(rules).not.toContain(STEPPER_MARK);
     });
 
     it('pads only the canvas content wrapper for the phone tool pill, by the names the layout and Canvas export', () => {
@@ -96,8 +98,13 @@ describe('touch CSS', () => {
         }
     });
 
-    it('marks the micro-steppers the touch CSS hides', () => {
-        for (const file of STEPPER_FILES) expect(readFileSync(file, 'utf8'), file).toContain(STEPPER_MARK);
+    it('marks the desktop-only micro-steppers and renders the touch stepper in their place', () => {
+        for (const file of STEPPER_FILES) {
+            const source = readFileSync(file, 'utf8');
+            expect(source, file).toContain(STEPPER_MARK);
+            expect(source, file).toMatch(/useFormFactor\(\) !== 'desktop'/);
+            expect(source, file).toContain('<TouchStepper');
+        }
     });
 
     it('flags uncovered hover reveals written as clsx, template, ternary or named-group literals', () => {
