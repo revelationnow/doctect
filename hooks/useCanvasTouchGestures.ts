@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useRef } from 'react';
+import { RefObject, useEffect, useLayoutEffect, useRef } from 'react';
 
 export interface TouchPoint { clientX: number; clientY: number; target: EventTarget | null; }
 
@@ -7,6 +7,13 @@ export interface TouchGestureHandlers {
     onDirectDown: (event: PointerEvent) => void;
     onDirectMove: (event: PointerEvent) => void;
     onDirectUp: (event: PointerEvent) => void;
+    /**
+     * A direct drag was interrupted (pointercancel from the OS, or the hook was disabled/unmounted
+     * mid-drag). Receives the last direct event seen, so callers can revert the in-progress
+     * manipulation like a desktop cancel instead of committing a partial move. When absent the
+     * hook falls back to onDirectUp with that same event.
+     */
+    onDirectCancel?: (event: PointerEvent) => void;
     onTap: (point: TouchPoint) => void;
     onDoubleTap: (point: TouchPoint) => void;
     onLongPress: (point: TouchPoint) => void;
@@ -22,6 +29,10 @@ export const DOUBLE_TAP_SLOP_PX = 24;
 export const LONG_PRESS_MS = 500;
 export const GESTURE_IGNORE_ATTR = 'data-touch-gesture-ignore';
 
+// Only the first two fingers are ever tracked. A third is ignored outright so that lifting one of the
+// pinch pair can never re-pair against a stale pinchDistance and jump the zoom.
+const MAX_TRACKED_POINTERS = 2;
+
 type Mode = 'idle' | 'pending' | 'pan' | 'direct' | 'pinch' | 'done';
 type Point = { x: number; y: number };
 
@@ -34,7 +45,9 @@ export function useCanvasTouchGestures(
     enabled: boolean,
 ): void {
     const handlersRef = useRef(handlers);
-    handlersRef.current = handlers;
+    useLayoutEffect(() => {
+        handlersRef.current = handlers;
+    });
 
     useEffect(() => {
         const el = ref.current;
@@ -76,10 +89,22 @@ export function useCanvasTouchGestures(
             handlersRef.current.onGestureEnd?.();
         };
 
+        // Interrupted direct drag: hand the last positioned direct event to onDirectCancel, or to
+        // onDirectUp for callers that don't distinguish cancel. A pointercancel event carries no
+        // useful coordinates, which is why the last direct event is passed rather than the cancel.
+        const cancelDirect = (fallback?: PointerEvent) => {
+            const event = lastDirectEvent ?? fallback;
+            if (!event) return;
+            const current = handlersRef.current;
+            if (current.onDirectCancel) current.onDirectCancel(event);
+            else current.onDirectUp(event);
+        };
+
         const onDown = (event: PointerEvent) => {
             if (event.pointerType !== 'touch') return;
             if ((event.target as Element | null)?.closest?.(`[${GESTURE_IGNORE_ATTR}]`)) return;
             event.preventDefault();
+            if (pointers.size >= MAX_TRACKED_POINTERS) return;
             el.setPointerCapture?.(event.pointerId);
             pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
 
@@ -171,7 +196,7 @@ export function useCanvasTouchGestures(
         const onCancel = (event: PointerEvent) => {
             if (event.pointerType !== 'touch' || !pointers.has(event.pointerId)) return;
             pointers.delete(event.pointerId);
-            if (mode === 'direct') handlersRef.current.onDirectUp(event);
+            if (mode === 'direct') cancelDirect(event);
             mode = 'done';
             finishIfIdle();
         };
@@ -186,6 +211,18 @@ export function useCanvasTouchGestures(
             el.removeEventListener('pointermove', onMove);
             el.removeEventListener('pointerup', onUp);
             el.removeEventListener('pointercancel', onCancel);
+            // Disabled or unmounted mid-gesture: the pointerup that would have closed the gesture
+            // will never reach us, so revert any direct drag and balance onGestureStart here.
+            // `mode` leaves 'idle' only via a first pointerdown (which fires onGestureStart) and
+            // returns to it only via finishIfIdle (which fires onGestureEnd), so this is exact.
+            if (mode !== 'idle') {
+                if (mode === 'direct') cancelDirect();
+                pointers.clear();
+                mode = 'idle';
+                start = null;
+                lastDirectEvent = null;
+                handlersRef.current.onGestureEnd?.();
+            }
         };
     }, [ref, enabled]);
 }

@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { act, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-    DOUBLE_TAP_MS, LONG_PRESS_MS, TouchGestureHandlers, useCanvasTouchGestures,
+    DOUBLE_TAP_MS, DOUBLE_TAP_SLOP_PX, LONG_PRESS_MS, TAP_SLOP_PX, TouchGestureHandlers, useCanvasTouchGestures,
 } from '../../hooks/useCanvasTouchGestures';
 
 const pointer = (target: Element, type: string, id: number, x: number, y: number, pointerType = 'touch') => {
@@ -118,5 +118,163 @@ describe('useCanvasTouchGestures', () => {
         pointer(getByTestId('surface'), 'pointerdown', 3, 0, 0);
         pointer(getByTestId('surface'), 'pointerup', 3, 0, 0);
         expect(h.onTap).not.toHaveBeenCalled();
+    });
+
+    // Thresholds (spec §Testing "drag thresholds")
+
+    it('reports two single taps when the second tap is later than the double-tap window', () => {
+        const h = makeHandlers();
+        const { getByTestId } = render(<Harness handlers={h} />);
+        const s = getByTestId('surface');
+        pointer(s, 'pointerdown', 1, 50, 50); pointer(s, 'pointerup', 1, 50, 50);
+        act(() => { vi.advanceTimersByTime(DOUBLE_TAP_MS + 1); });
+        pointer(s, 'pointerdown', 2, 50, 50); pointer(s, 'pointerup', 2, 50, 50);
+        expect(h.onTap).toHaveBeenCalledTimes(2);
+        expect(h.onDoubleTap).not.toHaveBeenCalled();
+    });
+
+    it('reports two single taps when the second tap is farther than the double-tap slop', () => {
+        const h = makeHandlers();
+        const { getByTestId } = render(<Harness handlers={h} />);
+        const s = getByTestId('surface');
+        const farX = 50 + DOUBLE_TAP_SLOP_PX + 1;
+        pointer(s, 'pointerdown', 1, 50, 50); pointer(s, 'pointerup', 1, 50, 50);
+        pointer(s, 'pointerdown', 2, farX, 50); pointer(s, 'pointerup', 2, farX, 50);
+        expect(h.onTap).toHaveBeenCalledTimes(2);
+        expect(h.onDoubleTap).not.toHaveBeenCalled();
+    });
+
+    it('still reports a tap when the finger wobbles within the tap slop', () => {
+        const h = makeHandlers();
+        const { getByTestId } = render(<Harness handlers={h} />);
+        const s = getByTestId('surface');
+        pointer(s, 'pointerdown', 1, 10, 10);
+        pointer(s, 'pointermove', 1, 10 + TAP_SLOP_PX, 10);
+        pointer(s, 'pointerup', 1, 10 + TAP_SLOP_PX, 10);
+        expect(h.onTap).toHaveBeenCalledTimes(1);
+        expect(h.onTap).toHaveBeenCalledWith(expect.objectContaining({ clientX: 10, clientY: 10 }));
+        expect(h.onPan).not.toHaveBeenCalled();
+    });
+
+    it('does not fire a long press once the finger has moved past the tap slop', () => {
+        const h = makeHandlers();
+        const { getByTestId } = render(<Harness handlers={h} />);
+        const s = getByTestId('surface');
+        const pastSlop = 10 + TAP_SLOP_PX + 1;
+        pointer(s, 'pointerdown', 1, 10, 10);
+        pointer(s, 'pointermove', 1, pastSlop, 10);
+        act(() => { vi.advanceTimersByTime(LONG_PRESS_MS); });
+        pointer(s, 'pointerup', 1, pastSlop, 10);
+        expect(h.onLongPress).not.toHaveBeenCalled();
+        expect(h.onPan).toHaveBeenCalledWith(TAP_SLOP_PX + 1, 0);
+        expect(h.onTap).not.toHaveBeenCalled();
+    });
+
+    // Second pointer cancels one-finger actions (spec §Testing)
+
+    it('turns a pending tap into a pinch when a second finger lands, with no tap or long press on lift', () => {
+        const h = makeHandlers();
+        const { getByTestId } = render(<Harness handlers={h} />);
+        const s = getByTestId('surface');
+        pointer(s, 'pointerdown', 1, 100, 100);
+        pointer(s, 'pointerdown', 2, 200, 100);
+        act(() => { vi.advanceTimersByTime(LONG_PRESS_MS); });
+        pointer(s, 'pointermove', 2, 250, 100);
+        expect(h.onPinch).toHaveBeenCalledWith(1.5, 175, 100);
+        pointer(s, 'pointerup', 1, 100, 100);
+        pointer(s, 'pointerup', 2, 250, 100);
+        expect(h.onTap).not.toHaveBeenCalled();
+        expect(h.onLongPress).not.toHaveBeenCalled();
+        expect(h.onDirectDown).not.toHaveBeenCalled();
+        expect(h.onGestureStart).toHaveBeenCalledTimes(1);
+        expect(h.onGestureEnd).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignores a third finger so lifting one of the pinch pair cannot jump the zoom', () => {
+        const h = makeHandlers();
+        const { getByTestId } = render(<Harness handlers={h} />);
+        const s = getByTestId('surface');
+        pointer(s, 'pointerdown', 1, 100, 100);
+        pointer(s, 'pointerdown', 2, 200, 100);
+        pointer(s, 'pointermove', 2, 300, 100);
+        expect(h.onPinch).toHaveBeenCalledTimes(1);
+        const third = pointer(s, 'pointerdown', 3, 500, 500);
+        expect(third.defaultPrevented).toBe(true);
+        pointer(s, 'pointermove', 3, 600, 600);
+        pointer(s, 'pointerup', 1, 100, 100);
+        pointer(s, 'pointermove', 3, 650, 650);
+        pointer(s, 'pointermove', 2, 320, 100);
+        expect(h.onPinch).toHaveBeenCalledTimes(1);
+        expect(h.onPan).toHaveBeenCalledTimes(1);
+        pointer(s, 'pointerup', 3, 650, 650);
+        expect(h.onGestureEnd).not.toHaveBeenCalled();
+        pointer(s, 'pointerup', 2, 320, 100);
+        expect(h.onGestureEnd).toHaveBeenCalledTimes(1);
+    });
+
+    // Cancel path
+
+    it('routes pointercancel during a direct drag to onDirectCancel with the last direct event', () => {
+        const h = { ...makeHandlers(true), onDirectCancel: vi.fn() };
+        const { getByTestId } = render(<Harness handlers={h} />);
+        const s = getByTestId('surface');
+        pointer(s, 'pointerdown', 1, 10, 10);
+        const move = pointer(s, 'pointermove', 1, 40, 10);
+        pointer(s, 'pointercancel', 1, 0, 0);
+        expect(h.onDirectCancel).toHaveBeenCalledTimes(1);
+        // Reference identity: two MouseEvents have no own enumerable props, so toHaveBeenCalledWith can't tell them apart.
+        expect(vi.mocked(h.onDirectCancel).mock.calls[0][0]).toBe(move);
+        expect(h.onDirectUp).not.toHaveBeenCalled();
+        expect(h.onGestureEnd).toHaveBeenCalledTimes(1);
+    });
+
+    it('falls back to onDirectUp on pointercancel when no onDirectCancel is provided', () => {
+        const h = makeHandlers(true);
+        const { getByTestId } = render(<Harness handlers={h} />);
+        const s = getByTestId('surface');
+        pointer(s, 'pointerdown', 1, 10, 10);
+        const move = pointer(s, 'pointermove', 1, 40, 10);
+        pointer(s, 'pointercancel', 1, 0, 0);
+        expect(h.onDirectUp).toHaveBeenCalledTimes(1);
+        expect(vi.mocked(h.onDirectUp).mock.calls[0][0]).toBe(move);
+        expect(h.onGestureEnd).toHaveBeenCalledTimes(1);
+    });
+
+    it('cancels a direct drag and ends the gesture when disabled mid-drag', () => {
+        const h = { ...makeHandlers(true), onDirectCancel: vi.fn() };
+        const { getByTestId, rerender } = render(<Harness handlers={h} />);
+        const s = getByTestId('surface');
+        pointer(s, 'pointerdown', 1, 10, 10);
+        const move = pointer(s, 'pointermove', 1, 40, 10);
+        rerender(<Harness handlers={h} enabled={false} />);
+        expect(h.onDirectCancel).toHaveBeenCalledTimes(1);
+        expect(vi.mocked(h.onDirectCancel).mock.calls[0][0]).toBe(move);
+        expect(h.onDirectUp).not.toHaveBeenCalled();
+        expect(h.onGestureEnd).toHaveBeenCalledTimes(1);
+        pointer(s, 'pointerup', 1, 40, 10);
+        expect(h.onGestureEnd).toHaveBeenCalledTimes(1);
+    });
+
+    it('ends a pending gesture on unmount without reporting a tap or long press', () => {
+        const h = makeHandlers();
+        const { getByTestId, unmount } = render(<Harness handlers={h} />);
+        pointer(getByTestId('surface'), 'pointerdown', 1, 10, 10);
+        unmount();
+        expect(h.onGestureEnd).toHaveBeenCalledTimes(1);
+        expect(h.onDirectUp).not.toHaveBeenCalled();
+        act(() => { vi.advanceTimersByTime(LONG_PRESS_MS); });
+        expect(h.onTap).not.toHaveBeenCalled();
+        expect(h.onLongPress).not.toHaveBeenCalled();
+    });
+
+    it('does not report a gesture end when disabled while idle', () => {
+        const h = makeHandlers();
+        const { getByTestId, rerender } = render(<Harness handlers={h} />);
+        const s = getByTestId('surface');
+        pointer(s, 'pointerdown', 1, 10, 10); pointer(s, 'pointerup', 1, 10, 10);
+        expect(h.onGestureEnd).toHaveBeenCalledTimes(1);
+        rerender(<Harness handlers={h} enabled={false} />);
+        expect(h.onGestureEnd).toHaveBeenCalledTimes(1);
+        expect(h.onDirectUp).not.toHaveBeenCalled();
     });
 });
