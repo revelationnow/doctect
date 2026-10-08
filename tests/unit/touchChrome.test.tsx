@@ -184,6 +184,19 @@ describe('ProjectSwitcher', () => {
         expect(parseFloat(menu.style.left) + parseFloat(menu.style.width)).toBeLessThanOrEqual(window.innerWidth);
     });
 
+    it('closes on window resize and on scroll so a stale position is never shown', () => {
+        render(<ProjectSwitcher chrome={chrome} />);
+        const trigger = screen.getByRole('button', { name: /Planner/ });
+        fireEvent.click(trigger);
+        expect(screen.getByRole('menu')).toBeTruthy();
+        fireEvent(window, new Event('resize'));
+        expect(screen.queryByRole('menu')).toBeNull();
+        fireEvent.click(trigger);
+        expect(screen.getByRole('menu')).toBeTruthy();
+        fireEvent.scroll(document.body);
+        expect(screen.queryByRole('menu')).toBeNull();
+    });
+
     it('falls back to Untitled when no project is active', () => {
         render(<ProjectSwitcher chrome={{ ...chrome, activeProjectId: null }} />);
         expect(screen.getByRole('button', { name: /Untitled/ })).toBeTruthy();
@@ -228,6 +241,33 @@ describe('PhoneTopBar', () => {
         fireEvent.click(more);
         fireEvent.click(screen.getByTestId('overflow-menu-backdrop'));
         expect(document.activeElement).toBe(more);
+    });
+
+    it('hands focus to a modal opened by an item instead of stealing it back to the trigger', () => {
+        // Mirrors SavePresetModal / HierarchyGeneratorModal / NewProjectModal, which focus in a
+        // useLayoutEffect on mount. The sheet's focus restore must run before that, not after it.
+        function ModalLike() {
+            const input = React.useRef<HTMLInputElement>(null);
+            React.useLayoutEffect(() => { input.current?.focus(); }, []);
+            return <div role="dialog" aria-label="Save preset"><input ref={input} aria-label="Preset title" /></div>;
+        }
+        function Harness() {
+            const [modalOpen, setModalOpen] = React.useState(false);
+            const actions = React.useMemo(() => makeActions({ savePreset: () => setModalOpen(true) }), []);
+            return (
+                <>
+                    <PhoneTopBar actions={actions} onOpenSidebar={() => {}} />
+                    {modalOpen && <ModalLike />}
+                </>
+            );
+        }
+        render(<Harness />);
+        const more = screen.getByRole('button', { name: 'More actions' });
+        more.focus();
+        fireEvent.click(more);
+        fireEvent.click(screen.getByRole('button', { name: 'Save preset' }));
+        expect(screen.queryByRole('dialog', { name: 'More actions' })).toBeNull();
+        expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Preset title' }));
     });
 
     it('calls undo and still renders without page chrome', () => {

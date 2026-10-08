@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type { TouchEditorActions } from './touchActions';
 import type { EditorChrome } from './EditorChromeContext';
@@ -33,6 +33,12 @@ const Group = ({ title, children }: { title: string; children: React.ReactNode }
  * any z-index on them would make a stacking context that traps a `fixed` child beneath the
  * sidebar drawer and properties sheet. Focus moves into the sheet on open and returns to
  * whatever had it (the ⋯ trigger) on every close path.
+ *
+ * The focus hand-off is a layout effect on purpose: items like "Save preset" and "Generator"
+ * close the sheet and mount a modal in the same commit, and those modals focus themselves in a
+ * useLayoutEffect. Layout cleanups run in the mutation phase, before any new layout effect, so
+ * the trigger gets focus back first and the modal then takes it. A passive cleanup would run
+ * after the modal's focus and steal it back behind the modal.
  */
 export function OverflowMenu({ open, onClose, actions, chrome }: {
     open: boolean; onClose: () => void; actions: TouchEditorActions; chrome: EditorChrome | null;
@@ -41,9 +47,9 @@ export function OverflowMenu({ open, onClose, actions, chrome }: {
     const dialog = useRef<HTMLDivElement>(null);
     // Latest onClose without re-running the open/close effect when the parent passes a new closure.
     const onCloseRef = useRef(onClose);
-    useEffect(() => { onCloseRef.current = onClose; });
+    useLayoutEffect(() => { onCloseRef.current = onClose; });
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (!open) return;
         const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         dialog.current?.focus();

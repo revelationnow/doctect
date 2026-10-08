@@ -46,9 +46,16 @@ export function ProjectSwitcher({ chrome }: { chrome: EditorChrome }) {
         // Capture phase so a canvas gesture handler that stops propagation cannot keep the menu open.
         document.addEventListener('pointerdown', onPointerDown, true);
         window.addEventListener('keydown', onKey);
+        // The menu's position is measured once at open; a resize (orientation change, keyboard)
+        // or any scroll would leave it stale, so both simply dismiss it. Scroll does not bubble,
+        // hence the capture-phase listener on the document.
+        window.addEventListener('resize', close);
+        document.addEventListener('scroll', close, true);
         return () => {
             document.removeEventListener('pointerdown', onPointerDown, true);
             window.removeEventListener('keydown', onKey);
+            window.removeEventListener('resize', close);
+            document.removeEventListener('scroll', close, true);
         };
     }, [open]);
 
