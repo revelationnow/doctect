@@ -13,14 +13,26 @@ const elementSelector = (id: string) => `[data-element-id="${id.replace(/["\\]/g
  * count, so UI gated on `active` (the quick format bar) does not blink on every tap — the hook's
  * onGestureStart fires for taps too, which is why it is not used here. Cleared on onGestureEnd,
  * which the hook guarantees for every started gesture, including cancels and a disable mid-drag.
+ *
+ * `directDrag` is true (read synchronously, no render) from a finger's onDirectDown until its
+ * onDirectUp or onDirectCancel, the window in which the hook owns the finger and the canvas's
+ * mouse handlers must ignore the mouse boundary events Chrome still reports for a touch (a
+ * mouseleave from hover re-evaluation after the drag changed the layout). A real mouse on a touch
+ * form factor never enters this window, so its drags keep ending when the cursor leaves the canvas.
  */
-export function useTouchGestureActivity(): { active: boolean; track: (handlers: TouchGestureHandlers) => TouchGestureHandlers } {
+export function useTouchGestureActivity(): {
+    active: boolean;
+    directDrag: RefObject<boolean>;
+    track: (handlers: TouchGestureHandlers) => TouchGestureHandlers;
+} {
     const [active, setActive] = useState(false);
     const directStart = useRef<{ x: number; y: number } | null>(null);
+    const directDrag = useRef(false);
     const track = (handlers: TouchGestureHandlers): TouchGestureHandlers => ({
         ...handlers,
         onDirectDown: event => {
             directStart.current = { x: event.clientX, y: event.clientY };
+            directDrag.current = true;
             handlers.onDirectDown(event);
         },
         onDirectMove: event => {
@@ -28,15 +40,19 @@ export function useTouchGestureActivity(): { active: boolean; track: (handlers: 
             if (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > TAP_SLOP_PX) setActive(true);
             handlers.onDirectMove(event);
         },
+        onDirectUp: event => { directDrag.current = false; handlers.onDirectUp(event); },
+        // Same fallback as the gesture hook's: without onDirectCancel a cancel is an onDirectUp.
+        onDirectCancel: event => { directDrag.current = false; (handlers.onDirectCancel ?? handlers.onDirectUp)(event); },
         onPan: (dx, dy) => { setActive(true); handlers.onPan(dx, dy); },
         onPinch: (factor, centerX, centerY) => { setActive(true); handlers.onPinch(factor, centerX, centerY); },
         onGestureEnd: () => {
             directStart.current = null;
+            directDrag.current = false;
             setActive(false);
             handlers.onGestureEnd?.();
         },
     });
-    return { active, track };
+    return { active, directDrag, track };
 }
 
 const sameAnchor = (a: QuickFormatAnchor | null, b: QuickFormatAnchor) =>

@@ -853,6 +853,18 @@ describe('Canvas touch Select multiple', () => {
         expect(props.onSelectElements).toHaveBeenLastCalledWith(['c', 'a']);
         expect(queryByTestId('select-under-menu')).toBeNull(); // a plain pick still closes the menu
     });
+
+    it('never removes through the long-press menu: picking a selected element keeps the selection', () => {
+        vi.useFakeTimers();
+        const elements = [rect('a', 20, 20), rect('c', 40, 30)];
+        const { props, elementNode, getByTestId } = renderCanvas({ multiSelect: true, selectedElementIds: ['c', 'a'], elements });
+        pointer(elementNode('c'), 'pointerdown', 1, 60, 50);
+        act(() => { vi.advanceTimersByTime(600); });
+        pointer(elementNode('c'), 'pointerup', 1, 60, 50);
+        compatClick(getByTestId('select-under-menu').querySelector('[data-menu-element-id="a"]')!, 70, 60);
+        expect(props.onSelectElements).toHaveBeenLastCalledWith(['c', 'a']);
+        expect(vi.mocked(props.onSelectElements).mock.calls.every(([ids]) => ids.length === 2)).toBe(true);
+    });
 });
 
 describe('Canvas touch group drag', () => {
@@ -867,7 +879,7 @@ describe('Canvas touch group drag', () => {
         expect(props.onInteractionStart).toHaveBeenCalledTimes(1);
     });
 
-    it('ignores a mouseleave on the container mid-drag on touch, which still ends a mouse drag', () => {
+    it('ignores a mouseleave on the container only while a finger is dragging', () => {
         // Chrome reports mouse boundary events for a touch even when pointerdown was cancelled, and a
         // group move that pushes an element past the page edge makes it re-evaluate hover mid-gesture.
         const editor = makeEditorStub([rect('a', 20, 20), rect('b', 200, 200)]);
@@ -882,12 +894,46 @@ describe('Canvas touch group drag', () => {
         expect(find(editor.committed(), 'a')).toMatchObject({ x: 50, y: 40 });
         expect(find(editor.committed(), 'b')).toMatchObject({ x: 230, y: 220 });
 
+        // A real mouse or trackpad on a touch form factor never goes through the gesture hook (its
+        // pointer events are not touch), so leaving the canvas still ends its drag as on desktop.
+        const hybrid = makeEditorStub([rect('a', 20, 20), rect('b', 200, 200)]);
+        const tablet = renderCanvas({ selectedElementIds: ['a', 'b'], captureInteraction: hybrid.capture, onEditElements: vi.fn() });
+        fireEvent.mouseDown(tablet.elementNode('a'), { clientX: 30, clientY: 30, button: 0 });
+        fireEvent.mouseMove(tablet.surface, { clientX: 40, clientY: 30 });
+        expect(hybrid.calls.start).toBe(1);
+        fireEvent.mouseLeave(tablet.surface);
+        expect(hybrid.calls).toMatchObject({ start: 1, end: 1, cancel: 0 });
+        fireEvent.mouseMove(tablet.surface, { clientX: 90, clientY: 80 }); // re-entry: nothing follows the cursor
+        expect(find(hybrid.committed(), 'a')).toMatchObject({ x: 30, y: 20 });
+
         const mouse = makeEditorStub([rect('a', 20, 20), rect('b', 200, 200)]);
         const desktop = renderCanvas({ inputMode: 'mouse', selectedElementIds: ['a', 'b'], captureInteraction: mouse.capture, onEditElements: vi.fn() });
         fireEvent.mouseDown(desktop.elementNode('a'), { clientX: 30, clientY: 30, button: 0 });
         fireEvent.mouseMove(desktop.surface, { clientX: 40, clientY: 30 });
         fireEvent.mouseLeave(desktop.surface);
         expect(mouse.calls.end).toBe(1); // desktop: leaving the canvas still ends the drag
+    });
+
+    it('ends a touch drag on its own pointerup or cancel, after which a mouseleave is inert', () => {
+        const editor = makeEditorStub([rect('a', 20, 20), rect('b', 200, 200)]);
+        const { elementNode, surface } = renderCanvas({ selectedElementIds: ['a', 'b'], captureInteraction: editor.capture, onEditElements: vi.fn() });
+        pointer(elementNode('a'), 'pointerdown', 1, 30, 30);
+        pointer(elementNode('a'), 'pointermove', 1, 40, 30);
+        pointer(elementNode('a'), 'pointercancel', 1, 40, 30);
+        expect(editor.calls).toMatchObject({ start: 1, end: 0, cancel: 1 });
+        fireEvent.mouseLeave(surface);
+        expect(editor.calls).toMatchObject({ start: 1, end: 0, cancel: 1 });
+
+        // A second finger cancels the direct drag too; the mouseleave Chrome may report for the
+        // pinch that follows finds nothing to end.
+        pointer(elementNode('a'), 'pointerdown', 2, 30, 30);
+        pointer(elementNode('a'), 'pointermove', 2, 40, 30);
+        pointer(surface, 'pointerdown', 3, 300, 300);
+        expect(editor.calls).toMatchObject({ start: 2, end: 0, cancel: 2 });
+        fireEvent.mouseLeave(surface);
+        pointer(surface, 'pointerup', 3, 300, 300);
+        pointer(elementNode('a'), 'pointerup', 2, 40, 30);
+        expect(editor.calls).toMatchObject({ start: 2, end: 0, cancel: 2 });
     });
 
     it('moves every selected element in one interaction with one patch intent per move (incremental path)', () => {

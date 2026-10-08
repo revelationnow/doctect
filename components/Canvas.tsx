@@ -9,7 +9,7 @@ import { OverlayTextEditor } from './canvas/OverlayTextEditor';
 import { SelectionHandles } from './canvas/SelectionHandles';
 import { resolveActiveLayerId, nextZIndexInLayer } from '../services/layers';
 import { hitTestPoint } from '../services/hitTest';
-import { toggleSelection } from '../services/selection';
+import { addToSelection, toggleSelection } from '../services/selection';
 import { ZERO_TEXT_PADDING } from '../services/textPadding';
 import { SelectUnderMenu } from './canvas/SelectUnderMenu';
 import { useCanvasTextLayoutSession } from './canvas/useCanvasTextLayoutSession';
@@ -1880,11 +1880,11 @@ export const Canvas: React.FC<CanvasProps> = ({
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
-            // Touch: the gesture hook owns the finger (pointer capture, pointerup/cancel). A cancelled
-            // pointerdown suppresses compat mouse clicks but not mouse boundary events, and Chrome's
-            // hover re-evaluation after a layout change (a group drag pushing an element past the page
-            // edge) reports a mouseleave mid-gesture, which must not end the drag.
-            onMouseLeave={isTouch ? undefined : handleMouseUp}
+            // Touch: while the gesture hook owns a finger (pointer capture, pointerup/cancel) a
+            // mouseleave is Chrome's hover re-evaluation after the drag changed the layout, not the
+            // pointer leaving — a cancelled pointerdown suppresses compat mouse clicks, not mouse
+            // boundary events. A real mouse on a touch form factor still ends its drag on leave.
+            onMouseLeave={isTouch ? e => { if (!gesture.directDrag.current) handleMouseUp(e); } : handleMouseUp}
             onPointerCancel={isTouch ? e => { if (e.pointerType !== 'touch') cancelInteraction(); } : cancelInteraction}
             onContextMenu={handleContextMenu}
         >
@@ -2233,9 +2233,11 @@ export const Canvas: React.FC<CanvasProps> = ({
                         // handleMouseUp (the right button's own, or the compat mouseup of a row tap),
                         // so re-capture here or the selection never reaches the incremental editor.
                         if (captureInteraction && !interaction.current?.isCurrent()) interaction.current = captureInteraction();
-                        // Shift-click, or any pick while touch Select multiple is on, toggles into the selection.
-                        if (additive || multiSelect) {
+                        // Shift-click toggles; a pick while touch Select multiple is on only ever adds.
+                        if (additive) {
                             onSelectElements(toggleSelection(selectedElementIds, id));
+                        } else if (multiSelect) {
+                            onSelectElements(addToSelection(selectedElementIds, id));
                         } else {
                             onSelectElements([id]);
                         }

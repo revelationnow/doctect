@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ALIGN_ACTIONS, alignElements, alignSelectedElements } from '../../services/alignElements';
-import { toggleSelection } from '../../services/selection';
+import { addToSelection, toggleSelection } from '../../services/selection';
 import { editorState } from '../helpers/editorFixtures';
 import type { TemplateElement } from '../../types';
 
@@ -72,5 +72,13 @@ describe('toggleSelection', () => {
         expect(toggleSelection(['a'], 'b')).toEqual(['a', 'b']);
         expect(toggleSelection(['a', 'b'], 'a')).toEqual(['b']);
         expect(toggleSelection([], 'a')).toEqual(['a']);
+    });
+});
+
+describe('addToSelection', () => {
+    it('adds an absent id at the end and leaves a present one selected', () => {
+        expect(addToSelection(['a'], 'b')).toEqual(['a', 'b']);
+        expect(addToSelection(['a', 'b'], 'a')).toEqual(['a', 'b']);
+        expect(addToSelection([], 'a')).toEqual(['a']);
     });
 });

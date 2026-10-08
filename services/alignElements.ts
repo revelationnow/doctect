@@ -125,8 +125,9 @@ export function alignSelectedElements(state: AppState, type: AlignType): AppStat
     if (selectedElementIds.length < 2) return state;
     const templateId = currentTemplateIdOf(state);
     const variant = variants[activeVariantId];
-    const template = templateId ? variant?.templates?.[templateId] : undefined;
-    if (!variant || !template) return state;
+    if (!templateId || !variant) return state;
+    const template = variant.templates?.[templateId];
+    if (!template) return state;
     const finalElements = alignElements(template.elements, selectedElementIds, type);
     if (finalElements === template.elements) return state;
     return {
@@ -135,7 +136,7 @@ export function alignSelectedElements(state: AppState, type: AlignType): AppStat
             ...variants,
             [activeVariantId]: {
                 ...variant,
-                templates: { ...variant.templates, [templateId!]: { ...template, elements: finalElements } },
+                templates: { ...variant.templates, [templateId]: { ...template, elements: finalElements } },
             },
         },
     };

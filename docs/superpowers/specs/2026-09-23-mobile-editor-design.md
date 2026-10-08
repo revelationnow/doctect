@@ -180,9 +180,9 @@ New touch-only components call the same `actions`; desktop JSX is untouched.
 
 Alignment/distribute requires two or more selected elements. The 2026-10-08 follow-ups added a
 **Select multiple** toggle beside Select in the tool strip (phone pill and tablet toolbar; session
-state, never persisted, off whenever the tool is not Select): while it is on, canvas taps, Layers
-rows and long-press picks toggle elements in and out of the selection and empty-canvas taps are
-inert. The ⋯ sheet then gains **Clear selection** (in the Selection group) and, at two or more
+state, never persisted, off whenever the tool is not Select): while it is on, canvas taps and
+Layers rows toggle elements in and out of the selection, a long-press pick adds the picked
+element, and empty-canvas taps are inert. The ⋯ sheet then gains **Clear selection** (in the Selection group) and, at two or more
 selected, an **Arrange** group running the desktop toolbar's align/distribute handlers.
 
 ## Dialogs, panels, hover-only controls
