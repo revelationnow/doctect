@@ -435,3 +435,88 @@ describe('Canvas touch creation and gestures', () => {
         expect(props.onZoom).not.toHaveBeenCalled();
     });
 });
+
+describe('Canvas touch mode: inline edit commit, no tap-cycling, long-press on the selection, pinch scroll', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it('commits an open inline edit when a direct touch begins on a resize handle', () => {
+        const elements = [textElement('t', 20, 20), rect('b', 300, 300)];
+        const editor = makeEditorStub(elements);
+        const { container, elementNode } = renderCanvas({
+            elements, selectedElementIds: ['t'], captureInteraction: editor.capture, onEditElements: vi.fn(),
+        });
+        doubleTap(elementNode('t'), 40, 30);
+        expect(inlineEditor(container)).not.toBeNull();
+        const ends = editor.calls.end;
+        const handle = container.querySelector('[data-resize-handle="se"]') as HTMLElement;
+        pointer(handle, 'pointerdown', 3, 234, 74);
+        expect(inlineEditor(container)).toBeNull();
+        expect(editor.calls.end).toBe(ends + 1);
+        pointer(handle, 'pointerup', 3, 234, 74);
+        expect(editor.calls.intents.filter(intent => intent.type === 'patch')).toEqual([]);
+    });
+
+    it('commits an open inline edit when a long press begins elsewhere', () => {
+        vi.useFakeTimers();
+        const elements = [textElement('t', 20, 20), rect('a', 300, 300), rect('c', 320, 310)];
+        const editor = makeEditorStub(elements);
+        const { container, elementNode, getByTestId } = renderCanvas({ elements, captureInteraction: editor.capture, onEditElements: vi.fn() });
+        doubleTap(elementNode('t'), 40, 30);
+        expect(inlineEditor(container)).not.toBeNull();
+        const ends = editor.calls.end;
+        pointer(elementNode('c'), 'pointerdown', 3, 330, 320);
+        act(() => { vi.advanceTimersByTime(600); });
+        expect(inlineEditor(container)).toBeNull();
+        expect(editor.calls.end).toBe(ends + 1);
+        expect(getByTestId('select-under-menu')).toBeTruthy();
+    });
+
+    it('double-tap edits an already-selected text over another element without tap-cycling the selection', () => {
+        const elements = [{ ...textElement('t', 20, 20), zIndex: 2 }, rect('a', 20, 20)];
+        const { container, elementNode, props } = renderCanvas({ elements, selectedElementIds: ['t'] });
+        doubleTap(elementNode('t'), 40, 30);
+        expect(inlineEditor(container)).not.toBeNull();
+        expect(vi.mocked(props.onSelectElements).mock.calls.map(([ids]) => ids)).toEqual([['t'], ['t'], ['t']]);
+    });
+
+    it('opens the select-under menu on a long press over the selected element, reverting the direct drag', () => {
+        vi.useFakeTimers();
+        const elements = [rect('a', 20, 20), rect('c', 40, 30)];
+        const editor = makeEditorStub(elements);
+        const { elementNode, getByTestId } = renderCanvas({
+            elements, selectedElementIds: ['c'], captureInteraction: editor.capture, onEditElements: vi.fn(),
+        });
+        pointer(elementNode('c'), 'pointerdown', 1, 60, 50);
+        act(() => { vi.advanceTimersByTime(600); });
+        expect(getByTestId('select-under-menu')).toBeTruthy();
+        pointer(elementNode('c'), 'pointerup', 1, 60, 50);
+        expect(find(editor.working(), 'c')).toMatchObject({ x: 40, y: 30 });
+        expect(editor.calls).toMatchObject({ end: 0, cancel: 1 });
+        expect(editor.calls.selects).toEqual([['c']]); // the direct down's keep-selection only; nothing cycled
+    });
+
+    it('draws with a shape tool after a held press instead of treating the hold as a long press', () => {
+        vi.useFakeTimers();
+        const { props, surface, queryByTestId } = renderCanvas({ tool: 'rect', elements: [rect('a', 20, 20)] });
+        pointer(surface, 'pointerdown', 1, 30, 30); // over 'a', held
+        act(() => { vi.advanceTimersByTime(600); });
+        pointer(surface, 'pointermove', 1, 130, 90);
+        pointer(surface, 'pointerup', 1, 130, 90);
+        expect(queryByTestId('select-under-menu')).toBeNull();
+        expect(vi.mocked(props.onUpdateElements).mock.calls.at(-1)![0].at(-1)).toMatchObject({ type: 'rect', x: 30, y: 30, w: 100, h: 60 });
+    });
+
+    it('corrects the scroll around the pinch midpoint once the zoomed scale renders, keeping the midpoint pan', () => {
+        const { props, surface, rerender } = renderCanvas({ scale: 1 });
+        const pos = trackScroll(surface, 50, 30);
+        pointer(surface, 'pointerdown', 1, 100, 100);
+        pointer(surface, 'pointerdown', 2, 200, 100);
+        pointer(surface, 'pointermove', 2, 300, 100); // midpoint 150 -> 200 (pan +50), distance doubled
+        expect(props.onZoom).toHaveBeenLastCalledWith(2);
+        expect(pos).toEqual({ left: 0, top: 30 }); // the pan applies immediately
+        rerender(<Canvas {...props} scale={2} />);
+        // The content under the old midpoint, ((150 + 50) / 1, (100 + 30) / 1) = (200, 130), must now sit
+        // under the new midpoint (200, 100) at scale 2: scroll = (200 * 2 - 200, 130 * 2 - 100).
+        expect(pos).toEqual({ left: 200, top: 160 });
+    });
+});

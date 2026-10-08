@@ -408,7 +408,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         const el = outerContainerRef.current;
         if (!el) return;
         const newScale = Math.max(0.2, Math.min(10, requested));
-        if (Math.abs(newScale - scale) <= 0.001) return;
+        if (!(Math.abs(newScale - scale) > 0.001)) return; // also drops NaN, as the wheel path always did
         const rect = el.getBoundingClientRect();
         const mx = clientX - rect.left;
         const my = clientY - rect.top;
@@ -887,7 +887,9 @@ export const Canvas: React.FC<CanvasProps> = ({
                     const stackIds = stack.map(el => el.id);
                     if (stackIds.some(id => selectedElementIds.includes(id))) {
                         keepSelection = true;
-                        if (selectedElementIds.length === 1 && stackIds.length >= 2) {
+                        // No tap-cycling on touch: long-press opens the select-under menu instead,
+                        // and the second tap of a double-tap must not move the selection.
+                        if (selectedElementIds.length === 1 && stackIds.length >= 2 && !isTouch) {
                             clickCycleStackRef.current = stackIds;
                         }
                     }
@@ -1689,7 +1691,10 @@ export const Canvas: React.FC<CanvasProps> = ({
             const stack = hitTestPoint(clientToCanvas(event.clientX, event.clientY), elements, template.layers, nodes, currentNodeId);
             return stack.some(el => selectedElementIds.includes(el.id));
         },
-        onDirectDown: event => handleMouseDown(asMouse(event)),
+        // Every touch path that captures an interaction commits an open inline edit first (desktop
+        // commits through the blur its mousedown causes; a touch pointerdown is cancelled, so it must
+        // not): direct down here, taps/double-taps and long press below.
+        onDirectDown: event => { commitInlineEditing(); handleMouseDown(asMouse(event)); },
         onDirectMove: event => handleMouseMove(asMouse(event)),
         onDirectUp: event => handleMouseUp(asMouse(event)),
         // Second finger, OS pointercancel or disable mid-drag: revert like desktop pointercancel.
@@ -1708,8 +1713,11 @@ export const Canvas: React.FC<CanvasProps> = ({
             const owner = selectThroughTap([top.id], true);
             if (owner) beginEditing(top, owner.inline);
         },
+        // Long press is a select-tool gesture; with a shape tool the finger is a (possibly held) drag.
+        canLongPress: () => tool === 'select',
         onLongPress: ({ clientX, clientY }) => {
             if (tool !== 'select') return;
+            commitInlineEditing();
             // The menu selects through this owner, as after a desktop right-click.
             if (captureInteraction) interaction.current = captureInteraction();
             openSelectUnderMenuAt(clientX, clientY);
@@ -1719,6 +1727,11 @@ export const Canvas: React.FC<CanvasProps> = ({
             if (!outer) return;
             outer.scrollLeft -= dx;
             outer.scrollTop -= dy;
+            // A pinch move reports its zoom at the new midpoint before this pan arrives, so the pending
+            // zoom target holds the content that was under the new midpoint at the old scroll. Shift it
+            // to the content under the previous midpoint, or the zoom's scroll correction undoes the pan.
+            const target = zoomTarget.current;
+            if (target) { target.cx -= dx / scale; target.cy -= dy / scale; }
         },
         onPinch: (factor, centerX, centerY) => {
             const base = pinchScaleRef.current ?? scale;

@@ -230,6 +230,73 @@ describe('useCanvasTouchGestures', () => {
         expect(h.onGestureEnd).toHaveBeenCalledTimes(1);
     });
 
+
+    // Long press during a direct drag (selected element / handle under the finger)
+
+    it('fires a long press during a direct drag that stays put, cancelling the direct drag first', () => {
+        const h = { ...makeHandlers(true), onDirectCancel: vi.fn() };
+        const order: string[] = [];
+        h.onDirectCancel.mockImplementation(() => { order.push('cancel'); });
+        vi.mocked(h.onLongPress).mockImplementation(() => { order.push('longPress'); });
+        const { getByTestId } = render(<Harness handlers={h} />);
+        const s = getByTestId('surface');
+        pointer(s, 'pointerdown', 1, 30, 40);
+        const wobble = pointer(s, 'pointermove', 1, 30 + TAP_SLOP_PX, 40); // within slop keeps the timer
+        act(() => { vi.advanceTimersByTime(LONG_PRESS_MS); });
+        expect(order).toEqual(['cancel', 'longPress']);
+        expect(vi.mocked(h.onDirectCancel).mock.calls[0][0]).toBe(wobble);
+        expect(h.onLongPress).toHaveBeenCalledWith(expect.objectContaining({ clientX: 30, clientY: 40 }));
+        pointer(s, 'pointermove', 1, 80, 40);
+        pointer(s, 'pointerup', 1, 80, 40);
+        expect(h.onDirectMove).toHaveBeenCalledTimes(1); // only the wobble; nothing after the long press
+        expect(h.onDirectUp).not.toHaveBeenCalled();
+        expect(h.onTap).not.toHaveBeenCalled();
+        expect(h.onPan).not.toHaveBeenCalled();
+        expect(h.onGestureEnd).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not fire a long press once a direct drag has moved past the tap slop', () => {
+        const h = { ...makeHandlers(true), onDirectCancel: vi.fn() };
+        const { getByTestId } = render(<Harness handlers={h} />);
+        const s = getByTestId('surface');
+        pointer(s, 'pointerdown', 1, 10, 10);
+        pointer(s, 'pointermove', 1, 10 + TAP_SLOP_PX + 1, 10);
+        act(() => { vi.advanceTimersByTime(LONG_PRESS_MS); });
+        pointer(s, 'pointerup', 1, 40, 10);
+        expect(h.onLongPress).not.toHaveBeenCalled();
+        expect(h.onDirectCancel).not.toHaveBeenCalled();
+        expect(h.onDirectMove).toHaveBeenCalledTimes(1);
+        expect(h.onDirectUp).toHaveBeenCalledTimes(1);
+    });
+
+
+    it('keeps a direct drag alive when canLongPress declines, so a held press can still drag', () => {
+        const h = { ...makeHandlers(true), onDirectCancel: vi.fn(), canLongPress: vi.fn(() => false) };
+        const { getByTestId } = render(<Harness handlers={h} />);
+        const s = getByTestId('surface');
+        pointer(s, 'pointerdown', 1, 10, 10);
+        act(() => { vi.advanceTimersByTime(LONG_PRESS_MS); });
+        expect(h.canLongPress).toHaveBeenCalledWith(expect.objectContaining({ clientX: 10, clientY: 10 }));
+        expect(h.onLongPress).not.toHaveBeenCalled();
+        expect(h.onDirectCancel).not.toHaveBeenCalled();
+        pointer(s, 'pointermove', 1, 60, 40);
+        pointer(s, 'pointerup', 1, 60, 40);
+        expect(h.onDirectMove).toHaveBeenCalledTimes(1);
+        expect(h.onDirectUp).toHaveBeenCalledTimes(1);
+        expect(h.onGestureEnd).toHaveBeenCalledTimes(1);
+    });
+
+    it('lets a pending press become a tap when canLongPress declines', () => {
+        const h = { ...makeHandlers(), canLongPress: vi.fn(() => false) };
+        const { getByTestId } = render(<Harness handlers={h} />);
+        const s = getByTestId('surface');
+        pointer(s, 'pointerdown', 1, 10, 10);
+        act(() => { vi.advanceTimersByTime(LONG_PRESS_MS); });
+        pointer(s, 'pointerup', 1, 10, 10);
+        expect(h.onLongPress).not.toHaveBeenCalled();
+        expect(h.onTap).toHaveBeenCalledTimes(1);
+    });
+
     // Cancel path
 
     it('routes pointercancel during a direct drag to onDirectCancel with the last direct event', () => {

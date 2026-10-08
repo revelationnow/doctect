@@ -8,15 +8,21 @@ export interface TouchGestureHandlers {
     onDirectMove: (event: PointerEvent) => void;
     onDirectUp: (event: PointerEvent) => void;
     /**
-     * A direct drag was interrupted (a second finger landed, pointercancel from the OS, or the hook
-     * was disabled/unmounted mid-drag). Receives the last direct event seen, so callers can revert
-     * the in-progress manipulation like a desktop cancel instead of committing a partial move. When
-     * absent the hook falls back to onDirectUp with that same event.
+     * A direct drag was interrupted (a second finger landed, pointercancel from the OS, the hook
+     * was disabled/unmounted mid-drag, or a long press fired because the finger stayed within the
+     * tap slop). Receives the last direct event seen, so callers can revert the in-progress
+     * manipulation like a desktop cancel instead of committing a partial move. When absent the hook
+     * falls back to onDirectUp with that same event. For a long press it is called before onLongPress.
      */
     onDirectCancel?: (event: PointerEvent) => void;
     onTap: (point: TouchPoint) => void;
     onDoubleTap: (point: TouchPoint) => void;
     onLongPress: (point: TouchPoint) => void;
+    /**
+     * Consulted when the long-press timer fires. Returning false lets the press continue as a tap
+     * or direct drag (nothing is cancelled); e.g. a shape tool, where holding before drawing is normal.
+     */
+    canLongPress?: (point: TouchPoint) => boolean;
     onPan: (dx: number, dy: number) => void;
     onPinch: (factor: number, centerX: number, centerY: number) => void;
     onGestureStart?: () => void;
@@ -100,6 +106,21 @@ export function useCanvasTouchGestures(
             else current.onDirectUp(event);
         };
 
+        // Armed for pending and direct presses alike: a finger that stays within the tap slop for
+        // LONG_PRESS_MS is a long press even over the selected element, in which case the direct
+        // drag it started is cancelled first so the caller can revert it cleanly.
+        const armLongPress = () => {
+            longPressTimer = setTimeout(() => {
+                longPressTimer = null;
+                if (!start || (mode !== 'pending' && mode !== 'direct')) return;
+                if (handlersRef.current.canLongPress && !handlersRef.current.canLongPress(start)) return;
+                const wasDirect = mode === 'direct';
+                mode = 'done';
+                if (wasDirect) { cancelDirect(); lastDirectEvent = null; }
+                handlersRef.current.onLongPress(start);
+            }, LONG_PRESS_MS);
+        };
+
         const onDown = (event: PointerEvent) => {
             if (event.pointerType !== 'touch') return;
             if ((event.target as Element | null)?.closest?.(`[${GESTURE_IGNORE_ATTR}]`)) return;
@@ -116,16 +137,11 @@ export function useCanvasTouchGestures(
                     mode = 'direct';
                     lastDirectEvent = event;
                     handlersRef.current.onDirectDown(event);
+                    armLongPress();
                     return;
                 }
                 mode = 'pending';
-                longPressTimer = setTimeout(() => {
-                    longPressTimer = null;
-                    if (mode === 'pending' && start) {
-                        mode = 'done';
-                        handlersRef.current.onLongPress(start);
-                    }
-                }, LONG_PRESS_MS);
+                armLongPress();
                 return;
             }
 
@@ -143,13 +159,14 @@ export function useCanvasTouchGestures(
             if (event.pointerType !== 'touch' || !pointers.has(event.pointerId)) return;
             pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
 
+            const pastSlop = !!start && Math.hypot(event.clientX - start.clientX, event.clientY - start.clientY) > TAP_SLOP_PX;
             if (mode === 'direct') {
+                if (pastSlop) clearLongPress();
                 lastDirectEvent = event;
                 handlersRef.current.onDirectMove(event);
                 return;
             }
-            if (mode === 'pending' && start
-                && Math.hypot(event.clientX - start.clientX, event.clientY - start.clientY) > TAP_SLOP_PX) {
+            if (mode === 'pending' && pastSlop) {
                 clearLongPress();
                 mode = 'pan';
             }
