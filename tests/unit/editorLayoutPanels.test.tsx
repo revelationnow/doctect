@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { SidebarDrawer } from '../../components/editor-layout/SidebarDrawer';
@@ -51,6 +51,52 @@ describe('SidebarDrawer', () => {
         // A non-editable child still lets Escape through to the drawer.
         fireEvent.keyDown(screen.getByRole('button', { name: 'Plain' }), { key: 'Escape' });
         expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('moves focus into the panel on open and restores it to the opener on close', () => {
+        function Owner() {
+            const [open, setOpen] = useState(false);
+            return (
+                <>
+                    <button type="button" onClick={() => setOpen(true)}>Open pages and templates</button>
+                    <SidebarDrawer open={open} onClose={() => setOpen(false)}><button type="button">Page</button></SidebarDrawer>
+                </>
+            );
+        }
+        render(<Owner />);
+        const trigger = screen.getByRole('button', { name: 'Open pages and templates' });
+        trigger.focus();
+        fireEvent.click(trigger);
+        const dialog = screen.getByRole('dialog', { name: 'Pages and templates' });
+        expect(document.activeElement).toBe(dialog);
+        // Focus moved on by the user inside the drawer still comes back to the opener on close.
+        screen.getByRole('button', { name: 'Page' }).focus();
+        fireEvent.click(screen.getByTestId('sidebar-drawer-backdrop'));
+        expect(screen.queryByRole('dialog')).toBeNull();
+        expect(document.activeElement).toBe(trigger);
+    });
+
+    it('does not restore focus to an opener that has since left the document', () => {
+        function Owner({ keepTrigger }: { keepTrigger: boolean }) {
+            const [open, setOpen] = useState(false);
+            return (
+                <>
+                    {keepTrigger && <button type="button" onClick={() => setOpen(true)}>Open pages and templates</button>}
+                    <button type="button" onClick={() => setOpen(false)}>Elsewhere</button>
+                    <SidebarDrawer open={open} onClose={() => setOpen(false)}><p>tree</p></SidebarDrawer>
+                </>
+            );
+        }
+        const { rerender } = render(<Owner keepTrigger />);
+        const trigger = screen.getByRole('button', { name: 'Open pages and templates' });
+        trigger.focus();
+        fireEvent.click(trigger);
+        rerender(<Owner keepTrigger={false} />);
+        const elsewhere = screen.getByRole('button', { name: 'Elsewhere' });
+        elsewhere.focus();
+        fireEvent.click(elsewhere);
+        expect(screen.queryByRole('dialog')).toBeNull();
+        expect(document.activeElement).toBe(elsewhere);
     });
 
     it('keeps the drawer when a child already consumed Escape', () => {

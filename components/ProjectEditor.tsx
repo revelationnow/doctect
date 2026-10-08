@@ -22,7 +22,9 @@ import { NewVariantModal, NewVariantConfig } from './NewVariantModal';
 import { reflowTemplates } from '../services/reflow';
 import clsx from 'clsx';
 import { trackEvent } from '../services/analytics';
-import { resolveActiveLayerId, nextZIndexInLayer, createDefaultLayer, moveElementsToLayer } from '../services/layers';
+import { resolveActiveLayerId, nextZIndexInLayer, createDefaultLayer, moveElementsToLayer, getElementLabel } from '../services/layers';
+import { listPreviewNodes } from '../services/previewNodes';
+import type { TouchEditorActions } from './editor-layout/touchActions';
 import { PLACEHOLDER_SVG, createPlacedSvgElement } from '../services/svgEditing';
 import { DocumentSnapshot, restoreDocument, snapshotDocument } from '../services/projectDocumentSnapshot';
 import type { GeneratedProject } from '../services/validateGeneratedProject';
@@ -1074,6 +1076,7 @@ function useLegacyEditor({ projectId, projectName, initialState, isActive, onNam
         setResizingPanel, setShowScriptGenModal, setShowSavePresetModal, handleImportSvg, handleInsertSvgPlaceholder,
         currentTemplate, effectivePreviewNodeId, saveToHistory, handleUpdateTemplateElements,
         deleteElements: (ids: string[]) => { saveToHistory(); handleDeleteElements(ids); },
+        duplicateElements: () => { saveToHistory(); handleDuplicate(); },
         handleUpdateTemplate, layersExpanded, toggleLayers: () => setLayersExpanded(v => !v),
         showScriptGenModal, handleApplyGenerated, onCreateGeneratedProject, showSavePresetModal, handleSavePreset,
         showNewVariantModal, setShowNewVariantModal, handleCreateVariant, getActiveTemplates, selectNodeTarget,
@@ -1597,7 +1600,7 @@ function IncrementalProjectEditor(props: CommonProjectEditorProps & { incrementa
         onEditElements, captureInteraction,
         onInteractionEnd: () => run(finishGroups),
         onInteractionCancel: () => run(() => { const id = group.current; if (id) editor.cancelGroup(id); finishGroups(); }),
-        handleUpdateTemplateElements, deleteElements, handleUpdateTemplate,
+        handleUpdateTemplateElements, deleteElements, duplicateElements: () => { paste(true); }, handleUpdateTemplate,
         layersExpanded: editor.preferences.panelsExpanded.layers ?? false, toggleLayers: () => setPanelExpanded('layers', !(editor.getCurrent().preferences.panelsExpanded.layers ?? false)),
         showScriptGenModal, handleApplyGenerated, onCreateGeneratedProject: props.onCreateGeneratedProject,
         showSavePresetModal, handleSavePreset, showNewVariantModal, setShowNewVariantModal,
@@ -1621,7 +1624,7 @@ function ProjectEditorView({
     handleSelectTemplate, handleAddTemplate, handleDeleteTemplates, handleDuplicateTemplates, handleUpdateTemplateName,
     handleSelectVariant, handleAddVariant, handleRenameVariant, handleDeleteVariant, handleDuplicateVariant,
     setResizingPanel, setShowScriptGenModal, setShowSavePresetModal, handleImportSvg, handleInsertSvgPlaceholder,
-    currentTemplate, effectivePreviewNodeId, saveToHistory, handleUpdateTemplateElements, deleteElements,
+    currentTemplate, effectivePreviewNodeId, saveToHistory, handleUpdateTemplateElements, deleteElements, duplicateElements,
     handleUpdateTemplate, layersExpanded, toggleLayers, showScriptGenModal, handleApplyGenerated, onCreateGeneratedProject,
     showSavePresetModal, handleSavePreset, showNewVariantModal, setShowNewVariantModal, handleCreateVariant,
     getActiveTemplates, selectNodeTarget, deleteConfirmState, setDeleteConfirmState, executeDeleteNode,
@@ -1780,6 +1783,42 @@ function ProjectEditorView({
             ) : null}
         />
     );
+    // Touch chrome (phone top bar / tablet toolbar / overflow sheet) drives the same handlers the
+    // desktop bars use; the desktop layout ignores these props, so its DOM is unchanged.
+    const previewChoice = listPreviewNodes(state, effectivePreviewNodeId);
+    const touchActions: TouchEditorActions = {
+        undo, redo, canUndo, canRedo,
+        exportPdf: () => { void handleExportPDF(); },
+        exportAllVariants: () => { void handleExportPDF({ exportAllVariants: true }); },
+        canExportAllVariants: Object.keys(state.variants).length > 1,
+        isExporting,
+        greyscale: exportGreyscale,
+        toggleGreyscale: () => setExportGreyscale(!exportGreyscale),
+        openJson: () => setSession({ showJsonModal: true }),
+        openGenerator: () => setShowScriptGenModal(true),
+        savePreset: () => setShowSavePresetModal(true),
+        importSvg: handleImportSvg,
+        insertSvgPlaceholder: handleInsertSvgPlaceholder,
+        snapToGrid: state.snapToGrid,
+        // Same as EditorToolbar's magnet button: turning snap on also reveals the grid.
+        toggleSnap: () => setPreferences({ snapToGrid: !state.snapToGrid, showGrid: !state.snapToGrid ? true : state.showGrid }),
+        showGrid: state.showGrid,
+        toggleGrid: () => setPreferences({ showGrid: !state.showGrid }),
+        tool: state.tool,
+        setTool: tool => setSession({ tool: tool as AppState['tool'] }),
+        fitToWidth: touchViewport.requestFit,
+        hasSelection: state.selectedElementIds.length > 0,
+        duplicateSelection: duplicateElements,
+        deleteSelection: () => deleteElements(state.selectedElementIds),
+        preview: previewChoice && { ...previewChoice, onSelect: id => setSession({ templatePreviewNodeId: id }) },
+    };
+    const selectedElements = (currentTemplate?.elements ?? []).filter(el => state.selectedElementIds.includes(el.id));
+    const selectionLabel = selectedElements.length === 1
+        ? getElementLabel(selectedElements[0])
+        : selectedElements.length > 1
+            ? `${selectedElements.length} elements`
+            : `Page · ${state.nodes[effectivePreviewNodeId]?.title ?? ''}`;
+    const navigationKey = `${state.viewMode}:${state.selectedNodeId}:${state.selectedTemplateId}:${state.activeVariantId}`;
     return (
         <div className="flex h-full w-full flex-col bg-slate-100 text-slate-900 overflow-hidden">
             <EditorLayout
@@ -1792,6 +1831,9 @@ function ProjectEditorView({
                 sidebarWidth={state.sidebarWidth}
                 propertiesPanelWidth={state.propertiesPanelWidth}
                 onStartResize={setResizingPanel}
+                touchActions={touchActions}
+                selectionLabel={selectionLabel}
+                navigationKey={navigationKey}
             />
 
             <JsonModal

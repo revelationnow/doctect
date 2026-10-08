@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, cleanup, render } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AppState } from '../../types';
 
@@ -50,6 +50,8 @@ describe('touch zoom isolation', () => {
         act(() => canvasProps.onZoom(3));
         expect(canvasProps.scale).toBe(3);
         // The editor's own state (what the legacy editor reports and the sidebar sees) is untouched.
+        // On touch the sidebar lives in the drawer, so open it to read what it is given.
+        fireEvent.click(screen.getByRole('button', { name: 'Open pages and templates' }));
         expect(sidebarProps.state.scale).toBe(1.5);
         const persisted = onStateChange.mock.calls.map(([s]) => s as AppState);
         expect(persisted.every(s => s.scale === 1.5 && s.sidebarWidth === 280 && s.propertiesPanelWidth === 320)).toBe(true);

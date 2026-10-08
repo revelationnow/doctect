@@ -19,6 +19,7 @@ import {
 import { useIncrementalProjectWrites } from '../hooks/useIncrementalProjectWrites';
 import { useEditorFormFactor } from '../hooks/useEditorFormFactor';
 import { FormFactorProvider } from '../components/editor-layout/FormFactorContext';
+import { EditorChromeContext, type EditorChrome } from '../components/editor-layout/EditorChromeContext';
 import { getNormalizedWorkspaceSession, isNormalizedWorkspaceStore } from '../services/localWorkspace/NormalizedWorkspaceStore';
 import type { WorkspaceEditingSession } from '../services/localWorkspace/workspaceEditingSession';
 import { downloadJson } from '../services/browserDownload';
@@ -351,12 +352,55 @@ function EditorPageShell({
     }), authorityEpoch);
   };
 
+  // The phone top bar replaces this header; it gets the same tab, save, cloud and account pieces.
+  const chrome: EditorChrome = {
+    projects,
+    activeProjectId,
+    onSelectProject: projectId => { void handleActivateProject(projectId); },
+    onCloseProject: projectId => {
+      const authorityEpoch = authorityEpochs.get(projectId);
+      if (authorityEpoch === undefined) return;
+      setClosingProjectIntent({ projectId, authorityEpoch });
+    },
+    onNewProject: () => {
+      setCommandError(null);
+      setShowNewProjectModal(true);
+    },
+    saveStatus: activeProject ? (
+      <LocalSaveStatus
+        state={saveStates.get(activeProject.id) ?? { status: 'saved' }}
+        onRetry={() => retryProject(activeProject.id)}
+        onDownload={() => downloadProjectJson(activeProject)}
+      />
+    ) : null,
+    cloudMenu: activeProject ? (
+      <CloudMenu
+        project={activeProject}
+        getWorkingProject={editing ? () => editing.readProject(activeProject.id, authorityEpochs.get(activeProject.id)) : undefined}
+        onLinkCloud={cloud => handleLinkCloud(
+          activeProject.id,
+          authorityEpochs.get(activeProject.id) ?? 0,
+          cloud,
+        )}
+        onRestoreState={(state, cloud) => handleRestoreState(
+          activeProject.id,
+          authorityEpochs.get(activeProject.id) ?? 0,
+          state,
+          cloud,
+        )}
+      />
+    ) : null,
+    accountMenu: <AccountMenu />,
+  };
+
   return (
     <FormFactorProvider value={formFactor}>
+    <EditorChromeContext.Provider value={chrome}>
     <div
       ref={editorShellRef}
       className="flex h-screen w-screen flex-col overflow-hidden bg-slate-200"
     >
+      {formFactor !== 'phone' && (
       <header className="z-20 flex h-12 shrink-0 items-center gap-3 border-b bg-white px-3 sm:gap-4 sm:px-4">
         <Link
           to="/"
@@ -439,6 +483,7 @@ function EditorPageShell({
           </Link>
         </div>
       </header>
+      )}
 
       {loadWarnings.length > 0 && (
         <div role="alert" className="flex items-start gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900">
@@ -545,6 +590,7 @@ function EditorPageShell({
         onLeave={() => blocker.proceed()}
       />
     )}
+    </EditorChromeContext.Provider>
     </FormFactorProvider>
   );
 }
