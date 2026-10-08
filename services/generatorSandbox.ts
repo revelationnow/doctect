@@ -3,6 +3,7 @@ import {
     GENERATOR_SCRIPT_MAX_BYTES,
 } from '../shared/generatorMetadata.js';
 import { MAX_GENERATOR_OUTPUT_BYTES } from '../shared/projectLimits.js';
+import type { GeneratorPane } from './generatorErrorPane';
 
 export interface GeneratorSandboxRequest {
     templateScript: string;
@@ -28,13 +29,16 @@ export interface GeneratorSandboxEnvironment {
 
 export type GeneratorSandboxResult =
     | { ok: true; value: GeneratorSandboxRawResult }
-    | { ok: false; category: 'runtime' | 'timeout' | 'clone' | 'protocol'; message: string };
+    // `phase` names the script that was compiling or running when the evaluator failed; absent when
+    // the failure is not attributable to one script (timeouts, protocol and transport errors).
+    | { ok: false; category: 'runtime' | 'timeout' | 'clone' | 'protocol'; message: string; phase?: GeneratorPane };
 
 type SandboxFrame = ReturnType<GeneratorSandboxEnvironment['createFrame']>;
 
 const SANDBOX_TIMEOUT_MS = 10_000;
 const RESULT_TYPE = 'generator-result';
 const FAILURE_CATEGORIES = new Set(['runtime', 'clone']);
+const SCRIPT_PHASES = new Set(['template', 'hierarchy']);
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
     value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -58,6 +62,7 @@ const parseMessage = (message: unknown, requestToken: string): GeneratorSandboxR
         ok: false,
         category: message.category as 'runtime' | 'clone',
         message: message.message,
+        ...(typeof message.phase === 'string' && SCRIPT_PHASES.has(message.phase) ? { phase: message.phase as GeneratorPane } : {}),
     };
 };
 
@@ -295,11 +300,14 @@ function generatorEvaluatorMain(maxOutputBytes: number) {
         if (!resultPort) return;
         const trustedPost = resultPort.postMessage.bind(resultPort);
         const trustedClose = resultPort.close.bind(resultPort);
+        // The script being compiled or run; carried on failures so the UI can point at the right pane.
+        let phase: 'template' | 'hierarchy' | undefined;
         const sendFailure = (category: 'runtime' | 'clone', error: unknown) => {
-            trustedPost({ ok: false, category, message: errorMessage(error) });
+            trustedPost({ ok: false, category, message: errorMessage(error), phase });
         };
         try {
             const { templateScript, hierarchyScript, constants } = event.data;
+            phase = 'template';
             const templateFn = new TrustedFunction(
                 'consts',
                 'const { RM_PP_WIDTH, RM_PP_HEIGHT, A4_WIDTH, A4_HEIGHT } = consts;\n' + templateScript,
@@ -310,6 +318,7 @@ function generatorEvaluatorMain(maxOutputBytes: number) {
             if (templateIssue) throw cloneError(templateIssue);
             const normalizedTemplates = normalizeTemplates(templates);
 
+            phase = 'hierarchy';
             const hierarchyFn = new TrustedFunction('templates', 'createId', hierarchyScript);
             const hierarchy = hierarchyFn(activeTemplates(normalizedTemplates), createId);
             if (isPromise(hierarchy)) throw new TrustedError('Hierarchy script must return synchronously.');

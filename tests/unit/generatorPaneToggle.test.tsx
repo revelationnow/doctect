@@ -5,6 +5,9 @@ import { generatorErrorPane } from '../../services/generatorErrorPane';
 import { HierarchyGeneratorModal } from '../../components/HierarchyGeneratorModal';
 import { FormFactorProvider } from '../../components/editor-layout/FormFactorContext';
 
+const runGeneratorSandbox = vi.hoisted(() => vi.fn());
+vi.mock('../../services/generatorSandbox', () => ({ runGeneratorSandbox }));
+
 describe('generatorErrorPane', () => {
     it.each([
         ['Template: page elements must be an array.', 'template'],
@@ -16,26 +19,63 @@ describe('generatorErrorPane', () => {
     ] as const)('%s -> %s', (message, pane) => {
         expect(generatorErrorPane(message)).toBe(pane);
     });
+
+    it('prefers the sandbox phase and falls back to the message prefix without one', () => {
+        expect(generatorErrorPane('Runtime: boom', 'hierarchy')).toBe('hierarchy');
+        expect(generatorErrorPane('Clone: cyclic value', 'template')).toBe('template');
+        expect(generatorErrorPane('Template: bad', undefined)).toBe('template');
+        expect(generatorErrorPane('Timeout: Generator exceeded the 10000 ms execution limit.', null)).toBeNull();
+    });
 });
 
-const renderModal = (formFactor: 'desktop' | 'phone') => render(
+const renderModal = (formFactor: 'desktop' | 'tablet' | 'phone') => render(
     <FormFactorProvider value={formFactor}>
         <HierarchyGeneratorModal isOpen projectName="P" onClose={vi.fn()}
             onApplyGenerated={vi.fn(() => true)} onCreateGeneratedProject={vi.fn(async () => false)} />
     </FormFactorProvider>,
 );
 
+const pane = (label: string) => screen.getByLabelText(label).closest('[data-generator-pane]') as HTMLElement;
+const dot = (tab: HTMLElement) => tab.querySelector('[data-error-dot]');
+
 describe('Generator pane toggle', () => {
     it('shows one pane at a time on touch and keeps both drafts', () => {
         renderModal('phone');
         const template = screen.getByLabelText('Template script') as HTMLTextAreaElement;
         const hierarchy = screen.getByLabelText('Hierarchy script') as HTMLTextAreaElement;
-        expect(template.closest('[data-generator-pane]')!.className).not.toContain('hidden');
-        expect(hierarchy.closest('[data-generator-pane]')!.className).toContain('hidden');
+        expect(pane('Template script').className).not.toContain('hidden');
+        expect(pane('Hierarchy script').className).toContain('hidden');
+        expect(document.body.contains(pane('Hierarchy script'))).toBe(true);
         fireEvent.change(template, { target: { value: 'return { templates: {} };' } });
+        fireEvent.change(hierarchy, { target: { value: 'return { nodes: {} };' } });
         fireEvent.click(screen.getByRole('tab', { name: 'Hierarchy' }));
-        expect(template.closest('[data-generator-pane]')!.className).toContain('hidden');
+        expect(pane('Template script').className).toContain('hidden');
+        expect(pane('Hierarchy script').className).not.toContain('hidden');
+        expect(document.body.contains(pane('Template script'))).toBe(true);
         expect(template.value).toBe('return { templates: {} };');
+        expect(hierarchy.value).toBe('return { nodes: {} };');
+    });
+
+    it('wires each tab to its panel on touch', () => {
+        renderModal('phone');
+        for (const [name, label] of [['Template', 'Template script'], ['Hierarchy', 'Hierarchy script']] as const) {
+            const tab = screen.getByRole('tab', { name });
+            const panel = pane(label);
+            expect(tab.id).not.toBe('');
+            expect(tab.getAttribute('aria-controls')).toBe(panel.id);
+            expect(panel.getAttribute('role')).toBe('tabpanel');
+            expect(panel.getAttribute('aria-labelledby')).toBe(tab.id);
+        }
+        expect(screen.getByRole('tab', { name: 'Template' }).getAttribute('aria-selected')).toBe('true');
+        expect(screen.getByRole('tab', { name: 'Hierarchy' }).getAttribute('aria-selected')).toBe('false');
+    });
+
+    it('shows the toggle and the full-screen panel classes on tablet too', () => {
+        renderModal('tablet');
+        expect(screen.getByRole('tablist', { name: 'Generator scripts' })).not.toBeNull();
+        expect(screen.getAllByRole('tab')).toHaveLength(2);
+        expect(pane('Hierarchy script').className).toContain('hidden');
+        expect(screen.getByRole('dialog').className).toContain('editor-dialog-panel generator-dialog-panel');
     });
 
     it('shows a red dot on the hidden segment whose script has the run error', () => {
@@ -44,20 +84,39 @@ describe('Generator pane toggle', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
         expect(screen.getByRole('alert').textContent).toContain('Template script exceeds 512 KiB.');
         // The erroring script is the visible one: no dot anywhere.
-        expect(screen.queryByLabelText('Has error')).toBeNull();
+        expect(document.querySelector('[data-error-dot]')).toBeNull();
         fireEvent.click(screen.getByRole('tab', { name: 'Hierarchy' }));
         const templateTab = screen.getByRole('tab', { name: /^Template/ });
-        expect(templateTab.querySelector('[aria-label="Has error"]')).not.toBeNull();
-        expect(screen.getByRole('tab', { name: 'Hierarchy' }).querySelector('[aria-label="Has error"]')).toBeNull();
+        expect(dot(templateTab)).not.toBeNull();
+        expect(dot(templateTab)!.getAttribute('aria-hidden')).toBe('true');
+        expect(templateTab.textContent).toBe('Template, has error');
+        expect(dot(screen.getByRole('tab', { name: 'Hierarchy' }))).toBeNull();
         fireEvent.click(templateTab);
-        expect(screen.queryByLabelText('Has error')).toBeNull();
+        expect(document.querySelector('[data-error-dot]')).toBeNull();
+        expect(templateTab.textContent).toBe('Template');
+    });
+
+    it('attributes a sandbox runtime error to the hidden script via its phase', async () => {
+        runGeneratorSandbox.mockResolvedValueOnce({ ok: false, category: 'runtime', message: 'boom', phase: 'hierarchy' });
+        renderModal('phone');
+        fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+        expect((await screen.findByRole('alert')).textContent).toContain('Runtime: boom');
+        const hierarchyTab = screen.getByRole('tab', { name: /^Hierarchy/ });
+        expect(dot(hierarchyTab)).not.toBeNull();
+        expect(hierarchyTab.textContent).toBe('Hierarchy, has error');
+        expect(dot(screen.getByRole('tab', { name: 'Template' }))).toBeNull();
+        fireEvent.click(hierarchyTab);
+        expect(document.querySelector('[data-error-dot]')).toBeNull();
+        expect(pane('Hierarchy script').className).not.toContain('hidden');
     });
 
     it('keeps side-by-side panes and no toggle on desktop', () => {
         renderModal('desktop');
         expect(screen.queryByRole('tab', { name: 'Hierarchy' })).toBeNull();
+        expect(screen.queryByRole('tablist')).toBeNull();
         const panes = document.querySelectorAll('[data-generator-pane]');
         expect(panes[0].className).toBe('flex-1 flex flex-col border-r-4 border-slate-500');
         expect(panes[1].className).toBe('flex-1 flex flex-col');
+        for (const wrapper of panes) expect(wrapper.getAttributeNames().sort()).toEqual(['class', 'data-generator-pane']);
     });
 });

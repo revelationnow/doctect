@@ -2025,7 +2025,7 @@ type PreviewState =
   | { status: 'idle' }
   | { status: 'running' }
   | ({ status: 'ready' } & GeneratorPreviewPayload)
-  | { status: 'error'; message: string };
+  | { status: 'error'; message: string; phase?: GeneratorPane };
 
 const utf8Bytes = (value: string) => new TextEncoder().encode(value).byteLength;
 
@@ -2058,7 +2058,8 @@ const HierarchyGeneratorSession: React.FC<HierarchyGeneratorSessionProps> = ({
   const formFactor = useFormFactor();
   const splitPanes = formFactor === 'desktop';
   const [activePane, setActivePane] = useState<GeneratorPane>('template');
-  const errorPane = previewState.status === 'error' ? generatorErrorPane(previewState.message) : null;
+  const errorPane = previewState.status === 'error' ? generatorErrorPane(previewState.message, previewState.phase) : null;
+  const panelProps = (pane: GeneratorPane) => (splitPanes ? {} : { role: 'tabpanel', id: `generator-pane-${pane}`, 'aria-labelledby': `generator-tab-${pane}` });
   const baselineRef = useRef({
     templateScript: initialSource.templateScript,
     hierarchyScript: initialSource.hierarchyScript,
@@ -2153,7 +2154,7 @@ const HierarchyGeneratorSession: React.FC<HierarchyGeneratorSessionProps> = ({
       if (requestId !== previewRequestRef.current) return;
       if (sandboxResult.ok === false) {
         const category = sandboxResult.category[0].toUpperCase() + sandboxResult.category.slice(1);
-        setPreviewState({ status: 'error', message: `${category}: ${sandboxResult.message}` });
+        setPreviewState({ status: 'error', message: `${category}: ${sandboxResult.message}`, phase: sandboxResult.phase });
         return;
       }
       const validation = validateGeneratedProject(sandboxResult.value);
@@ -2379,13 +2380,16 @@ const HierarchyGeneratorSession: React.FC<HierarchyGeneratorSessionProps> = ({
         {!splitPanes && (
           <div role="tablist" aria-label="Generator scripts" className="flex border-b bg-[#252526]">
             {(['template', 'hierarchy'] as const).map(pane => (
-              <button key={pane} type="button" role="tab" aria-selected={activePane === pane}
-                onClick={() => setActivePane(pane)}
+              <button key={pane} type="button" role="tab" id={`generator-tab-${pane}`} aria-controls={`generator-pane-${pane}`}
+                aria-selected={activePane === pane} onClick={() => setActivePane(pane)}
                 className={clsx('relative flex-1 text-sm font-medium',
                   activePane === pane ? 'text-white border-b-2 border-indigo-400' : 'text-slate-400')}>
                 {pane === 'template' ? 'Template' : 'Hierarchy'}
                 {errorPane === pane && activePane !== pane && (
-                  <span aria-label="Has error" className="absolute right-3 top-3 h-2 w-2 rounded-full bg-red-500" />
+                  <>
+                    <span className="sr-only">, has error</span>
+                    <span data-error-dot aria-hidden="true" className="absolute right-3 top-3 h-2 w-2 rounded-full bg-red-500" />
+                  </>
                 )}
               </button>
             ))}
@@ -2397,6 +2401,7 @@ const HierarchyGeneratorSession: React.FC<HierarchyGeneratorSessionProps> = ({
           {/* Templates Editor */}
           <div
             data-generator-pane="template"
+            {...panelProps('template')}
             className={clsx('flex-1 flex flex-col', splitPanes ? 'border-r-4 border-slate-500' : activePane !== 'template' && 'hidden')}
           >
             <div className="px-3 py-1.5 bg-[#252526] border-b border-slate-700 flex items-center gap-2">
@@ -2424,6 +2429,7 @@ const HierarchyGeneratorSession: React.FC<HierarchyGeneratorSessionProps> = ({
           {/* Hierarchy Editor */}
           <div
             data-generator-pane="hierarchy"
+            {...panelProps('hierarchy')}
             className={clsx('flex-1 flex flex-col', !splitPanes && activePane !== 'hierarchy' && 'hidden')}
           >
             <div className="px-3 py-1.5 bg-[#252526] border-b border-slate-700 flex items-center gap-2">

@@ -192,6 +192,25 @@ describe('runGeneratorSandbox transport', () => {
 
         await expect(pending).resolves.toMatchObject({ ok: false, category: 'protocol' });
     });
+
+    it('carries a valid script phase on failures and drops an invalid one', async () => {
+        const attributed = fakeEnvironment();
+        const pendingAttributed = runGeneratorSandbox(validRequest(), attributed.environment);
+        attributed.receive({ type: 'generator-result', requestToken: 'test-token', ok: false, category: 'runtime', message: 'boom', phase: 'hierarchy' });
+        await expect(pendingAttributed).resolves.toEqual({ ok: false, category: 'runtime', message: 'boom', phase: 'hierarchy' });
+
+        const bogus = fakeEnvironment();
+        const pendingBogus = runGeneratorSandbox(validRequest(), bogus.environment);
+        bogus.receive({ type: 'generator-result', requestToken: 'test-token', ok: false, category: 'clone', message: 'boom', phase: 'nope' });
+        await expect(pendingBogus).resolves.toStrictEqual({ ok: false, category: 'clone', message: 'boom' });
+
+        const timedOut = fakeEnvironment();
+        const pendingTimeout = runGeneratorSandbox(validRequest(), timedOut.environment);
+        timedOut.fireTimeout();
+        await expect(pendingTimeout).resolves.toStrictEqual({
+            ok: false, category: 'timeout', message: 'Generator exceeded the 10000 ms execution limit.',
+        });
+    });
 });
 
 describe('browser sandbox frame', () => {
@@ -203,6 +222,62 @@ describe('browser sandbox frame', () => {
             value: { templates: {}, hierarchy: {} },
         },
     }));
+
+    it('attributes evaluator failures to the script phase that threw in Chromium', async () => {
+        vi.spyOn(crypto, 'getRandomValues').mockImplementation(array => {
+            (array as Uint8Array).fill(0);
+            return array;
+        });
+        const pending = runGeneratorSandbox(validRequest());
+        const iframe = document.body.querySelector('iframe')!;
+        const sourceMatch = iframe.srcdoc.match(/const workerSource = (".*");\n  let worker/s);
+        expect(sourceMatch).not.toBeNull();
+        const workerSource = JSON.parse(sourceMatch![1]);
+        settleFrame(iframe);
+        await pending;
+
+        const browser = await chromium.launch({ headless: true });
+        try {
+            const page = await browser.newPage();
+            const results = await page.evaluate(async source => {
+                const runWorker = (request: unknown) => new Promise<any>((resolve, reject) => {
+                    const url = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
+                    const worker = new Worker(url);
+                    URL.revokeObjectURL(url);
+                    const channel = new MessageChannel();
+                    channel.port1.onmessage = event => {
+                        worker.terminate();
+                        channel.port1.close();
+                        resolve(event.data);
+                    };
+                    worker.onerror = event => reject(new Error(event.message));
+                    worker.postMessage(request, [channel.port2]);
+                });
+                const constants = { RM_PP_WIDTH: 509, RM_PP_HEIGHT: 679, A4_WIDTH: 595.28, A4_HEIGHT: 841.89 };
+                const templateScript = `return { page: { id: 'page', name: 'Page', width: 509, height: 679, elements: [] } };`;
+                const hierarchyScript = `return { nodes: { root: { id: 'root', parentId: null, type: 'page', title: 'Root', data: {}, children: [] } }, rootId: 'root' };`;
+                return {
+                    templateThrow: await runWorker({ templateScript: `throw new Error('template boom');`, hierarchyScript, constants }),
+                    templateSyntax: await runWorker({ templateScript: `return {`, hierarchyScript, constants }),
+                    templateAsync: await runWorker({ templateScript: `return Promise.resolve({});`, hierarchyScript, constants }),
+                    hierarchyThrow: await runWorker({ templateScript, hierarchyScript: `throw new Error('hierarchy boom');`, constants }),
+                    hierarchySyntax: await runWorker({ templateScript, hierarchyScript: `return {`, constants }),
+                    ok: await runWorker({ templateScript, hierarchyScript, constants }),
+                };
+            }, workerSource);
+
+            expect(results.templateThrow).toEqual({ ok: false, category: 'runtime', message: 'template boom', phase: 'template' });
+            expect(results.templateSyntax).toMatchObject({ ok: false, category: 'runtime', phase: 'template' });
+            expect(results.templateAsync).toEqual({
+                ok: false, category: 'runtime', message: 'Template script must return synchronously.', phase: 'template',
+            });
+            expect(results.hierarchyThrow).toEqual({ ok: false, category: 'runtime', message: 'hierarchy boom', phase: 'hierarchy' });
+            expect(results.hierarchySyntax).toMatchObject({ ok: false, category: 'runtime', phase: 'hierarchy' });
+            expect(results.ok).toMatchObject({ ok: true, serialized: expect.any(String) });
+        } finally {
+            await browser.close();
+        }
+    }, 20_000);
 
     it('uses an opaque iframe, private Worker channel, and pre-clone output bound', async () => {
         vi.spyOn(crypto, 'getRandomValues').mockImplementation(array => {
@@ -465,9 +540,9 @@ describe('browser sandbox frame', () => {
                 expect(hierarchyIds, name).toEqual(finalPage.elements.map(element => element.layerId));
                 expect(templates.page.elements.map(element => element.layerId), name).toEqual(hierarchyIds);
             }
-            expect(results.stringFailure).toEqual({ ok: false, category: 'runtime', message: '[object Object]' });
-            expect(results.stringSliceFailure).toEqual({ ok: false, category: 'runtime', message: 'expected hierarchy failure' });
-            expect(results.errorFailure).toEqual({ ok: false, category: 'clone', message: 'Output contains a non-finite number.' });
+            expect(results.stringFailure).toEqual({ ok: false, category: 'runtime', message: '[object Object]', phase: 'hierarchy' });
+            expect(results.stringSliceFailure).toEqual({ ok: false, category: 'runtime', message: 'expected hierarchy failure', phase: 'hierarchy' });
+            expect(results.errorFailure).toEqual({ ok: false, category: 'clone', message: 'Output contains a non-finite number.', phase: 'template' });
         } finally {
             await browser.close();
         }
