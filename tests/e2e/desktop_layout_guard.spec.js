@@ -3,7 +3,7 @@ import { seedNativeProject } from './localWorkspaceHelpers.js';
 import { layoutFixture as fixture } from './fixtures/layoutFixture.js';
 
 const activePane = page => page.locator('[data-testid="project-pane"][data-active="true"]');
-const shot = { maxDiffPixelRatio: 0.01, animations: 'disabled' };
+const shot = { maxDiffPixelRatio: 0.001, animations: 'disabled' };
 
 test.describe('desktop editor layout guard', () => {
     test.skip(({ browserName }) => browserName !== 'chromium', 'baselines are recorded on Chromium');
