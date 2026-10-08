@@ -2,7 +2,7 @@
 title: Using the Editor on Phones and Tablets
 summary: On a touch device the editor switches to a canvas-first layout — a pages drawer, a properties sheet or docked panel, and touch gestures for moving, resizing and editing — while desktop stays exactly as it is.
 aliases: mobile, phone, tablet, iPad, touch, touchscreen
-keywords: touch, pinch, zoom, fit, drawer, bottom sheet, quick format, generator toggle, long-press, double-tap, overflow menu, select multiple, multi-select, align, distribute, arrange
+keywords: touch, pinch, zoom, fit, drawer, bottom sheet, quick format, generator toggle, long-press, double-tap, overflow menu, select multiple, multi-select, align, distribute, arrange, stepper, nudge, back gesture, back button, escape, landscape
 ---
 
 On a phone or tablet the editor rearranges itself around the canvas. Nothing changes on a computer with a mouse or trackpad, at any window size — the layout follows the device's pointer, not its width. A touch screen whose shorter side is under 640px is treated as a phone, so a phone keeps the phone layout when you turn it sideways (the tool strip then usually fits in one row); larger touch screens get the tablet layout whichever way they are held.
@@ -22,6 +22,11 @@ On a phone or tablet the editor rearranges itself around the canvas. Nothing cha
 | Long-press | Pick from the elements stacked under your finger — tapping never cycles through a stack on touch |
 | Pinch / two-finger drag | Zoom and scroll |
 | Tap or drag with Text or a shape tool | Create one — a tap gives a shape its default size, or a text box ready to type |
+| Back (the phone's back gesture or the browser's Back button) | Close what is open over the editor — a dialog, the **⋯** menu, the pages drawer or the project list — rather than leave the editor |
+
+**Going back:** the back gesture closes one thing at a time and only leaves the editor once nothing is open. The JSON editor asks before discarding changes you have not applied — as it does when you press Escape on a device with a keyboard.
+
+**Numbers:** position, size, rotation, Z-index, text padding and the pattern gap and weight fields get big **−** / **+** buttons on touch. A tap changes the value by one step, holding a button keeps it going, and a finger that lands on a button and slides off scrolls instead. Each tap, and each step of a hold, is its own undo step.
 
 **Selecting several elements:** turn on **Select multiple** in the tool strip (beside Select). While it is on, each tap adds an element to the selection or takes it out again, tapping a row in Layers does the same, and picking from the long-press menu adds that element; tapping empty canvas changes nothing, so use **Clear selection** in **⋯** to start over. Turning the toggle off, or switching to a drawing tool, leaves the selection as it is. With two or more elements selected, dragging any of them moves them all, the properties edit all of them at once (the −/+ steppers nudge every element), **⋯ → Arrange** aligns or distributes them, and Duplicate and Delete apply to the whole selection.
 
@@ -29,6 +34,6 @@ While a single text or grid element is selected, a small bar floats beside it wi
 
 In the **Generator**, Template and Hierarchy become two tabs at the top of a full-screen dialog; both scripts are kept when you switch, and a red dot marks the other tab when its script has an error.
 
-**Not available on touch yet:** rotating, and drawing a selection box around several elements. Layers reorder with ▲/▼ instead of drag-and-drop. Zooming on a phone or tablet is for your screen only — it never changes the zoom saved with the project.
+**Not available on touch yet:** rotating by dragging (the **Rot** field's −/+ still turn an element), and drawing a selection box around several elements. Layers reorder with ▲/▼ instead of drag-and-drop. Zooming on a phone or tablet is for your screen only — it never changes the zoom saved with the project.
 
 See [Canvas basics](/docs/editor/canvas-basics).
