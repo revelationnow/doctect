@@ -1636,6 +1636,9 @@ function ProjectEditorView({
 }: EditorViewModel) {
     const formFactor = useFormFactor();
     const isTouch = formFactor !== 'desktop';
+    // Touch: every page/template pick in the drawer closes it, including a pick of the one already
+    // selected, which changes no state; the pick count is folded into the layout's navigation key.
+    const [pickCount, countPick] = useReducer((count: number) => count + 1, 0);
     // Touch zoom is session-local: it never reaches the persisted scale preference.
     const touchViewport = useTouchViewport();
     // "Select multiple" is session-only too, held here above the canvas (which remounts on context changes).
@@ -1698,9 +1701,6 @@ function ProjectEditorView({
             </div>
         </div>
     );
-    // Touch: every page/template pick in the drawer closes it, including a pick of the one already
-    // selected, which changes no state; the pick count is folded into the layout's navigation key.
-    const [pickCount, countPick] = useReducer((count: number) => count + 1, 0);
     const sidebarElement = (
         <Sidebar
             state={state}

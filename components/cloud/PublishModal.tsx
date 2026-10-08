@@ -152,7 +152,12 @@ export function PublishModal({ project, cloudProjectId, onClose, onPublished }: 
         }
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
-        if (event.shiftKey && document.activeElement === first) {
+        // `event.currentTarget` is the dialog container, which holds focus after a click on a
+        // non-interactive part of the dialog (it is tabIndex -1 for exactly that: otherwise such a
+        // click drops focus to the body, where no handler of ours sees the next Tab and it walks
+        // out of the dialog). From there Shift+Tab wraps to the last control; Tab needs no help,
+        // since the first control is next in document order.
+        if (event.shiftKey && (document.activeElement === first || document.activeElement === event.currentTarget)) {
             event.preventDefault();
             last.focus();
         } else if (!event.shiftKey && document.activeElement === last) {
@@ -163,8 +168,8 @@ export function PublishModal({ project, cloudProjectId, onClose, onPublished }: 
 
     return (
         <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center" onClick={onClose}>
-            <div role="dialog" aria-modal="true" aria-labelledby="publish-dialog-title"
-                className="bg-white rounded-xl shadow-2xl w-[560px] max-h-[80vh] flex flex-col"
+            <div role="dialog" aria-modal="true" aria-labelledby="publish-dialog-title" tabIndex={-1}
+                className="bg-white rounded-xl shadow-2xl w-[560px] max-h-[80vh] flex flex-col outline-none"
                 onClick={e => e.stopPropagation()} onKeyDown={handleDialogKeyDown}>
                 <div className="flex items-center justify-between px-4 py-3 border-b">
                     <h2 id="publish-dialog-title" className="font-semibold text-slate-800 text-sm flex items-center gap-1.5"><Globe size={14} /> Publish to gallery</h2>

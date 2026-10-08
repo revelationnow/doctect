@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { SidebarDrawer } from '../../components/editor-layout/SidebarDrawer';
 import { PropertiesSheet, SHEET_PEEK_PX } from '../../components/editor-layout/PropertiesSheet';
+import { layOutEveryElement } from '../helpers/jsdomLayout';
+
+// The drawer's Tab trap skips controls that are not rendered; jsdom renders nothing (see the helper).
+layOutEveryElement();
 
 // jsdom has no PointerEvent; like useCanvasTouchGestures.test, dispatch MouseEvents under the
 // pointer event names so clientY survives (fireEvent.pointerUp would drop it). `isPrimary` is
@@ -136,7 +141,9 @@ describe('SidebarDrawer', () => {
     });
 
     // The drawer is aria-modal, but nothing behind it is inert: Tab must wrap inside the panel
-    // instead of walking out to the canvas. Hidden, aria-hidden and disabled children are skipped.
+    // instead of walking out to the canvas. Children that cannot take focus — disabled, hidden
+    // (attribute or display:none), aria-hidden, inert, visibility:hidden, tabindex -1 — are not
+    // wrap targets: a prevented Tab plus a no-op focus() would otherwise strand the key.
     it('traps Tab inside the open panel, wrapping at both ends and from the panel itself', () => {
         render(
             <>
@@ -147,7 +154,12 @@ describe('SidebarDrawer', () => {
                     <button type="button" disabled>Disabled</button>
                     <input hidden aria-label="File" />
                     <span aria-hidden="true"><button type="button">Decorative</button></span>
+                    <div style={{ display: 'none' }}><button type="button">Collapsed</button></div>
+                    <div inert><button type="button">Inert</button></div>
+                    <button type="button" style={{ visibility: 'hidden' }}>Invisible</button>
+                    <button type="button" tabIndex={-1}>Programmatic</button>
                     <button type="button">Last</button>
+                    <button type="button" style={{ display: 'none' }}>Trailing collapsed</button>
                 </SidebarDrawer>
             </>,
         );
@@ -168,9 +180,40 @@ describe('SidebarDrawer', () => {
         panel.focus();
         expect(fireEvent.keyDown(panel, { key: 'Tab', shiftKey: true })).toBe(false);
         expect(document.activeElement).toBe(last);
-        // Other keys, and a Tab a child already handled, pass through.
+        // Other keys pass through.
         expect(fireEvent.keyDown(last, { key: 'Enter' })).toBe(true);
         expect(document.activeElement).toBe(last);
+    });
+
+    it('leaves a Tab that a child already handled alone, even at the panel edge', () => {
+        // A nested dialog with its own trap (the cloud modals a sheet row opens) prevents the
+        // key before the panel's handler runs; the panel must not then wrap focus on top of it.
+        render(
+            <SidebarDrawer open onClose={() => {}}>
+                <button type="button">First</button>
+                <button type="button" onKeyDown={event => { if (event.key === 'Tab') event.preventDefault(); }}>Consumer</button>
+            </SidebarDrawer>,
+        );
+        const consumer = screen.getByRole('button', { name: 'Consumer' });
+        consumer.focus();
+        expect(fireEvent.keyDown(consumer, { key: 'Tab' })).toBe(false); // prevented by the child
+        expect(document.activeElement).toBe(consumer);                  // not wrapped to First
+        screen.getByRole('button', { name: 'First' }).focus();
+        expect(fireEvent.keyDown(screen.getByRole('button', { name: 'First' }), { key: 'Tab', shiftKey: true })).toBe(false);
+        expect(document.activeElement).toBe(consumer); // an unhandled edge Tab still wraps
+    });
+
+    it('leaves a Tab whose focus sits in a child portal outside the panel to the browser', () => {
+        // DOM-outside but React-inside: the keydown bubbles to the panel's handler, which sees
+        // the panel holds nothing tabbable and must still not swallow the key or take focus.
+        const Portalled = () => createPortal(<button type="button">Portalled</button>, document.body);
+        render(<SidebarDrawer open onClose={() => {}}><p>tree</p><Portalled /></SidebarDrawer>);
+        const panel = screen.getByRole('dialog', { name: 'Pages and templates' });
+        const portalled = screen.getByRole('button', { name: 'Portalled' });
+        portalled.focus();
+        expect(fireEvent.keyDown(portalled, { key: 'Tab' })).toBe(true);
+        expect(document.activeElement).toBe(portalled);
+        expect(document.activeElement).not.toBe(panel);
     });
 
     it('keeps focus on the panel when it holds nothing tabbable', () => {

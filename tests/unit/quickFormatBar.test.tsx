@@ -232,7 +232,9 @@ describe('QuickFormatBar', () => {
         notify() { this.notifications += 1; this.callback(); }
         disconnect() { this.targets.clear(); }
     }
-    const settle = () => act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    // A macrotask: lets the MutationObserver callback (a microtask) and the fake's initial
+    // notification it may queue both run, inside act.
+    const settle = () => act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
 
     it('re-clamps when the sheet or the pill resizes, observing chrome that appears later, without an observe loop', async () => {
         (globalThis as any).ResizeObserver = FakeResizeObserver;
@@ -258,9 +260,9 @@ describe('QuickFormatBar', () => {
             act(() => observer.notify());
             expect(bar.style.top).toBe(`${200 - 48 - 8}px`);
 
-            // Back to peek: the sheet shrinks and the pill mounts in the same commit. The sheet's
-            // notification brings the pill under observation; the pill's own initial notification
-            // then re-clamps above it, and the sequence ends there.
+            // Back to peek: the sheet shrinks and the pill mounts in the same commit. The pill is
+            // found and observed once (whichever of the mutation and the sheet's notification runs
+            // discovery first); its own initial notification re-clamps above it, and that ends it.
             sheet.getBoundingClientRect = () => ({ top: 328, bottom: 400, left: 0, right: 0, width: 0, height: 72 } as DOMRect);
             const pill = chromeNode('tool-pill', { top: 236, bottom: 316 });
             act(() => observer.notify());
@@ -281,7 +283,56 @@ describe('QuickFormatBar', () => {
         }
     });
 
-    it('disconnects its chrome observer on unmount', async () => {
+    it('finds chrome that mounts on its own inside the layout root, with nothing else resizing, and re-clamps above it', async () => {
+        (globalThis as any).ResizeObserver = FakeResizeObserver;
+        FakeResizeObserver.instances = [];
+        // The layout root holds the overlay host (and, in the real layout, every chrome element).
+        const root = document.createElement('div');
+        const host = document.createElement('div');
+        root.appendChild(host);
+        document.body.appendChild(root);
+        const sheet = chromeNode('sheet', { top: 328, bottom: 400 });
+        root.appendChild(sheet);
+        Object.defineProperty(window, 'visualViewport', {
+            configurable: true, value: { offsetTop: 0, height: 400, addEventListener() {}, removeEventListener() {} },
+        });
+        try {
+            render(
+                <TouchOverlayHostContext.Provider value={host}>
+                    <QuickFormatBar element={text} anchor={{ left: 100, top: 700, bottom: 720, width: 100 }} onChange={() => {}} />
+                </TouchOverlayHostContext.Provider>,
+            );
+            await settle();
+            const bar = screen.getByRole('toolbar', { name: 'Text formatting' });
+            const observer = FakeResizeObserver.instances[0];
+            expect(observer.observeCalls).toBe(1);
+            expect(bar.style.top).toBe(`${328 - 48 - 8}px`);
+
+            // The pill appears under the root (inside a wrapper, as in the phone layout) and no
+            // observed element reports anything: the mutation alone must bring it in.
+            const wrapper = document.createElement('div');
+            const pill = chromeNode('tool-pill', { top: 236, bottom: 316 });
+            wrapper.appendChild(pill);
+            root.appendChild(wrapper);
+            await settle();
+            expect(observer.targets.has(pill)).toBe(true);
+            expect(observer.observeCalls).toBe(2);
+            expect(bar.style.top).toBe(`${236 - 48 - 8}px`);
+
+            // Mutations under the root that add no chrome, and chrome added outside the root,
+            // are not the bar's business.
+            root.appendChild(document.createElement('p'));
+            const stray = chromeNode('top-bar', { top: 0, bottom: 56 }); // body-level, outside the root
+            await settle();
+            expect(observer.observeCalls).toBe(2);
+            expect(observer.targets.has(stray)).toBe(false);
+        } finally {
+            root.remove();
+            delete (window as any).visualViewport;
+        }
+    });
+
+    it('disconnects its chrome and mutation observers on unmount', async () => {
         (globalThis as any).ResizeObserver = FakeResizeObserver;
         FakeResizeObserver.instances = [];
         chromeNode('sheet', { top: 328, bottom: 400 });
@@ -291,6 +342,10 @@ describe('QuickFormatBar', () => {
         const disconnect = vi.spyOn(observer, 'disconnect');
         unmount();
         expect(disconnect).toHaveBeenCalledTimes(1);
+        // No discovery after unmount: a chrome element added now is not observed.
+        chromeNode('tool-pill', { top: 236, bottom: 316 });
+        await settle();
+        expect(observer.observeCalls).toBe(1);
     });
 
     it('clamps into the visible band: under the top bar, above the sheet and keyboard, never off-screen', () => {

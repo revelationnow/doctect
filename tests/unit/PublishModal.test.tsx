@@ -305,6 +305,27 @@ describe('PublishModal generator source warning', () => {
         expect(props.onClose).toHaveBeenCalledOnce();
     });
 
+    it('keeps Shift+Tab inside once a click on the dialog body has put focus on the container', async () => {
+        renderModal(false);
+        await waitFor(() => expect(screen.getByRole('button', { name: 'Publish' })).toBeEnabled());
+        const dialog = screen.getByRole('dialog');
+        const publish = screen.getByRole('button', { name: 'Publish' });
+
+        // A click on a non-interactive part of the dialog lands focus on the container (it is
+        // tabIndex -1 so that focus does not drop to the body instead), which is neither the
+        // first nor the last control: the trap must still catch the Shift+Tab from there.
+        expect(dialog).toHaveAttribute('tabindex', '-1');
+        dialog.focus();
+        expect(dialog).toHaveFocus();
+        expect(fireEvent.keyDown(dialog, { key: 'Tab', shiftKey: true })).toBe(false);
+        expect(publish).toHaveFocus();
+
+        // Tab from the container needs no help: the first control is next in document order.
+        dialog.focus();
+        expect(fireEvent.keyDown(dialog, { key: 'Tab' })).toBe(true);
+        expect(dialog).toHaveFocus();
+    });
+
     it('restores focus after unmount and announces publish errors', async () => {
         const trigger = document.createElement('button');
         document.body.appendChild(trigger);

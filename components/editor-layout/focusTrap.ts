@@ -6,13 +6,37 @@ const FOCUSABLE_SELECTOR = [
     'input:not([disabled])',
     'select:not([disabled])',
     'textarea:not([disabled])',
-    '[tabindex]:not([tabindex="-1"])',
+    'summary',
+    'iframe',
+    'audio[controls]',
+    'video[controls]',
+    '[contenteditable]:not([contenteditable="false"])',
+    '[tabindex]',
 ].join(', ');
 
-/** Tabbable descendants in document order: focusable and not inside a hidden or aria-hidden subtree. */
+/** An explicit negative tabindex takes an otherwise focusable element out of the Tab sequence. */
+const hasNegativeTabIndex = (element: HTMLElement): boolean => {
+    const value = element.getAttribute('tabindex');
+    return value !== null && Number.parseInt(value, 10) < 0;
+};
+
+/**
+ * Rendered, as the browser sees it: a box (nothing under `display: none`, which includes the
+ * `hidden` attribute) and not `visibility: hidden`. A focus() on an element that fails either is a
+ * silent no-op, which would strand Tab on a prevented keydown.
+ */
+const isRendered = (element: HTMLElement): boolean =>
+    element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden';
+
+/**
+ * Tabbable descendants in document order: focusable, in the Tab sequence, outside any
+ * `hidden`, `inert` or `aria-hidden="true"` subtree, and rendered.
+ */
 export const tabbableWithin = (container: HTMLElement): HTMLElement[] =>
     Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
-        .filter(element => element.closest('[hidden], [aria-hidden="true"]') === null);
+        .filter(element => !hasNegativeTabIndex(element)
+            && element.closest('[hidden], [inert], [aria-hidden="true"]') === null
+            && isRendered(element));
 
 /**
  * Keeps Tab inside a modal dialog (the touch drawer and ⋯ sheet, `aria-modal` with no inert

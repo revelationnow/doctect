@@ -11,6 +11,10 @@ import { TabletToolbar } from '../../components/editor-layout/TabletToolbar';
 import { ProjectSwitcher } from '../../components/editor-layout/ProjectSwitcher';
 import { EditorChromeContext, EditorChrome } from '../../components/editor-layout/EditorChromeContext';
 import { useMenuListHost } from '../../components/editor-layout/MenuListContext';
+import { layOutEveryElement } from '../helpers/jsdomLayout';
+
+// The sheet's Tab trap skips controls that are not rendered; jsdom renders nothing (see the helper).
+layOutEveryElement();
 
 const chrome: EditorChrome = {
     projects: [{ id: 'a', name: 'Planner' }, { id: 'b', name: 'Notebook' }], activeProjectId: 'a',
@@ -261,25 +265,40 @@ describe('OverflowMenu', () => {
         expect(document.activeElement).toBe(cloudRow);
     });
 
-    it('leaves Tab to a modal a cloud row opened, inline or portalled, instead of fighting its trap', () => {
-        // CloudMenu renders its modals itself (the sheet stays open under them). An inline modal is
-        // inside the sheet's DOM and traps Tab on its own; a portalled one is outside the sheet's
-        // DOM but still inside its React tree, so its keydown reaches the sheet's handler.
-        const InlineModal = () => (
-            <div role="dialog" aria-label="Publish" onKeyDown={event => { if (event.key === 'Tab') { event.preventDefault(); screen.getByRole('button', { name: 'Publish first' }).focus(); } }}>
+    it('leaves Tab to a modal a cloud row opened instead of fighting its trap', () => {
+        // CloudMenu renders its modals itself, inside the sheet's DOM (the sheet stays open under
+        // them), and each prevents Tab at its own edges. Rendered as the sheet's last content, the
+        // modal's last button is also the sheet's last tabbable, so without deferring to the
+        // modal's handling the sheet would wrap that Tab to its own first row (Export PDF).
+        const Modal = () => (
+            <div role="dialog" aria-label="Publish" onKeyDown={event => { if (event.key === 'Tab') event.preventDefault(); }}>
                 <button type="button">Publish first</button>
                 <button type="button">Publish last</button>
             </div>
         );
-        const Portalled = () => createPortal(<button type="button">Portalled</button>, document.body);
         render(
             <OverflowMenu open onClose={vi.fn()} actions={makeActions()}
-                chrome={{ ...chrome, cloudMenu: <><InlineModal /><Portalled /></>, accountMenu: <span /> }} />,
+                chrome={{ ...chrome, cloudMenu: <span />, accountMenu: <Modal /> }} />,
         );
+        const dialog = screen.getByRole('dialog', { name: 'More actions' });
         const publishLast = screen.getByRole('button', { name: 'Publish last' });
+        expect(within(dialog).getAllByRole('button').at(-1)).toBe(publishLast);
         publishLast.focus();
-        fireEvent.keyDown(publishLast, { key: 'Tab' });
-        expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Publish first' }));
+        expect(fireEvent.keyDown(publishLast, { key: 'Tab' })).toBe(false); // the modal prevented it
+        expect(document.activeElement).toBe(publishLast);                     // the sheet did not wrap it
+        // A key the modal leaves alone at the sheet's edge still wraps: the sheet's trap is live.
+        const first = within(dialog).getByRole('button', { name: 'Export PDF' });
+        first.focus();
+        expect(fireEvent.keyDown(first, { key: 'Tab', shiftKey: true })).toBe(false);
+        expect(document.activeElement).toBe(publishLast);
+    });
+
+    it('leaves a Tab whose focus sits in a child portal outside the sheet to the browser', () => {
+        // DOM-outside but React-inside: the keydown bubbles to the sheet's handler. A portalled
+        // control is never the sheet's first or last tabbable, so this pins only that the key is
+        // not swallowed; the containment guard's load-bearing case is in focusTrap.test.tsx.
+        const Portalled = () => createPortal(<button type="button">Portalled</button>, document.body);
+        render(<OverflowMenu open onClose={vi.fn()} actions={makeActions()} chrome={{ ...chrome, cloudMenu: <Portalled /> }} />);
         const portalled = screen.getByRole('button', { name: 'Portalled' });
         portalled.focus();
         expect(fireEvent.keyDown(portalled, { key: 'Tab' })).toBe(true);
@@ -316,6 +335,66 @@ describe('ProjectSwitcher', () => {
             // Direct children of a menu are menuitems or transparent wrappers.
             expect(['menuitem', 'none']).toContain(wrapper.getAttribute('role'));
         }
+    });
+
+    // APG menu button: the menu is named by its trigger, opens with an item focused, the arrow
+    // keys move through every item (project rows and their Close alike) and wrap, Home/End jump
+    // to the ends, and closing hands focus back to the trigger.
+    it('opens with its first item focused, named by the trigger, and moves through items with the arrow keys', () => {
+        render(<ProjectSwitcher chrome={chrome} />);
+        const trigger = screen.getByRole('button', { name: /Planner/ });
+        fireEvent.click(trigger);
+        const menu = screen.getByRole('menu', { name: 'Planner' });
+        expect(menu.getAttribute('aria-labelledby')).toBe(trigger.id);
+        const items = within(menu).getAllByRole('menuitem');
+        expect(items).toHaveLength(5);
+        expect(document.activeElement).toBe(items[0]);
+        const press = (key: string) => fireEvent.keyDown(document.activeElement!, { key });
+        expect(press('ArrowDown')).toBe(false);
+        expect(document.activeElement).toBe(items[1]);
+        press('End');
+        expect(document.activeElement).toBe(items[4]);
+        press('ArrowDown');
+        expect(document.activeElement).toBe(items[0]); // wraps
+        press('ArrowUp');
+        expect(document.activeElement).toBe(items[4]);
+        press('Home');
+        expect(document.activeElement).toBe(items[0]);
+        expect(press('Enter')).toBe(true); // not ours: activates the item as a click would
+        fireEvent.keyDown(window, { key: 'Escape' });
+        expect(screen.queryByRole('menu')).toBeNull();
+        expect(document.activeElement).toBe(trigger);
+    });
+
+    it('opens from the trigger with Down Arrow on the first item and Up Arrow on the last; Tab closes it', () => {
+        render(<ProjectSwitcher chrome={chrome} />);
+        const trigger = screen.getByRole('button', { name: /Planner/ });
+        trigger.focus();
+        expect(fireEvent.keyDown(trigger, { key: 'ArrowUp' })).toBe(false);
+        let items = within(screen.getByRole('menu')).getAllByRole('menuitem');
+        expect(document.activeElement).toBe(items[4]);
+        // Tab is not prevented: once the menu is gone and the trigger has focus again, the
+        // browser's own move carries focus on to the next control after the trigger.
+        expect(fireEvent.keyDown(items[4], { key: 'Tab' })).toBe(true);
+        expect(screen.queryByRole('menu')).toBeNull();
+        expect(document.activeElement).toBe(trigger);
+        expect(fireEvent.keyDown(trigger, { key: 'ArrowDown' })).toBe(false);
+        items = within(screen.getByRole('menu')).getAllByRole('menuitem');
+        expect(document.activeElement).toBe(items[0]);
+        fireEvent.click(within(screen.getByRole('menu')).getByRole('menuitem', { name: 'Notebook' }));
+        expect(chrome.onSelectProject).toHaveBeenCalledWith('b');
+        expect(document.activeElement).toBe(trigger); // a choice closes it: focus returns too
+    });
+
+    it('leaves focus where an outside tap put it when that closes the menu', () => {
+        render(<div><button type="button">canvas</button><ProjectSwitcher chrome={chrome} /></div>);
+        fireEvent.click(screen.getByRole('button', { name: /Planner/ }));
+        expect(screen.getByRole('menu')).toBeTruthy();
+        const canvas = screen.getByRole('button', { name: 'canvas' });
+        canvas.focus();
+        fireEvent.pointerDown(canvas);
+        expect(screen.queryByRole('menu')).toBeNull();
+        expect(document.activeElement).toBe(canvas);
     });
 
     it('closes on outside tap and Escape without selecting anything', () => {

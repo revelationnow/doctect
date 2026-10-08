@@ -68,28 +68,35 @@ export function QuickFormatBar({ element, anchor, onChange, onPickChange, onPick
     const host = useTouchOverlayHost();
     // The band is read during render, so the bar must render again when the chrome around it
     // changes size: the sheet moving between detents, the pill wrapping to another row count, or
-    // either leaving the DOM (an observed element that is removed reports a 0×0 box). One observer
-    // for the bar's lifetime watches every chrome element present; a notification re-runs the
-    // discovery pass, which observes only elements not yet watched (the pill mounts again at peek,
-    // always alongside a sheet resize). Observing an element delivers one initial notification, so
-    // discovery that finds nothing new is what ends the sequence: no observe → notify → observe loop.
-    const [chromeVersion, chromeResized] = useReducer((version: number) => version + 1, 0);
-    const chromeWatch = useRef<{ observer: ResizeObserver; observed: WeakSet<Element> } | null>(null);
+    // either leaving the DOM (an observed element that is removed reports a 0×0 box). One
+    // ResizeObserver for the bar's lifetime watches every chrome element; its notifications only
+    // re-render. Chrome that mounts later (the pill, back at the peek detent) is found by a
+    // MutationObserver on the layout root (the overlay host's parent; the body without a host) that
+    // runs the discovery pass when an added subtree holds chrome. Discovery observes only elements
+    // not yet watched, and observing one delivers a single initial notification, so nothing here
+    // feeds back into itself: no observe → notify → observe loop, and no mutation of our own.
+    const [, chromeResized] = useReducer((version: number) => version + 1, 0);
     useEffect(() => {
         if (typeof ResizeObserver === 'undefined') return;
-        const watch = { observer: new ResizeObserver(chromeResized), observed: new WeakSet<Element>() };
-        chromeWatch.current = watch;
-        return () => { watch.observer.disconnect(); chromeWatch.current = null; };
-    }, []);
-    useEffect(() => {
-        const watch = chromeWatch.current;
-        if (!watch) return;
-        for (const node of document.querySelectorAll(TOUCH_CHROME_SELECTOR)) {
-            if (watch.observed.has(node)) continue;
-            watch.observed.add(node);
-            watch.observer.observe(node);
-        }
-    }, [chromeVersion]);
+        const observer = new ResizeObserver(chromeResized);
+        const observed = new WeakSet<Element>();
+        const discover = () => {
+            for (const node of document.querySelectorAll(TOUCH_CHROME_SELECTOR)) {
+                if (observed.has(node)) continue;
+                observed.add(node);
+                observer.observe(node);
+            }
+        };
+        discover();
+        const root = host?.parentElement ?? document.body;
+        const holdsChrome = (node: Node) =>
+            node instanceof Element && (node.matches(TOUCH_CHROME_SELECTOR) || node.querySelector(TOUCH_CHROME_SELECTOR) !== null);
+        const mutations = typeof MutationObserver === 'undefined' ? null : new MutationObserver(records => {
+            if (records.some(record => Array.from(record.addedNodes).some(holdsChrome))) discover();
+        });
+        mutations?.observe(root, { childList: true, subtree: true });
+        return () => { mutations?.disconnect(); observer.disconnect(); };
+    }, [host]);
 
     const viewportWidth = window.innerWidth;
     const width = Math.min(MAX_WIDTH, viewportWidth - 2 * GAP);
