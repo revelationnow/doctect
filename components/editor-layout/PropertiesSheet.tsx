@@ -8,6 +8,8 @@ const HEIGHT: Record<SheetDetent, string> = {
 const NEXT: Record<SheetDetent, SheetDetent> = { peek: 'half', half: 'full', full: 'peek' };
 /** Pointer travel below this is a tap (cycles detents); at or above it is a drag (lands on a detent). */
 const DRAG_THRESHOLD_PX = 24;
+/** jsdom's MouseEvent has no `isPrimary`; only an explicit `false` marks a second finger. */
+const isSecondaryPointer = (event: React.PointerEvent): boolean => event.isPrimary === false;
 
 /**
  * Bottom sheet that hosts the unchanged `PropertiesPanel` on phone. Presentational only:
@@ -22,13 +24,23 @@ export function PropertiesSheet({ detent, onDetentChange, title, actions, childr
     const dragStartY = useRef<number | null>(null);
     const suppressClick = useRef(false);
 
-    const onPointerDown = (event: React.PointerEvent) => { dragStartY.current = event.clientY; };
-    const onPointerCancel = () => { dragStartY.current = null; };
+    const onPointerDown = (event: React.PointerEvent) => {
+        if (isSecondaryPointer(event)) return;
+        // A touch drag gets no trailing click, so a flag left over from the last gesture would
+        // swallow this one's tap. Every gesture starts clean.
+        suppressClick.current = false;
+        dragStartY.current = event.clientY;
+    };
+    const onPointerCancel = (event: React.PointerEvent) => {
+        if (isSecondaryPointer(event)) return;
+        dragStartY.current = null;
+    };
     const onPointerUp = (event: React.PointerEvent) => {
+        if (isSecondaryPointer(event)) return;
         const startY = dragStartY.current;
         dragStartY.current = null;
         if (startY === null || Math.abs(event.clientY - startY) < DRAG_THRESHOLD_PX) return; // a tap: let onClick cycle
-        suppressClick.current = true; // browsers still fire click after a drag that ends on the button
+        suppressClick.current = true; // mouse browsers still fire click after a drag that ends on the button
         const fromTop = event.clientY / window.innerHeight;
         onDetentChange(fromTop > 0.75 ? 'peek' : fromTop > 0.3 ? 'half' : 'full');
     };
@@ -43,14 +55,14 @@ export function PropertiesSheet({ detent, onDetentChange, title, actions, childr
             style={{ height: HEIGHT[detent] }}>
             <div className="flex items-center gap-2 px-3" style={{ minHeight: SHEET_PEEK_PX }}>
                 <button type="button" aria-label="Resize properties sheet"
-                    className="flex min-h-11 flex-1 items-center gap-3 text-left touch-none"
+                    className="flex min-h-11 flex-1 self-stretch items-center gap-3 text-left touch-none"
                     onPointerDown={onPointerDown} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} onClick={onClick}>
                     <span className="h-1.5 w-10 shrink-0 rounded-full bg-slate-300" />
                     <span className="truncate text-sm font-semibold text-slate-700">{title}</span>
                 </button>
                 {actions}
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto" hidden={detent === 'peek'}>{children}</div>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" hidden={detent === 'peek'}>{children}</div>
         </section>
     );
 }

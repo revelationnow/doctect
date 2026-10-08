@@ -1,5 +1,10 @@
 import React, { useEffect } from 'react';
 
+/** Elements that use Escape themselves (e.g. the Sidebar's rename input cancels its edit). */
+const EDITABLE_SELECTOR = 'input, textarea, select, [contenteditable]:not([contenteditable="false"])';
+const isEditableTarget = (target: EventTarget | null): boolean =>
+    target instanceof Element && target.closest(EDITABLE_SELECTOR) !== null;
+
 /**
  * Left overlay drawer that hosts the unchanged `Sidebar` on phone and tablet.
  * Presentational only: the owner decides when it is open; it closes on backdrop
@@ -8,7 +13,13 @@ import React, { useEffect } from 'react';
 export function SidebarDrawer({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
     useEffect(() => {
         if (!open) return;
-        const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
+        const onKey = (event: KeyboardEvent) => {
+            if (event.key !== 'Escape') return;
+            // Escape already consumed by a child, or aimed at a field that handles it (the Sidebar's
+            // rename input cancels the rename on Escape without stopping propagation): keep the drawer.
+            if (event.defaultPrevented || isEditableTarget(event.target)) return;
+            onClose();
+        };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
     }, [open, onClose]);

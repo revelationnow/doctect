@@ -4,6 +4,15 @@ import { describe, expect, it, vi } from 'vitest';
 import { SidebarDrawer } from '../../components/editor-layout/SidebarDrawer';
 import { PropertiesSheet, SHEET_PEEK_PX } from '../../components/editor-layout/PropertiesSheet';
 
+// jsdom has no PointerEvent; like useCanvasTouchGestures.test, dispatch MouseEvents under the
+// pointer event names so clientY survives (fireEvent.pointerUp would drop it). `isPrimary` is
+// absent on jsdom's MouseEvent, so it is defined explicitly only when a test needs a second finger.
+const pointer = (target: Element, type: 'pointerdown' | 'pointerup' | 'pointercancel', clientY: number, isPrimary?: boolean) => {
+    const event = new MouseEvent(type, { bubbles: true, cancelable: true, clientY });
+    if (isPrimary !== undefined) Object.defineProperty(event, 'isPrimary', { value: isPrimary });
+    target.dispatchEvent(event);
+};
+
 describe('SidebarDrawer', () => {
     it('renders children only while open and closes on backdrop and Escape', () => {
         const onClose = vi.fn();
@@ -23,9 +32,44 @@ describe('SidebarDrawer', () => {
         fireEvent.keyDown(window, { key: 'Escape' });
         expect(onClose).not.toHaveBeenCalled();
     });
+
+    it('keeps the drawer when Escape is aimed at an editable field inside it', () => {
+        // The Sidebar's rename input cancels its edit on Escape without stopping propagation.
+        const onClose = vi.fn();
+        render(
+            <SidebarDrawer open onClose={onClose}>
+                <input aria-label="Rename page" />
+                <textarea aria-label="Notes" />
+                <div contentEditable data-testid="rich" />
+                <button type="button">Plain</button>
+            </SidebarDrawer>,
+        );
+        fireEvent.keyDown(screen.getByLabelText('Rename page'), { key: 'Escape' });
+        fireEvent.keyDown(screen.getByLabelText('Notes'), { key: 'Escape' });
+        fireEvent.keyDown(screen.getByTestId('rich'), { key: 'Escape' });
+        expect(onClose).not.toHaveBeenCalled();
+        // A non-editable child still lets Escape through to the drawer.
+        fireEvent.keyDown(screen.getByRole('button', { name: 'Plain' }), { key: 'Escape' });
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the drawer when a child already consumed Escape', () => {
+        const onClose = vi.fn();
+        render(
+            <SidebarDrawer open onClose={onClose}>
+                <button type="button" onKeyDown={(e) => { if (e.key === 'Escape') e.preventDefault(); }}>Consumer</button>
+            </SidebarDrawer>,
+        );
+        fireEvent.keyDown(screen.getByRole('button', { name: 'Consumer' }), { key: 'Escape' });
+        expect(onClose).not.toHaveBeenCalled();
+        fireEvent.keyDown(window, { key: 'Escape' });
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
 });
 
 describe('PropertiesSheet', () => {
+    const grabber = () => screen.getByRole('button', { name: 'Resize properties sheet' });
+
     it('shows peek height and cycles detents from the grabber', () => {
         const onDetentChange = vi.fn();
         render(<PropertiesSheet detent="peek" onDetentChange={onDetentChange} title="Rectangle"><p>props</p></PropertiesSheet>);
@@ -46,7 +90,6 @@ describe('PropertiesSheet', () => {
     it('cycles half → full → peek on successive taps and hides content only at peek', () => {
         const onDetentChange = vi.fn();
         const { rerender } = render(<PropertiesSheet detent="half" onDetentChange={onDetentChange} title="x"><p>props</p></PropertiesSheet>);
-        const grabber = () => screen.getByRole('button', { name: 'Resize properties sheet' });
         expect(screen.getByText('props').closest('[hidden]')).toBeNull();
         fireEvent.click(grabber());
         expect(onDetentChange).toHaveBeenLastCalledWith('full');
@@ -60,13 +103,10 @@ describe('PropertiesSheet', () => {
     it('lands a drag on the detent nearest the release point and swallows the trailing click', () => {
         const onDetentChange = vi.fn();
         render(<PropertiesSheet detent="peek" onDetentChange={onDetentChange} title="x"><p /></PropertiesSheet>);
-        const grabber = screen.getByRole('button', { name: 'Resize properties sheet' });
+        const button = grabber();
         const innerHeight = window.innerHeight;
-        // jsdom has no PointerEvent; like useCanvasTouchGestures.test, dispatch MouseEvents under the
-        // pointer event names so clientY survives (fireEvent.pointerUp would drop it).
-        const pointer = (type: 'pointerdown' | 'pointerup', clientY: number) =>
-            grabber.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, clientY }));
-        const drag = (fromY: number, toY: number) => { pointer('pointerdown', fromY); pointer('pointerup', toY); fireEvent.click(grabber); };
+        // A mouse drag: browsers fire click after pointerup even when the pointer moved.
+        const drag = (fromY: number, toY: number) => { pointer(button, 'pointerdown', fromY); pointer(button, 'pointerup', toY); fireEvent.click(button); };
 
         // Drag from the bottom of the screen up to 10% from the top → full.
         drag(innerHeight * 0.95, innerHeight * 0.1);
@@ -87,12 +127,56 @@ describe('PropertiesSheet', () => {
         drag(innerHeight * 0.95, innerHeight * 0.95 - 10);
         expect(onDetentChange).toHaveBeenCalledTimes(4);
         expect(onDetentChange).toHaveBeenLastCalledWith('half');
+    });
 
-        // A cancelled pointer leaves no stale start: the next click is a plain tap.
-        pointer('pointerdown', innerHeight * 0.95);
-        grabber.dispatchEvent(new MouseEvent('pointercancel', { bubbles: true, cancelable: true }));
-        fireEvent.click(grabber);
-        expect(onDetentChange).toHaveBeenCalledTimes(5);
+    it('does not swallow the tap that follows a touch drag (touch fires no trailing click)', () => {
+        const onDetentChange = vi.fn();
+        render(<PropertiesSheet detent="peek" onDetentChange={onDetentChange} title="x"><p /></PropertiesSheet>);
+        const button = grabber();
+        const innerHeight = window.innerHeight;
+
+        // Touch drag: pointerdown → pointerup ≥ 24px away, and NO click afterwards.
+        pointer(button, 'pointerdown', innerHeight * 0.95);
+        pointer(button, 'pointerup', innerHeight * 0.1);
+        expect(onDetentChange).toHaveBeenCalledTimes(1);
+        expect(onDetentChange).toHaveBeenLastCalledWith('full');
+
+        // The next real tap must cycle, not be eaten by a stale suppress flag.
+        pointer(button, 'pointerdown', innerHeight * 0.95);
+        pointer(button, 'pointerup', innerHeight * 0.95 - 5);
+        fireEvent.click(button);
+        expect(onDetentChange).toHaveBeenCalledTimes(2);
+        expect(onDetentChange).toHaveBeenLastCalledWith('half');
+    });
+
+    it('forgets the start of a cancelled pointer so the next release is not read as a drag', () => {
+        const onDetentChange = vi.fn();
+        render(<PropertiesSheet detent="peek" onDetentChange={onDetentChange} title="x"><p /></PropertiesSheet>);
+        const button = grabber();
+        const innerHeight = window.innerHeight;
+
+        pointer(button, 'pointerdown', innerHeight * 0.95);
+        pointer(button, 'pointercancel', innerHeight * 0.5);
+        // Without the reset this release would read as a 0.95h → 0.1h drag and land on 'full'.
+        pointer(button, 'pointerup', innerHeight * 0.1);
+        fireEvent.click(button);
+        expect(onDetentChange).toHaveBeenCalledTimes(1);
+        expect(onDetentChange).toHaveBeenLastCalledWith('half');
+    });
+
+    it('ignores a second finger on the grabber', () => {
+        const onDetentChange = vi.fn();
+        render(<PropertiesSheet detent="peek" onDetentChange={onDetentChange} title="x"><p /></PropertiesSheet>);
+        const button = grabber();
+        const innerHeight = window.innerHeight;
+
+        // A non-primary pointer dragging the full height must neither land a detent nor arm the
+        // click suppressor; the primary tap that follows cycles as normal.
+        pointer(button, 'pointerdown', innerHeight * 0.95, false);
+        pointer(button, 'pointerup', innerHeight * 0.1, false);
+        expect(onDetentChange).not.toHaveBeenCalled();
+        fireEvent.click(button);
+        expect(onDetentChange).toHaveBeenCalledTimes(1);
         expect(onDetentChange).toHaveBeenLastCalledWith('half');
     });
 
