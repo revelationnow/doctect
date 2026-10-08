@@ -92,17 +92,35 @@ describe('useCanvasTouchGestures', () => {
         expect(h.onPan).not.toHaveBeenCalled();
     });
 
-    it('ends a direct drag and switches to pinch when a second finger lands', () => {
+    it('cancels a direct drag and switches to pinch when a second finger lands', () => {
+        const h = { ...makeHandlers(true), onDirectCancel: vi.fn() };
+        const { getByTestId } = render(<Harness handlers={h} />);
+        const s = getByTestId('surface');
+        pointer(s, 'pointerdown', 1, 100, 100);
+        const move = pointer(s, 'pointermove', 1, 120, 100);
+        pointer(s, 'pointerdown', 2, 200, 100);
+        expect(h.onDirectCancel).toHaveBeenCalledTimes(1);
+        expect(vi.mocked(h.onDirectCancel).mock.calls[0][0]).toBe(move);
+        expect(h.onDirectUp).not.toHaveBeenCalled();
+        pointer(s, 'pointermove', 2, 300, 100);
+        // Pinch pairs finger 1 at its last position (120) with finger 2: 80 -> 180 px, centre 210.
+        expect(h.onPinch).toHaveBeenCalledWith(2.25, 210, 100);
+        pointer(s, 'pointerup', 1, 120, 100);
+        pointer(s, 'pointerup', 2, 300, 100);
+        expect(h.onDirectCancel).toHaveBeenCalledTimes(1);
+        expect(h.onDirectUp).not.toHaveBeenCalled();
+        expect(h.onGestureEnd).toHaveBeenCalledTimes(1);
+    });
+
+    it('falls back to onDirectUp when a second finger lands and no onDirectCancel is provided', () => {
         const h = makeHandlers(true);
         const { getByTestId } = render(<Harness handlers={h} />);
         const s = getByTestId('surface');
         pointer(s, 'pointerdown', 1, 100, 100);
         pointer(s, 'pointerdown', 2, 200, 100);
         expect(h.onDirectUp).toHaveBeenCalledTimes(1);
-        pointer(s, 'pointermove', 2, 300, 100);
-        expect(h.onPinch).toHaveBeenCalledWith(2, 200, 100);
         pointer(s, 'pointerup', 1, 100, 100);
-        pointer(s, 'pointerup', 2, 300, 100);
+        pointer(s, 'pointerup', 2, 200, 100);
         expect(h.onDirectUp).toHaveBeenCalledTimes(1);
         expect(h.onGestureEnd).toHaveBeenCalledTimes(1);
     });

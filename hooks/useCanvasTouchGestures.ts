@@ -8,10 +8,10 @@ export interface TouchGestureHandlers {
     onDirectMove: (event: PointerEvent) => void;
     onDirectUp: (event: PointerEvent) => void;
     /**
-     * A direct drag was interrupted (pointercancel from the OS, or the hook was disabled/unmounted
-     * mid-drag). Receives the last direct event seen, so callers can revert the in-progress
-     * manipulation like a desktop cancel instead of committing a partial move. When absent the
-     * hook falls back to onDirectUp with that same event.
+     * A direct drag was interrupted (a second finger landed, pointercancel from the OS, or the hook
+     * was disabled/unmounted mid-drag). Receives the last direct event seen, so callers can revert
+     * the in-progress manipulation like a desktop cancel instead of committing a partial move. When
+     * absent the hook falls back to onDirectUp with that same event.
      */
     onDirectCancel?: (event: PointerEvent) => void;
     onTap: (point: TouchPoint) => void;
@@ -131,7 +131,7 @@ export function useCanvasTouchGestures(
 
             if (pointers.size === 2) {
                 clearLongPress();
-                if (mode === 'direct' && lastDirectEvent) handlersRef.current.onDirectUp(lastDirectEvent);
+                if (mode === 'direct') cancelDirect();
                 const [a, b] = [...pointers.values()];
                 pinchDistance = distance(a, b);
                 pinchCenter = midpoint(a, b);

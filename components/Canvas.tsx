@@ -1624,10 +1624,18 @@ export const Canvas: React.FC<CanvasProps> = ({
         onDirectDown: event => handleMouseDown(asMouse(event)),
         onDirectMove: event => handleMouseMove(asMouse(event)),
         onDirectUp: event => handleMouseUp(asMouse(event)),
+        // Second finger, OS pointercancel or disable mid-drag: revert like desktop pointercancel.
+        onDirectCancel: () => cancelInteraction(),
         onTap: ({ clientX, clientY }) => {
-            if (tool !== 'select' && tool !== 'hand') return;
+            if (tool !== 'select') return; // hand-tool clicks never select on desktop either
+            // A tap never passes through handleMouseDown, so capture its interaction here the same way.
+            if (captureInteraction) {
+                interaction.current = captureInteraction();
+                if (!interaction.current) return;
+            }
             const top = topElementAt(clientX, clientY);
             onSelectElements(top ? [top.id] : []);
+            onInteractionEnd?.();
         },
         onDoubleTap: () => {},            // Task 7
         onLongPress: () => {},            // Task 7
@@ -1703,7 +1711,7 @@ export const Canvas: React.FC<CanvasProps> = ({
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
-            onPointerCancel={cancelInteraction}
+            onPointerCancel={isTouch ? e => { if (e.pointerType !== 'touch') cancelInteraction(); } : cancelInteraction}
             onContextMenu={handleContextMenu}
         >
             {/* Inner container wrapper to handle centering vs scrolling */}
@@ -1931,7 +1939,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                                                 id: 'group-handles',
                                                 type: 'group',
                                                 transformOrigin: { x: pivotX, y: pivotY }
-                                            } as any} />
+                                            } as any} touchScale={isTouch ? scale : undefined} />
                                         </div>
                                     </>
                                 );
