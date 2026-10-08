@@ -175,7 +175,10 @@ describe('incremental verification isolation', () => {
     expect(performance?.testMatch.toString()).toBe('/incremental_performance\\.spec\\.ts$/');
     expect(performance?.use.launchOptions.args).toEqual([]);
     for (const name of ['chromium', 'firefox', 'webkit']) {
-      expect(config.projects.find(project => project.name === name).testIgnore.test('incremental_performance.spec.ts')).toBe(true);
+      // Playwright accepts one pattern or a list; the desktop projects ignore several specs.
+      const { testIgnore } = config.projects.find(project => project.name === name);
+      const ignored: RegExp[] = Array.isArray(testIgnore) ? testIgnore : [testIgnore];
+      expect(ignored.some(pattern => pattern.test('incremental_performance.spec.ts'))).toBe(true);
     }
     expect(config.webServer.reuseExistingServer).toBe(false);
     vi.unstubAllEnvs();

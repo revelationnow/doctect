@@ -176,6 +176,8 @@ const approvedBrowserRootProperties = new Set([
   'scrollY',
   'sessionStorage',
   'setTimeout',
+  // Touch editor: on-screen-keyboard geometry (offsetTop/height + resize/scroll events) only.
+  'visualViewport',
 ]);
 const javascriptMimeEssences = new Set([
   'application/ecmascript',
