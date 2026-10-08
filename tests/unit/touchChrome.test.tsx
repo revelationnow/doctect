@@ -193,7 +193,19 @@ describe('ProjectSwitcher', () => {
         expect(screen.queryByRole('menu')).toBeNull();
         fireEvent.click(trigger);
         expect(screen.getByRole('menu')).toBeTruthy();
-        fireEvent.scroll(document.body);
+        fireEvent.scroll(document);
+        expect(screen.queryByRole('menu')).toBeNull();
+    });
+
+    it('stays open while its own project list scrolls', () => {
+        const many = Array.from({ length: 30 }, (_, i) => ({ id: `p${i}`, name: `Project ${i}` }));
+        render(<ProjectSwitcher chrome={{ ...chrome, projects: many, activeProjectId: 'p0' }} />);
+        fireEvent.click(screen.getByRole('button', { name: /Project 0/ }));
+        const menu = screen.getByRole('menu');
+        expect(menu.className).toMatch(/overflow-y-auto/);
+        fireEvent.scroll(menu);
+        expect(screen.getByRole('menu')).toBeTruthy();
+        fireEvent.scroll(document);
         expect(screen.queryByRole('menu')).toBeNull();
     });
 

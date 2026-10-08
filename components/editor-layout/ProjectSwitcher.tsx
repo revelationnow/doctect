@@ -47,15 +47,20 @@ export function ProjectSwitcher({ chrome }: { chrome: EditorChrome }) {
         document.addEventListener('pointerdown', onPointerDown, true);
         window.addEventListener('keydown', onKey);
         // The menu's position is measured once at open; a resize (orientation change, keyboard)
-        // or any scroll would leave it stale, so both simply dismiss it. Scroll does not bubble,
-        // hence the capture-phase listener on the document.
+        // or a scroll elsewhere would leave it stale, so both simply dismiss it. Scroll does not
+        // bubble, hence the capture-phase listener on the document; scrolling the menu's own
+        // list moves nothing it is anchored to, so that is ignored.
+        const onScroll = (event: Event) => {
+            if (event.target instanceof Node && menu.current?.contains(event.target)) return;
+            close();
+        };
         window.addEventListener('resize', close);
-        document.addEventListener('scroll', close, true);
+        document.addEventListener('scroll', onScroll, true);
         return () => {
             document.removeEventListener('pointerdown', onPointerDown, true);
             window.removeEventListener('keydown', onKey);
             window.removeEventListener('resize', close);
-            document.removeEventListener('scroll', close, true);
+            document.removeEventListener('scroll', onScroll, true);
         };
     }, [open]);
 
@@ -70,7 +75,7 @@ export function ProjectSwitcher({ chrome }: { chrome: EditorChrome }) {
             </button>
             {position && createPortal(
                 <div ref={menu} role="menu" style={{ position: 'fixed', top: position.top, left: position.left, width: MENU_WIDTH_PX }}
-                    className="z-50 rounded-xl border bg-white py-1 shadow-xl">
+                    className="z-50 max-h-[60dvh] overflow-y-auto rounded-xl border bg-white py-1 shadow-xl">
                     {chrome.projects.map(project => (
                         <div key={project.id} className="flex items-center">
                             <button type="button" role="menuitem" className="min-h-11 flex-1 truncate px-3 text-left text-sm"
