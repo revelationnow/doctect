@@ -1,25 +1,47 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Plus, X } from 'lucide-react';
 import type { EditorChrome } from './EditorChromeContext';
+
+const MENU_WIDTH_PX = 256;
+const MENU_GAP_PX = 4;
+const VIEWPORT_MARGIN_PX = 8;
 
 /**
  * Phone replacement for the tab strip: the active project's name opens a menu listing the open
  * projects with per-project Close and a New project entry. The menu closes after any choice,
  * on a tap outside it, or on Escape.
+ *
+ * The menu is portalled to document.body and positioned `fixed` from the trigger's rect, so no
+ * stacking context created by the top bar can trap it beneath the drawer or properties sheet.
  */
 export function ProjectSwitcher({ chrome }: { chrome: EditorChrome }) {
-    const [open, setOpen] = useState(false);
-    const root = useRef<HTMLDivElement>(null);
+    const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+    const open = position !== null;
+    const trigger = useRef<HTMLButtonElement>(null);
+    const menu = useRef<HTMLDivElement>(null);
     const active = chrome.projects.find(project => project.id === chrome.activeProjectId);
+
+    const close = () => setPosition(null);
+    const toggle = () => {
+        if (open) { close(); return; }
+        const rect = trigger.current?.getBoundingClientRect();
+        const maxLeft = Math.max(VIEWPORT_MARGIN_PX, window.innerWidth - MENU_WIDTH_PX - VIEWPORT_MARGIN_PX);
+        setPosition({
+            top: (rect?.bottom ?? 0) + MENU_GAP_PX,
+            left: Math.min(Math.max(VIEWPORT_MARGIN_PX, rect?.left ?? 0), maxLeft),
+        });
+    };
 
     useEffect(() => {
         if (!open) return;
         const onPointerDown = (event: Event) => {
-            if (event.target instanceof Node && root.current?.contains(event.target)) return;
-            setOpen(false);
+            if (!(event.target instanceof Node)) return;
+            if (trigger.current?.contains(event.target) || menu.current?.contains(event.target)) return;
+            close();
         };
         const onKey = (event: KeyboardEvent) => {
-            if (event.key === 'Escape' && !event.defaultPrevented) setOpen(false);
+            if (event.key === 'Escape' && !event.defaultPrevented) close();
         };
         // Capture phase so a canvas gesture handler that stops propagation cannot keep the menu open.
         document.addEventListener('pointerdown', onPointerDown, true);
@@ -30,17 +52,18 @@ export function ProjectSwitcher({ chrome }: { chrome: EditorChrome }) {
         };
     }, [open]);
 
-    const choose = (fn: () => void) => () => { fn(); setOpen(false); };
+    const choose = (fn: () => void) => () => { fn(); close(); };
 
     return (
-        <div ref={root} className="relative min-w-0 flex-1">
-            <button type="button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(v => !v)}
+        <div className="min-w-0 flex-1">
+            <button ref={trigger} type="button" aria-haspopup="menu" aria-expanded={open} onClick={toggle}
                 className="flex min-h-11 max-w-full items-center gap-1 truncate px-1 text-sm font-semibold text-slate-800">
                 <span className="truncate">{active?.name || 'Untitled'}</span>
                 <ChevronDown size={16} className="shrink-0" />
             </button>
-            {open && (
-                <div role="menu" className="absolute left-0 top-full z-50 mt-1 w-64 rounded-xl border bg-white py-1 shadow-xl">
+            {position && createPortal(
+                <div ref={menu} role="menu" style={{ position: 'fixed', top: position.top, left: position.left, width: MENU_WIDTH_PX }}
+                    className="z-50 rounded-xl border bg-white py-1 shadow-xl">
                     {chrome.projects.map(project => (
                         <div key={project.id} className="flex items-center">
                             <button type="button" role="menuitem" className="min-h-11 flex-1 truncate px-3 text-left text-sm"
@@ -58,7 +81,8 @@ export function ProjectSwitcher({ chrome }: { chrome: EditorChrome }) {
                         onClick={choose(chrome.onNewProject)}>
                         <Plus size={16} /> New project
                     </button>
-                </div>
+                </div>,
+                document.body,
             )}
         </div>
     );

@@ -1,6 +1,6 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeActions } from '../helpers/touchActions';
 import { TouchToolButtons } from '../../components/editor-layout/TouchToolButtons';
 import { OverflowMenu } from '../../components/editor-layout/OverflowMenu';
@@ -14,6 +14,10 @@ const chrome: EditorChrome = {
     onSelectProject: vi.fn(), onCloseProject: vi.fn(), onNewProject: vi.fn(),
     saveStatus: <span>saved</span>, cloudMenu: <span>cloud-menu</span>, accountMenu: <span>account-menu</span>,
 };
+
+// `chrome` and its vi.fn()s are shared across tests; clear call history so a `toHaveBeenCalledWith`
+// in one test cannot be satisfied by an earlier one.
+beforeEach(() => vi.clearAllMocks());
 
 describe('TouchToolButtons', () => {
     it('offers select, hand, text, shapes and fit, and marks the active tool', () => {
@@ -87,6 +91,24 @@ describe('OverflowMenu', () => {
         expect(screen.getByRole('button', { name: 'Snap to grid' }).getAttribute('aria-pressed')).toBe('false');
     });
 
+    it('renders its overlay in a portal on document.body so bar stacking contexts cannot trap it', () => {
+        render(<header><OverflowMenu open onClose={vi.fn()} actions={makeActions()} chrome={null} /></header>);
+        const dialog = screen.getByRole('dialog', { name: 'More actions' });
+        expect(dialog.closest('header')).toBeNull();
+        expect(screen.getByTestId('overflow-menu-backdrop').closest('header')).toBeNull();
+        expect(dialog.parentElement?.parentElement).toBe(document.body);
+    });
+
+    it('still closes on Escape when onClose changes identity after opening', () => {
+        const first = vi.fn();
+        const second = vi.fn();
+        const { rerender } = render(<OverflowMenu open onClose={first} actions={makeActions()} chrome={null} />);
+        rerender(<OverflowMenu open onClose={second} actions={makeActions()} chrome={null} />);
+        fireEvent.keyDown(window, { key: 'Escape' });
+        expect(first).not.toHaveBeenCalled();
+        expect(second).toHaveBeenCalledTimes(1);
+    });
+
     it('offers the preview-node choice only when the actions provide one', () => {
         const onSelect = vi.fn();
         const { unmount } = render(<OverflowMenu open onClose={vi.fn()} actions={makeActions()} chrome={null} />);
@@ -135,6 +157,33 @@ describe('ProjectSwitcher', () => {
         expect(local.onSelectProject).not.toHaveBeenCalled();
     });
 
+    it('portals the menu to document.body, fixed just below the trigger', () => {
+        render(<header><ProjectSwitcher chrome={chrome} /></header>);
+        const trigger = screen.getByRole('button', { name: /Planner/ });
+        vi.spyOn(trigger, 'getBoundingClientRect').mockReturnValue({
+            top: 4, bottom: 40, left: 52, right: 160, width: 108, height: 36, x: 52, y: 4, toJSON: () => ({}),
+        } as DOMRect);
+        fireEvent.click(trigger);
+        const menu = screen.getByRole('menu');
+        expect(menu.closest('header')).toBeNull();
+        expect(menu.parentElement).toBe(document.body);
+        expect(menu.style.position).toBe('fixed');
+        expect(menu.style.top).toBe('44px');
+        expect(menu.style.left).toBe('52px');
+    });
+
+    it('keeps the menu inside the viewport when the trigger sits near the right edge', () => {
+        render(<ProjectSwitcher chrome={chrome} />);
+        const trigger = screen.getByRole('button', { name: /Planner/ });
+        vi.spyOn(trigger, 'getBoundingClientRect').mockReturnValue({
+            top: 4, bottom: 40, left: window.innerWidth - 20, right: window.innerWidth, width: 20, height: 36,
+            x: window.innerWidth - 20, y: 4, toJSON: () => ({}),
+        } as DOMRect);
+        fireEvent.click(trigger);
+        const menu = screen.getByRole('menu');
+        expect(parseFloat(menu.style.left) + parseFloat(menu.style.width)).toBeLessThanOrEqual(window.innerWidth);
+    });
+
     it('falls back to Untitled when no project is active', () => {
         render(<ProjectSwitcher chrome={{ ...chrome, activeProjectId: null }} />);
         expect(screen.getByRole('button', { name: /Untitled/ })).toBeTruthy();
@@ -159,6 +208,26 @@ describe('PhoneTopBar', () => {
         expect(chrome.onSelectProject).toHaveBeenCalledWith('b');
         fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
         expect(screen.getByRole('button', { name: 'Export PDF' })).toBeTruthy();
+    });
+
+    it('moves focus into the sheet on open and back to the ⋯ trigger on every close path', () => {
+        render(<PhoneTopBar actions={makeActions()} onOpenSidebar={vi.fn()} />);
+        const more = screen.getByRole('button', { name: 'More actions' });
+        more.focus();
+        fireEvent.click(more);
+        expect(document.activeElement).toBe(screen.getByRole('dialog', { name: 'More actions' }));
+        fireEvent.click(screen.getByRole('button', { name: 'JSON' }));
+        expect(screen.queryByRole('dialog', { name: 'More actions' })).toBeNull();
+        expect(document.activeElement).toBe(more);
+
+        fireEvent.click(more);
+        expect(document.activeElement).toBe(screen.getByRole('dialog', { name: 'More actions' }));
+        fireEvent.keyDown(window, { key: 'Escape' });
+        expect(document.activeElement).toBe(more);
+
+        fireEvent.click(more);
+        fireEvent.click(screen.getByTestId('overflow-menu-backdrop'));
+        expect(document.activeElement).toBe(more);
     });
 
     it('calls undo and still renders without page chrome', () => {

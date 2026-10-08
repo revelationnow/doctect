@@ -12,7 +12,7 @@ import { OverflowMenu } from './OverflowMenu';
 export function TabletToolbar({ actions, onOpenSidebar }: { actions: TouchEditorActions; onOpenSidebar: () => void }) {
     const [menuOpen, setMenuOpen] = useState(false);
     return (
-        <div className="z-20 flex h-14 shrink-0 items-center gap-2 border-b bg-white px-2">
+        <div className="flex h-14 shrink-0 items-center gap-2 border-b bg-white px-2">
             <button type="button" aria-label="Open pages and templates" onClick={onOpenSidebar}
                 className="flex h-11 w-11 shrink-0 items-center justify-center text-slate-600"><Menu size={20} /></button>
             <TouchToolButtons actions={actions} showFit />

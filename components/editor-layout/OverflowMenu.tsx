@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import type { TouchEditorActions } from './touchActions';
 import type { EditorChrome } from './EditorChromeContext';
 
@@ -27,31 +28,45 @@ const Group = ({ title, children }: { title: string; children: React.ReactNode }
  * The ⋯ bottom sheet on phone and tablet. One-shot actions close the sheet; toggles keep it
  * open so their On/Off state can be read back. Closes on backdrop tap or Escape.
  * `chrome` is null on tablet, which keeps the desktop page header (cloud/account live there).
+ *
+ * The overlay is portalled to document.body: the bars that own this menu are flex items, and
+ * any z-index on them would make a stacking context that traps a `fixed` child beneath the
+ * sidebar drawer and properties sheet. Focus moves into the sheet on open and returns to
+ * whatever had it (the ⋯ trigger) on every close path.
  */
 export function OverflowMenu({ open, onClose, actions, chrome }: {
     open: boolean; onClose: () => void; actions: TouchEditorActions; chrome: EditorChrome | null;
 }) {
     const svgInput = useRef<HTMLInputElement>(null);
+    const dialog = useRef<HTMLDivElement>(null);
+    // Latest onClose without re-running the open/close effect when the parent passes a new closure.
+    const onCloseRef = useRef(onClose);
+    useEffect(() => { onCloseRef.current = onClose; });
 
     useEffect(() => {
         if (!open) return;
+        const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        dialog.current?.focus();
         const onKey = (event: KeyboardEvent) => {
             if (event.key !== 'Escape') return;
             if (event.defaultPrevented || isEditableTarget(event.target)) return;
-            onClose();
+            onCloseRef.current();
         };
         window.addEventListener('keydown', onKey);
-        return () => window.removeEventListener('keydown', onKey);
-    }, [open, onClose]);
+        return () => {
+            window.removeEventListener('keydown', onKey);
+            if (previouslyFocused?.isConnected) previouslyFocused.focus();
+        };
+    }, [open]);
 
     if (!open) return null;
     const run = (fn: () => void) => () => { fn(); onClose(); };
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-50 flex flex-col justify-end">
             <div data-testid="overflow-menu-backdrop" aria-hidden="true" className="flex-1 bg-black/30" onClick={onClose} />
-            <div role="dialog" aria-modal="true" aria-label="More actions"
-                className="max-h-[85dvh] overflow-y-auto rounded-t-2xl bg-white pb-[env(safe-area-inset-bottom)]">
+            <div ref={dialog} role="dialog" aria-modal="true" aria-label="More actions" tabIndex={-1}
+                className="max-h-[85dvh] overflow-y-auto rounded-t-2xl bg-white pb-[env(safe-area-inset-bottom)] outline-none">
                 {actions.hasSelection && (
                     <Group title="Selection">
                         <Item label="Duplicate selection" onClick={run(actions.duplicateSelection)} />
@@ -100,6 +115,7 @@ export function OverflowMenu({ open, onClose, actions, chrome }: {
                     </>
                 )}
             </div>
-        </div>
+        </div>,
+        document.body,
     );
 }
