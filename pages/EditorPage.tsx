@@ -17,6 +17,8 @@ import {
   type WorkspaceProjectWrites,
 } from '../hooks/useWorkspaceProjectWrites';
 import { useIncrementalProjectWrites } from '../hooks/useIncrementalProjectWrites';
+import { useEditorFormFactor } from '../hooks/useEditorFormFactor';
+import { FormFactorProvider } from '../components/editor-layout/FormFactorContext';
 import { getNormalizedWorkspaceSession, isNormalizedWorkspaceStore } from '../services/localWorkspace/NormalizedWorkspaceStore';
 import type { WorkspaceEditingSession } from '../services/localWorkspace/workspaceEditingSession';
 import { downloadJson } from '../services/browserDownload';
@@ -133,6 +135,7 @@ function EditorPageShell({
   const presetCommandBusyRef = useRef(false);
   const blocker = useBlocker(hasUnsavedWork);
   const navigationBlocked = blocker.state === 'blocked';
+  const formFactor = useEditorFormFactor();
 
   const { projects, activeProjectId } = workspace;
   const activeProject = projects.find(project => project.id === activeProjectId);
@@ -349,7 +352,7 @@ function EditorPageShell({
   };
 
   return (
-    <>
+    <FormFactorProvider value={formFactor}>
     <div
       ref={editorShellRef}
       className="flex h-screen w-screen flex-col overflow-hidden bg-slate-200"
@@ -542,6 +545,6 @@ function EditorPageShell({
         onLeave={() => blocker.proceed()}
       />
     )}
-    </>
+    </FormFactorProvider>
   );
 }
