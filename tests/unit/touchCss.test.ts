@@ -1,39 +1,115 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
+// Guards the touch-only CSS in index.html: every rule lives inside the marked block and is scoped
+// under [data-form-factor] (set on <html> only for phone/tablet), and the hover-revealed controls in
+// HOVER_FILES only use patterns the block makes visible on touch, or are micro-steppers it hides.
+
 const html = readFileSync('index.html', 'utf8');
+const START = '/* touch-editor:start */';
+const END = '/* touch-editor:end */';
+const block = html.slice(html.indexOf(START), html.indexOf(END));
+const rules = block.replace(/\/\*[\s\S]*?\*\//g, '');
+
 const HOVER_FILES = [
     'components/sidebar/NodeItem.tsx', 'components/sidebar/TemplateItem.tsx', 'components/TabBar.tsx',
     'components/json/JsonTreeItem.tsx', 'components/json/MainCollectionItem.tsx',
     'components/properties/SingleElementEditor.tsx', 'components/properties/TextPaddingControls.tsx',
 ];
+const STEPPER_FILES = ['components/properties/SingleElementEditor.tsx', 'components/properties/TextPaddingControls.tsx'];
+const STEPPER_MARK = 'data-micro-stepper';
+
+/** Hide/reveal class pairs the block turns visible, read from rules like `.opacity-0[class~="group-hover:opacity-100"]`. */
+const revealPairs = (): Array<[string, string]> =>
+    Array.from(rules.matchAll(/\.([\w-]+)\[class~="(group-hover:[\w-]+)"\]/g), m => [m[1], m[2]] as [string, string]);
+
+const LITERAL = /"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`/g;
+const HOVER = /^group-hover(?:\/[\w-]+)?:/;
+const HIDDEN = /^(?:opacity-0|hidden|invisible)$/;
+const REVEALS = /^group-hover(?:\/[\w-]+)?:(?:opacity-(?!0$)\d+|flex|inline-flex|block|inline-block|inline|grid|visible)$/;
+const MARK_WINDOW = 3;
+
+type Finding = { line: number; literal: string };
+
+/**
+ * Every string or template literal (plain, clsx, ternary, template, named group) that hides an
+ * element until group hover and is neither covered by a block rule nor inside a marked micro-stepper
+ * (the mark must sit on the literal's lines or the MARK_WINDOW lines above it). Classes are matched
+ * per literal, so keep a control's hide and reveal classes in the same literal.
+ */
+function uncoveredHoverReveals(source: string, pairs: Array<[string, string]>): Finding[] {
+    const lines = source.split('\n');
+    const findings: Finding[] = [];
+    for (const match of source.matchAll(LITERAL)) {
+        const literal = match[0];
+        const tokens = literal.replace(/[`"'${}]/g, ' ').split(/\s+/).filter(Boolean);
+        const hover = tokens.filter(token => HOVER.test(token));
+        if (hover.length === 0) continue;
+        if (!hover.some(token => REVEALS.test(token)) && !tokens.some(token => HIDDEN.test(token))) continue;
+        if (pairs.some(([hide, reveal]) => tokens.includes(hide) && tokens.includes(reveal))) continue;
+        const line = source.slice(0, match.index).split('\n').length;
+        const end = line + literal.split('\n').length - 1;
+        if (lines.slice(Math.max(0, line - 1 - MARK_WINDOW), end).some(text => text.includes(STEPPER_MARK))) continue;
+        findings.push({ line, literal });
+    }
+    return findings;
+}
 
 describe('touch CSS', () => {
-    it('scopes every touch rule under data-form-factor', () => {
-        const block = html.slice(html.indexOf('/* touch-editor:start */'), html.indexOf('/* touch-editor:end */'));
+    it('keeps every touch rule inside the marked block, scoped under data-form-factor', () => {
         expect(block.length).toBeGreaterThan(0);
-        const selectors = block.replace(/\/\*[\s\S]*?\*\//g, '').match(/[^{}]+(?=\{)/g) ?? [];
+        const selectors = rules.match(/[^{}]+(?=\{)/g) ?? [];
+        expect(selectors.length).toBeGreaterThan(0);
         for (const selector of selectors) {
-            for (const part of selector.split(',')) expect(part.trim()).toMatch(/^\[data-form-factor/);
+            for (const part of selector.split(',')) expect(part.trim()).toMatch(/^\[data-form-factor(=|\])/);
         }
+        expect(html.replace(block, '')).not.toMatch(/data-form-factor/);
     });
 
-    it('declares 44px targets, 16px form controls, hover reveal and dialog rules', () => {
-        expect(html).toMatch(/min-height:\s*44px/);
-        expect(html).toMatch(/font-size:\s*16px/);
-        expect(html).toContain('group-hover:opacity-100');
-        expect(html).toContain('group-hover:flex');
-        expect(html).toContain('.editor-dialog-panel');
+    it('declares 44px targets, 16px form controls, hover reveal, micro-stepper and dialog rules', () => {
+        expect(block).toMatch(/min-height:\s*44px/);
+        expect(block).toMatch(/font-size:\s*16px/);
+        expect(block).toContain('group-hover:opacity-100');
+        expect(block).toContain('group-hover:flex');
+        expect(block).toContain('.editor-dialog-panel');
+        expect(rules).toMatch(/\[data-form-factor\] \[data-micro-stepper\]\s*\{\s*display:\s*none\s*!important;\s*\}/);
     });
 
     it('only uses hover-reveal patterns the touch CSS knows about', () => {
-        const known = /(opacity-0 group-hover:opacity-100|hidden group-hover:flex|pointer-events-none[^"'`]*opacity-0)/;
+        const pairs = revealPairs();
+        expect(pairs).toEqual(expect.arrayContaining([['opacity-0', 'group-hover:opacity-100'], ['hidden', 'group-hover:flex']]));
         for (const file of HOVER_FILES) {
-            const source = readFileSync(file, 'utf8');
-            const uses = source.match(/className=["'`{][^"'`]*group-hover:[^"'`]*/g) ?? [];
-            for (const use of uses) {
-                if (/opacity-0|\bhidden\b/.test(use)) expect(use, `${file}: ${use}`).toMatch(known);
-            }
+            expect(uncoveredHoverReveals(readFileSync(file, 'utf8'), pairs), file).toEqual([]);
         }
+    });
+
+    it('marks the micro-steppers the touch CSS hides', () => {
+        for (const file of STEPPER_FILES) expect(readFileSync(file, 'utf8'), file).toContain(STEPPER_MARK);
+    });
+
+    it('flags uncovered hover reveals written as clsx, template, ternary or named-group literals', () => {
+        const pairs = revealPairs();
+        const rejected: Record<string, string> = {
+            clsx: '<button className={clsx("p-1 opacity-0 group-hover:opacity-50", active && "text-blue-600")} />',
+            template: '<div className={`hidden ${wide ? "w-full" : ""} group-hover:block`} />',
+            ternary: "<div className={disabled ? 'opacity-0' : 'opacity-0 group-hover:opacity-75'} />",
+            namedGroup: '<div className="opacity-0 group-hover/row:opacity-100" />',
+        };
+        for (const [name, source] of Object.entries(rejected)) expect(uncoveredHoverReveals(source, pairs), name).toHaveLength(1);
+
+        const accepted: Record<string, string> = {
+            plain: '<div className="ml-auto opacity-0 group-hover:opacity-100 p-1" />',
+            clsx: '<button className={clsx("p-0.5 opacity-0 group-hover:opacity-100", active ? "a" : "b")} />',
+            template: '<div className={`hidden group-hover:flex ${extra}`} />',
+            hoverTint: '<div className="text-slate-400 group-hover:text-slate-600" />',
+            stepper: '<div data-micro-stepper className="opacity-0 group-hover/stepper:opacity-100" />',
+            stepperAbove: [
+                '<div',
+                '    data-micro-stepper',
+                "    className={`flex ${disabled ? 'opacity-0' : 'opacity-0 group-hover/stepper:opacity-100'}`}",
+                '/>',
+            ].join('\n'),
+        };
+        for (const [name, source] of Object.entries(accepted)) expect(uncoveredHoverReveals(source, pairs), name).toEqual([]);
     });
 });

@@ -94,6 +94,11 @@
       [data-form-factor] .hidden[class~="group-hover:flex"] {
         display: flex;
       }
+      /* Micro-steppers (12px wide inside 24px number inputs) can neither be revealed nor grown to
+         44px without covering their input, so touch hides them; the inputs stay directly editable. */
+      [data-form-factor] [data-micro-stepper] {
+        display: none !important;
+      }
       [data-form-factor="phone"] :has(> .editor-dialog-panel),
       [data-form-factor] :has(> .editor-dialog-panel.generator-dialog-panel) {
         padding: 0;

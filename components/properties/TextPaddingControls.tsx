@@ -164,7 +164,7 @@ export const TextPaddingControls: React.FC<TextPaddingControlsProps> = ({
                                 onBlur={() => clearDraft(side)}
                             />
                         </label>
-                        <div className={`absolute bottom-0.5 right-0.5 top-0.5 flex w-3 flex-col justify-center rounded-sm border-l bg-white px-0.5 transition-opacity ${
+                        <div data-micro-stepper className={`absolute bottom-0.5 right-0.5 top-0.5 flex w-3 flex-col justify-center rounded-sm border-l bg-white px-0.5 transition-opacity ${
                             disabled
                                 ? 'opacity-0'
                                 : 'opacity-0 group-focus-within/stepper:opacity-100 group-hover/stepper:opacity-100'

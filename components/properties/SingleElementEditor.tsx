@@ -236,7 +236,7 @@ const SmartInput = ({
                     max={max}
                     step={step}
                 />
-                <div className="absolute right-0.5 top-0.5 bottom-0.5 flex flex-col justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white border-l px-0.5">
+                <div data-micro-stepper className="absolute right-0.5 top-0.5 bottom-0.5 flex flex-col justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white border-l px-0.5">
                     <button
                         className="h-2.5 flex items-center justify-center hover:bg-slate-100 active:bg-slate-200 text-slate-500 rounded-sm"
                         onMouseDown={() => startRepeat('up')}
