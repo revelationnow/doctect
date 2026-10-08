@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useReducer, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import clsx from 'clsx';
 import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Minus, Plus, Underline } from 'lucide-react';
@@ -13,7 +13,10 @@ const CONTROL = 44;      // h-11 / w-11
 const CONTROL_GAP = 2;   // gap-0.5
 const READOUT = 28;      // w-7
 const FRAME = 2 * 4 + 2; // px-1 + a 1px border each side
-const CONTENT_WIDTH = 9 * CONTROL + READOUT + 10 * CONTROL_GAP; // 444: every control in one row
+// Ten items in one row (eight buttons, the readout, the colour control) have nine gaps between them: 442.
+const CONTENT_WIDTH = 9 * CONTROL + READOUT + 9 * CONTROL_GAP;
+/** The touch chrome the bar keeps clear of (see visibleBand): the phone top bar / tablet toolbar, the sheet, the tool pill. */
+const TOUCH_CHROME_SELECTOR = '[data-touch-chrome]';
 
 export interface QuickFormatAnchor { left: number; top: number; bottom: number; width: number }
 
@@ -63,10 +66,36 @@ const visibleBand = () => {
 //   happens anyway). The colour input is exempt: it must take focus to open its picker.
 export function QuickFormatBar({ element, anchor, onChange, onPickChange, onPickEnd }: Props) {
     const host = useTouchOverlayHost();
+    // The band is read during render, so the bar must render again when the chrome around it
+    // changes size: the sheet moving between detents, the pill wrapping to another row count, or
+    // either leaving the DOM (an observed element that is removed reports a 0×0 box). One observer
+    // for the bar's lifetime watches every chrome element present; a notification re-runs the
+    // discovery pass, which observes only elements not yet watched (the pill mounts again at peek,
+    // always alongside a sheet resize). Observing an element delivers one initial notification, so
+    // discovery that finds nothing new is what ends the sequence: no observe → notify → observe loop.
+    const [chromeVersion, chromeResized] = useReducer((version: number) => version + 1, 0);
+    const chromeWatch = useRef<{ observer: ResizeObserver; observed: WeakSet<Element> } | null>(null);
+    useEffect(() => {
+        if (typeof ResizeObserver === 'undefined') return;
+        const watch = { observer: new ResizeObserver(chromeResized), observed: new WeakSet<Element>() };
+        chromeWatch.current = watch;
+        return () => { watch.observer.disconnect(); chromeWatch.current = null; };
+    }, []);
+    useEffect(() => {
+        const watch = chromeWatch.current;
+        if (!watch) return;
+        for (const node of document.querySelectorAll(TOUCH_CHROME_SELECTOR)) {
+            if (watch.observed.has(node)) continue;
+            watch.observed.add(node);
+            watch.observer.observe(node);
+        }
+    }, [chromeVersion]);
+
     const viewportWidth = window.innerWidth;
     const width = Math.min(MAX_WIDTH, viewportWidth - 2 * GAP);
     // Narrower than the content: wrap onto a second row rather than hide controls behind a scroll.
-    // Two rows hold everything down to a 248px viewport; no phone is narrower.
+    // Two rows hold everything down to a 254px viewport (five items a row: 228px of content plus
+    // the frame and the side gaps); no phone is narrower.
     const rows = width - FRAME < CONTENT_WIDTH ? 2 : 1;
     const height = QUICK_FORMAT_BAR_HEIGHT + (rows - 1) * (CONTROL + CONTROL_GAP);
     const band = visibleBand();
@@ -77,6 +106,7 @@ export function QuickFormatBar({ element, anchor, onChange, onPickChange, onPick
     const top = Math.max(band.top + GAP, Math.min(band.bottom - height - GAP, preferred));
     const left = Math.max(GAP, Math.min(viewportWidth - width - GAP, anchor.left + anchor.width / 2 - width / 2));
     const size = element.fontSize ?? 16;
+    const colour = element.textColor || '#000000';
 
     // A colour pick is open from the first React onChange (native `input`) until the picker's own
     // native `change`, which React's onChange normally never reports: it repeats the last `input`'s
@@ -135,9 +165,17 @@ export function QuickFormatBar({ element, anchor, onChange, onPickChange, onPick
             {toggle((element.align ?? 'left') === 'left', 'Align left', <AlignLeft size={16} />, { align: 'left' })}
             {toggle(element.align === 'center', 'Align center', <AlignCenter size={16} />, { align: 'center' })}
             {toggle(element.align === 'right', 'Align right', <AlignRight size={16} />, { align: 'right' })}
-            <input ref={colourInput} type="color" aria-label="Text colour" value={element.textColor || '#000000'}
-                onChange={onColour} onBlur={endPick}
-                className="h-11 w-11 shrink-0 rounded border-0 bg-transparent p-1 text-base" />
+            {/* A 44px hit target drawing a 24px swatch: the native colour input fills the target
+                unseen (it still takes the tap, the focus and opens the picker) and the swatch
+                beside it echoes the value, with the input's focus ring. The swatch is inert, so
+                every press lands on the input. */}
+            <span className="relative flex h-11 w-11 shrink-0 items-center justify-center">
+                <input ref={colourInput} type="color" aria-label="Text colour" value={colour}
+                    onChange={onColour} onBlur={endPick}
+                    className="peer absolute inset-0 h-11 w-11 cursor-pointer opacity-0 text-base" />
+                <span aria-hidden="true" data-testid="quick-format-colour-swatch" style={{ backgroundColor: colour }}
+                    className="pointer-events-none h-6 w-6 rounded-md border border-slate-300 peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500" />
+            </span>
         </div>,
         host ?? document.body,
     );

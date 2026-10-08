@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useBackDismiss } from './useBackDismiss';
+import { trapTab } from './focusTrap';
 
 /** Elements that use Escape themselves (e.g. the Sidebar's rename input cancels its edit). */
 const EDITABLE_SELECTOR = 'input, textarea, select, [contenteditable]:not([contenteditable="false"])';
@@ -11,7 +12,8 @@ const isEditableTarget = (target: EventTarget | null): boolean =>
  * Presentational only: the owner decides when it is open; it closes on backdrop
  * tap or Escape (the spec's third close path, picking a page, is the owner's job).
  * Opening moves focus onto the panel; closing hands it back to whatever had it
- * before (the ☰ trigger), as long as that element is still in the document.
+ * before (the ☰ trigger), as long as that element is still in the document. While open, Tab
+ * cycles within the panel (it is modal, but the canvas behind it stays in the tab order).
  */
 export function SidebarDrawer({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
     const panelRef = useRef<HTMLDivElement>(null);
@@ -53,6 +55,7 @@ export function SidebarDrawer({ open, onClose, children }: { open: boolean; onCl
     return (
         <div className="absolute inset-0 z-40 flex">
             <div ref={panelRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Pages and templates"
+                onKeyDown={event => trapTab(event, panelRef.current)}
                 className="relative flex h-full w-[min(85vw,320px)] flex-col bg-white shadow-2xl outline-none">
                 {children}
             </div>

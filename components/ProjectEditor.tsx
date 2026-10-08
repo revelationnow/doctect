@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo, useReducer } from 'react';
 import { AppState, AppNode, TemplateElement, PageTemplate, Variant, RM_PP_WIDTH, RM_PP_HEIGHT } from '../types';
 import { Sidebar } from './Sidebar';
 import { Canvas } from './Canvas';
@@ -1698,17 +1698,20 @@ function ProjectEditorView({
             </div>
         </div>
     );
+    // Touch: every page/template pick in the drawer closes it, including a pick of the one already
+    // selected, which changes no state; the pick count is folded into the layout's navigation key.
+    const [pickCount, countPick] = useReducer((count: number) => count + 1, 0);
     const sidebarElement = (
         <Sidebar
             state={state}
-            onSelectNode={handleSelectNode}
+            onSelectNode={(id, ctrl, shift) => { handleSelectNode(id, ctrl, shift); if (isTouch) countPick(); }}
             onAddNode={handleAddNode}
             onAddReference={handleAddReference}
             onDeleteNode={(id) => requestDeleteNodes(state.selectedNodeIds.includes(id) ? state.selectedNodeIds : [id])}
             onDuplicateNode={(id) => handleDuplicateNodes(state.selectedNodeIds.includes(id) ? state.selectedNodeIds : [id])}
             onUpdateNode={handleUpdateNode}
             onChangeViewMode={changeViewMode}
-            onSelectTemplate={handleSelectTemplate}
+            onSelectTemplate={(id, ctrl, shift) => { handleSelectTemplate(id, ctrl, shift); if (isTouch) countPick(); }}
             onAddTemplate={handleAddTemplate}
             onDeleteTemplate={(id) => handleDeleteTemplates(state.selectedTemplateIds.includes(id) ? state.selectedTemplateIds : [id])}
             onDuplicateTemplate={(id) => handleDuplicateTemplates(state.selectedTemplateIds.includes(id) ? state.selectedTemplateIds : [id])}
@@ -1831,7 +1834,7 @@ function ProjectEditorView({
         : selectedElements.length > 1
             ? `${selectedElements.length} elements`
             : `Page · ${state.nodes[effectivePreviewNodeId]?.title ?? ''}`;
-    const navigationKey = `${state.viewMode}:${state.selectedNodeId}:${state.selectedTemplateId}:${state.activeVariantId}`;
+    const navigationKey = `${state.viewMode}:${state.selectedNodeId}:${state.selectedTemplateId}:${state.activeVariantId}:${pickCount}`;
     return (
         <div className="flex h-full w-full flex-col bg-slate-100 text-slate-900 overflow-hidden">
             <EditorLayout

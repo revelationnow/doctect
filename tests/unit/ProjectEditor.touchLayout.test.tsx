@@ -254,6 +254,27 @@ describe('phone layout wired through the legacy editor', () => {
         expect(screen.queryByTestId('sidebar')).toBeNull();
     });
 
+    it('closes the drawer when the already-selected page or template is picked again', () => {
+        renderLegacy('phone');
+        const openDrawer = () => {
+            fireEvent.click(screen.getByRole('button', { name: 'Open pages and templates' }));
+            expect(screen.getByTestId('sidebar')).toBeTruthy();
+        };
+        openDrawer();
+        expect(sidebarProps.state.selectedNodeId).toBe('root');
+        act(() => sidebarProps.onSelectNode('root', false, false)); // no navigation change
+        expect(canvasProps.currentNodeId).toBe('root');
+        expect(screen.queryByTestId('sidebar')).toBeNull();
+        openDrawer();
+        act(() => sidebarProps.onChangeViewMode('template'));
+        expect(screen.queryByTestId('sidebar')).toBeNull(); // the mode change is a navigation change already
+        openDrawer();
+        const template = sidebarProps.state.selectedTemplateId;
+        act(() => sidebarProps.onSelectTemplate(template, false, false));
+        expect(sidebarProps.state.selectedTemplateId).toBe(template);
+        expect(screen.queryByTestId('sidebar')).toBeNull();
+    });
+
     it('fits the page from the pill without touching the persisted scale', () => {
         const onStateChange = vi.fn();
         render(
@@ -288,6 +309,16 @@ describe('tablet layout wired through the legacy editor', () => {
 });
 
 describe('phone layout wired through the incremental editor', () => {
+    it('closes the drawer when the already-selected page is picked again', () => {
+        renderIncremental('phone');
+        fireEvent.click(screen.getByRole('button', { name: 'Open pages and templates' }));
+        expect(screen.getByTestId('sidebar')).toBeTruthy();
+        const selected = sidebarProps.state.selectedNodeId;
+        act(() => sidebarProps.onSelectNode(selected, false, false));
+        expect(canvasProps.currentNodeId).toBe(selected);
+        expect(screen.queryByTestId('sidebar')).toBeNull();
+    });
+
     it('keeps pinch zoom and fit out of the preferences lane', () => {
         const { onPreferencesChange } = renderIncremental('phone');
         expect(canvasProps.inputMode).toBe('touch');

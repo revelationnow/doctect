@@ -79,13 +79,15 @@ export function ProjectSwitcher({ chrome }: { chrome: EditorChrome }) {
             {position && createPortal(
                 <div ref={menu} role="menu" style={{ position: 'fixed', top: position.top, left: position.left, width: MENU_WIDTH_PX }}
                     className="z-50 max-h-[60dvh] overflow-y-auto rounded-xl border bg-white py-1 shadow-xl">
+                    {/* Every row of the menu is a menuitem, the per-project Close included; the
+                        flex wrapper pairing a project with its Close is transparent to the tree. */}
                     {chrome.projects.map(project => (
-                        <div key={project.id} className="flex items-center">
+                        <div key={project.id} role="none" className="flex items-center">
                             <button type="button" role="menuitem" className="min-h-11 flex-1 truncate px-3 text-left text-sm"
                                 onClick={choose(() => chrome.onSelectProject(project.id))}>
                                 {project.name || 'Untitled'}
                             </button>
-                            <button type="button" aria-label={`Close ${project.name || 'Untitled'}`}
+                            <button type="button" role="menuitem" aria-label={`Close ${project.name || 'Untitled'}`}
                                 onClick={choose(() => chrome.onCloseProject(project.id))}
                                 className="flex h-11 w-11 shrink-0 items-center justify-center text-slate-400">
                                 <X size={16} />

@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -230,6 +231,60 @@ describe('OverflowMenu', () => {
         fireEvent.change(select, { target: { value: 'd2' } });
         expect(onSelect).toHaveBeenCalledWith('d2');
     });
+
+    // The sheet is aria-modal with a non-inert page behind it: Tab wraps within the sheet, from its
+    // first row (Export PDF with nothing selected) to its last (the Navigate links), and the Cloud
+    // and Account rows in between are part of the cycle. The hidden SVG file input is skipped.
+    it('traps Tab inside the sheet, cloud and account rows and navigate links included', () => {
+        const Row = ({ name }: { name: string }) => <button type="button" className="row">{name}</button>;
+        const navigation = [{ label: 'Home', to: '/' }, { label: 'Docs', to: '/docs' }];
+        render(
+            <MemoryRouter>
+                <button type="button">Outside</button>
+                <OverflowMenu open onClose={vi.fn()} actions={makeActions()}
+                    chrome={{ ...chrome, cloudMenu: <Row name="Save to cloud" />, accountMenu: <Row name="Sign out" />, navigation }} />
+            </MemoryRouter>,
+        );
+        const dialog = screen.getByRole('dialog', { name: 'More actions' });
+        const first = within(dialog).getByRole('button', { name: 'Export PDF' });
+        const last = within(dialog).getByRole('link', { name: 'Docs' });
+        expect(document.activeElement).toBe(dialog);
+        expect(fireEvent.keyDown(dialog, { key: 'Tab' })).toBe(false);
+        expect(document.activeElement).toBe(first);
+        expect(fireEvent.keyDown(first, { key: 'Tab', shiftKey: true })).toBe(false);
+        expect(document.activeElement).toBe(last);
+        expect(fireEvent.keyDown(last, { key: 'Tab' })).toBe(false);
+        expect(document.activeElement).toBe(first);
+        const cloudRow = within(dialog).getByRole('button', { name: 'Save to cloud' });
+        cloudRow.focus();
+        expect(fireEvent.keyDown(cloudRow, { key: 'Tab' })).toBe(true); // mid-sheet: the browser's move
+        expect(document.activeElement).toBe(cloudRow);
+    });
+
+    it('leaves Tab to a modal a cloud row opened, inline or portalled, instead of fighting its trap', () => {
+        // CloudMenu renders its modals itself (the sheet stays open under them). An inline modal is
+        // inside the sheet's DOM and traps Tab on its own; a portalled one is outside the sheet's
+        // DOM but still inside its React tree, so its keydown reaches the sheet's handler.
+        const InlineModal = () => (
+            <div role="dialog" aria-label="Publish" onKeyDown={event => { if (event.key === 'Tab') { event.preventDefault(); screen.getByRole('button', { name: 'Publish first' }).focus(); } }}>
+                <button type="button">Publish first</button>
+                <button type="button">Publish last</button>
+            </div>
+        );
+        const Portalled = () => createPortal(<button type="button">Portalled</button>, document.body);
+        render(
+            <OverflowMenu open onClose={vi.fn()} actions={makeActions()}
+                chrome={{ ...chrome, cloudMenu: <><InlineModal /><Portalled /></>, accountMenu: <span /> }} />,
+        );
+        const publishLast = screen.getByRole('button', { name: 'Publish last' });
+        publishLast.focus();
+        fireEvent.keyDown(publishLast, { key: 'Tab' });
+        expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Publish first' }));
+        const portalled = screen.getByRole('button', { name: 'Portalled' });
+        portalled.focus();
+        expect(fireEvent.keyDown(portalled, { key: 'Tab' })).toBe(true);
+        expect(document.activeElement).toBe(portalled);
+    });
 });
 
 describe('ProjectSwitcher', () => {
@@ -241,13 +296,26 @@ describe('ProjectSwitcher', () => {
         expect(screen.queryByRole('menu')).toBeNull();
         fireEvent.click(trigger);
         expect(trigger.getAttribute('aria-expanded')).toBe('true');
-        fireEvent.click(screen.getByRole('button', { name: 'Close Notebook' }));
+        fireEvent.click(screen.getByRole('menuitem', { name: 'Close Notebook' }));
         expect(local.onCloseProject).toHaveBeenCalledWith('b');
         expect(screen.queryByRole('menu')).toBeNull();
         fireEvent.click(trigger);
         fireEvent.click(screen.getByRole('menuitem', { name: 'New project' }));
         expect(local.onNewProject).toHaveBeenCalled();
         expect(screen.queryByRole('menu')).toBeNull();
+    });
+
+    it('exposes every row of the menu as a menuitem, the per-project Close included', () => {
+        render(<ProjectSwitcher chrome={chrome} />);
+        fireEvent.click(screen.getByRole('button', { name: /Planner/ }));
+        const menu = screen.getByRole('menu');
+        expect(within(menu).getAllByRole('menuitem').map(item => item.getAttribute('aria-label') ?? item.textContent?.trim()))
+            .toEqual(['Planner', 'Close Planner', 'Notebook', 'Close Notebook', 'New project']);
+        expect(within(menu).queryAllByRole('button')).toEqual([]); // no row is a bare button among menuitems
+        for (const wrapper of Array.from(menu.children)) {
+            // Direct children of a menu are menuitems or transparent wrappers.
+            expect(['menuitem', 'none']).toContain(wrapper.getAttribute('role'));
+        }
     });
 
     it('closes on outside tap and Escape without selecting anything', () => {

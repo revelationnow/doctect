@@ -134,6 +134,51 @@ describe('SidebarDrawer', () => {
         fireEvent.keyDown(window, { key: 'Escape' });
         expect(onClose).toHaveBeenCalledTimes(1);
     });
+
+    // The drawer is aria-modal, but nothing behind it is inert: Tab must wrap inside the panel
+    // instead of walking out to the canvas. Hidden, aria-hidden and disabled children are skipped.
+    it('traps Tab inside the open panel, wrapping at both ends and from the panel itself', () => {
+        render(
+            <>
+                <button type="button">Outside</button>
+                <SidebarDrawer open onClose={() => {}}>
+                    <button type="button">First</button>
+                    <input aria-label="Rename" />
+                    <button type="button" disabled>Disabled</button>
+                    <input hidden aria-label="File" />
+                    <span aria-hidden="true"><button type="button">Decorative</button></span>
+                    <button type="button">Last</button>
+                </SidebarDrawer>
+            </>,
+        );
+        const panel = screen.getByRole('dialog', { name: 'Pages and templates' });
+        const first = screen.getByRole('button', { name: 'First' });
+        const last = screen.getByRole('button', { name: 'Last' });
+        expect(document.activeElement).toBe(panel);
+        expect(fireEvent.keyDown(panel, { key: 'Tab' })).toBe(false);
+        expect(document.activeElement).toBe(first);
+        expect(fireEvent.keyDown(first, { key: 'Tab', shiftKey: true })).toBe(false);
+        expect(document.activeElement).toBe(last);
+        expect(fireEvent.keyDown(last, { key: 'Tab' })).toBe(false);
+        expect(document.activeElement).toBe(first);
+        // Between two inner controls the browser moves focus itself: nothing is prevented.
+        screen.getByLabelText('Rename').focus();
+        expect(fireEvent.keyDown(screen.getByLabelText('Rename'), { key: 'Tab' })).toBe(true);
+        expect(document.activeElement).toBe(screen.getByLabelText('Rename'));
+        panel.focus();
+        expect(fireEvent.keyDown(panel, { key: 'Tab', shiftKey: true })).toBe(false);
+        expect(document.activeElement).toBe(last);
+        // Other keys, and a Tab a child already handled, pass through.
+        expect(fireEvent.keyDown(last, { key: 'Enter' })).toBe(true);
+        expect(document.activeElement).toBe(last);
+    });
+
+    it('keeps focus on the panel when it holds nothing tabbable', () => {
+        render(<SidebarDrawer open onClose={() => {}}><p>tree</p></SidebarDrawer>);
+        const panel = screen.getByRole('dialog', { name: 'Pages and templates' });
+        expect(fireEvent.keyDown(panel, { key: 'Tab' })).toBe(false);
+        expect(document.activeElement).toBe(panel);
+    });
 });
 
 describe('PropertiesSheet', () => {

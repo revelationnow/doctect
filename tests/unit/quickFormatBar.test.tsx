@@ -1,6 +1,6 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { QuickFormatBar } from '../../components/canvas/QuickFormatBar';
 import { TabletToolbar } from '../../components/editor-layout/TabletToolbar';
 import { TouchOverlayHostContext } from '../../components/editor-layout/TouchOverlayHost';
@@ -13,6 +13,29 @@ const text: TemplateElement = {
     align: 'left', textColor: '#000000',
 };
 const anchor = { left: 100, top: 300, bottom: 320, width: 100 };
+
+/** A touch chrome element with a fixed viewport rect, appended to the body until the test ends. */
+const chromeNode = (kind: string, rect: Partial<DOMRect>) => {
+    const node = document.createElement('div');
+    node.setAttribute('data-touch-chrome', kind);
+    node.getBoundingClientRect = () => ({ top: 0, bottom: 0, left: 0, right: 0, width: 0, height: 0, ...rect } as DOMRect);
+    document.body.appendChild(node);
+    return node;
+};
+
+const withInnerWidth = (value: number, run: () => void) => {
+    const original = Object.getOwnPropertyDescriptor(window, 'innerWidth');
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value });
+    try { run(); } finally {
+        if (original) Object.defineProperty(window, 'innerWidth', original); else delete (window as any).innerWidth;
+    }
+};
+
+afterEach(() => {
+    // Only the body-level stand-ins from chromeNode: a rendered TabletToolbar is React's to remove.
+    document.querySelectorAll('body > [data-touch-chrome]').forEach(node => node.remove());
+    delete (globalThis as any).ResizeObserver;
+});
 
 describe('QuickFormatBar', () => {
     it.each([
@@ -138,9 +161,7 @@ describe('QuickFormatBar', () => {
     });
 
     it('wraps onto two rows at phone widths instead of scrolling, keeping every 44px control', () => {
-        const original = Object.getOwnPropertyDescriptor(window, 'innerWidth');
-        Object.defineProperty(window, 'innerWidth', { configurable: true, value: 360 });
-        try {
+        withInnerWidth(360, () => {
             render(<QuickFormatBar element={text} anchor={anchor} onChange={() => {}} />);
             const bar = screen.getByRole('toolbar', { name: 'Text formatting' });
             expect(bar.className).toMatch(/\bflex-wrap\b/);
@@ -150,19 +171,130 @@ describe('QuickFormatBar', () => {
             expect(bar.style.top).toBe(`${300 - 94 - 8}px`);
             expect(screen.getAllByRole('button')).toHaveLength(8);
             expect(screen.getByLabelText('Text colour')).toBeTruthy();
+        });
+    });
+
+    // Ten items (eight 44px buttons, the 28px readout, the 44px colour control) with nine 2px gaps
+    // need 442px of content, plus the 10px frame: a 452px bar (a 468px viewport) is one row; a
+    // pixel narrower wraps. (The former 444 wrapped bars that in fact fit.)
+    it('wraps exactly when the content box drops below 442px', () => {
+        withInnerWidth(468, () => {
+            const { unmount } = render(<QuickFormatBar element={text} anchor={anchor} onChange={() => {}} />);
+            const bar = screen.getByRole('toolbar', { name: 'Text formatting' });
+            expect(bar.style.width).toBe('452px');
+            expect(bar.style.height).toBe('48px');
+            unmount();
+        });
+        withInnerWidth(467, () => {
+            render(<QuickFormatBar element={text} anchor={anchor} onChange={() => {}} />);
+            const bar = screen.getByRole('toolbar', { name: 'Text formatting' });
+            expect(bar.style.width).toBe('451px');
+            expect(bar.style.height).toBe('94px');
+        });
+    });
+
+    it('draws a 24px swatch of the current colour inside the 44px colour control, inert to the pointer', () => {
+        render(<QuickFormatBar element={{ ...text, textColor: '#ff8800' }} anchor={anchor} onChange={() => {}} />);
+        const colour = screen.getByLabelText('Text colour') as HTMLInputElement;
+        expect(colour.value).toBe('#ff8800');
+        expect(colour.className).toMatch(/\bh-11\b/);
+        expect(colour.className).toMatch(/\bw-11\b/);
+        expect(colour.className).toMatch(/\babsolute\b/);
+        expect(colour.className).toMatch(/\binset-0\b/);
+        const target = colour.parentElement!;
+        expect(target.className).toMatch(/\bh-11\b/);
+        expect(target.className).toMatch(/\bw-11\b/);
+        expect(target.className).toMatch(/\brelative\b/);
+        const swatch = screen.getByTestId('quick-format-colour-swatch');
+        expect(swatch.parentElement).toBe(target);
+        expect(swatch.getAttribute('aria-hidden')).toBe('true');
+        expect(swatch.className).toMatch(/\bh-6\b/);
+        expect(swatch.className).toMatch(/\bw-6\b/);
+        expect(swatch.className).toMatch(/\bpointer-events-none\b/);
+        expect(swatch.style.backgroundColor).toBe('rgb(255, 136, 0)');
+        expect(swatch.className).toMatch(/\bpeer-focus-visible:/);
+        expect(colour.className).toMatch(/\bpeer\b/);
+    });
+
+    // Browsers deliver one notification when an element is first observed, so the fake does too:
+    // a discovery pass that re-observed every element on each notification would never settle.
+    class FakeResizeObserver {
+        static instances: FakeResizeObserver[] = [];
+        readonly targets = new Set<Element>();
+        observeCalls = 0;
+        notifications = 0;
+        constructor(private readonly callback: () => void) { FakeResizeObserver.instances.push(this); }
+        observe(target: Element) {
+            this.targets.add(target);
+            this.observeCalls += 1;
+            queueMicrotask(() => this.notify());
+        }
+        notify() { this.notifications += 1; this.callback(); }
+        disconnect() { this.targets.clear(); }
+    }
+    const settle = () => act(async () => { await Promise.resolve(); await Promise.resolve(); });
+
+    it('re-clamps when the sheet or the pill resizes, observing chrome that appears later, without an observe loop', async () => {
+        (globalThis as any).ResizeObserver = FakeResizeObserver;
+        FakeResizeObserver.instances = [];
+        chromeNode('top-bar', { top: 0, bottom: 56 });
+        const sheet = chromeNode('sheet', { top: 328, bottom: 400 });
+        Object.defineProperty(window, 'visualViewport', {
+            configurable: true, value: { offsetTop: 0, height: 400, addEventListener() {}, removeEventListener() {} },
+        });
+        try {
+            render(<QuickFormatBar element={text} anchor={{ left: 100, top: 700, bottom: 720, width: 100 }} onChange={() => {}} />);
+            await settle();
+            const bar = screen.getByRole('toolbar', { name: 'Text formatting' });
+            expect(bar.style.top).toBe(`${328 - 48 - 8}px`); // bottom-clamped above the sheet at peek
+            expect(FakeResizeObserver.instances).toHaveLength(1);
+            const observer = FakeResizeObserver.instances[0];
+            expect(Array.from(observer.targets).map(node => node.getAttribute('data-touch-chrome'))).toEqual(['top-bar', 'sheet']);
+            expect(observer.observeCalls).toBe(2); // the initial notifications did not re-observe anything
+            expect(observer.notifications).toBe(2);
+
+            // The sheet rises to half: nothing else about the bar changed, yet it must move up.
+            sheet.getBoundingClientRect = () => ({ top: 200, bottom: 400, left: 0, right: 0, width: 0, height: 200 } as DOMRect);
+            act(() => observer.notify());
+            expect(bar.style.top).toBe(`${200 - 48 - 8}px`);
+
+            // Back to peek: the sheet shrinks and the pill mounts in the same commit. The sheet's
+            // notification brings the pill under observation; the pill's own initial notification
+            // then re-clamps above it, and the sequence ends there.
+            sheet.getBoundingClientRect = () => ({ top: 328, bottom: 400, left: 0, right: 0, width: 0, height: 72 } as DOMRect);
+            const pill = chromeNode('tool-pill', { top: 236, bottom: 316 });
+            act(() => observer.notify());
+            await settle();
+            expect(observer.targets.has(pill)).toBe(true);
+            expect(observer.observeCalls).toBe(3);
+            expect(observer.notifications).toBe(5);
+            expect(bar.style.top).toBe(`${236 - 48 - 8}px`);
+
+            // The pill wraps to two rows (taller, higher top): re-clamped again from the same observer.
+            pill.getBoundingClientRect = () => ({ top: 192, bottom: 316, left: 0, right: 0, width: 0, height: 124 } as DOMRect);
+            act(() => observer.notify());
+            expect(bar.style.top).toBe(`${192 - 48 - 8}px`);
+            await settle();
+            expect(observer.observeCalls).toBe(3);
         } finally {
-            if (original) Object.defineProperty(window, 'innerWidth', original); else delete (window as any).innerWidth;
+            delete (window as any).visualViewport;
         }
     });
 
+    it('disconnects its chrome observer on unmount', async () => {
+        (globalThis as any).ResizeObserver = FakeResizeObserver;
+        FakeResizeObserver.instances = [];
+        chromeNode('sheet', { top: 328, bottom: 400 });
+        const { unmount } = render(<QuickFormatBar element={text} anchor={anchor} onChange={() => {}} />);
+        await settle();
+        const observer = FakeResizeObserver.instances[0];
+        const disconnect = vi.spyOn(observer, 'disconnect');
+        unmount();
+        expect(disconnect).toHaveBeenCalledTimes(1);
+    });
+
     it('clamps into the visible band: under the top bar, above the sheet and keyboard, never off-screen', () => {
-        const chrome = (kind: string, rect: Partial<DOMRect>) => {
-            const node = document.createElement('div');
-            node.setAttribute('data-touch-chrome', kind);
-            node.getBoundingClientRect = () => ({ top: 0, bottom: 0, left: 0, right: 0, width: 0, height: 0, ...rect } as DOMRect);
-            document.body.appendChild(node);
-            return node;
-        };
+        const chrome = chromeNode;
         const topBar = chrome('top-bar', { top: 0, bottom: 56 });
         const sheet = chrome('sheet', { top: 328, bottom: 400 });
         Object.defineProperty(window, 'visualViewport', {

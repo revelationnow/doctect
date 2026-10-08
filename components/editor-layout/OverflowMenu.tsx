@@ -5,6 +5,7 @@ import clsx from 'clsx';
 import type { TouchEditorActions } from './touchActions';
 import type { EditorChrome } from './EditorChromeContext';
 import { useBackDismiss } from './useBackDismiss';
+import { trapTab } from './focusTrap';
 import { MENU_ROW_CLASS, MenuListContext, type MenuListHost } from './MenuListContext';
 import { ALIGN_ACTIONS } from '../../services/alignElements';
 
@@ -37,7 +38,8 @@ const Group = ({ title, children }: { title: string; children: React.ReactNode }
  * The overlay is portalled to document.body: the bars that own this menu are flex items, and
  * any z-index on them would make a stacking context that traps a `fixed` child beneath the
  * sidebar drawer and properties sheet. Focus moves into the sheet on open and returns to
- * whatever had it (the ⋯ trigger) on every close path.
+ * whatever had it (the ⋯ trigger) on every close path; while open, Tab cycles within the sheet,
+ * Cloud and Account rows included (a modal one of those rows opens keeps its own trap: see trapTab).
  *
  * The focus hand-off is a layout effect on purpose: items like "Save preset" and "Generator"
  * close the sheet and mount a modal in the same commit, and those modals focus themselves in a
@@ -82,6 +84,7 @@ export function OverflowMenu({ open, onClose, actions, chrome }: {
         <div className="fixed inset-0 z-50 flex flex-col justify-end">
             <div data-testid="overflow-menu-backdrop" aria-hidden="true" className="flex-1 bg-black/30" onClick={onClose} />
             <div ref={dialog} role="dialog" aria-modal="true" aria-label="More actions" tabIndex={-1}
+                onKeyDown={event => trapTab(event, dialog.current)}
                 className="max-h-[85dvh] overflow-y-auto rounded-t-2xl bg-white pb-[env(safe-area-inset-bottom)] outline-none">
                 {actions.hasSelection && (
                     <Group title="Selection">
