@@ -10,6 +10,9 @@ import { HighlightedCode } from './HighlightedCode';
 import { GENERATOR_PRESETS } from './generatorPresets';
 import { FONTS } from '../constants/editor';
 import { GeneratorVisualPreviewModal } from './GeneratorVisualPreviewModal';
+import clsx from 'clsx';
+import { useFormFactor } from './editor-layout/FormFactorContext';
+import { generatorErrorPane, GeneratorPane } from '../services/generatorErrorPane';
 
 interface HierarchyGeneratorModalProps {
   isOpen: boolean;
@@ -2051,6 +2054,11 @@ const HierarchyGeneratorSession: React.FC<HierarchyGeneratorSessionProps> = ({
   const [fontSize, setFontSize] = useState<number>(12);
   const [wordWrap, setWordWrap] = useState<boolean>(true);
   const [isHelpOpen, setIsHelpOpen] = useState<boolean>(false);
+  // Touch shows one script pane at a time behind a Template | Hierarchy toggle; desktop keeps both side by side.
+  const formFactor = useFormFactor();
+  const splitPanes = formFactor === 'desktop';
+  const [activePane, setActivePane] = useState<GeneratorPane>('template');
+  const errorPane = previewState.status === 'error' ? generatorErrorPane(previewState.message) : null;
   const baselineRef = useRef({
     templateScript: initialSource.templateScript,
     hierarchyScript: initialSource.hierarchyScript,
@@ -2239,7 +2247,7 @@ const HierarchyGeneratorSession: React.FC<HierarchyGeneratorSessionProps> = ({
         inert={showVisualPreview}
         tabIndex={-1}
         onKeyDown={handleDialogKeyDown}
-        className="bg-white rounded-xl shadow-2xl w-full max-w-[95vw] h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200 outline-none"
+        className="bg-white rounded-xl shadow-2xl w-full max-w-[95vw] h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200 outline-none editor-dialog-panel generator-dialog-panel"
       >
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b bg-slate-50">
@@ -2368,10 +2376,29 @@ const HierarchyGeneratorSession: React.FC<HierarchyGeneratorSessionProps> = ({
           Saved generator source is retained with the project and becomes public when published. <span>{GENERATOR_WORKFLOW_HELP}</span> Opening source never runs it; Preview uses the sandbox. Manual edits are not written back to JavaScript.
         </p>
 
+        {!splitPanes && (
+          <div role="tablist" aria-label="Generator scripts" className="flex border-b bg-[#252526]">
+            {(['template', 'hierarchy'] as const).map(pane => (
+              <button key={pane} type="button" role="tab" aria-selected={activePane === pane}
+                onClick={() => setActivePane(pane)}
+                className={clsx('relative flex-1 text-sm font-medium',
+                  activePane === pane ? 'text-white border-b-2 border-indigo-400' : 'text-slate-400')}>
+                {pane === 'template' ? 'Template' : 'Hierarchy'}
+                {errorPane === pane && activePane !== pane && (
+                  <span aria-label="Has error" className="absolute right-3 top-3 h-2 w-2 rounded-full bg-red-500" />
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Side-by-Side Editor Area */}
         <div className="flex-1 flex overflow-hidden relative">
           {/* Templates Editor */}
-          <div className="flex-1 flex flex-col border-r-4 border-slate-500">
+          <div
+            data-generator-pane="template"
+            className={clsx('flex-1 flex flex-col', splitPanes ? 'border-r-4 border-slate-500' : activePane !== 'template' && 'hidden')}
+          >
             <div className="px-3 py-1.5 bg-[#252526] border-b border-slate-700 flex items-center gap-2">
               <LayoutTemplate size={14} className="text-indigo-400" />
               <span className="text-xs font-medium text-slate-300">1. Define Templates</span>
@@ -2395,7 +2422,10 @@ const HierarchyGeneratorSession: React.FC<HierarchyGeneratorSessionProps> = ({
           </div>
 
           {/* Hierarchy Editor */}
-          <div className="flex-1 flex flex-col">
+          <div
+            data-generator-pane="hierarchy"
+            className={clsx('flex-1 flex flex-col', !splitPanes && activePane !== 'hierarchy' && 'hidden')}
+          >
             <div className="px-3 py-1.5 bg-[#252526] border-b border-slate-700 flex items-center gap-2">
               <Network size={14} className="text-purple-400" />
               <span className="text-xs font-medium text-slate-300">2. Build Hierarchy</span>

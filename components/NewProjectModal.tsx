@@ -193,7 +193,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
         aria-busy={interactionBusy || undefined}
         tabIndex={-1}
         onKeyDown={handleKeyDown}
-        className="relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl outline-none animate-in fade-in zoom-in duration-200"
+        className="relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl outline-none animate-in fade-in zoom-in duration-200 editor-dialog-panel"
       >
         {deleteId && (
           <div

@@ -283,7 +283,7 @@ export const GeneratorVisualPreviewModal: React.FC<GeneratorVisualPreviewModalPr
         inert={nestedModalOpen}
         tabIndex={-1}
         onKeyDown={handleDialogKeyDown}
-        className="flex h-[92vh] w-full max-w-7xl flex-col overflow-hidden rounded-xl bg-slate-50 shadow-2xl outline-none"
+        className="flex h-[92vh] w-full max-w-7xl flex-col overflow-hidden rounded-xl bg-slate-50 shadow-2xl outline-none editor-dialog-panel"
       >
         <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 py-4">
           <div>

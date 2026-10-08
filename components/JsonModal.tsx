@@ -264,7 +264,7 @@ export const JsonModal: React.FC<JsonModalProps> = ({ isOpen, onClose, currentSt
 
     return (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200 editor-dialog-panel">
 
                 {/* Header */}
                 <div className="flex justify-between items-center p-4 border-b bg-slate-50 flex-shrink-0">
