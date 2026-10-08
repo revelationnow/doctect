@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, render } from '@testing-library/react';
+import { act, fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Canvas, type CanvasInteraction } from '../../components/Canvas';
 import type { EditorElementIntent } from '../../services/document/contracts';
@@ -23,6 +23,24 @@ const rect = (id: string, x: number, y: number): TemplateElement => ({
     id, type: 'rect', x, y, w: 100, h: 60, rotation: 0, layerId: 'l1',
     fill: '#eeeeee', stroke: '#000000', strokeWidth: 1, opacity: 1, zIndex: 1,
 });
+const textElement = (id: string, x: number, y: number): TemplateElement => ({
+    id, type: 'text', x, y, w: 200, h: 40, rotation: 0, layerId: 'l1',
+    fill: '', stroke: '', strokeWidth: 0, opacity: 1, text: 'Hello', fontSize: 16,
+    fontFamily: 'helvetica', textOverflow: 'clip', textWrap: true,
+});
+const tap = (target: Element, id: number, x: number, y: number) => {
+    pointer(target, 'pointerdown', id, x, y);
+    pointer(target, 'pointerup', id, x, y);
+};
+const doubleTap = (target: Element, x: number, y: number) => { tap(target, 1, x, y); tap(target, 2, x, y); };
+const inlineEditor = (container: HTMLElement) => container.querySelector('[contenteditable="true"]');
+// A tap on a `data-touch-gesture-ignore` subtree is left to the browser, which then emits the
+// compatibility mouse events the canvas's mouse handlers see.
+const compatClick = (target: Element, x = 0, y = 0) => {
+    fireEvent.mouseDown(target, { clientX: x, clientY: y, button: 0 });
+    fireEvent.mouseUp(target, { clientX: x, clientY: y, button: 0 });
+    fireEvent.click(target, { clientX: x, clientY: y, button: 0 });
+};
 
 const template: PageTemplate = {
     id: 'page', name: 'Page', width: 500, height: 700,
@@ -245,5 +263,175 @@ describe('Canvas touch mode', () => {
         expect(container.querySelector('[data-rotate-handle]')).not.toBeNull();
         // jsdom's cssstyle has no touch-action property, so an unset value reads undefined rather than ''.
         expect((container.querySelector('.canvas-scroll-container') as HTMLElement).style.touchAction).toBeFalsy();
+    });
+});
+
+describe('Canvas touch creation and gestures', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it('creates a default-size rect when tapping with the rect tool', () => {
+        const { props, surface } = renderCanvas({ tool: 'rect', elements: [] });
+        pointer(surface, 'pointerdown', 1, 300, 400);
+        pointer(surface, 'pointerup', 1, 300, 400);
+        const created = vi.mocked(props.onUpdateElements).mock.calls.at(-1)![0][0];
+        expect(created).toMatchObject({ type: 'rect', x: 300, y: 400, w: 120, h: 80 });
+    });
+
+    it('draws a text box by dragging with the text tool', () => {
+        const { props, surface } = renderCanvas({ tool: 'text', elements: [] });
+        pointer(surface, 'pointerdown', 1, 100, 100);
+        pointer(surface, 'pointermove', 1, 260, 140);
+        pointer(surface, 'pointerup', 1, 260, 140);
+        expect(vi.mocked(props.onUpdateElements).mock.calls.at(-1)![0][0]).toMatchObject({ type: 'text', w: 160, h: 40 });
+    });
+
+    it('starts inline editing on double tap of a text element', () => {
+        const text: TemplateElement = {
+            id: 't', type: 'text', x: 20, y: 20, w: 200, h: 40, rotation: 0, layerId: 'l1',
+            fill: '', stroke: '', strokeWidth: 0, opacity: 1, text: 'Hello', fontSize: 16,
+            fontFamily: 'helvetica', textOverflow: 'clip', textWrap: true,
+        };
+        const { container, elementNode } = renderCanvas({ elements: [text] });
+        for (let i = 0; i < 2; i++) {
+            pointer(elementNode('t'), 'pointerdown', i + 1, 40, 30);
+            pointer(elementNode('t'), 'pointerup', i + 1, 40, 30);
+        }
+        expect(container.querySelector('[contenteditable="true"]')).not.toBeNull();
+    });
+
+    it('opens the select-under menu on long press over stacked elements', () => {
+        vi.useFakeTimers();
+        const { elementNode, getByTestId } = renderCanvas({ elements: [rect('a', 20, 20), rect('c', 40, 30)] });
+        pointer(elementNode('c'), 'pointerdown', 1, 60, 50);
+        act(() => { vi.advanceTimersByTime(600); });
+        expect(getByTestId('select-under-menu')).toBeTruthy();
+        vi.useRealTimers();
+    });
+
+    it('zooms around the pinch centre via onZoom', () => {
+        const { props, surface } = renderCanvas({ scale: 1 });
+        pointer(surface, 'pointerdown', 1, 100, 100);
+        pointer(surface, 'pointerdown', 2, 200, 100);
+        pointer(surface, 'pointermove', 2, 300, 100);
+        expect(props.onZoom).toHaveBeenLastCalledWith(2);
+    });
+
+    it('fits the page width when fitSignal changes', () => {
+        const { props, surface, rerender } = renderCanvas({ fitSignal: 1 });
+        Object.defineProperty(surface, 'clientWidth', { configurable: true, value: 532 });
+        rerender(<Canvas {...props} fitSignal={2} />);
+        expect(props.onZoom).toHaveBeenLastCalledWith((532 - 2 * 16) / 500);
+    });
+
+    it('appends a default-size rect through the captured interaction on a tap (incremental path)', () => {
+        const editor = makeEditorStub([]);
+        const { props, surface } = renderCanvas({ tool: 'rect', elements: [], captureInteraction: editor.capture, onEditElements: vi.fn() });
+        tap(surface, 1, 300, 400);
+        const append = editor.calls.intents.find(intent => intent.type === 'append');
+        expect(append).toMatchObject({ type: 'append', elements: [expect.objectContaining({ type: 'rect', x: 300, y: 400, w: 120, h: 80 })] });
+        if (append?.type === 'append') expect(append.selectedElementIds).toEqual([append.elements[0].id]);
+        expect(editor.calls).toMatchObject({ start: 1, end: 1, cancel: 0 });
+        expect(props.onUpdateElements).not.toHaveBeenCalled();
+        expect(props.onEditElements).not.toHaveBeenCalled();
+    });
+
+    it('leaves native dblclick and contextmenu to the gesture hook in touch mode', () => {
+        const elements = [textElement('t', 20, 20), rect('a', 300, 300), rect('c', 320, 310)];
+        const { container, elementNode, surface, queryByTestId } = renderCanvas({ elements });
+        fireEvent.doubleClick(elementNode('t'), { clientX: 40, clientY: 30 });
+        expect(inlineEditor(container)).toBeNull();
+        // Suppressed native menu (default prevented), but no select-under menu from this path.
+        expect(fireEvent.contextMenu(surface, { clientX: 330, clientY: 320 })).toBe(false);
+        expect(queryByTestId('select-under-menu')).toBeNull();
+    });
+
+    it('keeps native double-click editing and the right-click menu in mouse mode', () => {
+        const elements = [textElement('t', 20, 20), rect('a', 300, 300), rect('c', 320, 310)];
+        const { container, elementNode, surface, getByTestId } = renderCanvas({ inputMode: 'mouse', elements });
+        expect(fireEvent.contextMenu(surface, { clientX: 330, clientY: 320 })).toBe(false);
+        expect(getByTestId('select-under-menu')).toBeTruthy();
+        fireEvent.doubleClick(elementNode('t'), { clientX: 40, clientY: 30 });
+        expect(inlineEditor(container)).not.toBeNull();
+    });
+
+    it('keeps editing when tapping inside the inline editor', () => {
+        const { container, elementNode, props } = renderCanvas({ elements: [textElement('t', 20, 20)] });
+        doubleTap(elementNode('t'), 40, 30);
+        const editable = inlineEditor(container)!;
+        expect(document.activeElement).toBe(editable);
+        const selects = vi.mocked(props.onSelectElements).mock.calls.length;
+        tap(editable, 3, 60, 30);
+        compatClick(editable, 60, 30);
+        expect(inlineEditor(container)).toBe(editable);
+        expect(document.activeElement).toBe(editable);
+        expect(props.onSelectElements).toHaveBeenCalledTimes(selects);
+    });
+
+    it('commits the inline edit when tapping outside the editor', () => {
+        const { container, elementNode, surface, props } = renderCanvas({ elements: [textElement('t', 20, 20)] });
+        doubleTap(elementNode('t'), 40, 30);
+        expect(inlineEditor(container)).not.toBeNull();
+        tap(surface, 3, 450, 650);
+        expect(inlineEditor(container)).toBeNull();
+        expect(props.onSelectElements).toHaveBeenLastCalledWith([]);
+    });
+
+    it('double-tap selects through the captured interaction and hands editing off to it (incremental path)', () => {
+        const elements = [textElement('t', 20, 20), rect('b', 300, 300)];
+        const editor = makeEditorStub(elements);
+        const { container, elementNode, surface, props } = renderCanvas({ elements, captureInteraction: editor.capture, onEditElements: vi.fn() });
+        doubleTap(elementNode('t'), 40, 30);
+        expect(inlineEditor(container)).not.toBeNull();
+        expect(editor.calls.selects).toEqual([['t'], ['t']]);
+        // The inline session owns the current interaction: a tap outside ends it, then the tap's own select/end runs.
+        tap(surface, 3, 450, 650);
+        expect(inlineEditor(container)).toBeNull();
+        expect(editor.calls.selects).toEqual([['t'], ['t'], []]);
+        expect(editor.calls).toMatchObject({ end: 3, cancel: 0 });
+        expect(props.onSelectElements).not.toHaveBeenCalled();
+    });
+
+    it('selects a menu row after a long press through a captured interaction (incremental path)', () => {
+        vi.useFakeTimers();
+        const elements = [rect('a', 20, 20), rect('c', 40, 30)];
+        const editor = makeEditorStub(elements);
+        const { elementNode, getByTestId, queryByTestId, props } = renderCanvas({ elements, captureInteraction: editor.capture, onEditElements: vi.fn() });
+        pointer(elementNode('c'), 'pointerdown', 1, 60, 50);
+        act(() => { vi.advanceTimersByTime(600); });
+        pointer(elementNode('c'), 'pointerup', 1, 60, 50); // release after a long press is inert
+        const row = getByTestId('select-under-menu').querySelector('[data-menu-element-id="a"]')!;
+        compatClick(row, 70, 60);
+        expect(editor.calls.selects).toEqual([['a']]);
+        expect(queryByTestId('select-under-menu')).toBeNull();
+        expect(props.onSelectElements).not.toHaveBeenCalled();
+    });
+
+    it('selects a menu row after a real right-click sequence on the incremental path (mouse mode)', () => {
+        const elements = [rect('a', 20, 20), rect('c', 40, 30)];
+        const editor = makeEditorStub(elements);
+        const { elementNode, getByTestId } = renderCanvas({ inputMode: 'mouse', elements, captureInteraction: editor.capture, onEditElements: vi.fn() });
+        const target = elementNode('c');
+        fireEvent.mouseDown(target, { clientX: 60, clientY: 50, button: 2 });
+        fireEvent.contextMenu(target, { clientX: 60, clientY: 50 });
+        fireEvent.mouseUp(target, { clientX: 60, clientY: 50, button: 2 });
+        compatClick(getByTestId('select-under-menu').querySelector('[data-menu-element-id="a"]')!, 70, 60);
+        expect(editor.calls.selects.at(-1)).toEqual(['a']);
+    });
+
+    it('keeps the ctrl+wheel zoom maths in mouse mode', () => {
+        const { props, surface } = renderCanvas({ inputMode: 'mouse', scale: 1 });
+        const lastZoom = () => vi.mocked(props.onZoom).mock.calls.at(-1)![0];
+        fireEvent.wheel(surface, { ctrlKey: true, deltaY: -100, clientX: 10, clientY: 20 });
+        expect(lastZoom()).toBeCloseTo(1.2, 12);
+        fireEvent.wheel(surface, { metaKey: true, deltaY: 100 });
+        expect(lastZoom()).toBeCloseTo(0.8, 12);
+        fireEvent.wheel(surface, { ctrlKey: true, deltaY: -100000 });
+        expect(lastZoom()).toBe(10);
+        fireEvent.wheel(surface, { ctrlKey: true, deltaY: 100000 });
+        expect(lastZoom()).toBe(0.2);
+        vi.mocked(props.onZoom).mockClear();
+        fireEvent.wheel(surface, { ctrlKey: true, deltaY: -0.4 }); // within the 0.001 dead band
+        fireEvent.wheel(surface, { deltaY: -100 });               // no modifier: plain scroll
+        expect(props.onZoom).not.toHaveBeenCalled();
     });
 });

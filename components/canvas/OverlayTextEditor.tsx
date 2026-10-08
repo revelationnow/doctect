@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { TemplateElement } from '../../types';
 import { resolveTextContentBox } from '../../services/textPadding';
+import { GESTURE_IGNORE_ATTR } from '../../hooks/useCanvasTouchGestures';
 
 // Duplicate font map to ensure consistency without refactoring risk
 const FONT_FAMILY_MAP: Record<string, string> = {
@@ -198,6 +199,8 @@ export const OverlayTextEditor: React.FC<OverlayTextEditorProps> = ({ element, o
 
     return (
         <div
+            // Touch taps inside the editor stay native (caret, selection) instead of reaching the canvas gesture hook.
+            {...{ [GESTURE_IGNORE_ATTR]: '' }}
             style={{
                 position: 'absolute',
                 left: element.x,

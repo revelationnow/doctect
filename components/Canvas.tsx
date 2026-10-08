@@ -52,10 +52,19 @@ interface CanvasProps {
     textLayoutSession?: CanvasTextLayoutSession;
     /** 'touch' routes one-finger gestures through the mouse handlers; default 'mouse' is the unchanged desktop path. */
     inputMode?: 'mouse' | 'touch';
+    /** Touch "fit": whenever this changes to a truthy value, the page width is fitted via onZoom. */
+    fitSignal?: number;
 }
 
 const MIN_DRAG_THRESHOLD = 5;
 const CREATION_TOOLS = ['rect', 'ellipse', 'triangle', 'text', 'grid', 'line'];
+export const TOUCH_CANVAS_GUTTER = 16;
+export const TOUCH_DEFAULT_SIZE: Record<string, { w: number; h: number }> = {
+    rect: { w: 120, h: 80 }, ellipse: { w: 120, h: 80 }, triangle: { w: 120, h: 100 },
+    grid: { w: 240, h: 120 }, line: { w: 120, h: 0 },
+};
+
+type InlineEditingSession = { elementId: string; owner?: CanvasInteraction; hasSavedHistory: boolean };
 
 // Helper: Convert degrees to radians
 const toRad = (deg: number) => deg * Math.PI / 180;
@@ -223,6 +232,7 @@ export const Canvas: React.FC<CanvasProps> = ({
     greyscalePreview,
     textLayoutSession: injectedTextLayoutSession,
     inputMode = 'mouse',
+    fitSignal,
 }) => {
     const isTouch = inputMode === 'touch';
     // Historical non-record layer cells remain in the owner/export. Rendering
@@ -270,13 +280,31 @@ export const Canvas: React.FC<CanvasProps> = ({
     const [selectionBox, setSelectionBox] = useState<{ x: number, y: number, w: number, h: number } | null>(null);
 
     // Inline Editing State
-    const [inlineEditing, setInlineEditing] = useState<{
-        elementId: string; owner?: CanvasInteraction; hasSavedHistory: boolean;
-    } | null>(null);
+    const [inlineEditing, setInlineEditing] = useState<InlineEditingSession | null>(null);
     const editingElementId = inlineEditing?.elementId ?? null;
     const beginInlineEditing = (elementId: string, owner?: CanvasInteraction) => {
         if (captureInteraction && !owner?.isCurrent()) return;
         setInlineEditing({ elementId, owner, hasSavedHistory: false });
+    };
+    // Desktop double-click and touch double-tap enter editing here. Touch hands over the owner it
+    // already holds (see selectThroughTap); desktop captures a fresh one, as before.
+    const beginEditing = (element: TemplateElement, owner?: CanvasInteraction) => {
+        const layer = element.layerId ? template.layers?.find(item => item.id === element.layerId) : undefined;
+        if (!layer?.locked) beginInlineEditing(element.id, owner ?? captureInteraction?.());
+    };
+    const finishInlineEditing = (session: InlineEditingSession) => {
+        if (captureInteraction) session.owner?.end();
+        else if (onEditElements) onInteractionEnd?.();
+        setInlineEditing(current => current === session ? null : current);
+    };
+    // Touch taps never move focus (the gesture hook cancels pointerdown), so a tap outside the
+    // inline editor commits the edit explicitly: blurring the focused editor runs the overlay's
+    // onFinish; the direct finish covers an editor that had already lost focus. Both are idempotent.
+    const commitInlineEditing = () => {
+        if (!inlineEditing) return;
+        const active = document.activeElement;
+        if (active instanceof HTMLElement && active.closest('[data-canvas-event-owner="inline-text"]')) active.blur();
+        finishInlineEditing(inlineEditing);
     };
     const [selectUnderMenu, setSelectUnderMenu] = useState<{ x: number; y: number; stack: TemplateElement[] } | null>(null);
     const [menuHoverId, setMenuHoverId] = useState<string | null>(null);
@@ -374,6 +402,20 @@ export const Canvas: React.FC<CanvasProps> = ({
         return 10;
     }, [scale]);
 
+    // Zoom to `requested` (clamped) keeping the content under the client point in place; shared by
+    // ctrl+wheel and touch pinch. The scroll correction happens in the layout effect below.
+    const zoomAroundClientPoint = (clientX: number, clientY: number, requested: number) => {
+        const el = outerContainerRef.current;
+        if (!el) return;
+        const newScale = Math.max(0.2, Math.min(10, requested));
+        if (Math.abs(newScale - scale) <= 0.001) return;
+        const rect = el.getBoundingClientRect();
+        const mx = clientX - rect.left;
+        const my = clientY - rect.top;
+        zoomTarget.current = { mx, my, cx: (mx + el.scrollLeft) / scale, cy: (my + el.scrollTop) / scale };
+        onZoom(newScale);
+    };
+
     // Handle Wheel Zoom (Ctrl + Scroll)
     useEffect(() => {
         const el = outerContainerRef.current;
@@ -382,32 +424,30 @@ export const Canvas: React.FC<CanvasProps> = ({
         const handleWheel = (e: WheelEvent) => {
             if (e.ctrlKey || e.metaKey) {
                 e.preventDefault();
-
-                const rect = el.getBoundingClientRect();
-                const mx = e.clientX - rect.left;
-                const my = e.clientY - rect.top;
-
-                // Calculate content coordinates under the mouse
-                const cx = (mx + el.scrollLeft) / scale;
-                const cy = (my + el.scrollTop) / scale;
-
-                // Use standard multiplicative zoom
-                const zoomFactor = -e.deltaY * 0.002;
-                let newScale = scale * (1 + zoomFactor);
-
-                // Clamp scale
-                newScale = Math.max(0.2, Math.min(10, newScale));
-
-                if (Math.abs(newScale - scale) > 0.001) {
-                    zoomTarget.current = { mx, my, cx, cy };
-                    onZoom(newScale);
-                }
+                // Standard multiplicative zoom: scale * (1 + (-deltaY * 0.002)).
+                zoomAroundClientPoint(e.clientX, e.clientY, scale * (1 - e.deltaY * 0.002));
             }
         };
 
         el.addEventListener('wheel', handleWheel, { passive: false });
         return () => el.removeEventListener('wheel', handleWheel);
     }, [scale, onZoom]);
+
+    // Pinch factors are relative to the previous move while the scale prop may lag a render, so
+    // track the requested scale between moves and resync whenever the prop catches up.
+    const pinchScaleRef = useRef<number | null>(null);
+    useEffect(() => { pinchScaleRef.current = null; }, [scale]);
+
+    // Touch "fit": zoom so the page width fills the viewport minus a gutter on each side.
+    useEffect(() => {
+        if (!isTouch || !fitSignal) return;
+        const outer = outerContainerRef.current;
+        if (!outer || template.width <= 0) return;
+        const available = outer.clientWidth - 2 * TOUCH_CANVAS_GUTTER;
+        if (available <= 0) return;
+        onZoom(Math.max(0.2, Math.min(10, available / template.width)));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [fitSignal, isTouch, template.width]);
 
     // Adjust scroll position after zoom to keep cursor over the same content point
     useLayoutEffect(() => {
@@ -617,15 +657,21 @@ export const Canvas: React.FC<CanvasProps> = ({
             && editable.matches('[contenteditable="true"], [contenteditable=""], [contenteditable="plaintext-only"]');
     };
 
+    const openSelectUnderMenuAt = (clientX: number, clientY: number) => {
+        const stack = hitTestPoint(clientToCanvas(clientX, clientY), elements, template.layers, nodes, currentNodeId);
+        if (stack.length === 0) return false;
+        setSelectUnderMenu({ x: clientX, y: clientY, stack });
+        return true;
+    };
+
     const handleContextMenu = (e: MouseEvent) => {
         if (isEditablePointerEvent(e)) return;
+        // Touch: the gesture hook's long-press owns this menu; only suppress the native one.
+        if (isTouch) { e.preventDefault(); return; }
         if (captureInteraction) interaction.current = captureInteraction();
         if (tool !== 'select') return;
-        const coords = getMouseCoords(e);
-        const stack = hitTestPoint(coords, elements, template.layers, nodes, currentNodeId);
-        if (stack.length === 0) return; // let the browser menu through on empty canvas
-        e.preventDefault();
-        setSelectUnderMenu({ x: e.clientX, y: e.clientY, stack });
+        // Opens over an element; otherwise let the browser menu through on empty canvas.
+        if (openSelectUnderMenuAt(e.clientX, e.clientY)) e.preventDefault();
     };
 
     const handleMouseDown = (e: MouseEvent) => {
@@ -1428,6 +1474,13 @@ export const Canvas: React.FC<CanvasProps> = ({
             const bounds = getConstrainedCreationBounds(newShapeStart, newShapeCurrent, tool, constrained);
             let { x, y, w, h, start, current } = bounds;
 
+            // Touch: a tap with a shape tool creates a default-size element at the tap point
+            // (x/y already equal it); text keeps the click-to-type path below.
+            if (isTouch && tool !== 'text' && w < MIN_DRAG_THRESHOLD && h < MIN_DRAG_THRESHOLD && TOUCH_DEFAULT_SIZE[tool]) {
+                ({ w, h } = TOUCH_DEFAULT_SIZE[tool]);
+                current = { x: start.x + w, y: start.y + h };
+            }
+
             if (w < MIN_DRAG_THRESHOLD && h < MIN_DRAG_THRESHOLD) {
                 if (tool === 'text') {
                     onInteractionStart();
@@ -1610,6 +1663,21 @@ export const Canvas: React.FC<CanvasProps> = ({
     const asMouse = (event: PointerEvent) => event as unknown as MouseEvent;
     const topElementAt = (clientX: number, clientY: number) =>
         hitTestPoint(clientToCanvas(clientX, clientY), elements, template.layers, nodes, currentNodeId)[0];
+    // A tap never passes through handleMouseDown, so capture its interaction here the same way,
+    // select, and end it like handleMouseUp. With `inline`, authority is instead handed to the
+    // returned owner for inline editing (the text-creation pattern): a fresh capture would be
+    // refused until the new selection has rendered. Returns null when no interaction was available.
+    const selectThroughTap = (ids: string[], inline = false) => {
+        let owner: CanvasInteraction | undefined;
+        if (captureInteraction) {
+            owner = interaction.current = captureInteraction();
+            if (!owner) return null;
+        }
+        onSelectElements(ids);
+        const handoff = inline ? owner?.handoffToInline() : undefined;
+        onInteractionEnd?.();
+        return { inline: handoff };
+    };
 
     const touchHandlers: TouchGestureHandlers = {
         claimDirectDrag: event => {
@@ -1627,25 +1695,37 @@ export const Canvas: React.FC<CanvasProps> = ({
         // Second finger, OS pointercancel or disable mid-drag: revert like desktop pointercancel.
         onDirectCancel: () => cancelInteraction(),
         onTap: ({ clientX, clientY }) => {
+            commitInlineEditing(); // taps inside the editor never reach here (data-touch-gesture-ignore)
             if (tool !== 'select') return; // hand-tool clicks never select on desktop either
-            // A tap never passes through handleMouseDown, so capture its interaction here the same way.
-            if (captureInteraction) {
-                interaction.current = captureInteraction();
-                if (!interaction.current) return;
-            }
             const top = topElementAt(clientX, clientY);
-            onSelectElements(top ? [top.id] : []);
-            onInteractionEnd?.();
+            selectThroughTap(top ? [top.id] : []);
         },
-        onDoubleTap: () => {},            // Task 7
-        onLongPress: () => {},            // Task 7
+        onDoubleTap: ({ clientX, clientY }) => {
+            if (tool !== 'select') return;
+            const top = topElementAt(clientX, clientY);
+            if (!top || top.type !== 'text') return;
+            commitInlineEditing();
+            const owner = selectThroughTap([top.id], true);
+            if (owner) beginEditing(top, owner.inline);
+        },
+        onLongPress: ({ clientX, clientY }) => {
+            if (tool !== 'select') return;
+            // The menu selects through this owner, as after a desktop right-click.
+            if (captureInteraction) interaction.current = captureInteraction();
+            openSelectUnderMenuAt(clientX, clientY);
+        },
         onPan: (dx, dy) => {
             const outer = outerContainerRef.current;
             if (!outer) return;
             outer.scrollLeft -= dx;
             outer.scrollTop -= dy;
         },
-        onPinch: () => {},                // Task 7
+        onPinch: (factor, centerX, centerY) => {
+            const base = pinchScaleRef.current ?? scale;
+            const next = Math.max(0.2, Math.min(10, base * factor));
+            pinchScaleRef.current = next;
+            zoomAroundClientPoint(centerX, centerY, next);
+        },
     };
     useCanvasTouchGestures(outerContainerRef, touchHandlers, isTouch);
 
@@ -1737,10 +1817,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                             currentNodeId={currentNodeId}
                             tool={tool}
                             showHandles={selectedElementIds.includes(element.id) && selectedElementIds.length === 1}
-                            onDoubleClick={() => {
-                                const layer = element.layerId ? template.layers?.find(item => item.id === element.layerId) : undefined;
-                                if (!layer?.locked) beginInlineEditing(element.id, captureInteraction?.());
-                            }}
+                            onDoubleClick={isTouch ? undefined : () => beginEditing(element)}
                             isEditing={editingElementId === element.id}
                             renderScale={scale}
                             textLayoutSession={textLayoutSession}
@@ -1972,9 +2049,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                                         }}
                                         onFinish={() => {
                                             canSwitchToSelect = !captureInteraction || !!inlineEditing.owner?.isCurrent();
-                                            if (captureInteraction) inlineEditing.owner?.end();
-                                            else if (onEditElements) onInteractionEnd?.();
-                                            setInlineEditing(current => current === inlineEditing ? null : current);
+                                            finishInlineEditing(inlineEditing);
                                         }}
                                         onSwitchToSelect={() => {
                                             if (canSwitchToSelect) onSwitchToSelect?.();
@@ -2066,6 +2141,10 @@ export const Canvas: React.FC<CanvasProps> = ({
                     }))}
                     selectedIds={selectedElementIds}
                     onSelect={(id, additive) => {
+                        // The owner captured when the menu opened is ended by any mouseup that reaches
+                        // handleMouseUp (the right button's own, or the compat mouseup of a row tap),
+                        // so re-capture here or the selection never reaches the incremental editor.
+                        if (captureInteraction && !interaction.current?.isCurrent()) interaction.current = captureInteraction();
                         if (additive) {
                             onSelectElements(selectedElementIds.includes(id)
                                 ? selectedElementIds.filter(x => x !== id)

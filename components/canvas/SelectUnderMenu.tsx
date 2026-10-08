@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import clsx from 'clsx';
 import { TemplateElement } from '../../types';
 import { getElementLabel } from '../../services/layers';
+import { GESTURE_IGNORE_ATTR } from '../../hooks/useCanvasTouchGestures';
 
 interface SelectUnderMenuProps {
     position: { x: number; y: number };
@@ -19,14 +20,16 @@ export const SelectUnderMenu: React.FC<SelectUnderMenuProps> = ({ position, item
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-        const onDown = (e: globalThis.MouseEvent) => {
+        // pointerdown precedes mousedown for a mouse and is the only event a touch tap emits
+        // before the canvas gesture hook cancels it.
+        const onDown = (e: globalThis.PointerEvent) => {
             if (ref.current && !ref.current.contains(e.target as Node)) onClose();
         };
         window.addEventListener('keydown', onKey);
-        window.addEventListener('mousedown', onDown);
+        window.addEventListener('pointerdown', onDown);
         return () => {
             window.removeEventListener('keydown', onKey);
-            window.removeEventListener('mousedown', onDown);
+            window.removeEventListener('pointerdown', onDown);
         };
     }, [onClose]);
 
@@ -34,9 +37,11 @@ export const SelectUnderMenu: React.FC<SelectUnderMenuProps> = ({ position, item
         <div
             ref={ref}
             data-testid="select-under-menu"
+            {...{ [GESTURE_IGNORE_ATTR]: '' }}
             className="fixed z-50 min-w-[200px] max-h-64 overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-xl py-1 text-sm"
             style={{ left: position.x, top: position.y }}
             onContextMenu={e => e.preventDefault()}
+            onMouseDown={e => e.stopPropagation()}
             onMouseLeave={() => onHover?.(null)}
         >
             <div className="px-3 py-1 text-[10px] uppercase tracking-wide text-slate-400">Select element · shift-click to add</div>

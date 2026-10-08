@@ -111,3 +111,29 @@ describe('hovering a menu entry highlights the element on canvas', () => {
         expect(queryByTestId('menu-hover-highlight')).toBeNull();
     });
 });
+
+describe('menu chrome and pointer handling', () => {
+    const layers = [makeLayer('back', 0), makeLayer('front', 1)];
+    const elements = [
+        makeEl('bottom', { layerId: 'back', zIndex: 1 }),
+        makeEl('top', { layerId: 'front', zIndex: 1 }),
+    ];
+
+    it('does not let a mousedown on the menu chrome reach the canvas', () => {
+        const { outer, getByTestId, queryByTestId, onSelectElements } = renderCanvas(elements, layers, { selectedElementIds: ['top'] });
+        fireEvent.contextMenu(outer, { clientX: 50, clientY: 50 });
+        const heading = getByTestId('select-under-menu').firstElementChild!;
+        fireEvent.mouseDown(heading, { clientX: 60, clientY: 60, button: 0 });
+        fireEvent.mouseUp(heading, { clientX: 60, clientY: 60, button: 0 });
+        expect(onSelectElements).not.toHaveBeenCalled(); // no marquee started behind the menu
+        expect(queryByTestId('select-under-menu')).not.toBeNull();
+    });
+
+    it('closes on a pointerdown outside and is ignored by the touch gesture hook', () => {
+        const { outer, getByTestId, queryByTestId } = renderCanvas(elements, layers);
+        fireEvent.contextMenu(outer, { clientX: 50, clientY: 50 });
+        expect(getByTestId('select-under-menu')).toHaveAttribute('data-touch-gesture-ignore');
+        fireEvent.pointerDown(outer, { clientX: 400, clientY: 600 });
+        expect(queryByTestId('select-under-menu')).toBeNull();
+    });
+});
