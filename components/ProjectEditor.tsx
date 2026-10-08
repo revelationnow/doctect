@@ -14,6 +14,8 @@ import { generatePDF } from '../services/pdfService';
 import { CURRENT_SCHEMA_VERSION } from '../services/migration';
 import { Download, Code, Undo2, Redo2, Loader2, Contrast, Layers } from 'lucide-react';
 import { EditorToolbar, type ToolbarActions } from './EditorToolbar';
+import { EditorLayout } from './editor-layout/EditorLayout';
+import { useFormFactor } from './editor-layout/FormFactorContext';
 import { SavePresetModal } from './SavePresetModal';
 import { NewVariantModal, NewVariantConfig } from './NewVariantModal';
 import { reflowTemplates } from '../services/reflow';
@@ -1624,168 +1626,167 @@ function ProjectEditorView({
     getActiveTemplates, selectNodeTarget, deleteConfirmState, setDeleteConfirmState, executeDeleteNode,
     onEditElements, onInteractionEnd, onInteractionCancel, captureInteraction,
 }: EditorViewModel) {
+    const formFactor = useFormFactor();
+    const editorBar = (
+        <div className="min-h-[40px] py-1 bg-white border-b flex flex-wrap items-center justify-between px-4 z-20 flex-shrink-0">
+            <div className="text-xs text-slate-400 font-mono">
+                {projectId.split('-')[0]}
+            </div>
+
+            <div className="flex gap-2">
+                <div className="flex items-center bg-slate-100 rounded p-0.5 mr-2">
+                    <button onClick={undo} disabled={!canUndo} className="p-1 text-slate-600 hover:bg-white hover:shadow-sm rounded disabled:opacity-30 transition-all" title="Undo (Ctrl+Z)">
+                        <Undo2 size={14} />
+                    </button>
+                    <button onClick={redo} disabled={!canRedo} className="p-1 text-slate-600 hover:bg-white hover:shadow-sm rounded disabled:opacity-30 transition-all" title="Redo (Ctrl+Y)">
+                        <Redo2 size={14} />
+                    </button>
+                </div>
+                <button onClick={() => setSession({ showJsonModal: true })} className="p-1 px-2 text-slate-600 hover:bg-slate-100 rounded flex items-center gap-2 text-xs font-medium"><Code size={14} /> JSON</button>
+                <div className="h-4 w-px bg-slate-300 mx-1 self-center"></div>
+
+                <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-md p-1 pl-1">
+                    <button
+                        onClick={() => setExportGreyscale(!exportGreyscale)}
+                        className={clsx(
+                            "p-1.5 rounded transition-all mr-1 focus:outline-none focus:ring-1 focus:ring-blue-500",
+                            exportGreyscale ? "bg-blue-100 text-blue-600" : "text-slate-400 hover:text-slate-600 hover:bg-slate-200"
+                        )}
+                        title={exportGreyscale ? "Greyscale Export: ON" : "Greyscale Export: OFF"}
+                    >
+                        <Contrast size={14} />
+                    </button>
+
+                    <div className="flex items-stretch ml-2 shadow-sm rounded">
+                        <button
+                            onClick={() => handleExportPDF()}
+                            disabled={isExporting}
+                            className={clsx(
+                                "text-white bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-l flex items-center gap-2 text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-wait",
+                                isExporting && "opacity-75"
+                            )}
+                        >
+                            {isExporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                            {isExporting ? "Generating..." : "Export PDF"}
+                        </button>
+                        <button
+                            onClick={() => handleExportPDF({ exportAllVariants: true })}
+                            disabled={isExporting || Object.keys(state.variants).length <= 1}
+                            className={clsx(
+                                "text-white bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded-r border-l border-blue-500/50 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed",
+                                isExporting && "opacity-75 bg-blue-700"
+                            )}
+                            title="Export All Variants (one PDF per variant)"
+                        >
+                            <Layers size={14} /> All
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+    const sidebarElement = (
+        <Sidebar
+            state={state}
+            onSelectNode={handleSelectNode}
+            onAddNode={handleAddNode}
+            onAddReference={handleAddReference}
+            onDeleteNode={(id) => requestDeleteNodes(state.selectedNodeIds.includes(id) ? state.selectedNodeIds : [id])}
+            onDuplicateNode={(id) => handleDuplicateNodes(state.selectedNodeIds.includes(id) ? state.selectedNodeIds : [id])}
+            onUpdateNode={handleUpdateNode}
+            onChangeViewMode={changeViewMode}
+            onSelectTemplate={handleSelectTemplate}
+            onAddTemplate={handleAddTemplate}
+            onDeleteTemplate={(id) => handleDeleteTemplates(state.selectedTemplateIds.includes(id) ? state.selectedTemplateIds : [id])}
+            onDuplicateTemplate={(id) => handleDuplicateTemplates(state.selectedTemplateIds.includes(id) ? state.selectedTemplateIds : [id])}
+            onUpdateTemplateName={handleUpdateTemplateName}
+            onSelectVariant={handleSelectVariant}
+            onAddVariant={handleAddVariant}
+            onRenameVariant={handleRenameVariant}
+            onDeleteVariant={handleDeleteVariant}
+            onDuplicateVariant={handleDuplicateVariant}
+        />
+    );
+    const toolbarElement = (
+        <EditorToolbar
+            state={state}
+            {...(toolbarActions ? { actions: toolbarActions } : { setState: toolbarStateSetter })}
+            onOpenScriptGen={() => setShowScriptGenModal(true)}
+            onSavePreset={() => setShowSavePresetModal(true)}
+            onImportSvg={handleImportSvg}
+            onInsertSvgPlaceholder={handleInsertSvgPlaceholder}
+        />
+    );
+    const canvasElement = (
+        currentTemplate && <EditorCanvas
+            contextKey={contextKey}
+            template={currentTemplate}
+            elements={currentTemplate?.elements || []}
+            selectedElementIds={state.selectedElementIds}
+            scale={state.scale}
+            tool={state.tool}
+            nodes={state.nodes}
+            currentNodeId={effectivePreviewNodeId}
+            snapToGrid={state.snapToGrid}
+            showGrid={state.showGrid}
+            activeLayerId={state.activeLayerId}
+            greyscalePreview={exportGreyscale}
+            onInteractionStart={saveToHistory}
+            captureInteraction={captureInteraction}
+            onInteractionEnd={onInteractionEnd}
+            onInteractionCancel={onInteractionCancel}
+            onEditElements={onEditElements}
+            onUpdateElements={(els, save) => handleUpdateTemplateElements(els, save)}
+            onSelectElements={(ids) => setSession({ selectedElementIds: ids })}
+            onZoom={(scale) => setPreferences({ scale })}
+            onSwitchToSelect={() => setSession({ tool: 'select' })}
+        />
+    );
+    const propertiesElement = (
+        <PropertiesPanel
+            incrementalActions={propertyActions}
+            state={state}
+            activePreviewNode={state.nodes[effectivePreviewNodeId]}
+            onUpdateElements={(els, save) => handleUpdateTemplateElements(els, save)}
+            onUpdateNode={handleUpdateNode}
+            onDeleteElements={deleteElements}
+            onOpenNodeSelector={(mode, elId) => setSession({ showNodeSelector: true, nodeSelectorMode: mode, editingElementId: elId })}
+            onUpdateTemplate={handleUpdateTemplate}
+            layersSlot={currentTemplate ? (
+                <CollapsibleSection
+                    title="Layers"
+                    icon={Layers}
+                    testId="layers-section"
+                    expanded={layersExpanded}
+                    onToggle={toggleLayers}
+                >
+                    <LayersPanel
+                        layerActions={layerActions}
+                        template={currentTemplate}
+                        selectedElementIds={state.selectedElementIds}
+                        activeLayerId={state.activeLayerId}
+                        onUpdateTemplate={(updates) => handleUpdateTemplate(currentTemplate.id, updates)}
+                        onUpdateElements={(els, save) => handleUpdateTemplateElements(els, save)}
+                        onSelectElements={(ids) => setSession({ selectedElementIds: ids })}
+                        onSetActiveLayer={(layerId) => setSession({ activeLayerId: layerId })}
+                    />
+                </CollapsibleSection>
+            ) : null}
+        />
+    );
     return (
         <div className="flex h-full w-full flex-col bg-slate-100 text-slate-900 overflow-hidden">
-            {/* Editor Toolbar */}
-            <div className="min-h-[40px] py-1 bg-white border-b flex flex-wrap items-center justify-between px-4 z-20 flex-shrink-0">
-                <div className="text-xs text-slate-400 font-mono">
-                    {projectId.split('-')[0]}
-                </div>
-
-                <div className="flex gap-2">
-                    <div className="flex items-center bg-slate-100 rounded p-0.5 mr-2">
-                        <button onClick={undo} disabled={!canUndo} className="p-1 text-slate-600 hover:bg-white hover:shadow-sm rounded disabled:opacity-30 transition-all" title="Undo (Ctrl+Z)">
-                            <Undo2 size={14} />
-                        </button>
-                        <button onClick={redo} disabled={!canRedo} className="p-1 text-slate-600 hover:bg-white hover:shadow-sm rounded disabled:opacity-30 transition-all" title="Redo (Ctrl+Y)">
-                            <Redo2 size={14} />
-                        </button>
-                    </div>
-                    <button onClick={() => setSession({ showJsonModal: true })} className="p-1 px-2 text-slate-600 hover:bg-slate-100 rounded flex items-center gap-2 text-xs font-medium"><Code size={14} /> JSON</button>
-                    <div className="h-4 w-px bg-slate-300 mx-1 self-center"></div>
-
-                    <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-md p-1 pl-1">
-                        <button
-                            onClick={() => setExportGreyscale(!exportGreyscale)}
-                            className={clsx(
-                                "p-1.5 rounded transition-all mr-1 focus:outline-none focus:ring-1 focus:ring-blue-500",
-                                exportGreyscale ? "bg-blue-100 text-blue-600" : "text-slate-400 hover:text-slate-600 hover:bg-slate-200"
-                            )}
-                            title={exportGreyscale ? "Greyscale Export: ON" : "Greyscale Export: OFF"}
-                        >
-                            <Contrast size={14} />
-                        </button>
-
-                        <div className="flex items-stretch ml-2 shadow-sm rounded">
-                            <button
-                                onClick={() => handleExportPDF()}
-                                disabled={isExporting}
-                                className={clsx(
-                                    "text-white bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-l flex items-center gap-2 text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-wait",
-                                    isExporting && "opacity-75"
-                                )}
-                            >
-                                {isExporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-                                {isExporting ? "Generating..." : "Export PDF"}
-                            </button>
-                            <button
-                                onClick={() => handleExportPDF({ exportAllVariants: true })}
-                                disabled={isExporting || Object.keys(state.variants).length <= 1}
-                                className={clsx(
-                                    "text-white bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded-r border-l border-blue-500/50 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed",
-                                    isExporting && "opacity-75 bg-blue-700"
-                                )}
-                                title="Export All Variants (one PDF per variant)"
-                            >
-                                <Layers size={14} /> All
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="flex flex-1 overflow-hidden">
-                <div style={{ width: state.sidebarWidth }} className="flex-shrink-0 relative flex flex-col">
-                    <Sidebar
-                        state={state}
-                        onSelectNode={handleSelectNode}
-                        onAddNode={handleAddNode}
-                        onAddReference={handleAddReference}
-                        onDeleteNode={(id) => requestDeleteNodes(state.selectedNodeIds.includes(id) ? state.selectedNodeIds : [id])}
-                        onDuplicateNode={(id) => handleDuplicateNodes(state.selectedNodeIds.includes(id) ? state.selectedNodeIds : [id])}
-                        onUpdateNode={handleUpdateNode}
-                        onChangeViewMode={changeViewMode}
-                        onSelectTemplate={handleSelectTemplate}
-                        onAddTemplate={handleAddTemplate}
-                        onDeleteTemplate={(id) => handleDeleteTemplates(state.selectedTemplateIds.includes(id) ? state.selectedTemplateIds : [id])}
-                        onDuplicateTemplate={(id) => handleDuplicateTemplates(state.selectedTemplateIds.includes(id) ? state.selectedTemplateIds : [id])}
-                        onUpdateTemplateName={handleUpdateTemplateName}
-                        onSelectVariant={handleSelectVariant}
-                        onAddVariant={handleAddVariant}
-                        onRenameVariant={handleRenameVariant}
-                        onDeleteVariant={handleDeleteVariant}
-                        onDuplicateVariant={handleDuplicateVariant}
-                    />
-                    <div
-                        className="absolute right-0 top-0 bottom-0 w-1 hover:bg-blue-400 cursor-col-resize z-30 transition-colors"
-                        onMouseDown={() => setResizingPanel('sidebar')}
-                    />
-                </div>
-
-                <div className="flex-1 flex flex-col relative min-w-0">
-                    <EditorToolbar
-                        state={state}
-                        {...(toolbarActions ? { actions: toolbarActions } : { setState: toolbarStateSetter })}
-                        onOpenScriptGen={() => setShowScriptGenModal(true)}
-                        onSavePreset={() => setShowSavePresetModal(true)}
-                        onImportSvg={handleImportSvg}
-                        onInsertSvgPlaceholder={handleInsertSvgPlaceholder}
-                    />
-
-                    <div className="flex-1 bg-slate-200 overflow-hidden relative flex flex-col">
-                        {currentTemplate && <EditorCanvas
-                            contextKey={contextKey}
-                            template={currentTemplate}
-                            elements={currentTemplate?.elements || []}
-                            selectedElementIds={state.selectedElementIds}
-                            scale={state.scale}
-                            tool={state.tool}
-                            nodes={state.nodes}
-                            currentNodeId={effectivePreviewNodeId}
-                            snapToGrid={state.snapToGrid}
-                            showGrid={state.showGrid}
-                            activeLayerId={state.activeLayerId}
-                            greyscalePreview={exportGreyscale}
-                            onInteractionStart={saveToHistory}
-                            captureInteraction={captureInteraction}
-                            onInteractionEnd={onInteractionEnd}
-                            onInteractionCancel={onInteractionCancel}
-                            onEditElements={onEditElements}
-                            onUpdateElements={(els, save) => handleUpdateTemplateElements(els, save)}
-                            onSelectElements={(ids) => setSession({ selectedElementIds: ids })}
-                            onZoom={(scale) => setPreferences({ scale })}
-                            onSwitchToSelect={() => setSession({ tool: 'select' })}
-                        />}
-                    </div>
-                </div>
-
-                <div style={{ width: state.propertiesPanelWidth }} className="flex-shrink-0 relative flex flex-col">
-                    <div
-                        className="absolute left-0 top-0 bottom-0 w-1 hover:bg-blue-400 cursor-col-resize z-30 transition-colors"
-                        onMouseDown={() => setResizingPanel('properties')}
-                    />
-                    <PropertiesPanel
-                        incrementalActions={propertyActions}
-                        state={state}
-                        activePreviewNode={state.nodes[effectivePreviewNodeId]}
-                        onUpdateElements={(els, save) => handleUpdateTemplateElements(els, save)}
-                        onUpdateNode={handleUpdateNode}
-                        onDeleteElements={deleteElements}
-                        onOpenNodeSelector={(mode, elId) => setSession({ showNodeSelector: true, nodeSelectorMode: mode, editingElementId: elId })}
-                        onUpdateTemplate={handleUpdateTemplate}
-                        layersSlot={currentTemplate ? (
-                            <CollapsibleSection
-                                title="Layers"
-                                icon={Layers}
-                                testId="layers-section"
-                                expanded={layersExpanded}
-                                onToggle={toggleLayers}
-                            >
-                                <LayersPanel
-                                    layerActions={layerActions}
-                                    template={currentTemplate}
-                                    selectedElementIds={state.selectedElementIds}
-                                    activeLayerId={state.activeLayerId}
-                                    onUpdateTemplate={(updates) => handleUpdateTemplate(currentTemplate.id, updates)}
-                                    onUpdateElements={(els, save) => handleUpdateTemplateElements(els, save)}
-                                    onSelectElements={(ids) => setSession({ selectedElementIds: ids })}
-                                    onSetActiveLayer={(layerId) => setSession({ activeLayerId: layerId })}
-                                />
-                            </CollapsibleSection>
-                        ) : null}
-                    />
-                </div>
-            </div>
+            <EditorLayout
+                formFactor={formFactor}
+                editorBar={editorBar}
+                toolbar={toolbarElement}
+                sidebar={sidebarElement}
+                canvas={canvasElement}
+                properties={propertiesElement}
+                sidebarWidth={state.sidebarWidth}
+                propertiesPanelWidth={state.propertiesPanelWidth}
+                onStartResize={setResizingPanel}
+            />
 
             <JsonModal
                 isOpen={state.showJsonModal}
