@@ -15,7 +15,7 @@ import { AccountSettingsPage } from './pages/AccountSettingsPage';
 import { MyProjectsPage } from './pages/MyProjectsPage';
 import { AdminModerationPage } from './pages/AdminModerationPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { trackEvent } from './services/analytics';
+import { PageTracker } from './components/PageTracker';
 import { useSession } from './lib/auth-client';
 import { Navigate } from 'react-router-dom';
 import { useCurrentUser } from './hooks/useCurrentUser';
@@ -125,16 +125,6 @@ function AppRoutes() {
       )}
     </ErrorBoundary>
   );
-}
-
-function PageTracker() {
-  // A page view is a URL change. Navigations that only change location.state (the touch
-  // editor's overlay history entries on /app) are not views.
-  const { pathname, search, hash } = useLocation();
-  React.useEffect(() => {
-    trackEvent('page_view', { path: pathname });
-  }, [pathname, search, hash]);
-  return null;
 }
 
 function AuthGuard({ children }: { children: React.ReactNode }) {

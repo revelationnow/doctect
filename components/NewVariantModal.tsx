@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { X, Monitor, ToggleLeft, ToggleRight } from 'lucide-react';
 import { PAGE_PRESETS } from '../constants/editor';
+import { useBackDismiss } from './editor-layout/useBackDismiss';
 
 export interface NewVariantConfig {
   name: string;
@@ -88,6 +89,8 @@ export const NewVariantModal: React.FC<NewVariantModalProps> = ({
       setScaleFontSize(true);
     }
   }, [isOpen, currentVariantName, currentWidth, currentHeight, detectedPreset]);
+  // Touch back gesture closes the dialog like Cancel.
+  useBackDismiss(isOpen, onClose);
 
   if (!isOpen) return null;
 

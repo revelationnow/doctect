@@ -1,5 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Save, X } from 'lucide-react';
+import { useBackDismiss } from './editor-layout/useBackDismiss';
 
 interface SavePresetModalProps {
   isOpen: boolean;
@@ -47,6 +48,13 @@ export const SavePresetModal: React.FC<SavePresetModalProps> = ({
   useLayoutEffect(() => {
     if (isOpen && error && !saving) titleRef.current?.focus();
   }, [error, isOpen, saving]);
+
+  // Touch back gesture: closes the dialog unless a save is in flight (then it stays, entry kept).
+  useBackDismiss(isOpen, () => {
+    if (saving || saveLockRef.current) return false;
+    onClose();
+    return true;
+  });
 
   if (!isOpen) return null;
 

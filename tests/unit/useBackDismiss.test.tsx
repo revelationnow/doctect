@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
-import type { Router } from '@remix-run/router';
+import type { RouteObject } from 'react-router-dom';
+import { createMemoryHistory, createRouter } from '@remix-run/router';
+import type { MemoryHistory, Router } from '@remix-run/router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FormFactorProvider } from '../../components/editor-layout/FormFactorContext';
 import type { FormFactor } from '../../hooks/useEditorFormFactor';
@@ -28,17 +30,21 @@ function Overlay({ name, open, dismiss }: { name: string; open: boolean; dismiss
 
 let setOpen: React.Dispatch<React.SetStateAction<OpenState>> = () => {};
 let setHold: React.Dispatch<React.SetStateAction<boolean>> = () => {};
+let setFormFactor: React.Dispatch<React.SetStateAction<FormFactor>> = () => {};
 
-function Host({ handlers, children }: { handlers: Handlers; children?: React.ReactNode }) {
+function Host({ handlers, formFactor: initialFormFactor }: { handlers: Handlers; formFactor: FormFactor }) {
     const [open, update] = useState<OpenState>({});
     const [hold, updateHold] = useState(false);
+    const [formFactor, updateFormFactor] = useState(initialFormFactor);
     setOpen = update;
     setHold = updateHold;
+    setFormFactor = updateFormFactor;
     return (
-        <BackDismissProvider hold={hold}>
-            {Object.keys(handlers).map(name => <Overlay key={name} name={name} open={open[name] === true} dismiss={handlers[name]} />)}
-            {children}
-        </BackDismissProvider>
+        <FormFactorProvider value={formFactor}>
+            <BackDismissProvider hold={hold}>
+                {Object.keys(handlers).map(name => <Overlay key={name} name={name} open={open[name] === true} dismiss={handlers[name]} />)}
+            </BackDismissProvider>
+        </FormFactorProvider>
     );
 }
 
@@ -46,22 +52,54 @@ const depth = (router: Router) => overlayDepthOf(router.state.location);
 const closes = (name: string): BackDismissHandler => () => { setOpen(state => ({ ...state, [name]: false })); };
 
 /** Mounts the provider on `/app` with `/` beneath it; `log` records every router update. */
-const mount = (formFactor: FormFactor, handlers: Handlers, options: { initialEntries?: Parameters<typeof createMemoryRouter>[1] } = {}) => {
-    const router = createMemoryRouter([
-        { path: '/app', element: <FormFactorProvider value={formFactor}><Host handlers={handlers} /></FormFactorProvider> },
-        { path: '/', element: <div>home route</div> },
-    ], { initialEntries: ['/', '/app'], initialIndex: 1, ...options.initialEntries });
+const routesFor = (formFactor: FormFactor, handlers: Handlers): RouteObject[] => [
+    { path: '/app', element: <Host handlers={handlers} formFactor={formFactor} /> },
+    { path: '/', element: <div>home route</div> },
+];
+const logOf = (router: Router) => {
     const log: { action: string; depth: number; pathname: string }[] = [];
     router.subscribe(state => log.push({ action: state.historyAction, depth: overlayDepthOf(state.location), pathname: state.location.pathname }));
+    return log;
+};
+const mount = (formFactor: FormFactor, handlers: Handlers, options: { initialEntries?: Parameters<typeof createMemoryRouter>[1] } = {}) => {
+    const router = createMemoryRouter(routesFor(formFactor, handlers), { initialEntries: ['/', '/app'], initialIndex: 1, ...options.initialEntries });
+    const log = logOf(router);
     render(<RouterProvider router={router} />);
     return { router, log };
+};
+
+/**
+ * Like `mount`, but `go()` (the provider's `navigate(-n)` and the user's back) lands only when
+ * `flushPops` runs, as the browser's popstate does in a later task; memory history otherwise
+ * delivers it synchronously, which hides the window the provider's pending guard covers.
+ */
+const mountWithDeferredPops = (formFactor: FormFactor, handlers: Handlers) => {
+    const history = createMemoryHistory({ initialEntries: ['/', '/app'], initialIndex: 1 });
+    const queued: number[] = [];
+    const deferred: MemoryHistory = {
+        get index() { return history.index; },
+        get action() { return history.action; },
+        get location() { return history.location; },
+        listen: fn => history.listen(fn),
+        createHref: to => history.createHref(to),
+        createURL: to => history.createURL(to),
+        encodeLocation: to => history.encodeLocation(to),
+        push: (to, state) => history.push(to, state),
+        replace: (to, state) => history.replace(to, state),
+        go: delta => { queued.push(delta); },
+    };
+    const router = createRouter({ routes: routesFor(formFactor, handlers), history: deferred, future: { v7_prependBasename: true } }).initialize();
+    const log = logOf(router);
+    render(<RouterProvider router={router} />);
+    const flushPops = () => act(() => { while (queued.length > 0) history.go(queued.shift()!); });
+    return { router, log, flushPops };
 };
 
 const open = (name: string) => act(() => { setOpen(state => ({ ...state, [name]: true })); });
 const close = (name: string) => act(() => { setOpen(state => ({ ...state, [name]: false })); });
 const back = (router: Router, delta = -1) => act(() => { void router.navigate(delta); });
 
-beforeEach(() => { setOpen = () => {}; setHold = () => {}; });
+beforeEach(() => { setOpen = () => {}; setHold = () => {}; setFormFactor = () => {}; });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); document.documentElement.removeAttribute('data-form-factor'); });
 
 describe('useBackDismiss on desktop', () => {
@@ -220,15 +258,60 @@ describe.each(['phone', 'tablet'] as const)('useBackDismiss on %s', formFactor =
         expect(depth(router)).toBe(0);
     });
 
-    it('keeps the entry of an overlay that was opened while the previous one closes by itself (drawer → page pick)', () => {
-        // The drawer closes on navigation; an overlay opening in the same commit swaps in. Then a
-        // close with nothing else open consumes the entry and a second close changes nothing.
+    it('consumes the entry once: a second close with nothing open changes nothing (no double pop)', () => {
         const { router, log } = mount(formFactor, { drawer: closes('drawer') });
         open('drawer');
         close('drawer');
         close('drawer');
         expect(log.map(entry => entry.action)).toEqual(['PUSH', 'POP']);
         expect(router.state.location.pathname).toBe('/app');
+    });
+});
+
+describe('useBackDismiss hardening', () => {
+    it('does not dismiss an overlay opened while the pop that consumes its predecessor\'s entry is still landing', () => {
+        const dismissA = vi.fn(closes('a')), dismissY = vi.fn(closes('y'));
+        const { router, log, flushPops } = mountWithDeferredPops('phone', { a: dismissA, y: dismissY });
+        open('a');
+        expect(depth(router)).toBe(1);
+        close('a'); // navigate(-1) issued, popstate not yet delivered
+        expect(depth(router)).toBe(1);
+        open('y'); // registered while that pop is pending: no push until the pop has landed
+        expect(log.map(entry => entry.action)).toEqual(['PUSH']);
+        flushPops(); // our pop lands at depth 0: Y is not what it closes, and Y now gets its own entry
+        expect(dismissY).not.toHaveBeenCalled();
+        expect(dismissA).not.toHaveBeenCalled();
+        expect(screen.getByTestId('overlay-y')).toBeTruthy();
+        expect(log.map(entry => [entry.action, entry.depth])).toEqual([['PUSH', 1], ['POP', 0], ['PUSH', 1]]);
+        back(router);
+        flushPops(); // the user's back, delivered later
+        expect(dismissY).toHaveBeenCalledTimes(1);
+        expect(screen.queryByTestId('overlay-y')).toBeNull();
+        expect(depth(router)).toBe(0);
+        expect(router.state.location.pathname).toBe('/app');
+    });
+
+    it('consumes the entries of overlays open when the form factor flips to desktop, and starts clean when it flips back', () => {
+        const dismissA = vi.fn(closes('a')), dismissB = vi.fn(closes('b'));
+        const { router, log } = mount('phone', { a: dismissA, b: dismissB });
+        open('a');
+        act(() => { setFormFactor('desktop'); });
+        // Desktop leaves the overlay alone but takes its entry back, so no back press is dead.
+        expect(log.map(entry => [entry.action, entry.depth])).toEqual([['PUSH', 1], ['POP', 0]]);
+        expect(dismissA).not.toHaveBeenCalled();
+        expect(screen.getByTestId('overlay-a')).toBeTruthy();
+        close('a');
+        expect(log).toHaveLength(2);
+        act(() => { setFormFactor('phone'); });
+        open('b'); // the location moved while disabled; a fresh overlay must not be dismissed for it
+        expect(dismissB).not.toHaveBeenCalled();
+        expect(screen.getByTestId('overlay-b')).toBeTruthy();
+        expect(depth(router)).toBe(1);
+        back(router);
+        expect(dismissB).toHaveBeenCalledTimes(1);
+        expect(depth(router)).toBe(0);
+        back(router);
+        expect(router.state.location.pathname).toBe('/');
     });
 });
 

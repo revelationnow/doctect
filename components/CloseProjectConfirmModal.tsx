@@ -1,6 +1,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Download, X, Trash2 } from 'lucide-react';
+import { useBackDismiss } from './editor-layout/useBackDismiss';
 
 interface CloseProjectConfirmModalProps {
   isOpen: boolean;
@@ -25,6 +26,12 @@ export const CloseProjectConfirmModal: React.FC<CloseProjectConfirmModalProps> =
   const close = () => {
     if (!pendingRef.current) onClose();
   };
+  // Touch back gesture: same as the X button; a close in flight keeps the dialog and its entry.
+  useBackDismiss(isOpen, () => {
+    if (pendingRef.current) return false;
+    onClose();
+    return true;
+  });
 
   const runAction = async (action: () => Promise<void>): Promise<void> => {
     if (pendingRef.current) return;

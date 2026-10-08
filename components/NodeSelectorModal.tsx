@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AppState } from '../types';
 import { X, ChevronRight, ChevronDown, Link } from 'lucide-react';
 import clsx from 'clsx';
+import { useBackDismiss } from './editor-layout/useBackDismiss';
 
 interface NodeSelectorModalProps {
   isOpen: boolean;
@@ -62,6 +63,8 @@ const NodeItem: React.FC<{
 };
 
 export const NodeSelectorModal: React.FC<NodeSelectorModalProps> = ({ isOpen, onClose, state, title, onSelect }) => {
+  // Touch back gesture closes the selector like its X button.
+  useBackDismiss(isOpen, onClose);
   if (!isOpen) return null;
 
   return (

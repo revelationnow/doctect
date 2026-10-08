@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle, X } from 'lucide-react';
+import { useBackDismiss } from './editor-layout/useBackDismiss';
 
 interface DeleteConfirmModalProps {
   isOpen: boolean;
@@ -9,6 +10,8 @@ interface DeleteConfirmModalProps {
 }
 
 export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ isOpen, onClose, onConfirm, nodeTitle }) => {
+  // Touch back gesture cancels the deletion like Cancel.
+  useBackDismiss(isOpen, onClose);
   if (!isOpen) return null;
 
   return (

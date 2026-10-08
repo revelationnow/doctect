@@ -735,7 +735,7 @@ test('back gesture closes the open overlay and keeps the editor; any other close
     const json = page.getByRole('heading', { name: 'Project JSON Editor' });
     await expect(json).toBeVisible();
     await expect(overflowMenu(page)).toBeHidden();
-    expect(await overlayDepth(page)).toBe(1);
+    await expect.poll(() => overlayDepth(page)).toBe(1);
     await page.goBack();
     await expect(json).toBeHidden();
     await expect(overflowMenu(page)).toBeHidden();
@@ -745,7 +745,7 @@ test('back gesture closes the open overlay and keeps the editor; any other close
     // Closing with the X button consumes the entry instead of leaving it behind.
     await openFromOverflow(page, 'JSON');
     await expect(json).toBeVisible();
-    expect(await overlayDepth(page)).toBe(1);
+    await expect.poll(() => overlayDepth(page)).toBe(1);
     await page.getByRole('button', { name: 'Close JSON editor' }).click();
     await expect(json).toBeHidden();
     await expect.poll(() => overlayDepth(page)).toBe(0);
@@ -757,6 +757,17 @@ test('back gesture closes the open overlay and keeps the editor; any other close
     await expect.poll(() => overlayDepth(page)).toBe(1);
     await page.goBack();
     await expect(overflowMenu(page)).toBeHidden();
+    await editorIntact();
+
+    // ⋯ → Save preset: the same handoff for a dialog outside the brief's first list (R39).
+    await openFromOverflow(page, 'Save preset');
+    const preset = page.getByRole('dialog', { name: 'Save As Preset' });
+    await expect(preset).toBeVisible();
+    await expect(overflowMenu(page)).toBeHidden();
+    await expect.poll(() => overlayDepth(page)).toBe(1);
+    await page.goBack();
+    await expect(preset).toBeHidden();
+    await expect.poll(() => overlayDepth(page)).toBe(0);
     await editorIntact();
 
     // The pages drawer.

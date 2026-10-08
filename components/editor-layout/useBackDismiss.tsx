@@ -55,11 +55,18 @@ export const isSameRouteNavigation = (
     next: Pick<Location, 'pathname' | 'search' | 'hash'>,
 ): boolean => current.pathname === next.pathname && current.search === next.search && current.hash === next.hash;
 
-interface Entry { id: string; dismiss: React.MutableRefObject<BackDismissHandler>; }
+interface Entry {
+    id: string;
+    dismiss: React.MutableRefObject<BackDismissHandler>;
+    /** Opened while a navigation of ours was still landing: that landing is not a back gesture for it. */
+    sinceNavigation: boolean;
+}
 
 /**
  * Owns the overlay stack for the editor page. Active on phone and tablet only; on desktop it
- * provides nothing, so every `useBackDismiss` below it is a no-op and history is untouched.
+ * provides nothing, so every `useBackDismiss` below it is a no-op and history is untouched
+ * (except that entries left behind by a touch session, e.g. after a form-factor flip, are
+ * consumed so no back press is dead).
  * `hold` pauses history operations while the unsaved-work prompt is up: a same-route POP would
  * otherwise complete and reset the router's blocker, dismissing the prompt under the user.
  */
@@ -75,31 +82,37 @@ export function BackDismissProvider({ hold = false, children }: { hold?: boolean
 
     const registry = useMemo<Registry>(() => ({
         register(id, dismiss) {
-            stack.current = [...stack.current.filter(entry => entry.id !== id), { id, dismiss }];
+            const entry: Entry = { id, dismiss, sinceNavigation: pending.current !== null };
+            stack.current = [...stack.current.filter(candidate => candidate.id !== id), entry];
             setVersion(value => value + 1);
             return () => {
-                if (!stack.current.some(entry => entry.id === id)) return;
-                stack.current = stack.current.filter(entry => entry.id !== id);
+                if (!stack.current.some(candidate => candidate.id === id)) return;
+                stack.current = stack.current.filter(candidate => candidate.id !== id);
                 setVersion(value => value + 1);
             };
         },
     }), []);
 
     useEffect(() => {
-        if (!enabled) return;
         const depth = overlayDepthOf(location);
         if (seen.current !== location) {
             seen.current = location;
+            const ours = pending.current !== null && depth === pending.current;
             pending.current = null;
-            // The router landed below some open overlays (the back gesture, or a stale entry):
-            // dismiss them top-down, stopping at the first that refuses.
-            for (const entry of stack.current.slice(depth).reverse()) {
-                if (entry.dismiss.current() === false) break;
-                stack.current = stack.current.filter(candidate => candidate !== entry);
+            if (enabled) {
+                // The router landed below some open overlays (the back gesture, or a stale entry):
+                // dismiss them top-down, stopping at the first that refuses. An overlay opened while
+                // our own pop was still landing is not what that pop closes; it gets its own entry.
+                for (const entry of stack.current.slice(depth).reverse()) {
+                    if (ours && entry.sinceNavigation) continue;
+                    if (entry.dismiss.current() === false) break;
+                    stack.current = stack.current.filter(candidate => candidate !== entry);
+                }
             }
+            for (const entry of stack.current) entry.sinceNavigation = false;
         }
         if (hold || pending.current !== null) return;
-        const want = stack.current.length;
+        const want = enabled ? stack.current.length : 0;
         if (want === depth) return;
         pending.current = want;
         if (want > depth) {
