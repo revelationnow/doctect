@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Minus, Plus, Underline } from 'lucide-react';
 import type { TemplateElement } from '../../types';
 import { GESTURE_IGNORE_ATTR } from '../../hooks/useCanvasTouchGestures';
+import { useTouchOverlayHost } from '../editor-layout/TouchOverlayHost';
 
 export const QUICK_FORMAT_BAR_HEIGHT = 48; // one row: a 44px control row inside the frame
 const GAP = 8;
@@ -48,9 +49,12 @@ const visibleBand = () => {
     return { top, bottom };
 };
 
-// Touch-only floating format bar over the selected text/grid element. Portaled to document.body
-// like the other touch overlays, so no stacking context in the editor chrome can trap it; its
-// `fixed` coordinates are viewport coordinates either way. The bar root:
+// Touch-only floating format bar over the selected text/grid element. Portaled into the touch
+// layout's overlay host (see TouchOverlayHost): a `fixed` element with viewport coordinates, but
+// one that stacks inside the project pane at z-25, between the tool pill (z-20) and the properties
+// sheet (z-30), so the sheet, the drawer, the dialogs and every body-level overlay cover it
+// instead of a bar floating over them. Without a host (a bar rendered outside a touch layout, as
+// in unit tests) it falls back to document.body. The bar root:
 // - carries data-touch-gesture-ignore, so a press on it is never a canvas gesture;
 // - stops mousedown/pointerdown at the root: the portal still bubbles React synthetic events to
 //   the canvas container, whose mouse handlers would otherwise start a marquee or drag;
@@ -58,6 +62,7 @@ const visibleBand = () => {
 //   editor keeps its caret and the keyboard stays up (data-prevent-finish-edit covers a blur that
 //   happens anyway). The colour input is exempt: it must take focus to open its picker.
 export function QuickFormatBar({ element, anchor, onChange, onPickChange, onPickEnd }: Props) {
+    const host = useTouchOverlayHost();
     const viewportWidth = window.innerWidth;
     const width = Math.min(MAX_WIDTH, viewportWidth - 2 * GAP);
     // Narrower than the content: wrap onto a second row rather than hide controls behind a scroll.
@@ -117,7 +122,7 @@ export function QuickFormatBar({ element, anchor, onChange, onPickChange, onPick
                 if (!(event.target instanceof HTMLInputElement)) event.preventDefault();
             }}
             onMouseDown={event => event.stopPropagation()}
-            className="fixed z-[200] flex flex-wrap content-center items-center justify-center gap-0.5 rounded-xl border bg-white px-1 shadow-xl"
+            className="fixed z-[25] flex flex-wrap content-center items-center justify-center gap-0.5 rounded-xl border bg-white px-1 shadow-xl"
             style={{ top: `${top}px`, left: `${left}px`, width, height }}>
             <button type="button" aria-label="Decrease font size" onClick={() => onChange({ fontSize: Math.max(4, size - 1) })}
                 className={clsx(button, 'text-slate-600')}><Minus size={16} /></button>
@@ -134,6 +139,6 @@ export function QuickFormatBar({ element, anchor, onChange, onPickChange, onPick
                 onChange={onColour} onBlur={endPick}
                 className="h-11 w-11 shrink-0 rounded border-0 bg-transparent p-1 text-base" />
         </div>,
-        document.body,
+        host ?? document.body,
     );
 }

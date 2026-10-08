@@ -2,6 +2,7 @@ import React from 'react';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EditorLayout, PILL_INSET_VAR } from '../../components/editor-layout/EditorLayout';
+import { TOUCH_OVERLAY_HOST_ATTR, useTouchOverlayHost } from '../../components/editor-layout/TouchOverlayHost';
 import { makeActions } from '../helpers/touchActions';
 
 const slots = {
@@ -143,5 +144,25 @@ describe('EditorLayout touch branches', () => {
         expect(container.firstElementChild!.className).toMatch(/\brelative\b/);
         rerender(<EditorLayout formFactor="tablet" {...slots} touchActions={makeActions()} navigationKey="n1" />);
         expect(container.firstElementChild!.className).toMatch(/\brelative\b/);
+    });
+
+    // I1: the canvas slot can portal floating touch UI (the quick format bar) into a host inside
+    // the layout root, so it stacks with the pill, sheet and drawer rather than over everything.
+    it('touch layouts host canvas overlays inside their root; desktop provides no host', () => {
+        let seen: HTMLElement | null | undefined;
+        const Probe = () => { seen = useTouchOverlayHost(); return <div data-testid="canvas" />; };
+        const probeSlots = { ...slots, canvas: <Probe /> };
+        const { container, rerender } = render(<EditorLayout formFactor="phone" {...probeSlots} touchActions={makeActions()} navigationKey="n1" />);
+        const root = container.firstElementChild!;
+        expect(seen).toBeInstanceOf(HTMLElement);
+        expect(root.contains(seen!)).toBe(true);
+        expect(seen!.getAttribute(TOUCH_OVERLAY_HOST_ATTR)).toBe('');
+        expect(seen!.className).toMatch(/\bcontents\b/); // takes no room in the flex column
+        rerender(<EditorLayout formFactor="tablet" {...probeSlots} touchActions={makeActions()} navigationKey="n1" />);
+        expect(seen).toBeInstanceOf(HTMLElement);
+        expect(container.firstElementChild!.contains(seen!)).toBe(true);
+        rerender(<EditorLayout formFactor="desktop" {...probeSlots} navigationKey="n1" />);
+        expect(seen).toBeNull();
+        expect(container.querySelector(`[${TOUCH_OVERLAY_HOST_ATTR}]`)).toBeNull();
     });
 });

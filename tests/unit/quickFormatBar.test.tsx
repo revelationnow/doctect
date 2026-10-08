@@ -2,6 +2,9 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { QuickFormatBar } from '../../components/canvas/QuickFormatBar';
+import { TabletToolbar } from '../../components/editor-layout/TabletToolbar';
+import { TouchOverlayHostContext } from '../../components/editor-layout/TouchOverlayHost';
+import { makeActions } from '../helpers/touchActions';
 import type { TemplateElement } from '../../types';
 
 const text: TemplateElement = {
@@ -191,7 +194,43 @@ describe('QuickFormatBar', () => {
         }
     });
 
-    it('renders in a portal on document.body so canvas stacking contexts cannot trap it', () => {
+    // M1: the tablet toolbar is the top bar of its layout; the band must stop under it as it does
+    // under the phone top bar, so a text element panned up under the toolbar never gets a bar
+    // over the tool buttons.
+    it('clamps under the tablet toolbar, which tags itself as the top bar', () => {
+        const { container } = render(<TabletToolbar actions={makeActions()} onOpenSidebar={() => {}} />);
+        const toolbar = container.firstElementChild as HTMLElement;
+        toolbar.getBoundingClientRect = () => ({ top: 0, bottom: 56, left: 0, right: 0, width: 0, height: 56 } as DOMRect);
+        render(<QuickFormatBar element={text} anchor={{ left: 100, top: 20, bottom: 40, width: 100 }} onChange={() => {}} />);
+        const bar = screen.getByRole('toolbar', { name: 'Text formatting' });
+        expect(bar.style.top).toBe(`${56 + 8}px`); // "below" would be 48px, under the toolbar
+    });
+
+    // I1: the bar lives in the project pane's stacking context, between the phone tool pill (z-20)
+    // and the properties sheet (z-30), so the sheet, the drawer (z-40), the in-pane dialogs (z-50)
+    // and every body-level overlay (which out-ranks the pane) cover it. The touch layouts provide
+    // the host; without one (tests rendering the bar alone) it falls back to document.body.
+    it('portals into the touch layout\'s overlay host at a z-index between the tool pill and the sheet', () => {
+        const host = document.createElement('div');
+        document.body.appendChild(host);
+        try {
+            const { container } = render(
+                <TouchOverlayHostContext.Provider value={host}>
+                    <QuickFormatBar element={text} anchor={anchor} onChange={() => {}} />
+                </TouchOverlayHostContext.Provider>,
+            );
+            const bar = screen.getByRole('toolbar', { name: 'Text formatting' });
+            expect(container.contains(bar)).toBe(false);
+            expect(bar.parentElement).toBe(host);
+            expect(bar.className).toMatch(/\bfixed\b/);
+            expect(bar.className.split(/\s+/)).toContain('z-[25]');
+            expect(bar.className).not.toMatch(/z-\[200\]/);
+        } finally {
+            host.remove();
+        }
+    });
+
+    it('falls back to a portal on document.body when no touch layout hosts it', () => {
         const { container } = render(<QuickFormatBar element={text} anchor={anchor} onChange={() => {}} />);
         const bar = screen.getByRole('toolbar', { name: 'Text formatting' });
         expect(container.contains(bar)).toBe(false);

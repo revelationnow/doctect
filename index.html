@@ -111,6 +111,17 @@
         max-height: none;
         border-radius: 0;
       }
+      /* Tablet keeps the page header, which is a root-level z-20 above the project pane (z-10),
+         so nothing inside the pane, dialogs included, can paint over it. The full-screen generator
+         therefore fills the pane (its nearest positioned ancestor) below the header instead of the
+         viewport; otherwise its title row, Close included, would sit under the header's controls. */
+      [data-form-factor="tablet"] :has(> .editor-dialog-panel.generator-dialog-panel) {
+        position: absolute;
+      }
+      [data-form-factor="tablet"] .editor-dialog-panel.generator-dialog-panel {
+        width: 100%;
+        height: 100%;
+      }
       /* Phone top bar: the save status keeps its icon and tint but drops its label, which at
          320-360px otherwise leaves the project name beside it no room at all. The label stays in
          the accessibility tree (role=status / role=alert read it as before). The failure popover

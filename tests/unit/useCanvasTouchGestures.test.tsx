@@ -55,6 +55,50 @@ describe('useCanvasTouchGestures', () => {
         expect(h.onDoubleTap).toHaveBeenCalledTimes(1);
     });
 
+    // M5: only a tap can be the first half of a double tap. A pan, pinch or long press between two
+    // taps ends the window, even when the second tap lands within DOUBLE_TAP_MS and the slop.
+    it('forgets the last tap once a pan, a long press or a pinch ends the gesture', () => {
+        const h = makeHandlers();
+        const { getByTestId } = render(<Harness handlers={h} />);
+        const s = getByTestId('surface');
+        const tapAt = (id: number, x: number, y: number) => { pointer(s, 'pointerdown', id, x, y); pointer(s, 'pointerup', id, x, y); };
+
+        tapAt(1, 50, 50);
+        pointer(s, 'pointerdown', 2, 50, 50);
+        pointer(s, 'pointermove', 2, 80, 50); // a pan
+        pointer(s, 'pointerup', 2, 80, 50);
+        act(() => { vi.advanceTimersByTime(DOUBLE_TAP_MS - 100); });
+        tapAt(3, 52, 52);
+        expect(h.onDoubleTap).not.toHaveBeenCalled();
+        expect(h.onTap).toHaveBeenCalledTimes(2);
+
+        act(() => { vi.advanceTimersByTime(DOUBLE_TAP_MS + 1); });
+        tapAt(4, 50, 50);
+        pointer(s, 'pointerdown', 5, 50, 50);
+        act(() => { vi.advanceTimersByTime(LONG_PRESS_MS); }); // a long press
+        pointer(s, 'pointerup', 5, 50, 50);
+        tapAt(6, 52, 52);
+        expect(h.onLongPress).toHaveBeenCalledTimes(1);
+        expect(h.onDoubleTap).not.toHaveBeenCalled();
+        expect(h.onTap).toHaveBeenCalledTimes(4);
+
+        act(() => { vi.advanceTimersByTime(DOUBLE_TAP_MS + 1); });
+        tapAt(7, 50, 50);
+        pointer(s, 'pointerdown', 8, 50, 50);
+        pointer(s, 'pointerdown', 9, 150, 50); // a pinch
+        pointer(s, 'pointerup', 8, 50, 50);
+        pointer(s, 'pointerup', 9, 150, 50);
+        tapAt(10, 52, 52);
+        expect(h.onDoubleTap).not.toHaveBeenCalled();
+        expect(h.onTap).toHaveBeenCalledTimes(6);
+
+        // Two plain taps in the window still double-tap, so the window itself is intact.
+        act(() => { vi.advanceTimersByTime(DOUBLE_TAP_MS + 1); });
+        tapAt(11, 50, 50);
+        tapAt(12, 52, 52);
+        expect(h.onDoubleTap).toHaveBeenCalledTimes(1);
+    });
+
     it('turns a moving single finger into pan deltas', () => {
         const h = makeHandlers();
         const { getByTestId } = render(<Harness handlers={h} />);

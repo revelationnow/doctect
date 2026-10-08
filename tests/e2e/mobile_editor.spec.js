@@ -106,9 +106,11 @@ test.beforeEach(async ({ page }) => {
 test('uses the touch layout for the device', async ({ page }, testInfo) => {
     const phone = isPhone(testInfo);
     await expect(page.locator('html')).toHaveAttribute('data-form-factor', phone ? 'phone' : 'tablet');
-    // Phone replaces the page header and editor bar with the top bar; tablet keeps the page header
-    // and has Export PDF in its single toolbar row.
-    await expect(topBar(page)).toHaveCount(phone ? 1 : 0);
+    // Both touch layouts tag their top row as the top bar (the quick format bar keeps clear of it).
+    // Phone replaces the page header and editor bar with a bar that holds the project switcher;
+    // tablet keeps the page header and has Export PDF in its single toolbar row.
+    await expect(topBar(page)).toHaveCount(1);
+    await expect(topBar(page).getByRole('button', { name: 'Mobile' })).toHaveCount(phone ? 1 : 0);
     await expect(page.getByRole('button', { name: 'Export PDF' })).toHaveCount(phone ? 0 : 1);
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
 });
@@ -373,6 +375,142 @@ test('layer colour swatches stay reachable', async ({ page }, testInfo) => {
     await row.getByTestId('layer-color-swatch-#ef4444').click();
     await expect(swatches).toHaveCount(0);
     await expect(row.getByTitle('Layer color')).toHaveCSS('background-color', 'rgb(239, 68, 68)');
+});
+
+/**
+ * Widths the dialog headers must fit: the device, then the narrower phones (as phoneWidths) or
+ * the classic 768px iPad in portrait, which has the same tablet layout and less room.
+ */
+const dialogWidths = async (page, testInfo) => {
+    if (isPhone(testInfo)) return phoneWidths(page);
+    const device = await viewport(page);
+    return [device.width, 768].filter((w, i, all) => all.indexOf(w) === i).map(width => ({ width, height: device.height }));
+};
+
+/** The control is visible and its whole box lies inside `screen`; returns the box. */
+const onScreen = async (locator, screen, label) => {
+    await expect(locator, label).toBeVisible();
+    const b = await locator.boundingBox();
+    expect(within(b, screen), `${label} inside the ${screen.width}px viewport`).toBe(true);
+    return b;
+};
+const sidewaysOverflow = panel => panel.evaluate(el => el.scrollWidth - el.clientWidth);
+/** aria-label of the button a tap at the centre of `b` reaches (null when something covers it). */
+const buttonAt = (page, b) => page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest('button')?.getAttribute('aria-label') ?? null,
+    [b.x + b.width / 2, b.y + b.height / 2]);
+const openFromOverflow = async (page, item) => {
+    await page.getByRole('button', { name: 'More actions' }).click();
+    await overflowMenu(page).getByRole('button', { name: item }).click();
+};
+
+test('dialogs keep Close and their primary actions inside the viewport, with no sideways overflow', async ({ page }, testInfo) => {
+    const phone = isPhone(testInfo);
+    for (const { width, height } of await dialogWidths(page, testInfo)) {
+        await page.setViewportSize({ width, height });
+        const screen = { x: 0, y: 0, width, height };
+
+        // Generator: its header is wider than any phone, so on touch it wraps with Close pinned to
+        // the title row's right end and Preview / Apply in the row below. Touch has no Escape, so a
+        // Close that is off-screen traps the user.
+        await openFromOverflow(page, 'Generator');
+        const generator = page.getByRole('dialog', { name: 'Hierarchy Generator' });
+        await expect(generator).toBeVisible();
+        expect(await sidewaysOverflow(generator), `generator panel overflow at ${width}px`).toBeLessThanOrEqual(0);
+        const close = await onScreen(generator.getByRole('button', { name: 'Close generator' }), screen, 'Close generator');
+        const title = await generator.getByRole('heading', { name: 'Hierarchy Generator' }).boundingBox();
+        expect(close.y, `Close shares the title row at ${width}px`).toBeLessThan(title.y + title.height);
+        expect(close.x + close.width, `Close at the right edge at ${width}px`).toBeGreaterThan(width - 32);
+        // On tablet the page header (root z-20) out-ranks the project pane, so a full-screen panel
+        // must not put Close under it: the tap must reach the button itself.
+        expect(await buttonAt(page, close), `Close generator is the hit target at ${width}px`).toBe('Close generator');
+        await onScreen(generator.getByRole('combobox', { name: 'Preset:' }), screen, 'Preset');
+        await onScreen(generator.getByRole('button', { name: 'Preview', exact: true }), screen, 'Preview');
+        await onScreen(generator.getByRole('button', { name: 'Apply Generated Project' }), screen, 'Apply');
+        // Preview runs the preset in the sandbox and opens the visual preview over the generator;
+        // its own Close must be reachable too.
+        await generator.getByRole('button', { name: 'Preview', exact: true }).click();
+        const preview = page.getByRole('dialog', { name: 'Generated Project Preview' });
+        await expect(preview).toBeVisible();
+        expect(await sidewaysOverflow(preview), `preview panel overflow at ${width}px`).toBeLessThanOrEqual(0);
+        await onScreen(preview.getByRole('button', { name: 'Close preview' }), screen, 'Close preview');
+        await preview.getByRole('button', { name: 'Close preview' }).click();
+        await expect(preview).toBeHidden();
+        await generator.getByRole('button', { name: 'Close generator' }).click();
+        await expect(generator).toBeHidden();
+
+        // JSON editor: the mode toggle drops below the title on phones so Close stays on-screen.
+        await openFromOverflow(page, 'JSON');
+        const json = page.locator('.editor-dialog-panel', { has: page.getByRole('heading', { name: 'Project JSON Editor' }) });
+        await expect(json).toBeVisible();
+        expect(await sidewaysOverflow(json), `JSON panel overflow at ${width}px`).toBeLessThanOrEqual(0);
+        const jsonClose = await onScreen(json.getByRole('button', { name: 'Close JSON editor' }), screen, 'Close JSON editor');
+        expect(await buttonAt(page, jsonClose), `Close JSON editor is the hit target at ${width}px`).toBe('Close JSON editor');
+        for (const name of ['Visual', 'Text', 'Cancel', 'Apply Changes']) await onScreen(json.getByRole('button', { name }), screen, name);
+        await json.getByRole('button', { name: 'Close JSON editor' }).click();
+        await expect(json).toBeHidden();
+
+        // Save preset
+        await openFromOverflow(page, 'Save preset');
+        const preset = page.getByRole('dialog', { name: /Save.*Preset/i });
+        await expect(preset).toBeVisible();
+        expect(await sidewaysOverflow(preset), `preset panel overflow at ${width}px`).toBeLessThanOrEqual(0);
+        await onScreen(preset.getByRole('button', { name: 'Close save preset' }), screen, 'Close save preset');
+        await onScreen(preset.getByRole('button', { name: 'Save Preset', exact: true }), screen, 'Save Preset');
+        await preset.getByRole('button', { name: 'Close save preset' }).click();
+        await expect(preset).toBeHidden();
+
+        // New project (page-level, also an editor-dialog-panel): from the phone's project switcher
+        // or the tablet's tab strip.
+        if (phone) {
+            await topBar(page).getByRole('button', { name: 'Mobile' }).click();
+            await page.getByRole('menuitem', { name: 'New project' }).click();
+        } else {
+            await page.getByTitle('New Project').click();
+        }
+        const newProject = page.getByRole('dialog', { name: 'Create New Project' });
+        await expect(newProject).toBeVisible();
+        expect(await sidewaysOverflow(newProject), `new project panel overflow at ${width}px`).toBeLessThanOrEqual(0);
+        await onScreen(newProject.getByRole('button', { name: 'Close new project' }), screen, 'Close new project');
+        await newProject.getByRole('button', { name: 'Close new project' }).click();
+        await expect(newProject).toBeHidden();
+    }
+});
+
+test('quick format bar is never the hit target under the overflow sheet, the drawer or a dialog', async ({ page }) => {
+    const pane = activePane(page);
+    const bar = formatBar(page);
+    const title = await box(pane.locator('[data-element-id="title"]'));
+    await page.touchscreen.tap(title.x, title.y);
+    await expect(bar).toBeVisible();
+    const centre = await box(bar);
+    // What a tap at the bar's centre reaches: the bar's own toolbar label, or whatever covers it.
+    const hit = () => page.evaluate(([x, y]) => {
+        const el = document.elementFromPoint(x, y);
+        return el?.closest('[role="toolbar"]')?.getAttribute('aria-label') ?? el?.tagName?.toLowerCase() ?? null;
+    }, [centre.x, centre.y]);
+    expect(await hit(), 'the bar is reachable on its own').toBe('Text formatting');
+
+    await page.getByRole('button', { name: 'More actions' }).click();
+    await expect(overflowMenu(page)).toBeVisible();
+    expect(await hit(), 'the overflow sheet covers the bar').not.toBe('Text formatting');
+    await page.getByTestId('overflow-menu-backdrop').click();
+    await expect(overflowMenu(page)).toBeHidden();
+    expect(await hit(), 'the bar is reachable again once the sheet closes').toBe('Text formatting');
+
+    await page.getByRole('button', { name: 'Open pages and templates' }).click();
+    const drawer = page.getByRole('dialog', { name: 'Pages and templates' });
+    await expect(drawer).toBeVisible();
+    expect(await hit(), 'the drawer covers the bar').not.toBe('Text formatting');
+    await page.getByTestId('sidebar-drawer-backdrop').click();
+    await expect(drawer).toBeHidden();
+
+    await openFromOverflow(page, 'Generator');
+    const generator = page.getByRole('dialog', { name: 'Hierarchy Generator' });
+    await expect(generator).toBeVisible();
+    expect(await hit(), 'the generator dialog covers the bar').not.toBe('Text formatting');
+    await generator.getByRole('button', { name: 'Close generator' }).click();
+    await expect(generator).toBeHidden();
+    expect(await hit(), 'the bar is reachable again once the dialog closes').toBe('Text formatting');
 });
 
 test('phone overflow menu offers Home, Gallery and Docs', async ({ page }, testInfo) => {

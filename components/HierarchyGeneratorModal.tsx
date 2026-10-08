@@ -2250,9 +2250,13 @@ const HierarchyGeneratorSession: React.FC<HierarchyGeneratorSessionProps> = ({
         onKeyDown={handleDialogKeyDown}
         className="bg-white rounded-xl shadow-2xl w-full max-w-[95vw] h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200 outline-none editor-dialog-panel generator-dialog-panel"
       >
-        {/* Header */}
-        <div className="flex justify-between items-center p-4 border-b bg-slate-50">
-          <div className="flex items-center gap-3">
+        {/* Header. The row is ~880px wide, so on touch (phones and portrait tablets) it wraps: the
+            title shrinks beside Close, which stays at the row's right end (touch has no Escape, so
+            an off-screen Close would trap the user), and the preset box drops to its own full-width
+            line with a shrinkable select. The group around the box and Close dissolves (`contents`)
+            so Close is a header flex item of its own. Desktop keeps its class strings. */}
+        <div className={clsx('flex justify-between items-center p-4 border-b bg-slate-50', !splitPanes && 'flex-wrap gap-y-3')}>
+          <div className={clsx('flex items-center gap-3', !splitPanes && 'min-w-0 flex-1')}>
             <div className="p-2 bg-purple-100 text-purple-600 rounded-lg">
               <Network size={20} />
             </div>
@@ -2263,15 +2267,15 @@ const HierarchyGeneratorSession: React.FC<HierarchyGeneratorSessionProps> = ({
           </div>
 
           {/* Preset Selector */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 shadow-sm">
+          <div className={splitPanes ? 'flex items-center gap-3' : 'contents'}>
+            <div className={clsx('flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 shadow-sm', !splitPanes && 'order-last w-full min-w-0')}>
               <Sparkles size={16} className="text-amber-500" />
               <label htmlFor="generator-preset" className="text-xs text-slate-500 font-medium">Preset:</label>
               <select
                 id="generator-preset"
                 value={selectedPreset}
                 onChange={(e) => loadPreset(e.target.value)}
-                className="text-sm font-medium text-slate-700 bg-transparent border-none focus:outline-none cursor-pointer"
+                className={clsx('text-sm font-medium text-slate-700 bg-transparent border-none focus:outline-none cursor-pointer', !splitPanes && 'min-w-0 flex-1 truncate')}
               >
                 {savedGenerator && <option value="saved">Current saved source</option>}
                 {GENERATOR_PRESETS.map(preset => (
@@ -2293,15 +2297,16 @@ const HierarchyGeneratorSession: React.FC<HierarchyGeneratorSessionProps> = ({
               } />
             </div>
 
-            <button aria-label="Close generator" onClick={handleClose} className="p-2 hover:bg-slate-200 rounded-full text-slate-500 transition-colors">
+            <button aria-label="Close generator" onClick={handleClose} className={clsx('p-2 hover:bg-slate-200 rounded-full text-slate-500 transition-colors', !splitPanes && 'shrink-0')}>
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Toolbar */}
-        <div className="flex items-center justify-between px-4 py-2 border-b bg-white">
-          <div className="flex items-center gap-4">
+        {/* Toolbar. On touch both groups wrap internally and the Preview / Apply group keeps to
+            the right, so every control stays inside a 320px viewport. */}
+        <div className={clsx('flex items-center justify-between px-4 py-2 border-b bg-white', !splitPanes && 'flex-wrap gap-y-2')}>
+          <div className={clsx('flex items-center gap-4', !splitPanes && 'flex-wrap gap-y-2')}>
             <div className="flex items-center gap-2 text-sm text-slate-600">
               <LayoutTemplate size={16} className="text-indigo-500" />
               <span className="font-medium">Templates</span>
@@ -2341,7 +2346,7 @@ const HierarchyGeneratorSession: React.FC<HierarchyGeneratorSessionProps> = ({
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className={clsx('flex items-center gap-3', !splitPanes && 'ml-auto flex-wrap justify-end gap-y-2')}>
             {savedGenerator && (
               <span className="text-indigo-700 text-xs flex items-center gap-1 font-semibold">
                 <CheckCircle2 size={14} /> Saved Generator

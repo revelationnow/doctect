@@ -110,6 +110,44 @@ describe('Generator pane toggle', () => {
         expect(pane('Hierarchy script').className).not.toContain('hidden');
     });
 
+    // C1: the two header rows are ~880px wide, so on touch they wrap: Close stays on the title row
+    // at its right end, the preset box drops to its own full-width line with a shrinkable select,
+    // and the Preview / Apply group wraps and right-aligns. Desktop keeps its class strings.
+    it('wraps both header rows on touch with Close pinned to the title row, and leaves desktop classes alone', () => {
+        const header = () => screen.getByRole('heading', { name: 'Hierarchy Generator' }).closest('.border-b') as HTMLElement;
+        const toolbar = () => screen.getByRole('button', { name: 'Preview' }).closest('.border-b') as HTMLElement;
+        const presetBox = () => screen.getByLabelText('Preset:').parentElement as HTMLElement;
+        const close = () => screen.getByRole('button', { name: 'Close generator' });
+
+        for (const formFactor of ['phone', 'tablet'] as const) {
+            const { unmount } = renderModal(formFactor);
+            expect(header().className, formFactor).toMatch(/\bflex-wrap\b/);
+            expect(presetBox().className, formFactor).toMatch(/\border-last\b/);
+            expect(presetBox().className, formFactor).toMatch(/\bw-full\b/);
+            expect(presetBox().className, formFactor).toMatch(/\bmin-w-0\b/);
+            expect((screen.getByLabelText('Preset:') as HTMLSelectElement).className, formFactor).toMatch(/\bmin-w-0\b/);
+            expect(close().className, formFactor).toMatch(/\bshrink-0\b/);
+            expect(close().previousElementSibling, `${formFactor}: Close follows the preset box in DOM order`).toBe(presetBox());
+            // The group around the preset box and Close dissolves (display: contents) so Close is a
+            // header flex item of its own and can sit on the title row while the box wraps.
+            expect(close().parentElement!.className, formFactor).toMatch(/\bcontents\b/);
+            expect(toolbar().className, formFactor).toMatch(/\bflex-wrap\b/);
+            expect(screen.getByRole('button', { name: 'Apply Generated Project' }).parentElement!.className, formFactor).toMatch(/\bflex-wrap\b/);
+            expect(screen.getByRole('button', { name: 'Wrap' }).parentElement!.className, formFactor).toMatch(/\bflex-wrap\b/);
+            unmount();
+        }
+
+        renderModal('desktop');
+        expect(header().className).toBe('flex justify-between items-center p-4 border-b bg-slate-50');
+        expect(close().parentElement!.className).toBe('flex items-center gap-3');
+        expect(presetBox().className).toBe('flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 shadow-sm');
+        expect((screen.getByLabelText('Preset:') as HTMLSelectElement).className).toBe('text-sm font-medium text-slate-700 bg-transparent border-none focus:outline-none cursor-pointer');
+        expect(close().className).toBe('p-2 hover:bg-slate-200 rounded-full text-slate-500 transition-colors');
+        expect(toolbar().className).toBe('flex items-center justify-between px-4 py-2 border-b bg-white');
+        expect(screen.getByRole('button', { name: 'Apply Generated Project' }).parentElement!.className).toBe('flex items-center gap-3');
+        expect(screen.getByRole('button', { name: 'Wrap' }).parentElement!.className).toBe('flex items-center gap-4');
+    });
+
     it('keeps side-by-side panes and no toggle on desktop', () => {
         renderModal('desktop');
         expect(screen.queryByRole('tab', { name: 'Hierarchy' })).toBeNull();

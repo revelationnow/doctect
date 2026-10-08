@@ -6,6 +6,7 @@ import { PropertiesSheet, SHEET_PEEK_PX, SheetDetent } from './PropertiesSheet';
 import { TabletToolbar } from './TabletToolbar';
 import { PhoneTopBar } from './PhoneTopBar';
 import { TouchToolButtons } from './TouchToolButtons';
+import { TouchOverlayHostProvider } from './TouchOverlayHost';
 
 export interface EditorLayoutProps {
     formFactor: FormFactor;
@@ -83,12 +84,14 @@ function TabletEditorLayout({ sidebar, canvas, properties, touchActions, navigat
     const { drawerOpen, setDrawerOpen } = useTouchLayoutState(navigationKey, touchActions.fitToWidth);
     return (
         <div className="relative flex min-h-0 flex-1 flex-col">
-            <TabletToolbar actions={touchActions} onOpenSidebar={() => setDrawerOpen(true)} />
-            <div className="flex min-h-0 flex-1 overflow-hidden">
-                <div className="relative flex min-w-0 flex-1 flex-col bg-slate-200">{canvas}</div>
-                <div className="flex w-[320px] shrink-0 flex-col border-l bg-white">{properties}</div>
-            </div>
-            <SidebarDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>{sidebar}</SidebarDrawer>
+            <TouchOverlayHostProvider>
+                <TabletToolbar actions={touchActions} onOpenSidebar={() => setDrawerOpen(true)} />
+                <div className="flex min-h-0 flex-1 overflow-hidden">
+                    <div className="relative flex min-w-0 flex-1 flex-col bg-slate-200">{canvas}</div>
+                    <div className="flex w-[320px] shrink-0 flex-col border-l bg-white">{properties}</div>
+                </div>
+                <SidebarDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>{sidebar}</SidebarDrawer>
+            </TouchOverlayHostProvider>
         </div>
     );
 }
@@ -133,25 +136,27 @@ function PhoneEditorLayout({ sidebar, canvas, properties, touchActions, navigati
 
     return (
         <div className="relative flex min-h-0 flex-1 flex-col">
-            <PhoneTopBar actions={touchActions} onOpenSidebar={() => setDrawerOpen(true)} />
-            <div ref={canvasRef} className="relative flex min-h-0 flex-1 flex-col bg-slate-200"
-                style={{ paddingBottom: SHEET_PEEK_PX }}>
-                {canvas}
-                {detent === 'peek' && (
-                    // All nine tools stay reachable at phone widths: the row wraps inside the pill
-                    // instead of scrolling Fit off the edge. `w-max` sizes the pill to the full row,
-                    // capped by max-w, so it wraps only as much as the screen requires.
-                    <div ref={pillRef} data-testid="touch-tool-pill" data-touch-chrome="tool-pill"
-                        className="absolute left-1/2 z-20 w-max max-w-[calc(100vw-16px)] -translate-x-1/2 rounded-2xl border bg-white/95 px-1 shadow-lg"
-                        style={{ bottom: SHEET_PEEK_PX + PILL_BOTTOM_GAP_PX }}>
-                        <TouchToolButtons actions={touchActions} showFit wrap />
-                    </div>
-                )}
-            </div>
-            <PropertiesSheet detent={detent} onDetentChange={setDetent} title={selectionLabel ?? 'Properties'}>
-                {properties}
-            </PropertiesSheet>
-            <SidebarDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>{sidebar}</SidebarDrawer>
+            <TouchOverlayHostProvider>
+                <PhoneTopBar actions={touchActions} onOpenSidebar={() => setDrawerOpen(true)} />
+                <div ref={canvasRef} className="relative flex min-h-0 flex-1 flex-col bg-slate-200"
+                    style={{ paddingBottom: SHEET_PEEK_PX }}>
+                    {canvas}
+                    {detent === 'peek' && (
+                        // All nine tools stay reachable at phone widths: the row wraps inside the pill
+                        // instead of scrolling Fit off the edge. `w-max` sizes the pill to the full row,
+                        // capped by max-w, so it wraps only as much as the screen requires.
+                        <div ref={pillRef} data-testid="touch-tool-pill" data-touch-chrome="tool-pill"
+                            className="absolute left-1/2 z-20 w-max max-w-[calc(100vw-16px)] -translate-x-1/2 rounded-2xl border bg-white/95 px-1 shadow-lg"
+                            style={{ bottom: SHEET_PEEK_PX + PILL_BOTTOM_GAP_PX }}>
+                            <TouchToolButtons actions={touchActions} showFit wrap />
+                        </div>
+                    )}
+                </div>
+                <PropertiesSheet detent={detent} onDetentChange={setDetent} title={selectionLabel ?? 'Properties'}>
+                    {properties}
+                </PropertiesSheet>
+                <SidebarDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>{sidebar}</SidebarDrawer>
+            </TouchOverlayHostProvider>
         </div>
     );
 }

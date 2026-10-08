@@ -1784,9 +1784,10 @@ function ProjectEditorView({
         />
     );
     // Touch chrome (phone top bar / tablet toolbar / overflow sheet) drives the same handlers the
-    // desktop bars use; the desktop layout ignores these props, so its DOM is unchanged.
-    const previewChoice = listPreviewNodes(state, effectivePreviewNodeId);
-    const touchActions: TouchEditorActions = {
+    // desktop bars use. Built only on touch: desktop never reads them (its DOM is unchanged) and
+    // listPreviewNodes walks every node.
+    const previewChoice = isTouch ? listPreviewNodes(state, effectivePreviewNodeId) : null;
+    const touchActions: TouchEditorActions | undefined = !isTouch ? undefined : {
         undo, redo, canUndo, canRedo,
         exportPdf: () => { void handleExportPDF(); },
         exportAllVariants: () => { void handleExportPDF({ exportAllVariants: true }); },
@@ -1831,7 +1832,7 @@ function ProjectEditorView({
                 sidebarWidth={state.sidebarWidth}
                 propertiesPanelWidth={state.propertiesPanelWidth}
                 onStartResize={setResizingPanel}
-                touchActions={isTouch ? touchActions : undefined}
+                touchActions={touchActions}
                 selectionLabel={selectionLabel}
                 navigationKey={navigationKey}
             />

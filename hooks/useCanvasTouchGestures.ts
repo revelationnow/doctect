@@ -66,6 +66,9 @@ export function useCanvasTouchGestures(
         let lastDirectEvent: PointerEvent | null = null;
         let longPressTimer: ReturnType<typeof setTimeout> | null = null;
         let lastTap: { x: number; y: number; time: number } | null = null;
+        // Whether the gesture now ending registered a tap. Any other ending (pan, pinch, long
+        // press, cancel) forgets lastTap, so only two taps in a row can make a double tap.
+        let endedWithTap = false;
         let pinchDistance = 0;
         let pinchCenter: Point = { x: 0, y: 0 };
 
@@ -75,6 +78,7 @@ export function useCanvasTouchGestures(
         };
 
         const registerTap = (point: TouchPoint, notify: boolean) => {
+            endedWithTap = true;
             const now = Date.now();
             if (lastTap && now - lastTap.time <= DOUBLE_TAP_MS
                 && Math.hypot(point.clientX - lastTap.x, point.clientY - lastTap.y) <= DOUBLE_TAP_SLOP_PX) {
@@ -89,6 +93,8 @@ export function useCanvasTouchGestures(
         const finishIfIdle = () => {
             if (pointers.size > 0) return;
             clearLongPress();
+            if (!endedWithTap) lastTap = null;
+            endedWithTap = false;
             mode = 'idle';
             start = null;
             lastDirectEvent = null;

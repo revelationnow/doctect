@@ -338,4 +338,9 @@ describe('TabletToolbar', () => {
         expect(screen.queryByRole('heading', { name: 'Navigate' })).toBeNull();
         expect(screen.getAllByRole('button', { name: 'Export PDF' })).toHaveLength(2);
     });
+
+    it('tags its row as the top bar so the quick format bar keeps clear of it', () => {
+        const { container } = render(<TabletToolbar actions={makeActions()} onOpenSidebar={vi.fn()} />);
+        expect(container.firstElementChild!.getAttribute('data-touch-chrome')).toBe('top-bar');
+    });
 });

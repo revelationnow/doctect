@@ -6,6 +6,7 @@ import { X, Save, AlertTriangle, FileJson, CheckCircle, Braces, AlignLeft, ListT
 import clsx from 'clsx';
 import { JsonTreeItem, NodeOption } from './json/JsonTreeItem';
 import { MainCollectionItem } from './json/MainCollectionItem';
+import { useFormFactor } from './editor-layout/FormFactorContext';
 
 interface JsonModalProps {
     isOpen: boolean;
@@ -15,6 +16,8 @@ interface JsonModalProps {
 }
 
 export const JsonModal: React.FC<JsonModalProps> = ({ isOpen, onClose, currentState, onSave }) => {
+    // Phones get a full-screen panel (touch CSS) narrower than the one-row header; see the header.
+    const phone = useFormFactor() === 'phone';
     const [mode, setMode] = useState<'visual' | 'text'>('visual');
     const [jsonString, setJsonString] = useState('');
     const [jsonObject, setJsonObject] = useState<any>({});
@@ -266,9 +269,11 @@ export const JsonModal: React.FC<JsonModalProps> = ({ isOpen, onClose, currentSt
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm p-4">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200 editor-dialog-panel">
 
-                {/* Header */}
-                <div className="flex justify-between items-center p-4 border-b bg-slate-50 flex-shrink-0">
-                    <div className="flex items-center gap-3">
+                {/* Header. ~380px wide in one row; on phones (full-screen panel, down to 320px) it
+                    wraps: the title shrinks beside Close, which stays at the row's right end, and the
+                    Visual|Text toggle drops to its own full-width line. Tablet and desktop keep the row. */}
+                <div className={clsx('flex justify-between items-center p-4 border-b bg-slate-50 flex-shrink-0', phone && 'flex-wrap gap-y-3')}>
+                    <div className={clsx('flex items-center gap-3', phone && 'min-w-0 flex-1')}>
                         <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
                             <FileJson size={24} />
                         </div>
@@ -278,12 +283,13 @@ export const JsonModal: React.FC<JsonModalProps> = ({ isOpen, onClose, currentSt
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4 bg-white p-1 rounded-lg border border-slate-200">
+                    <div className={clsx('flex items-center gap-4 bg-white p-1 rounded-lg border border-slate-200', phone && 'order-last w-full')}>
                         <button
                             onClick={() => handleModeSwitch('visual')}
                             className={clsx(
                                 "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
-                                mode === 'visual' ? "bg-blue-100 text-blue-700 shadow-sm" : "text-slate-500 hover:bg-slate-50"
+                                mode === 'visual' ? "bg-blue-100 text-blue-700 shadow-sm" : "text-slate-500 hover:bg-slate-50",
+                                phone && 'flex-1 justify-center',
                             )}
                         >
                             <ListTree size={16} /> Visual
@@ -292,14 +298,15 @@ export const JsonModal: React.FC<JsonModalProps> = ({ isOpen, onClose, currentSt
                             onClick={() => handleModeSwitch('text')}
                             className={clsx(
                                 "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
-                                mode === 'text' ? "bg-blue-100 text-blue-700 shadow-sm" : "text-slate-500 hover:bg-slate-50"
+                                mode === 'text' ? "bg-blue-100 text-blue-700 shadow-sm" : "text-slate-500 hover:bg-slate-50",
+                                phone && 'flex-1 justify-center',
                             )}
                         >
                             <FileText size={16} /> Text
                         </button>
                     </div>
 
-                    <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full text-slate-500 transition-colors">
+                    <button onClick={onClose} aria-label="Close JSON editor" className={clsx('p-2 hover:bg-slate-200 rounded-full text-slate-500 transition-colors', phone && 'shrink-0')}>
                         <X className="w-5 h-5" />
                     </button>
                 </div>

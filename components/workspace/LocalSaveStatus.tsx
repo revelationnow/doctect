@@ -8,6 +8,13 @@ export interface LocalSaveStatusProps {
   onDownload: () => void;
 }
 
+/**
+ * Also rendered in the phone top bar, where the touch CSS in index.html (the `touch-editor` block,
+ * rules under `[data-touch-chrome="top-bar"]`) restyles it by structure: it hides the label text of
+ * the `role="status"` root and of the `role="alert"` root's first child (the pill), and re-anchors
+ * the alert's last child (the failure popover) as a fixed strip under the bar. Keep that shape
+ * when editing here: status = one element with icon + text; alert = pill first, popover last.
+ */
 export function LocalSaveStatus({
   state,
   onRetry,
