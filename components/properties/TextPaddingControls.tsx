@@ -134,6 +134,20 @@ export const TextPaddingControls: React.FC<TextPaddingControlsProps> = ({
                         nudge(side, -1);
                     }
                 };
+                // Same input on both form factors, in this attribute order; only its classes differ.
+                const inputProps = (className: string) => ({
+                    type: 'number',
+                    min: '0',
+                    step: 'any',
+                    'aria-label': `Padding ${side}`,
+                    className,
+                    value,
+                    placeholder: values[side] === 'mixed' ? 'Mixed' : undefined,
+                    disabled,
+                    onChange,
+                    onKeyDown,
+                    onBlur: () => clearDraft(side),
+                });
                 if (touch) {
                     // Phone and tablet: one full-width row per side, with the −/+ at 44px and the
                     // input at 16px; the four-up desktop row has no room for three touch targets each.
@@ -149,19 +163,7 @@ export const TextPaddingControls: React.FC<TextPaddingControlsProps> = ({
                                 onNudge={delta => nudge(side, delta)}
                                 className="min-w-0 flex-1"
                             >
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="any"
-                                    aria-label={`Padding ${side}`}
-                                    className="h-11 w-full min-w-0 rounded border border-slate-200 bg-white px-2 text-center text-base text-slate-700 [appearance:textfield] focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400 disabled:cursor-not-allowed disabled:text-slate-400 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                                    value={value}
-                                    placeholder={values[side] === 'mixed' ? 'Mixed' : undefined}
-                                    disabled={disabled}
-                                    onChange={onChange}
-                                    onKeyDown={onKeyDown}
-                                    onBlur={() => clearDraft(side)}
-                                />
+                                <input {...inputProps('h-11 w-full min-w-0 rounded border border-slate-200 bg-white px-2 text-center text-base text-slate-700 [appearance:textfield] focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400 disabled:cursor-not-allowed disabled:text-slate-400 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none')} />
                             </TouchStepper>
                         </div>
                     );
@@ -176,19 +178,7 @@ export const TextPaddingControls: React.FC<TextPaddingControlsProps> = ({
                             <span aria-hidden="true" className="text-[10px] font-medium">
                                 {SHORT_LABELS[side]}
                             </span>
-                            <input
-                                type="number"
-                                min="0"
-                                step="any"
-                                aria-label={`Padding ${side}`}
-                                className="w-0 min-w-0 flex-1 border-0 bg-transparent py-0 pl-1 pr-5 text-right text-xs text-slate-700 [appearance:textfield] focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                                value={value}
-                                placeholder={values[side] === 'mixed' ? 'Mixed' : undefined}
-                                disabled={disabled}
-                                onChange={onChange}
-                                onKeyDown={onKeyDown}
-                                onBlur={() => clearDraft(side)}
-                            />
+                            <input {...inputProps('w-0 min-w-0 flex-1 border-0 bg-transparent py-0 pl-1 pr-5 text-right text-xs text-slate-700 [appearance:textfield] focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none')} />
                         </label>
                         <div data-micro-stepper className={`absolute bottom-0.5 right-0.5 top-0.5 flex w-3 flex-col justify-center rounded-sm border-l bg-white px-0.5 transition-opacity ${
                             disabled

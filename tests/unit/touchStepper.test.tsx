@@ -128,7 +128,9 @@ describe('touch steppers on numeric property fields', () => {
             for (const name of [`Decrease ${field}`, `Increase ${field}`]) {
                 const control = button(name);
                 expect(control).toHaveAttribute('type', 'button');
-                expect(control).toHaveClass('h-11', 'w-11', 'touch-none');
+                expect(control).toHaveClass('h-11', 'w-11');
+                // Default touch-action: a finger that moves on from a button scrolls the sheet.
+                expect(control).not.toHaveClass('touch-none');
             }
         }
         const input = screen.getByLabelText('X');
@@ -221,17 +223,81 @@ describe('touch steppers on numeric property fields', () => {
         fireEvent.click(increase, { detail: 0 });
         expect(props.onUpdateElements).toHaveBeenCalledOnce();
 
-        // Keyboard or assistive-technology activation: a click with no press before it.
+        // Keyboard activation: keydown, then a click with no press before it.
+        fireEvent.keyDown(increase, { key: 'Enter' });
         fireEvent.click(increase, { detail: 0 });
         expect(props.onUpdateElements).toHaveBeenCalledTimes(2);
+        // Assistive technology: the click alone.
+        fireEvent.click(increase, { detail: 0 });
+        expect(props.onUpdateElements).toHaveBeenCalledTimes(3);
+    });
 
-        // A press that slides off the button while down gets no click; the next click is a
-        // fresh activation.
+    it('releases the implicit pointer capture of the press so a finger sliding off leaves the button', () => {
+        renderPanel('phone', stateFor([rect('a')], ['a']));
+        const increase = button('Increase X');
+        const release = vi.fn();
+        Object.defineProperty(increase, 'releasePointerCapture', { value: release, configurable: true });
+
+        pointerDown(increase, { isPrimary: true, button: 0 });
+        expect(release).toHaveBeenCalledOnce();
+
+        // Browsers throw for a pointer that is not captured (a mouse) or unknown; the press goes on.
+        release.mockImplementation(() => { throw new DOMException('not captured', 'NotFoundError'); });
+        fireEvent.pointerUp(increase);
+        expect(() => pointerDown(increase, { isPrimary: true, button: 0 })).not.toThrow();
+        expect(release).toHaveBeenCalledTimes(2);
+    });
+
+    it('a scroll the browser claims (pointercancel) ends the hold after the one nudge, and keyboard activation still works after it', () => {
+        vi.useFakeTimers();
+        const { props } = renderPanel('phone', stateFor([rect('a')], ['a']));
+        const increase = button('Increase X');
+
+        fireEvent.pointerDown(increase);
+        fireEvent.pointerCancel(increase);
+        act(() => vi.advanceTimersByTime(STEPPER_REPEAT_DELAY_MS + STEPPER_REPEAT_INTERVAL_MS * 10));
+        expect(props.onUpdateElements).toHaveBeenCalledOnce();
+
+        // No click follows a cancelled press; the keyboard's own click must not be swallowed.
+        fireEvent.keyDown(increase, { key: ' ' });
+        fireEvent.click(increase, { detail: 0 });
+        expect(props.onUpdateElements).toHaveBeenCalledTimes(2);
+    });
+
+    it('a mouse that slides off the button and back before releasing nudges once', () => {
+        vi.useFakeTimers();
+        const { props } = renderPanel('phone', stateFor([rect('a')], ['a']));
+        const increase = button('Increase X');
+
         fireEvent.pointerDown(increase);
         pointerLeave(increase, { buttons: 1 });
-        expect(props.onUpdateElements).toHaveBeenCalledTimes(3);
-        fireEvent.click(increase, { detail: 0 });
+        act(() => vi.advanceTimersByTime(1000));
+        expect(props.onUpdateElements).toHaveBeenCalledOnce();
+        fireEvent.pointerUp(increase);
+        fireEvent.click(increase, { detail: 1 }); // mousedown and mouseup on the same element: the browser clicks
+        expect(props.onUpdateElements).toHaveBeenCalledOnce();
+    });
+
+    it('stops a hold when the page is hidden or the window loses focus', () => {
+        vi.useFakeTimers();
+        const { props } = renderPanel('phone', stateFor([rect('a')], ['a']));
+        const increase = button('Increase X');
+
+        fireEvent.pointerDown(increase);
+        act(() => { document.dispatchEvent(new Event('visibilitychange')); });
+        act(() => vi.advanceTimersByTime(1000));
+        expect(props.onUpdateElements).toHaveBeenCalledOnce();
+
+        fireEvent.pointerDown(increase);
+        act(() => { window.dispatchEvent(new Event('blur')); });
+        act(() => vi.advanceTimersByTime(1000));
+        expect(props.onUpdateElements).toHaveBeenCalledTimes(2);
+
+        // The listeners are gone with the hold: a later blur does not touch a new hold's timers.
+        fireEvent.pointerDown(increase);
+        act(() => vi.advanceTimersByTime(STEPPER_REPEAT_DELAY_MS + STEPPER_REPEAT_INTERVAL_MS));
         expect(props.onUpdateElements).toHaveBeenCalledTimes(4);
+        fireEvent.pointerUp(increase);
     });
 
     it('stops a hold when the field unmounts', () => {

@@ -12,18 +12,22 @@ export interface HoldRepeat {
 }
 
 /**
- * One press-and-hold timer per control. Starting a hold cancels any hold in progress, and the
- * timers clear on unmount, so a repeat can never outlive its field.
+ * One press-and-hold timer per control. Starting a hold cancels any hold in progress. A hold also
+ * ends when the page is hidden or the window loses focus, since a finger lifted during an app
+ * switch or under a system dialog sends no pointer event, and the timers clear on unmount, so a
+ * repeat can never outlive its field or run unseen.
  */
 export function useHoldRepeat(): HoldRepeat {
     const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
     const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
-    const stop = React.useCallback(() => {
+    const stop = React.useCallback(function end() {
         if (intervalRef.current) clearInterval(intervalRef.current);
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         intervalRef.current = null;
         timeoutRef.current = null;
+        document.removeEventListener('visibilitychange', end);
+        window.removeEventListener('blur', end);
     }, []);
 
     const start = React.useCallback((action: () => void) => {
@@ -32,6 +36,8 @@ export function useHoldRepeat(): HoldRepeat {
         timeoutRef.current = setTimeout(() => {
             intervalRef.current = setInterval(action, STEPPER_REPEAT_INTERVAL_MS);
         }, STEPPER_REPEAT_DELAY_MS);
+        document.addEventListener('visibilitychange', stop);
+        window.addEventListener('blur', stop);
     }, [stop]);
 
     React.useEffect(() => stop, [stop]);
@@ -53,7 +59,7 @@ interface TouchStepperProps {
     className?: string;
 }
 
-const BUTTON_CLASS = 'flex h-11 w-11 shrink-0 select-none touch-none items-center justify-center rounded border border-slate-200 bg-white text-slate-600 active:bg-slate-100 disabled:text-slate-300';
+const BUTTON_CLASS = 'flex h-11 w-11 shrink-0 select-none items-center justify-center rounded border border-slate-200 bg-white text-slate-600 active:bg-slate-100 disabled:text-slate-300';
 
 interface StepButtonProps extends Pick<TouchStepperProps, 'onNudge' | 'repeat' | 'disabled'> {
     delta: number;
@@ -64,28 +70,34 @@ interface StepButtonProps extends Pick<TouchStepperProps, 'onNudge' | 'repeat' |
 /**
  * The press starts the hold on `pointerdown` (so a tap nudges at once and a hold can repeat) and
  * cancels it, which keeps focus where it is: the input neither loses nor gains it, so the
- * on-screen keyboard stays as it was. The tap's trailing `click` is consumed: a touch tap's click
- * is not told apart by `detail` (Chromium reports 0, as for a keyboard) and `pointerType` is not
- * on every browser's click. A click with no press before it (keyboard, assistive technology)
- * nudges once. A cancelled press, or one that slides off the button while still down, gets no
- * click, so those drop the pending flag; a touch pointer also "leaves" when it is lifted, after
- * pointerup and before its click, and that leave keeps the flag.
+ * on-screen keyboard stays as it was. The hold ends on pointerup, on pointercancel (the browser
+ * claimed the finger for a scroll: the button keeps the default touch-action so the sheet or
+ * panel can scroll from it) and on pointerleave (a mouse, or a finger whose implicit capture the
+ * press released, slid off).
+ *
+ * The tap's trailing `click` is consumed by the press that produced it: a touch tap's click is
+ * not told apart by `detail` (Chromium reports 0, as for a keyboard) and `pointerType` is not on
+ * every browser's click. A click with no press before it (keyboard, assistive technology) nudges
+ * once. The flag is cleared only by that click or by a keydown, so a press that ends without a
+ * click (a slide-off, a claimed scroll, a long Android hold) cannot swallow the keyboard
+ * activation that follows, and a mouse that slides off and back before releasing (which does
+ * click) still nudges once.
  */
 function StepButton({ delta, label, Icon, onNudge, repeat, disabled }: StepButtonProps) {
     const pressed = React.useRef(false);
     const onPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
         if (disabled || event.isPrimary === false || event.button > 0) return;
         event.preventDefault();
+        // A touch pointer is implicitly captured by its pointerdown target, which would keep a
+        // finger that slides off the button "on" it (no pointerleave) until it lifts. Browsers
+        // refuse the call for an uncaptured (mouse) or unknown pointer.
+        try {
+            event.currentTarget.releasePointerCapture?.(event.pointerId);
+        } catch {
+            /* not captured */
+        }
         pressed.current = true;
         repeat.start(() => onNudge(delta));
-    };
-    const cancel = () => {
-        repeat.stop();
-        pressed.current = false;
-    };
-    const onPointerLeave = (event: React.PointerEvent<HTMLButtonElement>) => {
-        if (event.buttons !== 0) cancel();
-        else repeat.stop();
     };
     const onClick = () => {
         if (pressed.current) {
@@ -93,6 +105,9 @@ function StepButton({ delta, label, Icon, onNudge, repeat, disabled }: StepButto
             return;
         }
         if (!disabled) onNudge(delta);
+    };
+    const onKeyDown = () => {
+        pressed.current = false;
     };
     return (
         <button
@@ -102,8 +117,9 @@ function StepButton({ delta, label, Icon, onNudge, repeat, disabled }: StepButto
             disabled={disabled}
             onPointerDown={onPointerDown}
             onPointerUp={repeat.stop}
-            onPointerCancel={cancel}
-            onPointerLeave={onPointerLeave}
+            onPointerCancel={repeat.stop}
+            onPointerLeave={repeat.stop}
+            onKeyDown={onKeyDown}
             onContextMenu={event => event.preventDefault()}
             onClick={onClick}
         >

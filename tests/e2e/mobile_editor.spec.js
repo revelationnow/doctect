@@ -589,46 +589,76 @@ test('Select multiple: taps build the selection, a drag moves all of it, Arrange
     if (phone) await expect(twoSelected).toContainText('Page ·');
 });
 
-test('numeric fields get touch −/+ steppers that fit the viewport, tap once, hold to repeat and undo per nudge', async ({ page, browserName }, testInfo) => {
+test('numeric fields get touch −/+ steppers that fit their scroller, tap once, hold to repeat, scroll on a drag and undo per nudge', async ({ page, browserName }, testInfo) => {
+    const phone = isPhone(testInfo);
+    const fingers = new Fingers(page, browserName);
     const pane = activePane(page);
-    const start = await box(pane.locator('[data-element-id="box"]'));
+    // The fixed-size text: its Typography section carries the padding steppers as well.
+    const start = await box(pane.locator('[data-element-id="title"]'));
     await page.touchscreen.tap(start.x, start.y);
     await expect(pane.locator('[data-resize-handle="se"]')).toBeVisible();
-    if (isPhone(testInfo)) {
+    if (phone) {
         const grabber = page.getByRole('button', { name: 'Resize properties sheet' });
         await grabber.click(); // half
         await grabber.click(); // full
     }
-    const decrease = page.getByRole('button', { name: 'Decrease X' });
-    const increase = page.getByRole('button', { name: 'Increase X' });
-    const input = page.getByLabel('X', { exact: true });
-    await increase.scrollIntoViewIfNeeded();
+    const control = name => page.getByRole('button', { name });
+    const field = name => page.getByLabel(name, { exact: true });
+    const input = field('X');
 
-    const { width, height } = await viewport(page);
-    const screen = { x: 0, y: 0, width, height };
-    for (const control of [decrease, increase]) {
-        const b = await control.boundingBox();
-        expect(b.width).toBeGreaterThanOrEqual(44);
-        expect(b.height).toBeGreaterThanOrEqual(44);
-        expect(within(b, screen)).toBe(true);
+    // Each target is measured against the scroll container it lives in (the phone sheet's content
+    // or the tablet panel): a document-level overflow check cannot see sideways overflow inside a
+    // scroller. Phone repeats the check down to 320px.
+    const scrollerHandle = locator => locator.evaluateHandle(el => {
+        let node = el.parentElement;
+        while (node && !/(auto|scroll)/.test(getComputedStyle(node).overflowY)) node = node.parentElement;
+        if (!node) throw new Error('no scroll container');
+        return node;
+    });
+    const scrollerOf = async locator => (await scrollerHandle(locator)).evaluate(node => {
+        const r = node.getBoundingClientRect();
+        return { x: r.x, width: r.width, sideways: node.scrollWidth - node.clientWidth };
+    });
+    const fits = async () => {
+        const { width } = await viewport(page);
+        const buttons = ['Decrease X', 'Increase X', 'Decrease Z-Index', 'Increase Z-Index', 'Decrease left padding', 'Increase left padding'].map(control);
+        buttons.push(page.getByTitle('Bring Forward'), page.getByTitle('Send Backward'));
+        const inputs = [input, field('Z-Index'), field('Padding left')];
+        for (const target of [...buttons, ...inputs]) {
+            await target.scrollIntoViewIfNeeded();
+            const name = `${await target.evaluate(el => el.getAttribute('aria-label') || el.title || el.id)} at ${width}px`;
+            const b = await target.boundingBox();
+            const s = await scrollerOf(target);
+            if (buttons.includes(target)) expect(b.width, name).toBeGreaterThanOrEqual(44);
+            expect(b.height, name).toBeGreaterThanOrEqual(44);
+            expect(b.x, name).toBeGreaterThanOrEqual(s.x);
+            expect(b.x + b.width, name).toBeLessThanOrEqual(s.x + s.width + 0.5);
+            expect(s.sideways, name).toBeLessThanOrEqual(0);
+        }
+        expect(await input.evaluate(el => getComputedStyle(el).fontSize)).toBe('16px');
+        expect(await page.locator('[data-micro-stepper]').count()).toBe(0);
+        expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    };
+    if (phone) {
+        for (const { width, height } of await phoneWidths(page)) {
+            await page.setViewportSize({ width, height });
+            await fits();
+        }
+    } else {
+        await fits();
     }
-    const field = await input.boundingBox();
-    expect(field.height).toBeGreaterThanOrEqual(44);
-    expect(within(field, screen)).toBe(true);
-    expect(await input.evaluate(el => getComputedStyle(el).fontSize)).toBe('16px');
-    expect(await page.locator('[data-micro-stepper]').count()).toBe(0);
-    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
 
     // A real touch tap (pointerdown, pointerup, then click) nudges exactly once, without focusing
     // the input (which would raise the on-screen keyboard).
+    const increase = control('Increase X');
+    await increase.scrollIntoViewIfNeeded();
     const before = Number(await input.inputValue());
     const plus = await box(increase);
     await page.touchscreen.tap(plus.x, plus.y);
     await expect(input).toHaveValue(String(before + 1));
     expect(await input.evaluate(el => document.activeElement === el)).toBe(false);
 
-    // Holding repeats after the initial delay; releasing stops it.
-    const fingers = new Fingers(page, browserName);
+    // A finger that stays put repeats after the initial delay; lifting it stops the repeat.
     await fingers.down(1, plus.x, plus.y);
     await page.waitForTimeout(600);
     await fingers.up(1, plus.x, plus.y);
@@ -640,4 +670,25 @@ test('numeric fields get touch −/+ steppers that fit the viewport, tap once, h
     // Every nudge is its own undo step.
     await page.getByRole('button', { name: 'Undo' }).click();
     await expect(input).toHaveValue(String(held - 1));
+
+    if (phone) {
+        // A finger that lands on a stepper and moves on is scrolling the sheet, not holding the
+        // button: the value changes once at most (the press itself) and the sheet scrolls.
+        const increaseY = control('Increase Y');
+        await increaseY.scrollIntoViewIfNeeded();
+        const scroller = await scrollerHandle(increaseY);
+        const from = await box(increaseY);
+        const y = Number(await field('Y').inputValue());
+        const scrolled = await scroller.evaluate(el => el.scrollTop);
+        await fingers.down(1, from.x, from.y);
+        for (let step = 1; step <= 6; step++) await fingers.move(1, from.x, from.y - 25 * step);
+        await page.waitForTimeout(500);
+        await fingers.up(1, from.x, from.y - 150);
+        await expect.poll(() => scroller.evaluate(el => el.scrollTop)).toBeGreaterThan(scrolled);
+        const after = Number(await field('Y').inputValue());
+        expect(after - y).toBeGreaterThanOrEqual(0);
+        expect(after - y).toBeLessThanOrEqual(1);
+        await page.waitForTimeout(300);
+        await expect(field('Y')).toHaveValue(String(after));
+    }
 });

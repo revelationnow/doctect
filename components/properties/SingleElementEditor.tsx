@@ -13,7 +13,7 @@ import { DEFAULT_TEXT_FONT_SIZE, resolveTextFontSize } from '../../services/text
 import { CollapsibleSection } from '../CollapsibleSection';
 import { resolveTextPadding, type TextPaddingSide } from '../../services/textPadding';
 import { TextPaddingControls, type TextPaddingSelection } from './TextPaddingControls';
-import { TouchStepper, useHoldRepeat } from './TouchStepper';
+import { TouchStepper, useHoldRepeat, type HoldRepeat } from './TouchStepper';
 import { useFormFactor } from '../editor-layout/FormFactorContext';
 import { writeBrowserPreference } from '../../services/browserPreferences';
 
@@ -156,6 +156,46 @@ const SmartValueInput: React.FC<{
     );
 };
 
+/**
+ * SmartInput on phone and tablet: 44px −/+ beside a 44px, 16px input, on a row of its own since
+ * the desktop grids (four or two columns) are too narrow for three touch targets per cell. Its
+ * own component so the desktop SmartInput makes no extra hook call: a `useId` there would shift
+ * every id React hands out after it on desktop.
+ */
+const TouchNumberField = ({ label, displayValue, onChange, onKeyDown, min, max, step, className, repeat, onNudge }: {
+    label: string,
+    displayValue: string | number,
+    onChange: React.ChangeEventHandler<HTMLInputElement>,
+    onKeyDown: React.KeyboardEventHandler<HTMLInputElement>,
+    min?: number,
+    max?: number,
+    step: number,
+    className: string,
+    repeat: HoldRepeat,
+    onNudge: (delta: number) => void,
+}) => {
+    const inputId = React.useId();
+    return (
+        <div className={`col-span-full ${className}`}>
+            <label htmlFor={inputId} className="mb-1 block text-xs text-slate-500">{label}</label>
+            <TouchStepper name={label} step={step} repeat={repeat} onNudge={onNudge}>
+                <input
+                    id={inputId}
+                    type="number"
+                    value={displayValue}
+                    onChange={onChange}
+                    onKeyDown={onKeyDown}
+                    className="h-11 w-full min-w-0 rounded border px-2 text-center text-base [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    placeholder="Mixed"
+                    min={min}
+                    max={max}
+                    step={step}
+                />
+            </TouchStepper>
+        </div>
+    );
+};
+
 const SmartInput = ({
     label,
     value,
@@ -203,29 +243,20 @@ const SmartInput = ({
     };
 
     const touch = useFormFactor() !== 'desktop';
-    const inputId = React.useId();
-
     if (touch) {
-        // Phone and tablet: 44px −/+ beside a 44px, 16px input, on a row of its own since the
-        // desktop grids (four or two columns) are too narrow for three touch targets per cell.
         return (
-            <div className={`col-span-full ${className}`}>
-                <label htmlFor={inputId} className="mb-1 block text-xs text-slate-500">{label}</label>
-                <TouchStepper name={label} step={step} repeat={repeat} onNudge={nudgeLatest}>
-                    <input
-                        id={inputId}
-                        type="number"
-                        value={displayValue}
-                        onChange={(e) => onChange(parseFloat(e.target.value))}
-                        onKeyDown={handleKeyDown}
-                        className="h-11 w-full min-w-0 rounded border px-2 text-center text-base [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        placeholder="Mixed"
-                        min={min}
-                        max={max}
-                        step={step}
-                    />
-                </TouchStepper>
-            </div>
+            <TouchNumberField
+                label={label}
+                displayValue={displayValue}
+                onChange={(e) => onChange(parseFloat(e.target.value))}
+                onKeyDown={handleKeyDown}
+                min={min}
+                max={max}
+                step={step}
+                className={className}
+                repeat={repeat}
+                onNudge={nudgeLatest}
+            />
         );
     }
 
