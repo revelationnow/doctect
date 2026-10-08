@@ -100,6 +100,33 @@ describe('EditorLayout touch branches', () => {
         expect(pill.firstElementChild!.className).toMatch(/\bflex-wrap\b/);
         expect(within(pill).getAllByRole('button')).toHaveLength(9);
         expect(within(pill).getByRole('button', { name: 'Fit page to width' })).toBeTruthy();
+        // R33: the quick format bar reads the pill as bottom chrome through this tag.
+        expect(pill.getAttribute('data-touch-chrome')).toBe('tool-pill');
+    });
+
+    it('phone publishes the pill height plus gap as scroll room for the canvas, 0 once the pill unmounts', () => {
+        const observed: Array<{ target: Element; callback: () => void }> = [];
+        class FakeResizeObserver {
+            constructor(private readonly callback: () => void) {}
+            observe(target: Element) { observed.push({ target, callback: this.callback }); }
+            disconnect() {}
+        }
+        (globalThis as any).ResizeObserver = FakeResizeObserver;
+        try {
+            render(<EditorLayout formFactor="phone" {...slots} touchActions={makeActions()} navigationKey="n1" selectionLabel="Page · Root" />);
+            const wrapper = screen.getByTestId('canvas').parentElement!;
+            const pill = screen.getByTestId('touch-tool-pill');
+            expect(wrapper.style.getPropertyValue('--touch-pill-inset')).toBe('12px'); // jsdom lays out 0px tall
+            expect(observed.map(entry => entry.target)).toEqual([pill]);
+            Object.defineProperty(pill, 'offsetHeight', { configurable: true, value: 92 }); // two rows at phone width
+            act(() => observed[0].callback());
+            expect(wrapper.style.getPropertyValue('--touch-pill-inset')).toBe('104px');
+            fireEvent.click(screen.getByRole('button', { name: 'Resize properties sheet' })); // half: pill unmounts
+            expect(screen.queryByTestId('touch-tool-pill')).toBeNull();
+            expect(wrapper.style.getPropertyValue('--touch-pill-inset')).toBe('0px');
+        } finally {
+            delete (globalThis as any).ResizeObserver;
+        }
     });
 
     it('phone keeps the sheet at the user detent when a non-editable canvas child takes focus', () => {

@@ -174,11 +174,19 @@ describe('QuickFormatBar', () => {
             expect(bar.style.top).toBe(`${328 - 48 - 8}px`);  // "above" would be 644px, under the sheet / keyboard
             rerender(at(200, 220));
             expect(bar.style.top).toBe(`${200 - 48 - 8}px`);  // inside the band: untouched
+            // R33: the phone tool pill floats above the sheet; a bottom-clamped bar stops above it.
+            const pill = chrome('tool-pill', { top: 236, bottom: 316 });
+            rerender(at(700, 720));
+            expect(bar.style.top).toBe(`${236 - 48 - 8}px`);
+            pill.remove();
+            rerender(at(700, 720));
+            expect(bar.style.top).toBe(`${328 - 48 - 8}px`);  // pill unmounted (sheet raised): the sheet bounds again
             sheet.getBoundingClientRect = () => ({ top: 80, bottom: 400, left: 0, right: 0, width: 0, height: 0 } as DOMRect);
             rerender(at(200, 220));
             expect(bar.style.top).toBe(`${56 + 8}px`);        // band shorter than the bar: pinned to its top
         } finally {
             topBar.remove(); sheet.remove();
+            document.querySelector('[data-touch-chrome="tool-pill"]')?.remove();
             delete (window as any).visualViewport;
         }
     });

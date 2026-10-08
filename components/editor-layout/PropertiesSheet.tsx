@@ -62,7 +62,7 @@ export function PropertiesSheet({ detent, onDetentChange, title, actions, childr
                 </button>
                 {actions}
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" hidden={detent === 'peek'}>{children}</div>
+            <div data-testid="properties-sheet-content" className="min-h-0 flex-1 overflow-y-auto overscroll-contain" hidden={detent === 'peek'}>{children}</div>
         </section>
     );
 }

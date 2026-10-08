@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { FormFactor } from '../../hooks/useEditorFormFactor';
 import type { TouchEditorActions } from './touchActions';
 import { SidebarDrawer } from './SidebarDrawer';
@@ -93,11 +93,33 @@ function TabletEditorLayout({ sidebar, canvas, properties, touchActions, navigat
     );
 }
 
+/** The tool pill floats this far above the properties sheet's peek row. */
+export const PILL_BOTTOM_GAP_PX = 12;
+/** CSS variable on the phone canvas wrapper: the pill's height plus its gap, 0 while the pill is unmounted. */
+export const PILL_INSET_VAR = '--touch-pill-inset';
+
 /** Phone: top bar, full-screen canvas with a floating tool pill, properties in a bottom sheet, sidebar in a drawer. */
 function PhoneEditorLayout({ sidebar, canvas, properties, touchActions, navigationKey, selectionLabel }: EditorLayoutProps & { touchActions: TouchEditorActions }) {
     const { drawerOpen, setDrawerOpen } = useTouchLayoutState(navigationKey, touchActions.fitToWidth);
     const [detent, setDetent] = useState<SheetDetent>('peek');
     const canvasRef = useRef<HTMLDivElement>(null);
+    const pillRef = useRef<HTMLDivElement>(null);
+
+    // Scroll room under the page for the pill: the wrapper publishes the pill's height plus its gap
+    // as a CSS variable, which the touch CSS adds to the canvas content's bottom padding, so the page
+    // bottom can be scrolled clear of the pill. Measured live: the pill wraps to one or two rows
+    // with the width. 0 while the pill is unmounted (sheet at half/full).
+    useLayoutEffect(() => {
+        const wrapper = canvasRef.current;
+        if (!wrapper) return;
+        const pill = pillRef.current;
+        const apply = () => wrapper.style.setProperty(PILL_INSET_VAR, `${pill ? pill.offsetHeight + PILL_BOTTOM_GAP_PX : 0}px`);
+        apply();
+        if (!pill || typeof ResizeObserver === 'undefined') return;
+        const observer = new ResizeObserver(apply);
+        observer.observe(pill);
+        return () => observer.disconnect();
+    }, [detent]);
 
     // Selecting something from half/full keeps the user's detent; editing text always drops to peek
     // so the inline editor is not hidden behind the sheet and keyboard.
@@ -119,9 +141,9 @@ function PhoneEditorLayout({ sidebar, canvas, properties, touchActions, navigati
                     // All nine tools stay reachable at phone widths: the row wraps inside the pill
                     // instead of scrolling Fit off the edge. `w-max` sizes the pill to the full row,
                     // capped by max-w, so it wraps only as much as the screen requires.
-                    <div data-testid="touch-tool-pill"
+                    <div ref={pillRef} data-testid="touch-tool-pill" data-touch-chrome="tool-pill"
                         className="absolute left-1/2 z-20 w-max max-w-[calc(100vw-16px)] -translate-x-1/2 rounded-2xl border bg-white/95 px-1 shadow-lg"
-                        style={{ bottom: SHEET_PEEK_PX + 12 }}>
+                        style={{ bottom: SHEET_PEEK_PX + PILL_BOTTOM_GAP_PX }}>
                         <TouchToolButtons actions={touchActions} showFit wrap />
                     </div>
                 )}

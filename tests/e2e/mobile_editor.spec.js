@@ -15,6 +15,18 @@ const horizontalOverflow = page => page.evaluate(() => document.documentElement.
 const SHEET_PEEK_PX = 72; // PropertiesSheet.SHEET_PEEK_PX
 const SHEET_FULL_INSET_PX = 56; // PropertiesSheet full detent: calc(100dvh - 56px)
 
+// The desktop guard's fixture plus a text column spanning most of the page: once selected, its
+// format bar has no room above it and clamps to the bottom of the visible band, where the phone
+// tool pill lives. It sits right of the guard's elements so their taps are unaffected.
+const mobileFixture = structuredClone(fixture);
+mobileFixture.variants.default.templates.page.elements.push({
+    id: 'tall', type: 'text', layerId: 'base', x: 380, y: 20, w: 200, h: 800, rotation: 0,
+    fill: '', stroke: '', strokeWidth: 0, opacity: 1, text: 'Tall', autoWidth: false,
+    fontSize: 18, fontFamily: 'helvetica', fontWeight: 'normal', fontStyle: 'normal',
+    textColor: '#000000', textOverflow: 'clip', textWrap: true,
+    textPadding: { top: 0, right: 0, bottom: 0, left: 0 },
+});
+
 const box = async locator => {
     const b = await locator.boundingBox();
     if (!b) throw new Error(`no bounding box for ${locator}`);
@@ -27,9 +39,10 @@ const overlaps = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b
 
 /**
  * Multi-finger touch input. On Chromium every step goes through CDP as a real touch event, so the
- * browser produces the same `pointerType: 'touch'` events a device does, with live pointer ids
- * (pointer capture, which the gesture hook takes, rejects a synthetic second finger). Elsewhere
- * PointerEvents are dispatched at the element under the finger, which is what the hook consumes.
+ * browser produces the same `pointerType: 'touch'` events a device does, with live pointer ids.
+ * Elsewhere PointerEvents are dispatched at the element under the finger, which is what the hook
+ * consumes; the browser refuses pointer capture for such a pointer (NotFoundError), which the hook
+ * tolerates. That path is validated by forcing it on mobile-phone-chromium: the whole spec passes.
  * Each CDP call carries the full set of fingers still down: the browser derives press/move/release
  * per finger from the difference to the previous call.
  */
@@ -81,7 +94,7 @@ test.beforeEach(async ({ page }) => {
             ? { matches: true, media: query, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {}, onchange: null, dispatchEvent: () => false }
             : original(query));
     });
-    await seedNativeProject(page, { id: 'mobile', name: 'Mobile', initialState: fixture });
+    await seedNativeProject(page, { id: 'mobile', name: 'Mobile', initialState: mobileFixture });
     await page.goto('/app');
     await expect(activePane(page).getByTestId('editor-canvas')).toBeVisible();
 });
@@ -162,7 +175,7 @@ test('drawer, sheet and overflow menu', async ({ page }, testInfo) => {
     if (phone) {
         const sheet = page.getByTestId('properties-sheet');
         const grabber = page.getByRole('button', { name: 'Resize properties sheet' });
-        const content = sheet.locator(':scope > div').last();
+        const content = page.getByTestId('properties-sheet-content');
         const height = async () => (await sheet.boundingBox()).height;
         const { height: inner } = await viewport(page);
         expect(await height()).toBe(SHEET_PEEK_PX);
@@ -252,6 +265,50 @@ test('phone tool pill keeps all nine tools, Fit included, inside the viewport', 
         const sheet = await page.getByTestId('properties-sheet').boundingBox();
         expect(pillBox.y + pillBox.height, `pill clears the sheet at ${width}px`).toBeLessThanOrEqual(sheet.y);
         expect(await horizontalOverflow(page), `no horizontal scroll at ${width}px`).toBeLessThanOrEqual(0);
+    }
+});
+
+/** Refit the page to the current width (the layout refits on rotation, not on a plain resize). */
+const fitPage = async (page, width) => {
+    const canvas = activePane(page).getByTestId('editor-canvas');
+    await page.getByRole('button', { name: 'Fit page to width' }).click();
+    await expect.poll(async () => Math.abs((await canvas.boundingBox()).width - (width - 32))).toBeLessThanOrEqual(1);
+};
+
+test('phone quick format bar clamps above the tool pill, never over it', async ({ page }, testInfo) => {
+    test.skip(!isPhone(testInfo), 'phone only');
+    const pane = activePane(page);
+    const bar = formatBar(page);
+    const pill = page.getByTestId('touch-tool-pill');
+    for (const { width, height } of await phoneWidths(page)) {
+        await page.setViewportSize({ width, height });
+        await fitPage(page, width);
+        const tall = await box(pane.locator('[data-element-id="tall"]'));
+        await page.touchscreen.tap(tall.x, tall.y);
+        await expect(bar).toBeVisible();
+        const b = await bar.boundingBox();
+        const p = await pill.boundingBox();
+        const sheet = await page.getByTestId('properties-sheet').boundingBox();
+        expect(within(b, { x: 0, y: 0, width, height }), `bar inside the ${width}px viewport`).toBe(true);
+        expect(b.y + b.height, `bar clears the pill at ${width}px`).toBeLessThanOrEqual(p.y);
+        expect(p.y + p.height, `pill clears the sheet at ${width}px`).toBeLessThanOrEqual(sheet.y);
+        await page.touchscreen.tap(6, tall.y); // the gutter beside the page: deselects, the bar goes
+        await expect(bar).toBeHidden();
+    }
+});
+
+test('phone canvas scrolls the page bottom clear of the tool pill', async ({ page }, testInfo) => {
+    test.skip(!isPhone(testInfo), 'phone only');
+    const outer = activePane(page).locator('.canvas-scroll-container');
+    const canvas = activePane(page).getByTestId('editor-canvas');
+    const pill = page.getByTestId('touch-tool-pill');
+    for (const { width, height } of await phoneWidths(page)) {
+        await page.setViewportSize({ width, height });
+        await fitPage(page, width);
+        await outer.evaluate(el => { el.scrollTop = el.scrollHeight; });
+        const p = await pill.boundingBox();
+        await expect.poll(async () => { const c = await canvas.boundingBox(); return c.y + c.height; }, `page bottom above the pill at ${width}px`)
+            .toBeLessThanOrEqual(p.y);
     }
 });
 

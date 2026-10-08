@@ -128,6 +128,12 @@
         right: 1rem;
         width: auto;
       }
+      /* Phone canvas: scroll room under the page equal to the floating tool pill plus its gap
+         (--touch-pill-inset, measured by the phone layout), so the page bottom can be scrolled
+         clear of the pill instead of ending beneath it. */
+      [data-form-factor="phone"] .canvas-scroll-container > div {
+        padding-bottom: calc(1rem + var(--touch-pill-inset, 0px));
+      }
       /* Layer colour swatches: at 44px each the strip is wider than the space right of the chip,
          so the sheet or panel edge would clip it as an absolute popover. On touch it becomes a
          third line of the row (chip and strip join the row's flex items; the strip takes the full

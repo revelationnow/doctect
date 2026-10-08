@@ -32,8 +32,9 @@ interface Props {
 }
 
 // The part of the viewport the bar may occupy: the visual viewport (shrunk by the on-screen
-// keyboard, when the browser reports one) minus the phone top bar and the properties sheet, which
-// tag themselves with data-touch-chrome. Chrome that is not mounted takes nothing away.
+// keyboard, when the browser reports one) minus the phone top bar, the properties sheet and the
+// tool pill floating above the sheet, which tag themselves with data-touch-chrome. Chrome that is
+// not mounted takes nothing away.
 const visibleBand = () => {
     const viewport = window.visualViewport;
     let top = viewport?.offsetTop ?? 0;
@@ -42,6 +43,8 @@ const visibleBand = () => {
     if (topBar) top = Math.max(top, topBar.bottom);
     const sheet = document.querySelector('[data-touch-chrome="sheet"]')?.getBoundingClientRect();
     if (sheet) bottom = Math.min(bottom, sheet.top);
+    const pill = document.querySelector('[data-touch-chrome="tool-pill"]')?.getBoundingClientRect();
+    if (pill) bottom = Math.min(bottom, pill.top);
     return { top, bottom };
 };
 

@@ -126,7 +126,11 @@ export function useCanvasTouchGestures(
             if ((event.target as Element | null)?.closest?.(`[${GESTURE_IGNORE_ATTR}]`)) return;
             event.preventDefault();
             if (pointers.size >= MAX_TRACKED_POINTERS) return;
-            el.setPointerCapture?.(event.pointerId);
+            // Capture keeps the finger's events on this element once it leaves it. The browser
+            // throws NotFoundError for a pointer it no longer counts as active (lifted or cancelled
+            // before this ran, or an event that did not come from the platform); the gesture must
+            // register either way, so a refused capture is ignored.
+            try { el.setPointerCapture?.(event.pointerId); } catch { /* uncaptured: events still bubble here */ }
             pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
 
             if (pointers.size === 1) {

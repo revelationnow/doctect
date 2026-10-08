@@ -112,6 +112,27 @@ describe('useCanvasTouchGestures', () => {
         expect(h.onGestureEnd).toHaveBeenCalledTimes(1);
     });
 
+    it('still registers pinch and tap when pointer capture throws for an inactive or synthetic pointer', () => {
+        const h = makeHandlers();
+        const { getByTestId } = render(<Harness handlers={h} />);
+        const s = getByTestId('surface') as HTMLElement;
+        const capture = vi.fn(() => { throw new DOMException('No active pointer with the given id is found.', 'NotFoundError'); });
+        (s as any).setPointerCapture = capture;
+        pointer(s, 'pointerdown', 1, 100, 100);
+        pointer(s, 'pointerdown', 2, 200, 100);
+        pointer(s, 'pointermove', 2, 300, 100);
+        expect(capture).toHaveBeenCalledTimes(2);
+        expect(h.onPinch).toHaveBeenCalledWith(2, 200, 100); // 100 -> 200 px apart, centre 200
+        pointer(s, 'pointerup', 1, 100, 100);
+        pointer(s, 'pointerup', 2, 300, 100);
+        expect(h.onGestureEnd).toHaveBeenCalledTimes(1);
+        pointer(s, 'pointerdown', 3, 10, 10);
+        pointer(s, 'pointerup', 3, 10, 10);
+        expect(capture).toHaveBeenCalledTimes(3);
+        expect(h.onTap).toHaveBeenCalledTimes(1);
+        expect(h.onGestureEnd).toHaveBeenCalledTimes(2);
+    });
+
     it('falls back to onDirectUp when a second finger lands and no onDirectCancel is provided', () => {
         const h = makeHandlers(true);
         const { getByTestId } = render(<Harness handlers={h} />);
