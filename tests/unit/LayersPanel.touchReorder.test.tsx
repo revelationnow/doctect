@@ -87,4 +87,58 @@ describe('LayersPanel touch reorder with layerActions (incremental editor)', () 
         expect(screen.getByRole('button', { name: 'Move Back backward' })).toHaveProperty('disabled', true);
         expect(screen.getByRole('button', { name: 'Move Back forward' })).toHaveProperty('disabled', false);
     });
+
+    it('drag-drop between rows issues the same move intent as the buttons (desktop drag path)', () => {
+        const p = props(shuffled);
+        const layerActions = actions();
+        render(<LayersPanel {...p} layerActions={layerActions} />);
+        fireEvent.dragStart(screen.getByTestId('layer-row-back'));
+        fireEvent.dragOver(screen.getByTestId('layer-row-front'));
+        fireEvent.drop(screen.getByTestId('layer-row-front'));
+        expect(layerActions.edit).toHaveBeenCalledTimes(1);
+        expect(layerActions.edit).toHaveBeenCalledWith({ type: 'move', position: 1, targetPosition: 0 });
+        expect(p.onUpdateTemplate).not.toHaveBeenCalled();
+    });
+});
+
+describe('LayersPanel row layout per form factor', () => {
+    const ROW = 'group flex items-center gap-1 px-2 py-1.5 border-b border-slate-50 text-sm';
+    const DELETE = 'p-0.5 text-slate-300 hover:text-red-500 disabled:opacity-30 disabled:hover:text-slate-300';
+    const parts = (row: HTMLElement) => ({
+        grip: row.querySelector('[title="Reorder layer"]')!,
+        collapse: row.querySelector('[title="Collapse layer"]')!,
+        name: row.querySelector('[data-testid="layer-name"]')!,
+        eye: row.querySelector('[title="Toggle visibility"]')!,
+        lock: row.querySelector('[title="Toggle lock"]')!,
+        color: row.querySelector('[data-color-popover]')!,
+        del: row.querySelector('[title="Delete layer"]')!,
+    });
+
+    it('desktop rows keep the original single-line markup and class strings', () => {
+        render(<LayersPanel {...props()} />);
+        expect(screen.getByTestId('layer-row-back').className).toBe(`${ROW} bg-blue-50`);
+        const row = screen.getByTestId('layer-row-front');
+        expect(row.className).toBe(`${ROW} hover:bg-slate-50`);
+        const { eye, lock, color, del } = parts(row);
+        expect(eye.className).toBe('text-slate-500');
+        expect(lock.className).toBe('text-slate-500');
+        expect(color.className).toBe('relative');
+        expect(del.className).toBe(DELETE);
+        expect(row.querySelector('.basis-full')).toBeNull();
+        expect(row.children).toHaveLength(7); // grip, collapse, eye, lock, color, name, delete
+    });
+
+    it('touch rows wrap: grip, collapse and name on line 1, the actions on a full-width line 2', () => {
+        render(<FormFactorProvider value="phone"><LayersPanel {...props()} /></FormFactorProvider>);
+        const row = screen.getByTestId('layer-row-front');
+        expect(row.className).toBe(`${ROW} flex-wrap hover:bg-slate-50`);
+        const { grip, collapse, name, eye, lock, color, del } = parts(row);
+        const up = screen.getByRole('button', { name: 'Move Front forward' });
+        const down = screen.getByRole('button', { name: 'Move Front backward' });
+        for (const el of [grip, collapse, name]) expect(el.className).not.toMatch(/\border-\d/);
+        expect(row.querySelector('.basis-full')!.className).toContain('order-1');
+        for (const el of [eye, lock, color, up, down, del]) expect(el.className).toContain('order-2');
+        expect(name.className).toContain('flex-1');
+        expect(row.children).toHaveLength(10); // 7 desktop parts + break + up + down
+    });
 });

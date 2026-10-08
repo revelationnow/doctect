@@ -47,6 +47,9 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
     const [dragLayerId, setDragLayerId] = useState<string | null>(null);
     const [filter, setFilter] = useState('');
     const [dragElementId, setDragElementId] = useState<string | null>(null);
+    // Touch form factors get ▲/▼ buttons and a two-line row: HTML5 drag-and-drop is unreliable on
+    // phones, and seven ≥44px controls plus the name do not fit one line of a phone drawer.
+    const isTouch = useFormFactor() !== 'desktop';
 
     // Dismiss the color popover when a mousedown lands outside it (or its chip).
     useEffect(() => {
@@ -128,9 +131,8 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
         onUpdateElements(next.elements, true);
     };
 
-    // Touch form factors get ▲/▼ buttons per row: HTML5 drag-and-drop is unreliable on phones.
-    const isTouch = useFormFactor() !== 'desktop';
     const ascending = [...layers].sort((a, b) => a.order - b.order);
+    const ascIndex = (layer: Layer & { position: number }) => ascending.findIndex(l => rowKey(l) === rowKey(layer));
 
     // Move the source row to the target row's slot in ascending `order`. Keys are row keys
     // (template.layers positions in incremental mode, layer ids otherwise). Shared by the
@@ -150,7 +152,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
     };
 
     const moveLayerBy = (layer: Layer & { position: number }, delta: 1 | -1) => {
-        const neighbour = ascending[ascending.indexOf(layer) + delta];
+        const neighbour = ascending[ascIndex(layer) + delta];
         if (neighbour) moveLayer(rowKey(layer), rowKey(neighbour));
     };
 
@@ -207,7 +209,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
                                 handleDropOnLayer(rowKey(layer));
                             }
                         }}
-                        className={clsx('group flex items-center gap-1 px-2 py-1.5 border-b border-slate-50 text-sm',
+                        className={clsx('group flex items-center gap-1 px-2 py-1.5 border-b border-slate-50 text-sm', isTouch && 'flex-wrap',
                             activeLayerId === layer.id ? 'bg-blue-50' : 'hover:bg-slate-50')}>
                         <span title="Reorder layer" className="cursor-grab text-slate-300 group-hover:text-slate-400">
                             <GripVertical size={12} />
@@ -216,15 +218,15 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
                             onClick={() => updateLayer(rowKey(layer), { collapsed: !layer.collapsed })}>
                             {layer.collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
                         </button>
-                        <button title="Toggle visibility" className="text-slate-500"
+                        <button title="Toggle visibility" className={clsx('text-slate-500', isTouch && 'order-2')}
                             onClick={() => updateLayer(rowKey(layer), { visible: !layer.visible })}>
                             {layer.visible ? <Eye size={13} /> : <EyeOff size={13} className="text-slate-300" />}
                         </button>
-                        <button title="Toggle lock" className="text-slate-500"
+                        <button title="Toggle lock" className={clsx('text-slate-500', isTouch && 'order-2')}
                             onClick={() => updateLayer(rowKey(layer), { locked: !layer.locked })}>
                             {layer.locked ? <Lock size={13} /> : <Unlock size={13} className="text-slate-300" />}
                         </button>
-                        <span className="relative" data-color-popover>
+                        <span className={clsx('relative', isTouch && 'order-2')} data-color-popover>
                             <button title="Layer color"
                                 className="w-3 h-3 rounded-full border border-slate-300"
                                 style={{ backgroundColor: layer.color || 'transparent' }}
@@ -256,18 +258,20 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
                         )}
                         {isTouch && (
                             <>
-                                <button type="button" aria-label={`Move ${layer.name} forward`} disabled={ascending.at(-1) === layer}
-                                    onClick={() => moveLayerBy(layer, 1)} className="text-slate-500 disabled:opacity-30">
+                                {/* Line break: grip, collapse and the name stay on line 1; the order-2 actions wrap below. */}
+                                <span aria-hidden className="basis-full order-1" />
+                                <button type="button" aria-label={`Move ${layer.name} forward`} disabled={ascIndex(layer) === ascending.length - 1}
+                                    onClick={() => moveLayerBy(layer, 1)} className="order-2 text-slate-500 disabled:opacity-30">
                                     <ChevronUp size={14} />
                                 </button>
-                                <button type="button" aria-label={`Move ${layer.name} backward`} disabled={ascending[0] === layer}
-                                    onClick={() => moveLayerBy(layer, -1)} className="text-slate-500 disabled:opacity-30">
+                                <button type="button" aria-label={`Move ${layer.name} backward`} disabled={ascIndex(layer) === 0}
+                                    onClick={() => moveLayerBy(layer, -1)} className="order-2 text-slate-500 disabled:opacity-30">
                                     <ChevronDown size={14} />
                                 </button>
                             </>
                         )}
                         <button title="Delete layer" disabled={(template.layers ?? []).length <= 1}
-                            className="p-0.5 text-slate-300 hover:text-red-500 disabled:opacity-30 disabled:hover:text-slate-300"
+                            className={clsx('p-0.5 text-slate-300 hover:text-red-500 disabled:opacity-30 disabled:hover:text-slate-300', isTouch && 'order-2')}
                             onClick={() => handleDelete(rowKey(layer))}>
                             <Trash2 size={12} />
                         </button>
