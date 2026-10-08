@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, render, renderHook } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { detectFormFactor, PHONE_QUERY, useEditorFormFactor } from '../../hooks/useEditorFormFactor';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { detectFormFactor, KEYBOARD_SETTLE_MS, PHONE_QUERY, useEditorFormFactor } from '../../hooks/useEditorFormFactor';
 import { FormFactorProvider, useFormFactor } from '../../components/editor-layout/FormFactorContext';
 
 type Listener = () => void;
@@ -94,7 +94,9 @@ describe('useEditorFormFactor', () => {
             document.body.appendChild(element);
             return element;
         };
-        afterEach(() => { document.body.innerHTML = ''; });
+        beforeEach(() => { vi.useFakeTimers(); });
+        afterEach(() => { vi.useRealTimers(); document.body.innerHTML = ''; });
+        const settle = () => act(() => { vi.advanceTimersByTime(KEYBOARD_SETTLE_MS); });
 
         it('holds a height-only change while an input has focus, and applies it once the input blurs', () => {
             const media = installMatchMedia({ coarse: true, width: 1280, height: 800 });
@@ -105,6 +107,8 @@ describe('useEditorFormFactor', () => {
             act(() => media.set({ height: 500 })); // the keyboard opened
             expect(result.current).toBe('tablet');
             act(() => input.blur());
+            expect(result.current).toBe('tablet'); // the keyboard may still be closing
+            settle();
             expect(result.current).toBe('phone');
             expect(document.documentElement.hasAttribute('data-form-factor')).toBe(false); // the hook alone sets nothing
         });
@@ -126,6 +130,7 @@ describe('useEditorFormFactor', () => {
             }
             const button = field<HTMLButtonElement>('button');
             act(() => button.focus()); // leaving the fields for a control applies the change
+            settle();
             expect(result.current).toBe('phone');
         });
 
@@ -138,7 +143,50 @@ describe('useEditorFormFactor', () => {
             act(() => media.set({ height: 800 })); // the keyboard closed before the field blurred
             expect(result.current).toBe('tablet');
             act(() => input.blur());
+            settle();
             expect(result.current).toBe('tablet');
+        });
+
+        it('waits for the keyboard to finish closing after a blur instead of flipping twice', () => {
+            const media = installMatchMedia({ coarse: true, width: 1280, height: 800 });
+            const input = field<HTMLInputElement>('input');
+            const seen: string[] = [];
+            const { result } = renderHook(() => { const value = useEditorFormFactor(); seen.push(value); return value; });
+            act(() => input.focus());
+            act(() => media.set({ height: 500 })); // keyboard open: held
+            act(() => input.blur()); // focusout fires before the keyboard has gone
+            act(() => { vi.advanceTimersByTime(KEYBOARD_SETTLE_MS / 2); });
+            act(() => media.set({ height: 800 })); // the viewport is restored
+            settle();
+            expect(result.current).toBe('tablet');
+            expect(seen).not.toContain('phone');
+        });
+
+        it('re-holds when focus lands in another field before the settle delay ends', () => {
+            const media = installMatchMedia({ coarse: true, width: 1280, height: 800 });
+            const input = field<HTMLInputElement>('input');
+            const other = field<HTMLInputElement>('input');
+            const button = field<HTMLButtonElement>('button');
+            const { result } = renderHook(() => useEditorFormFactor());
+            act(() => input.focus());
+            act(() => media.set({ height: 500 }));
+            act(() => button.focus());
+            act(() => other.focus());
+            settle();
+            expect(result.current).toBe('tablet'); // still typing
+            act(() => other.blur());
+            settle();
+            expect(result.current).toBe('phone');
+        });
+
+        it('does not hold for inputs nobody types into', () => {
+            const media = installMatchMedia({ coarse: true, width: 1280, height: 800 });
+            const checkbox = field<HTMLInputElement>('input');
+            checkbox.type = 'checkbox';
+            const { result } = renderHook(() => useEditorFormFactor());
+            act(() => checkbox.focus());
+            act(() => media.set({ height: 500 }));
+            expect(result.current).toBe('phone');
         });
 
         it('does not hold a change that arrives while a non-editable element has focus, and drops its listener on unmount', () => {

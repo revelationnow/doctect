@@ -12,7 +12,19 @@ const COARSE_QUERY = '(pointer: coarse)';
 export const PHONE_QUERY = `(max-width: ${PHONE_MAX_SHORT_SIDE}px), (max-height: ${PHONE_MAX_SHORT_SIDE}px)`;
 
 /** Elements the user types into; while one has focus the soft keyboard may be resizing the viewport. */
-const EDITABLE_SELECTOR = 'input, textarea, select, [contenteditable]:not([contenteditable="false"])';
+const NON_TEXT_INPUT_TYPES = ['checkbox', 'radio', 'range', 'color', 'button', 'submit', 'reset', 'file', 'image'];
+const EDITABLE_SELECTOR = [
+    `input${NON_TEXT_INPUT_TYPES.map(type => `:not([type="${type}"])`).join('')}`,
+    'textarea',
+    'select',
+    '[contenteditable]:not([contenteditable="false"])',
+].join(', ');
+/**
+ * How long after focus leaves the fields the queries are re-read. On browsers that resize the
+ * viewport for the soft keyboard, `focusout` fires before the keyboard has gone; reading at once
+ * would apply the keyboard-sized viewport and flip back a moment later (two remounts).
+ */
+export const KEYBOARD_SETTLE_MS = 400;
 const isEditable = (target: EventTarget | null): boolean =>
     target instanceof Element && (target.matches(EDITABLE_SELECTOR) || (target as HTMLElement).isContentEditable === true);
 
@@ -36,7 +48,8 @@ const read = (): FormFactor => {
  * `(max-height)` term flips for the keyboard alone, and swapping the tablet layout for the
  * phone one would unmount the field under the user. A change that arrives while an editable
  * element has focus is held until focus leaves editable elements, and the queries are read
- * afresh then, so a keyboard that has closed again by that time changes nothing.
+ * afresh KEYBOARD_SETTLE_MS later (or at the next query change, whichever comes first), so a
+ * keyboard that has closed again by then changes nothing.
  */
 export function useEditorFormFactor(): FormFactor {
     const [formFactor, setFormFactor] = useState<FormFactor>(read);
@@ -45,13 +58,16 @@ export function useEditorFormFactor(): FormFactor {
         if (typeof window.matchMedia !== 'function') return;
         const queries = [window.matchMedia(COARSE_QUERY), window.matchMedia(PHONE_QUERY)];
         let held = false;
+        let settle: ReturnType<typeof setTimeout> | undefined;
         const onFocusOut = (event: FocusEvent) => {
             if (isEditable(event.relatedTarget)) return; // moving between fields is still typing
             document.removeEventListener('focusout', onFocusOut);
             held = false;
-            setFormFactor(read());
+            settle = setTimeout(update, KEYBOARD_SETTLE_MS);
         };
-        const update = () => {
+        function update() {
+            clearTimeout(settle);
+            settle = undefined;
             if (isEditable(document.activeElement)) {
                 if (!held) {
                     held = true;
@@ -60,10 +76,11 @@ export function useEditorFormFactor(): FormFactor {
                 return;
             }
             setFormFactor(read());
-        };
+        }
         queries.forEach(query => query.addEventListener('change', update));
         update();
         return () => {
+            clearTimeout(settle);
             queries.forEach(query => query.removeEventListener('change', update));
             document.removeEventListener('focusout', onFocusOut);
         };
