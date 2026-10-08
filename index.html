@@ -111,6 +111,39 @@
         max-height: none;
         border-radius: 0;
       }
+      /* Phone top bar: the save status keeps its icon and tint but drops its label, which at
+         320-360px otherwise leaves the project name beside it no room at all. The label stays in
+         the accessibility tree (role=status / role=alert read it as before). The failure popover
+         spans the bar's width just below it: anchored to the pill as on desktop it would run off
+         an edge, since the pill sits mid-bar here rather than at the header's right end. */
+      [data-form-factor="phone"] [data-touch-chrome="top-bar"] [role="status"],
+      [data-form-factor="phone"] [data-touch-chrome="top-bar"] [role="alert"] > div:first-child {
+        font-size: 0;
+        gap: 0;
+      }
+      [data-form-factor="phone"] [data-touch-chrome="top-bar"] [role="alert"] > div:last-child {
+        position: fixed;
+        top: 3rem;
+        left: 1rem;
+        right: 1rem;
+        width: auto;
+      }
+      /* Layer colour swatches: at 44px each the strip is wider than the space right of the chip,
+         so the sheet or panel edge would clip it as an absolute popover. On touch it becomes a
+         third line of the row (chip and strip join the row's flex items; the strip takes the full
+         width after the order-2 actions), so nothing can clip it and nothing is covered. */
+      [data-form-factor] [data-color-popover] {
+        display: contents;
+      }
+      [data-form-factor] [data-color-popover] > button {
+        order: 2;
+      }
+      [data-form-factor] [data-color-popover] > span {
+        position: static;
+        order: 3;
+        flex-basis: 100%;
+        margin-top: 8px;
+      }
       /* touch-editor:end */
     </style>
   <script type="importmap">

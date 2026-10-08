@@ -61,7 +61,7 @@ module.exports = defineConfig({
     projects: [
         {
             name: 'chromium',
-            testIgnore: /incremental_performance\.spec\.ts$/,
+            testIgnore: [/incremental_performance\.spec\.ts$/, /mobile_editor\.spec\.js$/],
             use: {
                 ...devices['Desktop Chrome'],
                 ...(builtBundle ? { launchOptions: { args: ['--unlimited-storage'] } } : {}),
@@ -70,13 +70,13 @@ module.exports = defineConfig({
 
         {
             name: 'firefox',
-            testIgnore: /incremental_performance\.spec\.ts$/,
+            testIgnore: [/incremental_performance\.spec\.ts$/, /mobile_editor\.spec\.js$/],
             use: { ...devices['Desktop Firefox'] },
         },
 
         {
             name: 'webkit',
-            testIgnore: /incremental_performance\.spec\.ts$/,
+            testIgnore: [/incremental_performance\.spec\.ts$/, /mobile_editor\.spec\.js$/],
             use: { ...devices['Desktop Safari'] },
         },
         {
@@ -106,6 +106,29 @@ module.exports = defineConfig({
                 ...devices['Desktop Firefox'],
                 launchOptions: { firefoxUserPrefs: { 'dom.storage.default_quota': 20480 } },
             },
+        },
+        // Touch editor (phone/tablet emulation). Only mobile_editor.spec.js runs here; the desktop
+        // projects ignore that file. WebKit cannot launch on the current dev host, so local runs use
+        // the chromium pair; the webkit pair is for CI.
+        {
+            name: 'mobile-phone-chromium',
+            testMatch: /mobile_editor\.spec\.js$/,
+            use: { ...devices['iPhone 13'], browserName: 'chromium' },
+        },
+        {
+            name: 'mobile-phone-webkit',
+            testMatch: /mobile_editor\.spec\.js$/,
+            use: { ...devices['iPhone 13'] },
+        },
+        {
+            name: 'mobile-tablet-chromium',
+            testMatch: /mobile_editor\.spec\.js$/,
+            use: { ...devices['iPad (gen 7)'], browserName: 'chromium' },
+        },
+        {
+            name: 'mobile-tablet-webkit',
+            testMatch: /mobile_editor\.spec\.js$/,
+            use: { ...devices['iPad (gen 7)'] },
         },
     ],
 

@@ -10,6 +10,8 @@ const workflowPath = path.join(repositoryRoot, '.github/workflows/local-workspac
 const benchmarkMarker = 'coalesces near-limit built-editor interactions before one module-Worker save';
 const migrationSpecPath = 'tests/e2e/local_workspace_migration.spec.js';
 const playwrightCommand = ['npx', 'playwright', 'test', migrationSpecPath];
+// The five desktop projects the CI migration matrix runs. The touch-editor projects below are
+// registered alongside them but take only mobile_editor.spec.js, which the desktop trio ignores.
 const sourceProjects = [
     'chromium',
     'firefox',
@@ -17,6 +19,15 @@ const sourceProjects = [
     'workspace-large-chromium',
     'workspace-large-firefox',
 ];
+const desktopBrowserProjects = ['chromium', 'firefox', 'webkit'];
+const mobileProjects = [
+    'mobile-phone-chromium',
+    'mobile-phone-webkit',
+    'mobile-tablet-chromium',
+    'mobile-tablet-webkit',
+];
+const mobileSpecFile = 'mobile_editor.spec.js'; // --list prints paths relative to testDir
+const mobileSpecMatch = '/mobile_editor\\.spec\\.js$/';
 const requiredMigrationSteps = [
     'TypeScript check',
     'Browser migration matrix',
@@ -507,7 +518,28 @@ describe('incremental project discovery', () => {
         delete env.INCREMENTAL_PERFORMANCE_PHASE;
         const result = probe(env);
         expect(result.status, result.stderr).toBe(0);
-        expect(JSON.parse(result.stdout).projects.map(project => project.name)).toEqual(sourceProjects);
+        expect(JSON.parse(result.stdout).projects.map(project => project.name)).toEqual([...sourceProjects, ...mobileProjects]);
+    });
+
+    it('keeps the touch editor spec to the mobile projects and the desktop projects off it', () => {
+        const env = isolated('baseline');
+        delete env.INCREMENTAL_PERFORMANCE_PHASE;
+        const result = probe(env);
+        expect(result.status, result.stderr).toBe(0);
+        const projects = new Map(JSON.parse(result.stdout).projects.map(project => [project.name, project]));
+        for (const name of desktopBrowserProjects) {
+            expect(projects.get(name).testIgnore, name).toEqual(['/incremental_performance\\.spec\\.ts$/', mobileSpecMatch]);
+        }
+        for (const name of mobileProjects) {
+            const project = projects.get(name);
+            expect(project.testMatch, name).toBe(mobileSpecMatch);
+            expect(project.use.isMobile, name).toBe(true);
+            expect(project.use.hasTouch, name).toBe(true);
+            expect(project.use.browserName, name).toBe(name.endsWith('-chromium') ? 'chromium' : undefined);
+            expect(project.use.defaultBrowserType, name).toBe('webkit');
+        }
+        expect(projects.get('mobile-phone-chromium').use.viewport.width).toBeLessThan(640);
+        expect(projects.get('mobile-tablet-chromium').use.viewport.width).toBeGreaterThanOrEqual(640);
     });
 
     it.each(['baseline', 'final'])('requires isolated mode for %s and preserves exact matching and ordinary quotas', phase => {
@@ -544,6 +576,16 @@ describe('incremental project discovery', () => {
         expect(result.stdout).toContain('[chromium]');
         expect(result.stdout).not.toContain('incremental-performance-chromium');
         expect(result.stdout).not.toContain('incremental_performance.spec.ts');
+
+        // `[project] › file.spec.js:line:col › title` per listed test.
+        const listed = Array.from(result.stdout.matchAll(/^\s*\[([^\]]+)\] › (\S+?):\d+:\d+ › /gm), m => ({ project: m[1], file: m[2] }));
+        expect(listed.length).toBeGreaterThan(0);
+        const mobileSpecProjects = new Set(listed.filter(row => row.file === mobileSpecFile).map(row => row.project));
+        expect([...mobileSpecProjects].sort()).toEqual([...mobileProjects].sort());
+        for (const name of mobileProjects) {
+            const files = new Set(listed.filter(row => row.project === name).map(row => row.file));
+            expect([...files], name).toEqual([mobileSpecFile]);
+        }
     }, 35_000);
 });
 
