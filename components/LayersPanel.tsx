@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import clsx from 'clsx';
 import {
-    ChevronDown, ChevronRight, Circle, Eye, EyeOff, Grid3X3, GripVertical, Image as ImageIcon,
+    ChevronDown, ChevronRight, ChevronUp, Circle, Eye, EyeOff, Grid3X3, GripVertical, Image as ImageIcon,
     Layers, Lock, Minus, Plus, Search, Square, Trash2, Triangle, Type, Unlock,
 } from 'lucide-react';
 import { Layer, PageTemplate, TemplateElement } from '../types';
 import { addLayer, getElementLabel, moveElementsToLayer, moveLayerToIndex, removeLayerFromTemplate } from '../services/layers';
 import type { LayerEditAction } from '../services/document/editOperations';
+import { useFormFactor } from './editor-layout/FormFactorContext';
 
 export interface LayerPanelActions {
     readonly sequence?: readonly Layer[];
@@ -127,16 +128,30 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
         onUpdateElements(next.elements, true);
     };
 
-    const handleDropOnLayer = (targetId: string) => {
-        if (!dragLayerId || dragLayerId === targetId) { setDragLayerId(null); return; }
+    // Touch form factors get ▲/▼ buttons per row: HTML5 drag-and-drop is unreliable on phones.
+    const isTouch = useFormFactor() !== 'desktop';
+    const ascending = [...layers].sort((a, b) => a.order - b.order);
+
+    // Move the source row to the target row's slot in ascending `order`. Keys are row keys
+    // (template.layers positions in incremental mode, layer ids otherwise). Shared by the
+    // drag-drop reorder and the touch ▲/▼ buttons so both paths issue the same edit.
+    const moveLayer = (sourceKey: string, targetKey: string) => {
         if (layerActions) {
-            layerActions.edit({ type: 'move', position: Number(dragLayerId), targetPosition: Number(targetId) });
-            setDragLayerId(null); return;
+            layerActions.edit({ type: 'move', position: Number(sourceKey), targetPosition: Number(targetKey) });
+            return;
         }
-        const asc = [...(template.layers ?? [])].sort((a, b) => a.order - b.order);
-        const targetIndex = asc.findIndex(l => l.id === targetId);
-        onUpdateTemplate({ layers: moveLayerToIndex(template.layers ?? [], dragLayerId, targetIndex) });
+        const targetIndex = ascending.findIndex(l => l.id === targetKey);
+        onUpdateTemplate({ layers: moveLayerToIndex(template.layers ?? [], sourceKey, targetIndex) });
+    };
+
+    const handleDropOnLayer = (targetId: string) => {
+        if (dragLayerId && dragLayerId !== targetId) moveLayer(dragLayerId, targetId);
         setDragLayerId(null);
+    };
+
+    const moveLayerBy = (layer: Layer & { position: number }, delta: 1 | -1) => {
+        const neighbour = ascending[ascending.indexOf(layer) + delta];
+        if (neighbour) moveLayer(rowKey(layer), rowKey(neighbour));
     };
 
     return (
@@ -238,6 +253,18 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
                                 onDoubleClick={() => { setRenamingId(rowKey(layer)); setRenameValue(layer.name); }}>
                                 {layer.name}
                             </span>
+                        )}
+                        {isTouch && (
+                            <>
+                                <button type="button" aria-label={`Move ${layer.name} forward`} disabled={ascending.at(-1) === layer}
+                                    onClick={() => moveLayerBy(layer, 1)} className="text-slate-500 disabled:opacity-30">
+                                    <ChevronUp size={14} />
+                                </button>
+                                <button type="button" aria-label={`Move ${layer.name} backward`} disabled={ascending[0] === layer}
+                                    onClick={() => moveLayerBy(layer, -1)} className="text-slate-500 disabled:opacity-30">
+                                    <ChevronDown size={14} />
+                                </button>
+                            </>
                         )}
                         <button title="Delete layer" disabled={(template.layers ?? []).length <= 1}
                             className="p-0.5 text-slate-300 hover:text-red-500 disabled:opacity-30 disabled:hover:text-slate-300"
