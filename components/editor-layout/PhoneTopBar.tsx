@@ -14,7 +14,7 @@ export function PhoneTopBar({ actions, onOpenSidebar }: { actions: TouchEditorAc
     const chrome = useEditorChrome();
     const [menuOpen, setMenuOpen] = useState(false);
     return (
-        <header className="flex h-12 shrink-0 items-center gap-1 border-b bg-white px-1">
+        <header data-touch-chrome="top-bar" className="flex h-12 shrink-0 items-center gap-1 border-b bg-white px-1">
             <button type="button" aria-label="Open pages and templates" onClick={onOpenSidebar}
                 className="flex h-11 w-11 shrink-0 items-center justify-center text-slate-600"><Menu size={20} /></button>
             {chrome ? <ProjectSwitcher chrome={chrome} /> : <div className="flex-1" />}

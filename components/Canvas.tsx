@@ -1771,18 +1771,36 @@ export const Canvas: React.FC<CanvasProps> = ({
         : undefined;
     const formatAnchor = useQuickFormatAnchor(outerContainerRef, formatTarget?.id ?? null, !gesture.active, [scale, elements]);
     useKeepEditedElementVisible(outerContainerRef, editingElementId, isTouch);
-    const applyQuickFormat = (updates: Partial<TemplateElement>) => {
+    // A colour pick streams values (`live`): the interaction captured for its first value is held,
+    // in `quickPick`, until the picker closes or the bar unmounts, so a pick is one history step
+    // like a drag. A tap captures, patches and ends in one go.
+    const quickPick = useRef<{ owner?: CanvasInteraction } | null>(null);
+    const finishQuickFormat = (owner?: CanvasInteraction) => {
+        if (captureInteraction) owner?.end(); else if (onEditElements) onInteractionEnd?.();
+    };
+    const applyQuickFormat = (updates: Partial<TemplateElement>, live = false) => {
         if (!formatTarget) return;
         const id = formatTarget.id;
         if (inlineEditing?.elementId === id) { patchInlineSession(inlineEditing, id, updates); return; }
-        commitInlineEditing(); // a session on another element (legacy path only) must end before a fresh capture orphans it
-        if (captureInteraction) {
-            interaction.current = captureInteraction();
-            if (!interaction.current) return;
+        const next = elements.map(el => el.id === id ? { ...el, ...updates } : el);
+        const fields = Object.keys(updates) as (keyof TemplateElement)[];
+        const pick = quickPick.current;
+        if (live && pick) {
+            if (captureInteraction && !pick.owner?.isCurrent()) return; // superseded: the picker's close ends it
+            updateGeometry(next, fields);
+            return;
         }
+        commitInlineEditing(); // a session on another element (legacy path only) must end before a fresh capture orphans it
+        const owner = captureInteraction ? (interaction.current = captureInteraction()) : undefined;
+        if (captureInteraction && !owner) return;
         if (onEditElements) onInteractionStart();
-        updateGeometry(elements.map(el => el.id === id ? { ...el, ...updates } : el), Object.keys(updates) as (keyof TemplateElement)[], true);
-        if (onEditElements) onInteractionEnd?.();
+        updateGeometry(next, fields, true);
+        if (live) quickPick.current = { owner }; else finishQuickFormat(owner);
+    };
+    const endQuickPick = () => {
+        const pick = quickPick.current;
+        quickPick.current = null;
+        if (pick) finishQuickFormat(pick.owner);
     };
 
     const renderCreationPreview = () => {
@@ -2177,7 +2195,8 @@ export const Canvas: React.FC<CanvasProps> = ({
             </div>
 
             {formatTarget && formatAnchor && !gesture.active && (
-                <QuickFormatBar element={formatTarget} anchor={formatAnchor} onChange={applyQuickFormat} />
+                <QuickFormatBar element={formatTarget} anchor={formatAnchor} onChange={updates => applyQuickFormat(updates)}
+                    onPickChange={updates => applyQuickFormat(updates, true)} onPickEnd={endQuickPick} />
             )}
 
             {selectUnderMenu && (

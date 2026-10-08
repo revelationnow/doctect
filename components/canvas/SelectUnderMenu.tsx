@@ -21,15 +21,16 @@ export const SelectUnderMenu: React.FC<SelectUnderMenuProps> = ({ position, item
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
         // pointerdown precedes mousedown for a mouse and is the only event a touch tap emits
-        // before the canvas gesture hook cancels it.
+        // before the canvas gesture hook cancels it. Capture phase, as ProjectSwitcher does, so an
+        // overlay that stops propagation (the quick format bar) still closes the menu.
         const onDown = (e: globalThis.PointerEvent) => {
             if (ref.current && !ref.current.contains(e.target as Node)) onClose();
         };
         window.addEventListener('keydown', onKey);
-        window.addEventListener('pointerdown', onDown);
+        window.addEventListener('pointerdown', onDown, true);
         return () => {
             window.removeEventListener('keydown', onKey);
-            window.removeEventListener('pointerdown', onDown);
+            window.removeEventListener('pointerdown', onDown, true);
         };
     }, [onClose]);
 

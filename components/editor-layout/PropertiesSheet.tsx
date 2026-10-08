@@ -50,7 +50,7 @@ export function PropertiesSheet({ detent, onDetentChange, title, actions, childr
     };
 
     return (
-        <section data-testid="properties-sheet" aria-label="Properties"
+        <section data-testid="properties-sheet" data-touch-chrome="sheet" aria-label="Properties"
             className="absolute inset-x-0 bottom-0 z-30 flex flex-col rounded-t-2xl border-t bg-white shadow-[0_-8px_24px_rgba(15,23,42,0.12)] transition-[height] duration-200"
             style={{ height: HEIGHT[detent] }}>
             <div className="flex items-center gap-2 px-3" style={{ minHeight: SHEET_PEEK_PX }}>

@@ -539,7 +539,7 @@ describe('Canvas touch mode: inline edit commit, no tap-cycling, long-press on t
 });
 
 describe('Canvas touch mode: quick format bar and keyboard-aware editing', () => {
-    afterEach(() => vi.useRealTimers());
+    afterEach(() => { vi.useRealTimers(); delete (window as any).visualViewport; });
     const bar = () => screen.queryByRole('toolbar', { name: 'Text formatting' });
     const barButton = (name: string) => screen.getByRole('button', { name });
     const gridElement = (id: string): TemplateElement => ({
@@ -589,14 +589,13 @@ describe('Canvas touch mode: quick format bar and keyboard-aware editing', () =>
         expect(props.onSelectElements).not.toHaveBeenCalled();
     });
 
-    it('does not remove the bar from the DOM, even transiently, on a tap on the element, the canvas or the bar', () => {
+    it('does not remove the bar from the DOM, even transiently, on a tap on the element or on the bar', () => {
         const elements = [textElement('t', 20, 20), rect('b', 300, 300)];
-        const { elementNode, surface } = renderCanvas({ elements, selectedElementIds: ['t'] });
+        const { elementNode } = renderCanvas({ elements, selectedElementIds: ['t'] });
         const node = bar()!;
         const observer = new MutationObserver(() => {});
         observer.observe(node.parentElement!, { childList: true });
-        tap(elementNode('t'), 1, 40, 30);      // direct press on the selected element
-        tap(surface, 2, 450, 650);              // press on empty canvas
+        tap(elementNode('t'), 1, 40, 30);      // direct press on the selected element (sets isDragging and back)
         compatClick(barButton('Italic'));       // press on the bar itself
         expect(bar()).toBe(node);
         expect(observer.takeRecords().flatMap(record => Array.from(record.removedNodes))).not.toContain(node);
@@ -684,7 +683,6 @@ describe('Canvas touch mode: quick format bar and keyboard-aware editing', () =>
             pointer(elementNode('t'), 'pointerup', i + 1, 40, 30);
         }
         expect(surface.scrollTop).toBe(540 - (300 - 16));
-        delete (window as any).visualViewport;
     });
 
     it('re-runs the keyboard scroll when the visual viewport resizes, and only in touch mode', () => {
@@ -713,6 +711,71 @@ describe('Canvas touch mode: quick format bar and keyboard-aware editing', () =>
         fireEvent.doubleClick(mouse.elementNode('t'), { clientX: 40, clientY: 30 });
         expect(inlineEditor(mouse.container)).not.toBeNull();
         expect(mousePos.top).toBe(0);
-        delete (window as any).visualViewport;
+    });
+
+    it('holds one interaction across a colour pick: a stream of inputs, one start/end (incremental path)', () => {
+        const elements = [textElement('t', 20, 20), rect('b', 300, 300)];
+        const editor = makeEditorStub(elements);
+        const { props, rerender } = renderCanvas({ elements, selectedElementIds: ['t'], captureInteraction: editor.capture, onEditElements: vi.fn() });
+        const colour = screen.getByLabelText('Text colour');
+        // The element prop follows the working copy, as the incremental editor's state does, so the
+        // controlled input keeps the picked value and the picker's closing `change` repeats it.
+        const pick = (value: string) => { fireEvent.input(colour, { target: { value } }); rerender(<Canvas {...props} elements={editor.working()} />); };
+        pick('#ff0000');
+        pick('#00ff00');
+        expect(editor.calls.intents).toEqual([
+            { type: 'patch', updates: [{ id: 't', patch: { textColor: '#ff0000' } }] },
+            { type: 'patch', updates: [{ id: 't', patch: { textColor: '#00ff00' } }] },
+        ]);
+        expect(editor.calls).toMatchObject({ start: 1, end: 0, cancel: 0 });
+        expect(find(editor.committed(), 't')).not.toHaveProperty('textColor');
+        fireEvent.change(colour, { target: { value: '#00ff00' } }); // the picker closes
+        expect(editor.calls).toMatchObject({ start: 1, end: 1, cancel: 0 });
+        expect(find(editor.committed(), 't')).toMatchObject({ textColor: '#00ff00' });
+        expect(props.onUpdateElements).not.toHaveBeenCalled();
+        pick('#0000ff'); // the next pick is its own interaction
+        fireEvent.change(colour, { target: { value: '#0000ff' } });
+        expect(editor.calls).toMatchObject({ start: 2, end: 2, cancel: 0 });
+        expect(editor.calls.intents).toHaveLength(3);
+    });
+
+    it('saves history once for a colour pick on the legacy path', () => {
+        const { props, rerender } = renderCanvas({ elements: [textElement('t', 20, 20)], selectedElementIds: ['t'] });
+        const colour = screen.getByLabelText('Text colour');
+        const updates = vi.mocked(props.onUpdateElements);
+        const pick = (value: string) => { fireEvent.input(colour, { target: { value } }); rerender(<Canvas {...props} elements={updates.mock.calls.at(-1)![0]} />); };
+        pick('#ff0000');
+        pick('#00ff00');
+        fireEvent.change(colour, { target: { value: '#00ff00' } });
+        expect(updates.mock.calls.map(([next, save]) => [find(next, 't').textColor, save])).toEqual([['#ff0000', true], ['#00ff00', false]]);
+        expect(props.onInteractionStart).not.toHaveBeenCalled();
+    });
+
+    it('balances a pick left open when the selection changes: cancelled by the selection effect, not ended twice', () => {
+        const elements = [textElement('t', 20, 20), rect('b', 300, 300)];
+        const editor = makeEditorStub(elements);
+        const { props, rerender } = renderCanvas({ elements, selectedElementIds: ['t'], captureInteraction: editor.capture, onEditElements: vi.fn() });
+        fireEvent.input(screen.getByLabelText('Text colour'), { target: { value: '#ff0000' } });
+        expect(editor.calls).toMatchObject({ start: 1, end: 0, cancel: 0 });
+        rerender(<Canvas {...props} elements={editor.working()} selectedElementIds={['b']} />);
+        // Canvas's selection layout effect cancels the stale interaction first (as it does for a
+        // drag); the unmounting bar's end then finds its owner superseded and is a no-op.
+        expect(editor.calls).toMatchObject({ start: 1, end: 0, cancel: 1 });
+        expect(find(editor.committed(), 't')).not.toHaveProperty('textColor');
+        expect(bar()).toBeNull();
+    });
+
+    it('closes an open select-under menu when the bar is pressed', () => {
+        vi.useFakeTimers();
+        const elements = [textElement('t', 20, 20), rect('c', 40, 30)];
+        const { elementNode, getByTestId, queryByTestId } = renderCanvas({ elements, selectedElementIds: ['t'] });
+        pointer(elementNode('c'), 'pointerdown', 1, 60, 50);
+        act(() => { vi.advanceTimersByTime(600); });
+        pointer(elementNode('c'), 'pointerup', 1, 60, 50);
+        expect(getByTestId('select-under-menu')).toBeTruthy();
+        expect(bar()).not.toBeNull();
+        fireEvent.pointerDown(barButton('Bold'), { pointerType: 'touch' }); // the bar stops propagation; the closer is capture-phase
+        expect(queryByTestId('select-under-menu')).toBeNull();
+        expect(bar()).not.toBeNull();
     });
 });

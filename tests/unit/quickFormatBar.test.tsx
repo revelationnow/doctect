@@ -82,6 +82,107 @@ describe('QuickFormatBar', () => {
         expect(bar.textContent).toContain('14');
     });
 
+    it('streams a colour pick and ends it exactly once on the picker\'s native change', () => {
+        const onChange = vi.fn(); const onPickChange = vi.fn(); const onPickEnd = vi.fn();
+        const at = (textColor: string) =>
+            <QuickFormatBar element={{ ...text, textColor }} anchor={anchor} onChange={onChange} onPickChange={onPickChange} onPickEnd={onPickEnd} />;
+        const { rerender } = render(at('#000000'));
+        const colour = screen.getByLabelText('Text colour');
+        // A host applies each streamed value, so the controlled input keeps it (a static prop would
+        // make React restore the old value and report the picker's closing `change` as new).
+        const pick = (value: string) => { fireEvent.input(colour, { target: { value } }); rerender(at(value)); };
+        pick('#ff0000');
+        pick('#00ff00');
+        expect(onPickChange.mock.calls).toEqual([[{ textColor: '#ff0000' }], [{ textColor: '#00ff00' }]]);
+        expect(onPickEnd).not.toHaveBeenCalled();
+        fireEvent.change(colour, { target: { value: '#00ff00' } }); // the picker closes, repeating the last value
+        expect(onPickEnd).toHaveBeenCalledTimes(1);
+        fireEvent.change(colour, { target: { value: '#00ff00' } }); // a stray change outside a pick is inert
+        expect(onPickEnd).toHaveBeenCalledTimes(1);
+        expect(onChange).not.toHaveBeenCalled();
+        fireEvent.change(colour, { target: { value: '#0000ff' } }); // a lone new value (typed, no drag): discrete
+        expect(onChange).toHaveBeenCalledWith({ textColor: '#0000ff' });
+        expect(onPickChange).toHaveBeenCalledTimes(2);
+        expect(onPickEnd).toHaveBeenCalledTimes(1);
+    });
+
+    it('ends an open pick on blur and on unmount, never twice', () => {
+        const onPickEnd = vi.fn();
+        const { unmount } = render(
+            <QuickFormatBar element={text} anchor={anchor} onChange={() => {}} onPickChange={() => {}} onPickEnd={onPickEnd} />,
+        );
+        const colour = screen.getByLabelText('Text colour');
+        fireEvent.input(colour, { target: { value: '#ff0000' } });
+        fireEvent.blur(colour);
+        expect(onPickEnd).toHaveBeenCalledTimes(1);
+        fireEvent.blur(colour);
+        expect(onPickEnd).toHaveBeenCalledTimes(1);
+        fireEvent.input(colour, { target: { value: '#00ff00' } });
+        unmount();
+        expect(onPickEnd).toHaveBeenCalledTimes(2);
+    });
+
+    it('lets the colour input take focus: its pointerdown default is kept while a button\'s is prevented', () => {
+        const onPointerDown = vi.fn();
+        render(
+            <div onPointerDown={onPointerDown}>
+                <QuickFormatBar element={text} anchor={anchor} onChange={() => {}} />
+            </div>,
+        );
+        expect(fireEvent.pointerDown(screen.getByLabelText('Text colour'), { pointerType: 'touch' })).toBe(true);
+        expect(fireEvent.pointerDown(screen.getByRole('button', { name: 'Bold' }), { pointerType: 'touch' })).toBe(false);
+        expect(onPointerDown).not.toHaveBeenCalled();
+    });
+
+    it('wraps onto two rows at phone widths instead of scrolling, keeping every 44px control', () => {
+        const original = Object.getOwnPropertyDescriptor(window, 'innerWidth');
+        Object.defineProperty(window, 'innerWidth', { configurable: true, value: 360 });
+        try {
+            render(<QuickFormatBar element={text} anchor={anchor} onChange={() => {}} />);
+            const bar = screen.getByRole('toolbar', { name: 'Text formatting' });
+            expect(bar.className).toMatch(/\bflex-wrap\b/);
+            expect(bar.className).not.toMatch(/overflow-x/);
+            expect(bar.style.width).toBe('344px');
+            expect(bar.style.height).toBe('94px');
+            expect(bar.style.top).toBe(`${300 - 94 - 8}px`);
+            expect(screen.getAllByRole('button')).toHaveLength(8);
+            expect(screen.getByLabelText('Text colour')).toBeTruthy();
+        } finally {
+            if (original) Object.defineProperty(window, 'innerWidth', original); else delete (window as any).innerWidth;
+        }
+    });
+
+    it('clamps into the visible band: under the top bar, above the sheet and keyboard, never off-screen', () => {
+        const chrome = (kind: string, rect: Partial<DOMRect>) => {
+            const node = document.createElement('div');
+            node.setAttribute('data-touch-chrome', kind);
+            node.getBoundingClientRect = () => ({ top: 0, bottom: 0, left: 0, right: 0, width: 0, height: 0, ...rect } as DOMRect);
+            document.body.appendChild(node);
+            return node;
+        };
+        const topBar = chrome('top-bar', { top: 0, bottom: 56 });
+        const sheet = chrome('sheet', { top: 328, bottom: 400 });
+        Object.defineProperty(window, 'visualViewport', {
+            configurable: true, value: { offsetTop: 0, height: 400, addEventListener() {}, removeEventListener() {} },
+        });
+        const at = (top: number, bottom: number) => <QuickFormatBar element={text} anchor={{ left: 100, top, bottom, width: 100 }} onChange={() => {}} />;
+        try {
+            const { rerender } = render(at(20, 40));
+            const bar = screen.getByRole('toolbar', { name: 'Text formatting' });
+            expect(bar.style.top).toBe(`${56 + 8}px`);        // "below" would be 48px, under the top bar
+            rerender(at(700, 720));
+            expect(bar.style.top).toBe(`${328 - 48 - 8}px`);  // "above" would be 644px, under the sheet / keyboard
+            rerender(at(200, 220));
+            expect(bar.style.top).toBe(`${200 - 48 - 8}px`);  // inside the band: untouched
+            sheet.getBoundingClientRect = () => ({ top: 80, bottom: 400, left: 0, right: 0, width: 0, height: 0 } as DOMRect);
+            rerender(at(200, 220));
+            expect(bar.style.top).toBe(`${56 + 8}px`);        // band shorter than the bar: pinned to its top
+        } finally {
+            topBar.remove(); sheet.remove();
+            delete (window as any).visualViewport;
+        }
+    });
+
     it('renders in a portal on document.body so canvas stacking contexts cannot trap it', () => {
         const { container } = render(<QuickFormatBar element={text} anchor={anchor} onChange={() => {}} />);
         const bar = screen.getByRole('toolbar', { name: 'Text formatting' });

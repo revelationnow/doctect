@@ -55,16 +55,23 @@ export function useQuickFormatAnchor(
     deps: unknown[],
 ): QuickFormatAnchor | null {
     const [anchor, setAnchor] = useState<QuickFormatAnchor | null>(null);
+    // Mirror of `anchor` for the effect, so a run with nothing to change (every desktop run: no
+    // target, nothing set) touches no state at all.
+    const current = useRef<QuickFormatAnchor | null>(null);
+    const update = (next: QuickFormatAnchor | null) => {
+        if (next ? sameAnchor(current.current, next) : current.current === null) return;
+        current.current = next;
+        setAnchor(next);
+    };
     useLayoutEffect(() => {
         const outer = outerRef.current;
-        if (!targetId || !outer) { setAnchor(null); return; }
+        if (!targetId || !outer) { update(null); return; }
         if (!enabled) return;
         const measure = () => {
             const node = outer.querySelector(elementSelector(targetId));
-            if (!node) { setAnchor(null); return; }
+            if (!node) { update(null); return; }
             const r = node.getBoundingClientRect();
-            const next = { left: r.left, top: r.top, bottom: r.bottom, width: r.width };
-            setAnchor(current => sameAnchor(current, next) ? current : next);
+            update({ left: r.left, top: r.top, bottom: r.bottom, width: r.width });
         };
         measure();
         const viewport = window.visualViewport;
