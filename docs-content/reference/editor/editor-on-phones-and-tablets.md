@@ -26,7 +26,7 @@ On a phone or tablet the editor rearranges itself around the canvas. Nothing cha
 
 **Going back:** the back gesture closes one thing at a time and only leaves the editor once nothing is open. The JSON editor asks before discarding changes you have not applied — as it does when you press Escape on a device with a keyboard.
 
-**Numbers:** position, size, rotation, Z-index, text padding and the pattern gap and weight fields get big **−** / **+** buttons on touch. A tap changes the value by one step, holding a button keeps it going, and a finger that lands on a button and slides off scrolls instead. Each tap, and each step of a hold, is its own undo step.
+**Numbers:** position, size, rotation, Z-index, text padding and the pattern gap and weight fields get big **−** / **+** buttons on touch. A tap changes the value by one step, holding a button keeps it going, and a finger that lands on a button and slides off nudges once and then scrolls instead of holding. Each tap, and each step of a hold, is its own undo step.
 
 **Selecting several elements:** turn on **Select multiple** in the tool strip (beside Select). While it is on, each tap adds an element to the selection or takes it out again, tapping a row in Layers does the same, and picking from the long-press menu adds that element; tapping empty canvas changes nothing, so use **Clear selection** in **⋯** to start over. Turning the toggle off, or switching to a drawing tool, leaves the selection as it is. With two or more elements selected, dragging any of them moves them all, the properties edit all of them at once (the −/+ steppers nudge every element), **⋯ → Arrange** aligns or distributes them, and Duplicate and Delete apply to the whole selection.
 

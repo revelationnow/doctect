@@ -289,13 +289,13 @@ describe('touch steppers on numeric property fields', () => {
         const documentRemove = vi.spyOn(document, 'removeEventListener');
         const windowAdd = vi.spyOn(window, 'addEventListener');
         const windowRemove = vi.spyOn(window, 'removeEventListener');
-        const added = (spy: typeof documentAdd, type: string) => spy.mock.calls.filter(([t]) => t === type).map(([, listener]) => listener);
-        const removed = (spy: typeof documentRemove, type: string) => spy.mock.calls.filter(([t]) => t === type).map(([, listener]) => listener);
+        /** The listeners a spied add/removeEventListener saw for `type`, in call order. */
+        const listenersOf = (spy: typeof documentAdd, type: string) => spy.mock.calls.filter(([t]) => t === type).map(([, listener]) => listener);
         const press = () => {
             documentAdd.mockClear(); documentRemove.mockClear(); windowAdd.mockClear(); windowRemove.mockClear();
             fireEvent.pointerDown(increase);
-            const [onHidden, ...moreHidden] = added(documentAdd, 'visibilitychange');
-            const [onBlur, ...moreBlur] = added(windowAdd, 'blur');
+            const [onHidden, ...moreHidden] = listenersOf(documentAdd, 'visibilitychange');
+            const [onBlur, ...moreBlur] = listenersOf(windowAdd, 'blur');
             expect(onHidden).toEqual(expect.any(Function));
             expect(onBlur).toEqual(expect.any(Function));
             expect(moreHidden).toEqual([]);
@@ -305,8 +305,8 @@ describe('touch steppers on numeric property fields', () => {
             return { onHidden, onBlur };
         };
         const expectRemoved = ({ onHidden, onBlur }: ReturnType<typeof press>) => {
-            expect(removed(documentRemove, 'visibilitychange')).toEqual([onHidden]);
-            expect(removed(windowRemove, 'blur')).toEqual([onBlur]);
+            expect(listenersOf(documentRemove, 'visibilitychange')).toEqual([onHidden]);
+            expect(listenersOf(windowRemove, 'blur')).toEqual([onBlur]);
         };
 
         let listeners = press();
@@ -321,12 +321,13 @@ describe('touch steppers on numeric property fields', () => {
         act(() => vi.advanceTimersByTime(1000));
         expect(props.onUpdateElements).toHaveBeenCalledTimes(2);
 
-        // A hold that ends by the finger lifting drops them the same way, after its repeats.
+        // A hold that ends by the finger lifting drops them the same way, after its repeats: nothing
+        // is removed while the hold repeats, only at the lift.
         listeners = press();
-        expect(removed(documentRemove, 'visibilitychange')).toEqual([]);
-        expect(removed(windowRemove, 'blur')).toEqual([]);
         act(() => vi.advanceTimersByTime(STEPPER_REPEAT_DELAY_MS + STEPPER_REPEAT_INTERVAL_MS));
         expect(props.onUpdateElements).toHaveBeenCalledTimes(4);
+        expect(listenersOf(documentRemove, 'visibilitychange')).toEqual([]);
+        expect(listenersOf(windowRemove, 'blur')).toEqual([]);
         fireEvent.pointerUp(increase);
         expectRemoved(listeners);
         act(() => vi.advanceTimersByTime(1000));

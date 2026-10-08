@@ -48,7 +48,11 @@ vi.mock('../../components/TabBar', () => ({ TabBar: () => <div data-testid="tab-
 vi.mock('../../components/NewProjectModal', () => ({ NewProjectModal: (props: any) => { newProjectModal.current = props; return null; } }));
 vi.mock('../../components/CloseProjectConfirmModal', () => ({ CloseProjectConfirmModal: (props: any) => { closeModal.current = props; return null; } }));
 vi.mock('../../components/AccountMenu', () => ({ AccountMenu: () => <span>account-menu</span> }));
-vi.mock('../../components/cloud/CloudMenu', () => ({ CloudMenu: ({ project }: any) => <span>cloud-menu:{project.id}</span> }));
+// The chrome's CloudMenu (remounted by the sheet on every ⋯ open) carries the page's cloud-project
+// cache; the header's own instance, mounted once, does not.
+vi.mock('../../components/cloud/CloudMenu', () => ({
+    CloudMenu: ({ project, cloudProjectCache }: any) => <span>cloud-menu:{project.id}{cloudProjectCache instanceof Map ? ':cached' : ''}</span>,
+}));
 vi.mock('../../services/analytics', () => ({ trackEvent: vi.fn() }));
 
 const workspace = (): WorkspaceSnapshot => ({
@@ -96,7 +100,7 @@ describe('EditorPage page chrome on touch', () => {
         expect(screen.getByTestId('chrome-projects').textContent).toBe('Project A|Project B');
         expect(screen.getByTestId('chrome-active').textContent).toBe('project-a');
         expect(screen.getByTestId('chrome-save').textContent).toContain('Saved locally');
-        expect(screen.getByTestId('chrome-cloud').textContent).toBe('cloud-menu:project-a');
+        expect(screen.getByTestId('chrome-cloud').textContent).toBe('cloud-menu:project-a:cached');
         expect(screen.getByTestId('chrome-account').textContent).toBe('account-menu');
         // Only the phone top bar renders these now: no second copy anywhere on the page.
         expect(screen.getAllByText('Saved locally')).toHaveLength(1);
@@ -135,6 +139,9 @@ describe('EditorPage page chrome on touch', () => {
         expect(seenChrome.list.at(-1)).not.toBe(first);
         expect(seenChrome.list.at(-1).activeProjectId).toBe('project-b');
         expect(seenChrome.list.at(-1).navigation).toBe(first.navigation);
+        // The cloud-project cache is the page's, so a project change keeps the same one.
+        expect(seenChrome.list.at(-1).cloudMenu.props.cloudProjectCache).toBe(first.cloudMenu.props.cloudProjectCache);
+        expect(first.cloudMenu.props.cloudProjectCache).toBeInstanceOf(Map);
     });
 
     it.each(['desktop', 'tablet'] as const)('keeps the page header with the tab strip on %s', (value) => {

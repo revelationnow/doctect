@@ -40,6 +40,7 @@ import type {
   WorkspaceSnapshot,
 } from '../services/localWorkspace/index';
 import type { GeneratedProject } from '../services/validateGeneratedProject';
+import type { CloudProject } from '../services/cloudApi';
 import type { AppState } from '../types';
 
 export type Project = WorkspaceProject;
@@ -374,6 +375,9 @@ function EditorPageShell({
     latest.current = { handleActivateProject, downloadProjectJson, handleLinkCloud, handleRestoreState, retryProject };
   });
   const activeSaveState = activeProject ? saveStates.get(activeProject.id) ?? SAVED_LOCALLY : null;
+  // The sheet mounts the chrome's CloudMenu afresh on every ⋯ open; this keeps its fetched cloud
+  // project for the page's lifetime, as the header popover keeps its own by staying mounted.
+  const cloudProjectCache = useRef(new Map<string, CloudProject>()).current;
   const chrome = useMemo<EditorChrome>(() => ({
     projects,
     activeProjectId,
@@ -397,6 +401,7 @@ function EditorPageShell({
     cloudMenu: activeProject ? (
       <CloudMenu
         project={activeProject}
+        cloudProjectCache={cloudProjectCache}
         getWorkingProject={editing ? () => editing.readProject(activeProject.id, authorityEpochs.get(activeProject.id)) : undefined}
         onLinkCloud={cloud => latest.current.handleLinkCloud(
           activeProject.id,
@@ -413,7 +418,7 @@ function EditorPageShell({
     ) : null,
     accountMenu: <AccountMenu />,
     navigation: PAGE_NAVIGATION,
-  }), [projects, activeProjectId, activeProject, authorityEpochs, activeSaveState, editing]);
+  }), [projects, activeProjectId, activeProject, authorityEpochs, activeSaveState, editing, cloudProjectCache]);
 
   return (
     <FormFactorProvider value={formFactor}>

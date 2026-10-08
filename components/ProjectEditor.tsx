@@ -1079,8 +1079,14 @@ function useLegacyEditor({ projectId, projectName, initialState, isActive, onNam
         currentTemplate, effectivePreviewNodeId, saveToHistory, handleUpdateTemplateElements,
         deleteElements: (ids: string[]) => { saveToHistory(); handleDeleteElements(ids); },
         duplicateElements: () => { saveToHistory(); handleDuplicate(); },
-        // The desktop toolbar's legacy align handler, shared with the touch Arrange menu.
-        alignElements: (type: AlignType) => setState(s => alignSelectedElements(s, type)),
+        // The touch Arrange menu's align: the desktop toolbar's legacy computation, recorded as one
+        // undo step like every other touch edit (the toolbar's own legacy branch is unchanged).
+        alignElements: (type: AlignType) => {
+            const next = alignSelectedElements(state, type);
+            if (next === state) return;
+            saveToHistory();
+            setState(next);
+        },
         handleUpdateTemplate, layersExpanded, toggleLayers: () => setLayersExpanded(v => !v),
         showScriptGenModal, handleApplyGenerated, onCreateGeneratedProject, showSavePresetModal, handleSavePreset,
         showNewVariantModal, setShowNewVariantModal, handleCreateVariant, getActiveTemplates, selectNodeTarget,

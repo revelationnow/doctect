@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { X, GitPullRequest } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cloudApi, ApiError } from '../../services/cloudApi';
 import { useBackDismiss } from '../editor-layout/useBackDismiss';
+import { trapTab } from '../editor-layout/focusTrap';
 
 interface ProposeChangesModalProps {
     sourceProjectId: string;
@@ -15,9 +16,19 @@ export function ProposeChangesModal({ sourceProjectId, onClose }: ProposeChanges
     const [description, setDescription] = useState('');
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const dialogRef = useRef<HTMLDivElement>(null);
     // Touch: the back gesture closes this dialog alone (the ⋯ sheet it was opened from stays), as
     // its Close button does.
     useBackDismiss(true, onClose);
+
+    // Focus moves into the dialog on open and back to the opener on close, so Tab is trapped
+    // from the first press: the row that opened it (a sheet row beneath the backdrop, or the
+    // popover button that closes with the popover) is never the next stop.
+    useEffect(() => {
+        const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        dialogRef.current?.focus();
+        return () => { if (previous?.isConnected) previous.focus(); };
+    }, []);
 
     const submit = async () => {
         if (!title.trim()) { setError('A title is required.'); return; }
@@ -33,12 +44,14 @@ export function ProposeChangesModal({ sourceProjectId, onClose }: ProposeChanges
 
     return (
         <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center" onClick={onClose}>
-            <div className="bg-white rounded-xl shadow-2xl w-[440px]" onClick={e => e.stopPropagation()}>
+            <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="propose-dialog-title" tabIndex={-1}
+                className="bg-white rounded-xl shadow-2xl w-[440px] outline-none"
+                onClick={e => e.stopPropagation()} onKeyDown={event => trapTab(event, dialogRef.current)}>
                 <div className="flex items-center justify-between px-4 py-3 border-b">
-                    <h2 className="font-semibold text-slate-800 text-sm flex items-center gap-1.5">
+                    <h2 id="propose-dialog-title" className="font-semibold text-slate-800 text-sm flex items-center gap-1.5">
                         <GitPullRequest size={14} /> Propose changes to upstream
                     </h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={16} /></button>
+                    <button onClick={onClose} aria-label="Close propose changes" className="text-slate-400 hover:text-slate-700"><X size={16} /></button>
                 </div>
                 <div className="p-4 space-y-3">
                     <p className="text-xs text-slate-500">

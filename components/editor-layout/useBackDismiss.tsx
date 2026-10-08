@@ -49,6 +49,17 @@ export const overlayDepthOf = (location: Pick<Location, 'state'>): number => {
     return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : 0;
 };
 
+/**
+ * `replace` for a router link (or `navigate`) that leaves the editor from inside an open touch
+ * overlay (a Navigate row of the ⋯ sheet, an Account or Cloud link row): the destination then
+ * takes over the overlay's history entry instead of stacking on it. The route change unmounts the
+ * editor in the same render, so the provider never gets to consume that entry itself; left behind,
+ * a back from the destination would land on it and the provider would pop once more (one back,
+ * two entries). `undefined` outside an overlay entry (the desktop and tablet headers included), so
+ * `Link` keeps its own default of replacing only a same-URL navigation.
+ */
+export const useOverlayLinkReplace = (): true | undefined => overlayDepthOf(useLocation()) > 0 || undefined;
+
 /** True when a navigation stays on one URL (only `state`/`key` differ): an overlay entry, never a page change. */
 export const isSameRouteNavigation = (
     current: Pick<Location, 'pathname' | 'search' | 'hash'>,

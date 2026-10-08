@@ -145,14 +145,15 @@ describe('AccountMenu as sheet rows', () => {
         sessionState.value = { data: null, isPending: false };
     });
 
-    const renderRows = () => {
+    /** `overlayDepth` > 0 starts on the history entry a touch overlay (the ⋯ sheet) pushes above the editor's. */
+    const renderRows = (overlayDepth = 0) => {
         const onDismiss = vi.fn();
         render(
             <MenuListContext.Provider value={{ onDismiss }}>
-                <MemoryRouter initialEntries={['/app']}>
+                <MemoryRouter initialEntries={[{ pathname: '/app', state: overlayDepth > 0 ? { touchOverlays: overlayDepth } : null }]}>
                     <Routes>
                         <Route path="/app" element={<AccountMenu />} />
-                        <Route path="/gallery" element={<div>GALLERY_PAGE</div>} />
+                        <Route path="/gallery" element={<GalleryDestination />} />
                         <Route path="/login" element={<LoginDestination />} />
                     </Routes>
                 </MemoryRouter>
@@ -160,6 +161,9 @@ describe('AccountMenu as sheet rows', () => {
         );
         return onDismiss;
     };
+    function GalleryDestination() {
+        return <div>GALLERY_PAGE:{useNavigationType()}</div>;
+    }
 
     it('lists the account links and Sign out as 44px rows at once, naming the account instead of a trigger', async () => {
         api.me.mockResolvedValue(user('user', 'planner_pro'));
@@ -175,7 +179,41 @@ describe('AccountMenu as sheet rows', () => {
         expect(screen.getByRole('button', { name: 'Sign out' }).className).toMatch(/\bmin-h-11\b/);
         fireEvent.click(screen.getByRole('link', { name: 'Gallery' }));
         expect(onDismiss).toHaveBeenCalledTimes(1);
-        expect(screen.getByText('GALLERY_PAGE')).toBeInTheDocument();
+        expect(screen.getByText('GALLERY_PAGE:PUSH')).toBeInTheDocument();
+    });
+
+    it('shows a Loading… status row in the rows\' size while the account is looked up, where the header shows nothing', async () => {
+        const authority = deferred<ReturnType<typeof user> | null>();
+        api.me.mockReturnValueOnce(authority.promise);
+        renderRows();
+        const status = screen.getByRole('status');
+        expect(status).toHaveTextContent('Loading…');
+        expect(status.className).toMatch(/\bmin-h-11\b/);
+        await act(async () => { authority.resolve(user('user', 'planner_pro')); await authority.promise; });
+        expect(screen.queryByRole('status')).toBeNull();
+        expect(screen.getByText('Signed in as planner_pro')).toBeInTheDocument();
+    });
+
+    it('renders nothing in the header while the account is looked up', () => {
+        api.me.mockReturnValueOnce(new Promise(() => {}));
+        const { container } = renderAt();
+        expect(screen.queryByRole('status')).toBeNull();
+        expect(container).toBeEmptyDOMElement();
+    });
+
+    it('replaces the overlay\'s history entry when a link is followed from inside an open touch overlay', async () => {
+        api.me.mockResolvedValue(user('user', 'planner_pro'));
+        const onDismiss = renderRows(1);
+        fireEvent.click(await screen.findByRole('link', { name: 'Gallery' }));
+        expect(onDismiss).toHaveBeenCalledTimes(1);
+        expect(screen.getByText('GALLERY_PAGE:REPLACE')).toBeInTheDocument();
+    });
+
+    it('replaces the overlay\'s history entry when Sign in is followed from inside an open touch overlay', async () => {
+        api.me.mockResolvedValue(null);
+        renderRows(1);
+        fireEvent.click(await screen.findByRole('link', { name: 'Sign in' }));
+        expect(screen.getByText('LOGIN_PAGE:REPLACE')).toBeInTheDocument();
     });
 
     it('offers Moderation to an admin and signs out through the same handler without dismissing the host', async () => {

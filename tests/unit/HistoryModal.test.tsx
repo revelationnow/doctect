@@ -1,8 +1,10 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { HistoryModal } from '../../components/cloud/HistoryModal';
 import { cloudApi, CommitMeta } from '../../services/cloudApi';
 import { deferred } from '../helpers/fakeLocalWorkspaceStore';
+import { layOutEveryElement } from '../helpers/jsdomLayout';
 
 const commits: CommitMeta[] = [
     { id: 'c2', parentCommitId: 'c1', message: 'Second save', schemaVersion: 1, createdBy: 'u1', createdAt: '2026-02-01T00:00:00.000Z' },
@@ -71,6 +73,34 @@ describe('HistoryModal', () => {
         expect(await screen.findByText(/Second save/)).toBeInTheDocument();
         expect(screen.getByText(/Initial save/)).toBeInTheDocument();
         expect(screen.getByText('HEAD')).toBeInTheDocument();
+    });
+
+    describe('as a modal dialog', () => {
+        layOutEveryElement();
+
+        it('takes focus on open and wraps Tab at its own edges', async () => {
+            render(<HistoryModal cloudProjectId="proj-1" onRestore={vi.fn()} onClose={vi.fn()} />);
+            const dialog = screen.getByRole('dialog', { name: 'Version history' });
+            expect(document.activeElement).toBe(dialog);
+            const restores = await screen.findAllByRole('button', { name: 'Restore' });
+            const close = screen.getByRole('button', { name: 'Close version history' });
+            expect(fireEvent.keyDown(dialog, { key: 'Tab', shiftKey: true })).toBe(false);
+            expect(document.activeElement).toBe(restores[1]);
+            expect(fireEvent.keyDown(restores[1], { key: 'Tab' })).toBe(false);
+            expect(document.activeElement).toBe(close);
+            expect(fireEvent.keyDown(close, { key: 'Tab' })).toBe(true); // mid-dialog: the browser's move
+            expect(document.activeElement).toBe(close);
+        });
+
+        it('returns focus to the element that had it when it opened', async () => {
+            render(<button type="button">Opener</button>);
+            screen.getByRole('button', { name: 'Opener' }).focus();
+            const modal = render(<HistoryModal cloudProjectId="proj-1" onRestore={vi.fn()} onClose={vi.fn()} />);
+            expect(document.activeElement).toBe(screen.getByRole('dialog', { name: 'Version history' }));
+            await screen.findAllByRole('button', { name: 'Restore' });
+            modal.unmount();
+            expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Opener' }));
+        });
     });
 
     describe('default (restore) mode', () => {

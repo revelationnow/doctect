@@ -5,6 +5,7 @@ import { User, LogOut, Image, Settings, FolderOpen, Shield } from 'lucide-react'
 import { signOut } from '../lib/auth-client';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { MENU_ROW_BASE_CLASS, MENU_ROW_CLASS, useMenuListHost } from './editor-layout/MenuListContext';
+import { useOverlayLinkReplace } from './editor-layout/useBackDismiss';
 
 /**
  * The header's Account trigger and popover. Inside a `MenuListContext` host (the phone ⋯ sheet)
@@ -19,6 +20,8 @@ export function AccountMenu() {
     const ref = useRef<HTMLDivElement>(null);
     const location = useLocation();
     const navigate = useNavigate();
+    // Inside the phone ⋯ sheet a followed link replaces the sheet's history entry (undefined elsewhere).
+    const replace = useOverlayLinkReplace();
 
     const handleSignOut = async () => {
         setLogoutError(false);
@@ -42,7 +45,10 @@ export function AccountMenu() {
         return () => document.removeEventListener('mousedown', onClick);
     }, [list]);
 
-    if (loading) return null;
+    if (loading) {
+        // The sheet's Account heading would otherwise stand over nothing until the lookup lands.
+        return list ? <div role="status" className={clsx(MENU_ROW_BASE_CLASS, 'text-slate-500')}>Loading…</div> : null;
+    }
     if (error) {
         if (list) {
             return (
@@ -65,7 +71,7 @@ export function AccountMenu() {
     }
     if (!user) {
         return list
-            ? <Link to="/login" state={{ from: location.pathname }} onClick={list.onDismiss} className={MENU_ROW_CLASS}>Sign in</Link>
+            ? <Link to="/login" state={{ from: location.pathname }} replace={replace} onClick={list.onDismiss} className={MENU_ROW_CLASS}>Sign in</Link>
             : <Link to="/login" state={{ from: location.pathname }} className="text-xs font-medium text-slate-500 hover:text-blue-600">Sign in</Link>;
     }
     const username = user.username;
@@ -77,15 +83,15 @@ export function AccountMenu() {
     const iconSize = list ? 16 : 12;
     const items = (
         <>
-            <Link to={profileTo} state={profileState} onClick={follow} className={list ? MENU_ROW_CLASS : 'block px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50'}>My profile</Link>
-            <Link to="/gallery" onClick={follow} className={linkClass}><Image size={iconSize} /> Gallery</Link>
-            <Link to="/projects" onClick={follow} className={linkClass}><FolderOpen size={iconSize} /> My projects</Link>
+            <Link to={profileTo} state={profileState} replace={replace} onClick={follow} className={list ? MENU_ROW_CLASS : 'block px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50'}>My profile</Link>
+            <Link to="/gallery" replace={replace} onClick={follow} className={linkClass}><Image size={iconSize} /> Gallery</Link>
+            <Link to="/projects" replace={replace} onClick={follow} className={linkClass}><FolderOpen size={iconSize} /> My projects</Link>
             {(user.role === 'admin' || user.role === 'owner') && (
-                <Link to="/admin/moderation" onClick={follow} className={linkClass}>
+                <Link to="/admin/moderation" replace={replace} onClick={follow} className={linkClass}>
                     <Shield size={iconSize} /> Moderation
                 </Link>
             )}
-            <Link to="/account" onClick={follow} className={linkClass}><Settings size={iconSize} /> Account settings</Link>
+            <Link to="/account" replace={replace} onClick={follow} className={linkClass}><Settings size={iconSize} /> Account settings</Link>
             {logoutError && <div role="alert" className={list ? 'px-4 py-2 text-sm text-red-700' : 'px-3 py-1.5 text-xs text-red-700'}>Unable to sign out. Try again.</div>}
             <button onClick={() => void handleSignOut()}
                 className={list ? MENU_ROW_CLASS : 'w-full text-left flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50'}>

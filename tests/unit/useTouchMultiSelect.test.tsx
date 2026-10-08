@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { act, render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useTouchMultiSelect } from '../../components/editor-layout/useTouchMultiSelect';
@@ -6,6 +6,12 @@ import { useTouchMultiSelect } from '../../components/editor-layout/useTouchMult
 let latest: ReturnType<typeof useTouchMultiSelect>;
 const Harness = ({ tool, enabled = true, setTool = vi.fn() }: { tool: string; enabled?: boolean; setTool?: (tool: 'select') => void }) => {
     latest = useTouchMultiSelect({ tool, enabled, setTool });
+    return null;
+};
+/** The editor's wiring: `setTool` really changes the tool the hook is rendered with. */
+const StatefulHarness = ({ initialTool, onSetTool }: { initialTool: string; onSetTool: (tool: 'select') => void }) => {
+    const [tool, setTool] = useState(initialTool);
+    latest = useTouchMultiSelect({ tool, enabled: true, setTool: next => { onSetTool(next); setTool(next); } });
     return null;
 };
 
@@ -31,13 +37,17 @@ describe('useTouchMultiSelect', () => {
         expect(latest.multiSelect).toBe(false);
     });
 
-    it('switches back to Select when turned on from another tool', () => {
+    it('switches back to Select when turned on from another tool, and is on once the tool has changed', () => {
+        // The tool is state here, so the reset effect sees the switch the hook itself asked for
+        // (with a static `tool` prop the effect would never re-run and the case would prove nothing).
         const setTool = vi.fn();
-        const { rerender } = render(<Harness tool="hand" setTool={setTool} />);
+        render(<StatefulHarness initialTool="hand" onSetTool={setTool} />);
         act(() => latest.toggleMultiSelect());
         expect(setTool).toHaveBeenCalledWith('select');
-        rerender(<Harness tool="select" setTool={setTool} />);
         expect(latest.multiSelect).toBe(true);
+        act(() => latest.toggleMultiSelect());
+        expect(latest.multiSelect).toBe(false);
+        expect(setTool).toHaveBeenCalledTimes(1);
     });
 
     it('is inert outside the touch form factors', () => {

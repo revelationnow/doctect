@@ -554,7 +554,7 @@ test('quick format bar is never the hit target under the overflow sheet, the dra
     expect(await hit(), 'the bar is reachable again once the dialog closes').toBe('Text formatting');
 });
 
-test('phone overflow menu offers Home, Gallery and Docs', async ({ page }, testInfo) => {
+test('phone overflow menu offers Home, Gallery and Docs; a followed row replaces the sheet\'s history entry', async ({ page }, testInfo) => {
     test.skip(!isPhone(testInfo), 'phone only');
     await page.getByRole('button', { name: 'More actions' }).click();
     const menu = overflowMenu(page);
@@ -564,6 +564,19 @@ test('phone overflow menu offers Home, Gallery and Docs', async ({ page }, testI
         await expect(link).toBeVisible();
         await expect(link).toHaveAttribute('href', href);
     }
+    // The open sheet holds one history entry above the editor's. Following a row leaves the editor
+    // in the same render, so that entry is replaced by the destination rather than left behind:
+    // history is no longer than it was with the sheet open, and one back lands on the bare editor.
+    await expect.poll(() => overlayDepth(page)).toBe(1);
+    const length = await page.evaluate(() => history.length);
+    await menu.getByRole('link', { name: 'Docs', exact: true }).click();
+    await expect.poll(() => pathname(page)).toBe('/docs');
+    expect(await page.evaluate(() => history.length)).toBe(length);
+    await page.goBack();
+    await expect(activePane(page).getByTestId('editor-canvas')).toBeVisible();
+    expect(pathname(page)).toBe('/app');
+    await expect.poll(() => overlayDepth(page)).toBe(0);
+    await expect(menu).toBeHidden();
 });
 
 test('Select multiple: taps build the selection, a drag moves all of it, Arrange aligns it', async ({ page, browserName }, testInfo) => {
@@ -840,15 +853,13 @@ test('back gesture closes the open overlay and keeps the editor; any other close
     const textarea = jsonPanel.locator('textarea');
     await textarea.fill(`${await textarea.inputValue()}\n`);
     const prompts = [];
-    page.on('dialog', dialog => {
-        prompts.push(dialog.message());
-        void (prompts.length === 1 ? dialog.dismiss() : dialog.accept());
-    });
+    page.once('dialog', dialog => { prompts.push(dialog.message()); void dialog.dismiss(); });
     await page.goBack();
     await expect.poll(() => prompts).toEqual(['Discard JSON changes?']);
     await expect(json).toBeVisible();
     await expect.poll(() => overlayDepth(page)).toBe(1);
     expect(pathname(page)).toBe('/app');
+    page.once('dialog', dialog => { prompts.push(dialog.message()); void dialog.accept(); });
     await page.goBack();
     await expect.poll(() => prompts).toEqual(['Discard JSON changes?', 'Discard JSON changes?']);
     await expect(json).toBeHidden();

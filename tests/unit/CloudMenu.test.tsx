@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, cleanup, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, Routes, Route, createMemoryRouter, RouterProvider } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, createMemoryRouter, RouterProvider, useNavigationType } from 'react-router-dom';
 import { CloudMenu } from '../../components/cloud/CloudMenu';
+import type { CloudProject } from '../../services/cloudApi';
+import { layOutEveryElement } from '../helpers/jsdomLayout';
 import { MenuListContext } from '../../components/editor-layout/MenuListContext';
 import { OverflowMenu } from '../../components/editor-layout/OverflowMenu';
 import { FormFactorProvider } from '../../components/editor-layout/FormFactorContext';
@@ -206,14 +208,23 @@ describe('CloudMenu', () => {
 describe('CloudMenu as sheet rows', () => {
     beforeEach(() => vi.restoreAllMocks());
 
-    const renderRows = (menuProject: WorkspaceProject = project, onLinkCloud = vi.fn(async () => true)) => {
+    const Destination = ({ name }: { name: string }) => <div>{name}:{useNavigationType()}</div>;
+    /** `overlayDepth` > 0 starts on the history entry a touch overlay (the ⋯ sheet) pushes above the editor's. */
+    const renderRows = (
+        menuProject: WorkspaceProject = project,
+        onLinkCloud = vi.fn(async () => true),
+        { overlayDepth = 0, cache, onRestoreState = vi.fn(async () => true) }: {
+            overlayDepth?: number; cache?: Map<string, CloudProject>; onRestoreState?: React.ComponentProps<typeof CloudMenu>['onRestoreState'];
+        } = {},
+    ) => {
         const onDismiss = vi.fn();
         render(
             <MenuListContext.Provider value={{ onDismiss }}>
-                <MemoryRouter initialEntries={['/app']}>
+                <MemoryRouter initialEntries={[{ pathname: '/app', state: overlayDepth > 0 ? { touchOverlays: overlayDepth } : null }]}>
                     <Routes>
-                        <Route path="/app" element={<CloudMenu project={menuProject} onLinkCloud={onLinkCloud} onRestoreState={vi.fn(async () => true)} />} />
-                        <Route path="/login" element={<div>LOGIN_MARKER</div>} />
+                        <Route path="/app" element={<CloudMenu project={menuProject} cloudProjectCache={cache} onLinkCloud={onLinkCloud} onRestoreState={onRestoreState} />} />
+                        <Route path="/login" element={<Destination name="LOGIN_MARKER" />} />
+                        <Route path="/welcome" element={<Destination name="WELCOME_MARKER" />} />
                     </Routes>
                 </MemoryRouter>
             </MenuListContext.Provider>,
@@ -230,7 +241,45 @@ describe('CloudMenu as sheet rows', () => {
         expect(link.className).toMatch(/\bmin-h-11\b/);
         fireEvent.click(link);
         expect(onDismiss).toHaveBeenCalledTimes(1);
-        expect(screen.getByText('LOGIN_MARKER')).toBeInTheDocument();
+        expect(screen.getByText('LOGIN_MARKER:PUSH')).toBeInTheDocument();
+    });
+
+    it('replaces the overlay\'s history entry when a link is followed from inside an open touch overlay', () => {
+        mockUseSession.mockReturnValue({ data: null });
+        const { onDismiss } = renderRows(project, undefined, { overlayDepth: 1 });
+        fireEvent.click(screen.getByRole('link', { name: 'Sign in to save to cloud' }));
+        expect(onDismiss).toHaveBeenCalledTimes(1);
+        expect(screen.getByText('LOGIN_MARKER:REPLACE')).toBeInTheDocument();
+    });
+
+    it('replaces the overlay\'s history entry when a save is sent to /welcome for a username', async () => {
+        mockUseSession.mockReturnValue({ data: { user: { username: 'planner_pro' } } });
+        vi.spyOn(cloudApi, 'createProject').mockRejectedValue(new ApiError(403, 'nope', 'USERNAME_REQUIRED'));
+        vi.spyOn(window, 'prompt').mockReturnValue('Initial save');
+        renderRows(project, undefined, { overlayDepth: 1 });
+        fireEvent.click(screen.getByRole('button', { name: 'Save to cloud (new)' }));
+        expect(await screen.findByText('WELCOME_MARKER:REPLACE')).toBeInTheDocument();
+    });
+
+    it('keeps a host cache in step: the fetched project, the reloaded one, and nothing once a listing edit drops it', async () => {
+        mockUseSession.mockReturnValue({ data: { user: { username: 'planner_pro' } } });
+        const linked = { ...project, cloud: { projectId: 'cloud-1', lastSyncedCommitId: 'head-1' } };
+        const stale = { id: 'cloud-1', headCommitId: 'head-1' } as CloudProject;
+        const latest = { id: 'cloud-1', headCommitId: 'head-2' } as CloudProject;
+        const getProject = vi.spyOn(cloudApi, 'getProject').mockResolvedValueOnce(stale).mockResolvedValueOnce(latest);
+        vi.spyOn(cloudApi, 'saveCommit').mockRejectedValue(new ApiError(409, 'changed', 'PROJECT_HEAD_CHANGED'));
+        vi.spyOn(cloudApi, 'getCommit').mockResolvedValue({ id: 'head-2', state: project.initialState } as any);
+        vi.spyOn(window, 'prompt').mockReturnValue('Update');
+        const cache = new Map<string, CloudProject>();
+        const onRestoreState = vi.fn(async () => true);
+        renderRows(linked, undefined, { cache, onRestoreState });
+        await waitFor(() => expect(cache.get('cloud-1')).toBe(stale));
+        expect(getProject).toHaveBeenCalledTimes(1);
+        fireEvent.click(screen.getByRole('button', { name: 'Save to cloud' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'Reload cloud version' }));
+        await waitFor(() => expect(onRestoreState).toHaveBeenCalled());
+        expect(cache.get('cloud-1')).toBe(latest);
+        expect(getProject).toHaveBeenCalledTimes(2);
     });
 
     it('saves to the cloud from its row with the usual handlers and then dismisses the host', async () => {
@@ -297,21 +346,21 @@ describe('Cloud modals opened from the sheet', () => {
         projects: [{ id: 'local-1', name: 'Test Project' }], activeProjectId: 'local-1',
         onSelectProject: vi.fn(), onCloseProject: vi.fn(), onNewProject: vi.fn(), saveStatus: null, accountMenu: null,
     };
-    function Host() {
+    function Host({ cache }: { cache?: Map<string, CloudProject> }) {
         const [menu, setMenu] = useState(false);
         return (
             <>
                 <button type="button" onClick={() => setMenu(true)}>More actions</button>
                 <OverflowMenu open={menu} onClose={() => setMenu(false)} actions={makeActions()} chrome={{
                     ...chrome,
-                    cloudMenu: <CloudMenu project={linked} onLinkCloud={vi.fn(async () => true)} onRestoreState={vi.fn(async () => true)} />,
+                    cloudMenu: <CloudMenu project={linked} cloudProjectCache={cache} onLinkCloud={vi.fn(async () => true)} onRestoreState={vi.fn(async () => true)} />,
                 }} />
             </>
         );
     }
-    const mountOnPhone = () => {
+    const mountOnPhone = (cache?: Map<string, CloudProject>) => {
         const router = createMemoryRouter([
-            { path: '/app', element: <FormFactorProvider value="phone"><BackDismissProvider><Host /></BackDismissProvider></FormFactorProvider> },
+            { path: '/app', element: <FormFactorProvider value="phone"><BackDismissProvider><Host cache={cache} /></BackDismissProvider></FormFactorProvider> },
             { path: '/', element: <div>home route</div> },
         ], { initialEntries: ['/', '/app'], initialIndex: 1 });
         render(<RouterProvider router={router} />);
@@ -323,10 +372,40 @@ describe('Cloud modals opened from the sheet', () => {
             history: () => screen.queryByRole('heading', { name: 'Version history' }),
         };
     };
-    const signedIn = () => {
+    const signedIn = (cloudProject: Partial<CloudProject> = {}) => {
         mockUseSession.mockReturnValue({ data: { user: { username: 'planner_pro' } } });
-        vi.spyOn(cloudApi, 'getProject').mockResolvedValue({ id: 'cloud-1', headCommitId: 'head-1' } as any);
+        return vi.spyOn(cloudApi, 'getProject').mockResolvedValue({ id: 'cloud-1', headCommitId: 'head-1', ...cloudProject } as CloudProject);
     };
+    const openSheet = () => fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
+
+    it('fetches the cloud project once into the host\'s cache and reopens the sheet from it, not from another GET', async () => {
+        const getProject = signedIn({ forkedFromProjectId: 'upstream-1' });
+        const cache = new Map<string, CloudProject>();
+        const { depth, sheet } = mountOnPhone(cache);
+        openSheet();
+        expect(await screen.findByRole('link', { name: /forked from upstream/ })).toBeTruthy();
+        expect(getProject).toHaveBeenCalledTimes(1);
+        expect(cache.get('cloud-1')).toMatchObject({ forkedFromProjectId: 'upstream-1' });
+        fireEvent.click(screen.getByTestId('overflow-menu-backdrop'));
+        expect(sheet()).toBeNull();
+        await waitFor(() => expect(depth()).toBe(0));
+        openSheet();
+        // The fork row is there from the first render: the record came from the cache.
+        expect(within(sheet()!).getByRole('link', { name: /forked from upstream/ })).toBeTruthy();
+        expect(getProject).toHaveBeenCalledTimes(1);
+    });
+
+    it('without a host cache, every open of the sheet is another fetch (the record lives with the menu)', async () => {
+        const getProject = signedIn({ forkedFromProjectId: 'upstream-1' });
+        const { depth, sheet } = mountOnPhone();
+        openSheet();
+        expect(await screen.findByRole('link', { name: /forked from upstream/ })).toBeTruthy();
+        fireEvent.click(screen.getByTestId('overflow-menu-backdrop'));
+        await waitFor(() => expect(depth()).toBe(0));
+        openSheet();
+        expect(within(sheet()!).queryByRole('link', { name: /forked from upstream/ })).toBeNull();
+        await waitFor(() => expect(getProject).toHaveBeenCalledTimes(2));
+    });
 
     it('back closes Version history only and keeps the sheet; its Close button returns to the sheet with the entry consumed', async () => {
         signedIn();
@@ -374,5 +453,60 @@ describe('Cloud modals opened from the sheet', () => {
         expect(history()).not.toBeNull();
         expect(sheet()).not.toBeNull();
         await waitFor(() => expect(depth()).toBe(2));
+    });
+
+    // The modals a sheet row opens render inside the sheet's DOM, above its backdrop, where the
+    // sheet's own trap wraps only at the sheet's edges: without a trap of their own, Tab from a
+    // modal's last control would walk on to the sheet rows beneath it. Each takes focus on open,
+    // wraps Tab at its own edges and hands focus back to the row that opened it.
+    describe('keep keyboard focus inside themselves', () => {
+        layOutEveryElement();
+
+        it('Version history: focus lands in the dialog, Tab wraps at its edges, Close returns to the row', async () => {
+            signedIn();
+            vi.spyOn(cloudApi, 'listCommits').mockResolvedValue([{ id: 'c1', message: 'Initial save', createdAt: new Date().toISOString() }] as any);
+            const { sheet } = mountOnPhone();
+            openSheet();
+            const row = within(sheet()!).getByRole('button', { name: 'Version history' });
+            row.focus();
+            fireEvent.click(row);
+            const dialog = await screen.findByRole('dialog', { name: 'Version history' });
+            expect(document.activeElement).toBe(dialog);
+            const restore = await screen.findByRole('button', { name: 'Restore' });
+            const close = screen.getByRole('button', { name: 'Close version history' });
+            expect(fireEvent.keyDown(dialog, { key: 'Tab' })).toBe(false);
+            expect(document.activeElement).toBe(close);
+            expect(fireEvent.keyDown(close, { key: 'Tab', shiftKey: true })).toBe(false);
+            expect(document.activeElement).toBe(restore);
+            expect(fireEvent.keyDown(restore, { key: 'Tab' })).toBe(false);
+            expect(document.activeElement).toBe(close);
+            fireEvent.click(close);
+            expect(screen.queryByRole('dialog', { name: 'Version history' })).toBeNull();
+            expect(sheet()).not.toBeNull();
+            expect(document.activeElement).toBe(row);
+        });
+
+        it('Propose changes: focus lands in the dialog, Tab wraps at its edges, Cancel returns to the row', async () => {
+            signedIn({ forkedFromProjectId: 'upstream-1' });
+            const { sheet } = mountOnPhone();
+            openSheet();
+            const row = await within(sheet()!).findByRole('button', { name: 'Propose changes to upstream…' });
+            row.focus();
+            fireEvent.click(row);
+            const dialog = screen.getByRole('dialog', { name: 'Propose changes to upstream' });
+            expect(document.activeElement).toBe(dialog);
+            const close = screen.getByRole('button', { name: 'Close propose changes' });
+            const create = screen.getByRole('button', { name: 'Create merge request' });
+            expect(fireEvent.keyDown(dialog, { key: 'Tab' })).toBe(false);
+            expect(document.activeElement).toBe(close);
+            expect(fireEvent.keyDown(close, { key: 'Tab', shiftKey: true })).toBe(false);
+            expect(document.activeElement).toBe(create);
+            expect(fireEvent.keyDown(create, { key: 'Tab' })).toBe(false);
+            expect(document.activeElement).toBe(close);
+            fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+            expect(screen.queryByRole('dialog', { name: 'Propose changes to upstream' })).toBeNull();
+            expect(sheet()).not.toBeNull();
+            expect(document.activeElement).toBe(row);
+        });
     });
 });

@@ -5,6 +5,7 @@ import { loadProjectState } from '../../services/loadProjectState';
 import { IMPORT_STAGE_ERROR_MESSAGE } from '../../services/importProject';
 import type { AppState } from '../../types';
 import { useBackDismiss } from '../editor-layout/useBackDismiss';
+import { trapTab } from '../editor-layout/focusTrap';
 
 type HistoryModalProps =
     { cloudProjectId: string; onClose: () => void } &
@@ -29,6 +30,16 @@ export function HistoryModal(props: HistoryModalProps) {
     // Compound so two actions can share one row without both showing "Loading…".
     const [busyKey, setBusyKey] = useState<string | null>(null);
     const busyRef = useRef(false);
+    const dialogRef = useRef<HTMLDivElement>(null);
+
+    // Focus moves into the dialog on open and back to the opener on close, so Tab is trapped
+    // from the first press: the row that opened it (a sheet row beneath the backdrop, or the
+    // popover button that closes with the popover) is never the next stop.
+    useEffect(() => {
+        const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        dialogRef.current?.focus();
+        return () => { if (previous?.isConnected) previous.focus(); };
+    }, []);
 
     useEffect(() => {
         cloudApi.listCommits(cloudProjectId)
@@ -93,9 +104,11 @@ export function HistoryModal(props: HistoryModalProps) {
 
     return (
         <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center" onClick={close}>
-            <div className="bg-white rounded-xl shadow-2xl w-[480px] max-h-[70vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="history-dialog-title" tabIndex={-1}
+                className="bg-white rounded-xl shadow-2xl w-[480px] max-h-[70vh] flex flex-col outline-none"
+                onClick={e => e.stopPropagation()} onKeyDown={event => trapTab(event, dialogRef.current)}>
                 <div className="flex items-center justify-between px-4 py-3 border-b">
-                    <h2 className="font-semibold text-slate-800 text-sm">Version history</h2>
+                    <h2 id="history-dialog-title" className="font-semibold text-slate-800 text-sm">Version history</h2>
                     <button
                         type="button"
                         aria-label="Close version history"

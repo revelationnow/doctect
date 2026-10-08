@@ -167,11 +167,13 @@ describe('phone layout wired through the legacy editor', () => {
         expect(canvasProps.selectedElementIds).toEqual(['r1']);
     });
 
-    it('arranges a multi-selection from the overflow menu with the desktop align handler and clears it', () => {
+    it('arranges a multi-selection from the overflow menu with the desktop align handler, one undo step each, and clears it', () => {
         const state = legacyState();
         state.variants.default.templates.page.elements = [rect('r1'), { ...rect('r2'), x: 120, y: 90 }];
         // Hierarchy view: the shown template is the node's, not state.selectedTemplateId (empty here).
         renderLegacy('phone', { ...state, selectedElementIds: ['r1', 'r2'] });
+        const undo = () => screen.getByRole('button', { name: 'Undo' });
+        expect(undo()).toHaveProperty('disabled', true);
         openOverflow();
         expect(screen.getByRole('heading', { name: 'Arrange' })).toBeTruthy();
         fireEvent.click(screen.getByRole('button', { name: 'Align left' }));
@@ -181,6 +183,14 @@ describe('phone layout wired through the legacy editor', () => {
         openOverflow();
         fireEvent.click(screen.getByRole('button', { name: 'Align bottom' }));
         expect(legacyElements().map(element => element.y)).toEqual([90, 90]);
+        // Each Arrange action is one undo step (the production editor's behaviour), walked back in order.
+        fireEvent.click(undo());
+        expect(legacyElements().map(element => [element.x, element.y])).toEqual([[10, 10], [10, 90]]);
+        fireEvent.click(undo());
+        expect(legacyElements().map(element => [element.x, element.y])).toEqual([[10, 10], [120, 90]]);
+        expect(undo()).toHaveProperty('disabled', true);
+        fireEvent.click(screen.getByRole('button', { name: 'Redo' }));
+        expect(legacyElements().map(element => [element.x, element.y])).toEqual([[10, 10], [10, 90]]);
         openOverflow();
         fireEvent.click(screen.getByRole('button', { name: 'Clear selection' }));
         expect(canvasProps.selectedElementIds).toEqual([]);

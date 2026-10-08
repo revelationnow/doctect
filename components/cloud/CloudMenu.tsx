@@ -10,10 +10,18 @@ import { PublishModal } from './PublishModal';
 import { ProposeChangesModal } from './ProposeChangesModal';
 import { LazyEditListingModal } from './LazyEditListingModal';
 import { MENU_ROW_BASE_CLASS, MENU_ROW_CLASS, useMenuListHost } from '../editor-layout/MenuListContext';
+import { useOverlayLinkReplace } from '../editor-layout/useBackDismiss';
 import type { WorkspaceProject } from '../../services/localWorkspace/index';
 
 interface CloudMenuProps {
     project: WorkspaceProject;
+    /**
+     * Cloud projects already fetched, by cloud project id, owned by a host that mounts this menu
+     * afresh each time it shows (the phone ⋯ sheet): the menu starts from the cached record and
+     * keeps the cache in step, so reopening the host is not another GET. Without it the record
+     * lives only as long as the menu does (the header popover, mounted once per page).
+     */
+    cloudProjectCache?: Map<string, CloudProject>;
     getWorkingProject?: () => WorkspaceProject;
     onLinkCloud: (cloud: { projectId: string; lastSyncedCommitId: string }) => Promise<boolean>;
     onRestoreState: (
@@ -29,7 +37,7 @@ type CloudLink = NonNullable<WorkspaceProject['cloud']>;
  * same items render as a list of rows instead, with no trigger: the host shows them whenever it is
  * open, and a completed one-shot action dismisses the host as the popover would close.
  */
-export function CloudMenu({ project, getWorkingProject, onLinkCloud, onRestoreState }: CloudMenuProps) {
+export function CloudMenu({ project, cloudProjectCache, getWorkingProject, onLinkCloud, onRestoreState }: CloudMenuProps) {
     const { data: session } = useSession();
     const list = useMenuListHost();
     const [open, setOpen] = useState(false);
@@ -42,13 +50,22 @@ export function CloudMenu({ project, getWorkingProject, onLinkCloud, onRestoreSt
     const [publishProject, setPublishProject] = useState<WorkspaceProject | null>(null);
     const [showEditListing, setShowEditListing] = useState(false);
     const [showPropose, setShowPropose] = useState(false);
-    const [cloudProject, setCloudProject] = useState<CloudProject | null>(null);
+    const [cloudProject, setCloudProject] = useState<CloudProject | null>(
+        () => (project.cloud && cloudProjectCache?.get(project.cloud.projectId)) ?? null,
+    );
     const [saveConflict, setSaveConflict] = useState(false);
     const [pendingCloudLinks, setPendingCloudLinks] = useState<Record<string, CloudLink>>({});
     const ref = useRef<HTMLDivElement>(null);
     const location = useLocation();
     const navigate = useNavigate();
+    // Inside the phone ⋯ sheet a followed link replaces the sheet's history entry (undefined elsewhere).
+    const replace = useOverlayLinkReplace();
     const pendingCloudLink = pendingCloudLinks[project.id] ?? null;
+    /** The fetched cloud project for `cloudProjectId`, kept in the host's cache too (null forgets it). */
+    const rememberCloudProject = (cloudProjectId: string, value: CloudProject | null) => {
+        if (value) cloudProjectCache?.set(cloudProjectId, value); else cloudProjectCache?.delete(cloudProjectId);
+        setCloudProject(value);
+    };
 
     useEffect(() => {
         if (list) return; // rows have no popover to close
@@ -61,9 +78,12 @@ export function CloudMenu({ project, getWorkingProject, onLinkCloud, onRestoreSt
 
     useEffect(() => {
         if (expanded && project.cloud && !cloudProject) {
-            cloudApi.getProject(project.cloud.projectId).then(setCloudProject).catch(() => {});
+            const { projectId } = project.cloud;
+            cloudApi.getProject(projectId)
+                .then(fetched => { cloudProjectCache?.set(projectId, fetched); setCloudProject(fetched); })
+                .catch(() => {});
         }
-    }, [expanded, project.cloud, cloudProject]);
+    }, [expanded, project.cloud, cloudProject, cloudProjectCache]);
 
     /** A one-shot action completed: the popover closes, or the list's host is dismissed. */
     const done = () => { if (list) list.onDismiss(); else setOpen(false); };
@@ -104,7 +124,7 @@ export function CloudMenu({ project, getWorkingProject, onLinkCloud, onRestoreSt
             done();
         } catch (e) {
             if (e instanceof ApiError && e.code === 'USERNAME_REQUIRED') {
-                navigate('/welcome', { state: { from: location.pathname } });
+                navigate('/welcome', { state: { from: location.pathname }, replace });
                 return;
             }
             if (e instanceof ApiError && e.code === 'PROJECT_HEAD_CHANGED') {
@@ -132,7 +152,7 @@ export function CloudMenu({ project, getWorkingProject, onLinkCloud, onRestoreSt
                 setError('Cloud version loaded, but it was not saved locally.');
                 return;
             }
-            setCloudProject(latest);
+            rememberCloudProject(project.cloud.projectId, latest);
             setSaveConflict(false);
             done();
         } catch (e) {
@@ -153,11 +173,11 @@ export function CloudMenu({ project, getWorkingProject, onLinkCloud, onRestoreSt
     const iconSize = list ? 16 : 12;
     const follow = list?.onDismiss;
     const items = !session?.user ? (
-        <Link to="/login" state={{ from: location.pathname }} onClick={follow} className={linkClass}>
+        <Link to="/login" state={{ from: location.pathname }} replace={replace} onClick={follow} className={linkClass}>
             Sign in to save to cloud
         </Link>
     ) : !session.user.username ? (
-        <Link to="/welcome" state={{ from: location.pathname }} onClick={follow} className={linkClass}>
+        <Link to="/welcome" state={{ from: location.pathname }} replace={replace} onClick={follow} className={linkClass}>
             Set a username to use cloud features
         </Link>
     ) : (
@@ -171,7 +191,7 @@ export function CloudMenu({ project, getWorkingProject, onLinkCloud, onRestoreSt
                 </button>
             )}
             {cloudProject?.forkedFromProjectId && (
-                <Link to={`/gallery/${cloudProject.forkedFromProjectId}`} onClick={follow}
+                <Link to={`/gallery/${cloudProject.forkedFromProjectId}`} replace={replace} onClick={follow}
                     className={list ? clsx(MENU_ROW_BASE_CLASS, 'text-slate-500') : 'block px-3 py-1.5 text-[11px] text-slate-400 hover:bg-slate-50'}>
                     ↳ forked from upstream — view source
                 </Link>
@@ -242,7 +262,7 @@ export function CloudMenu({ project, getWorkingProject, onLinkCloud, onRestoreSt
                         // Dropping the cached project makes the menu refetch on its next open, so
                         // a listing edited and then unpublished elsewhere cannot keep offering
                         // this item from stale state.
-                        setCloudProject(null);
+                        if (project.cloud) rememberCloudProject(project.cloud.projectId, null);
                         window.alert('Listing updated. Your published version is unchanged.');
                     }} />
             )}

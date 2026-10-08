@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import clsx from 'clsx';
 import type { TouchEditorActions } from './touchActions';
 import type { EditorChrome } from './EditorChromeContext';
-import { useBackDismiss } from './useBackDismiss';
+import { useBackDismiss, useOverlayLinkReplace } from './useBackDismiss';
 import { trapTab } from './focusTrap';
 import { MENU_ROW_CLASS, MenuListContext, type MenuListHost } from './MenuListContext';
 import { ALIGN_ACTIONS } from '../../services/alignElements';
@@ -21,6 +21,15 @@ const Item = ({ label, onClick, checked, disabled }: { label: string; onClick: (
         {/* Visual echo of aria-pressed; hidden from the name so toggles stay reachable by label. */}
         {checked !== undefined && <span aria-hidden="true" className="text-xs text-slate-400">{checked ? 'On' : 'Off'}</span>}
     </button>
+);
+
+/**
+ * A page link of the Navigate group, like the desktop header's: the unsaved-work blocker applies.
+ * The sheet closes first so a blocker dialog is not hidden beneath it, and the destination replaces
+ * the sheet's history entry rather than leaving it behind (see useOverlayLinkReplace).
+ */
+const NavigateRow = ({ to, label, onClose }: { to: string; label: string; onClose: () => void }) => (
+    <Link to={to} replace={useOverlayLinkReplace()} onClick={onClose} className={MENU_ROW_CLASS}>{label}</Link>
 );
 
 const Group = ({ title, children }: { title: string; children: React.ReactNode }) => (
@@ -144,13 +153,9 @@ export function OverflowMenu({ open, onClose, actions, chrome }: {
                             <Group title="Account">{chrome.accountMenu}</Group>
                         </MenuListContext.Provider>
                         {chrome.navigation && chrome.navigation.length > 0 && (
-                            // Router links, like the desktop header: the unsaved-work blocker applies.
-                            // The sheet closes first so a blocker dialog is not hidden beneath it.
                             <Group title="Navigate">
                                 {chrome.navigation.map(target => (
-                                    <Link key={target.to} to={target.to} onClick={onClose} className={MENU_ROW_CLASS}>
-                                        {target.label}
-                                    </Link>
+                                    <NavigateRow key={target.to} to={target.to} label={target.label} onClose={onClose} />
                                 ))}
                             </Group>
                         )}

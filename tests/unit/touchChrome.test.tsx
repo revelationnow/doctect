@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { fireEvent, render, screen, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { MemoryRouter, RouterProvider, createMemoryRouter } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeActions } from '../helpers/touchActions';
 import { TouchToolButtons } from '../../components/editor-layout/TouchToolButtons';
 import { OverflowMenu } from '../../components/editor-layout/OverflowMenu';
@@ -10,6 +10,8 @@ import { PhoneTopBar } from '../../components/editor-layout/PhoneTopBar';
 import { TabletToolbar } from '../../components/editor-layout/TabletToolbar';
 import { ProjectSwitcher } from '../../components/editor-layout/ProjectSwitcher';
 import { EditorChromeContext, EditorChrome } from '../../components/editor-layout/EditorChromeContext';
+import { FormFactorProvider } from '../../components/editor-layout/FormFactorContext';
+import { BackDismissProvider, overlayDepthOf } from '../../components/editor-layout/useBackDismiss';
 import { useMenuListHost } from '../../components/editor-layout/MenuListContext';
 import { layOutEveryElement } from '../helpers/jsdomLayout';
 
@@ -303,6 +305,48 @@ describe('OverflowMenu', () => {
         portalled.focus();
         expect(fireEvent.keyDown(portalled, { key: 'Tab' })).toBe(true);
         expect(document.activeElement).toBe(portalled);
+    });
+});
+
+// A Navigate row leaves the editor from inside the open sheet: the route change unmounts the
+// editor in the same render, so the provider cannot consume the sheet's history entry itself. The
+// row's link replaces that entry instead of stacking on it, so one back from the destination lands
+// on the bare editor (and the next back leaves it), with no entry for the provider to pop later.
+describe('OverflowMenu Navigate rows and the sheet\'s history entry', () => {
+    afterEach(() => { document.documentElement.removeAttribute('data-form-factor'); });
+    const navigation = [{ label: 'Gallery', to: '/gallery' }];
+    function Host() {
+        const [menu, setMenu] = useState(false);
+        return (
+            <>
+                <button type="button" onClick={() => setMenu(true)}>More actions</button>
+                <OverflowMenu open={menu} onClose={() => setMenu(false)} actions={makeActions()} chrome={{ ...chrome, navigation }} />
+            </>
+        );
+    }
+    const mountOnPhone = () => {
+        const router = createMemoryRouter([
+            { path: '/app', element: <FormFactorProvider value="phone"><BackDismissProvider><Host /></BackDismissProvider></FormFactorProvider> },
+            { path: '/gallery', element: <div>gallery route</div> },
+            { path: '/', element: <div>home route</div> },
+        ], { initialEntries: ['/', '/app'], initialIndex: 1 });
+        render(<RouterProvider router={router} />);
+        return router;
+    };
+
+    it('replaces the open sheet\'s entry with the destination, so back from there lands on the editor with nothing open', () => {
+        const router = mountOnPhone();
+        fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
+        expect(overlayDepthOf(router.state.location)).toBe(1);
+        fireEvent.click(screen.getByRole('link', { name: 'Gallery' }));
+        expect(router.state.location.pathname).toBe('/gallery');
+        expect(router.state.historyAction).toBe('REPLACE');
+        act(() => { void router.navigate(-1); });
+        expect(router.state.location.pathname).toBe('/app');
+        expect(overlayDepthOf(router.state.location)).toBe(0);
+        expect(screen.queryByRole('dialog', { name: 'More actions' })).toBeNull();
+        act(() => { void router.navigate(-1); });
+        expect(router.state.location.pathname).toBe('/');
     });
 });
 
