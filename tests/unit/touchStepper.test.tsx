@@ -278,26 +278,59 @@ describe('touch steppers on numeric property fields', () => {
         expect(props.onUpdateElements).toHaveBeenCalledOnce();
     });
 
-    it('stops a hold when the page is hidden or the window loses focus', () => {
+    it('stops a hold when the page is hidden or the window loses focus, and removes those listeners with the hold', () => {
         vi.useFakeTimers();
         const { props } = renderPanel('phone', stateFor([rect('a')], ['a']));
         const increase = button('Increase X');
+        // The hold's own handlers: whatever the press registers for these two events. `stop` is
+        // idempotent, so a stale listener would be invisible to behaviour; the proof is that the
+        // very functions the press added are removed again when the hold ends, by any route.
+        const documentAdd = vi.spyOn(document, 'addEventListener');
+        const documentRemove = vi.spyOn(document, 'removeEventListener');
+        const windowAdd = vi.spyOn(window, 'addEventListener');
+        const windowRemove = vi.spyOn(window, 'removeEventListener');
+        const added = (spy: typeof documentAdd, type: string) => spy.mock.calls.filter(([t]) => t === type).map(([, listener]) => listener);
+        const removed = (spy: typeof documentRemove, type: string) => spy.mock.calls.filter(([t]) => t === type).map(([, listener]) => listener);
+        const press = () => {
+            documentAdd.mockClear(); documentRemove.mockClear(); windowAdd.mockClear(); windowRemove.mockClear();
+            fireEvent.pointerDown(increase);
+            const [onHidden, ...moreHidden] = added(documentAdd, 'visibilitychange');
+            const [onBlur, ...moreBlur] = added(windowAdd, 'blur');
+            expect(onHidden).toEqual(expect.any(Function));
+            expect(onBlur).toEqual(expect.any(Function));
+            expect(moreHidden).toEqual([]);
+            expect(moreBlur).toEqual([]);
+            // Starting a hold ends any previous one first; nothing is removed after that.
+            documentRemove.mockClear(); windowRemove.mockClear();
+            return { onHidden, onBlur };
+        };
+        const expectRemoved = ({ onHidden, onBlur }: ReturnType<typeof press>) => {
+            expect(removed(documentRemove, 'visibilitychange')).toEqual([onHidden]);
+            expect(removed(windowRemove, 'blur')).toEqual([onBlur]);
+        };
 
-        fireEvent.pointerDown(increase);
+        let listeners = press();
         act(() => { document.dispatchEvent(new Event('visibilitychange')); });
+        expectRemoved(listeners);
         act(() => vi.advanceTimersByTime(1000));
         expect(props.onUpdateElements).toHaveBeenCalledOnce();
 
-        fireEvent.pointerDown(increase);
+        listeners = press();
         act(() => { window.dispatchEvent(new Event('blur')); });
+        expectRemoved(listeners);
         act(() => vi.advanceTimersByTime(1000));
         expect(props.onUpdateElements).toHaveBeenCalledTimes(2);
 
-        // The listeners are gone with the hold: a later blur does not touch a new hold's timers.
-        fireEvent.pointerDown(increase);
+        // A hold that ends by the finger lifting drops them the same way, after its repeats.
+        listeners = press();
+        expect(removed(documentRemove, 'visibilitychange')).toEqual([]);
+        expect(removed(windowRemove, 'blur')).toEqual([]);
         act(() => vi.advanceTimersByTime(STEPPER_REPEAT_DELAY_MS + STEPPER_REPEAT_INTERVAL_MS));
         expect(props.onUpdateElements).toHaveBeenCalledTimes(4);
         fireEvent.pointerUp(increase);
+        expectRemoved(listeners);
+        act(() => vi.advanceTimersByTime(1000));
+        expect(props.onUpdateElements).toHaveBeenCalledTimes(4);
     });
 
     it('stops a hold when the field unmounts', () => {
