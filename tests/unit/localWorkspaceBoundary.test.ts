@@ -1617,7 +1617,7 @@ const lineSensitiveSyntaxFingerprint = (source: string): string =>
 
 // Any syntax change at a privileged seam requires an explicit policy update.
 const approvedBrowserPreferenceSyntax = '7af5f5c562faed881be020c3c7ee2ad624b46ab771178c0ce1a85a0dc2e50f4c';
-const approvedGeneratorEvaluatorSyntax = 'dbe902dcb1f1ae81ed1fe600b84e88837c703ddbb68e382a01dd02845ddeda42';
+const approvedGeneratorEvaluatorSyntax = 'ab19ef2e35c7a085d6e326d5cf7263cf1669dfe06150291dd7e7fce2d51f1971';
 const approvedRestoreIndexedDbSyntax = 'b374e90adbabba0e5f5feb7792d155a60ff238d93a68754b611aacbc245ac0ca';
 const approvedOpenWithFactorySyntax = 'caf87c7f6d3ff1817db584990469483e9ec871a6788fd3cfcce59d96880f6bad';
 const approvedGeneratorCapabilitySyntax = new Map([
@@ -3181,7 +3181,7 @@ const analyzeSources = (inputs: readonly SourceInput[]): Map<string, string[]> =
       policyPath === 'services/generatorSandbox.ts'
       && node.getText(sourceFile) === 'new Worker(evaluatorUrl)'
       // Freeze surrounding source/URL assignment too, not just a reusable alias.
-      && createHash('sha256').update(input.source).digest('hex') === '1a88277576aed21782cb61ec1945395471b845428fe491874f8c1dda6933ca61'
+      && createHash('sha256').update(input.source).digest('hex') === '59c82c9910ea7e3b6f6c84aff204062f5a75fd7a65ee2b2685335353f21d0450'
     );
     const transparentExpression = (node: ts.Identifier): ts.Expression => {
       let expression: ts.Expression = node;
