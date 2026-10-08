@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EditorLayout } from '../../components/editor-layout/EditorLayout';
 import { makeActions } from '../helpers/touchActions';
@@ -91,6 +91,15 @@ describe('EditorLayout touch branches', () => {
         if (formFactor === 'phone') expect(screen.getByTestId('properties-sheet').style.height).toBe('50dvh');
         unmount();
         expect(listeners.size).toBe(0);
+    });
+
+    it('phone pill offers all nine tools including Fit by wrapping, never by horizontal scrolling', () => {
+        render(<EditorLayout formFactor="phone" {...slots} touchActions={makeActions()} navigationKey="n1" selectionLabel="Page · Root" />);
+        const pill = screen.getByTestId('touch-tool-pill');
+        expect(pill.className).not.toMatch(/overflow-x/);
+        expect(pill.firstElementChild!.className).toMatch(/\bflex-wrap\b/);
+        expect(within(pill).getAllByRole('button')).toHaveLength(9);
+        expect(within(pill).getByRole('button', { name: 'Fit page to width' })).toBeTruthy();
     });
 
     it('phone keeps the sheet at the user detent when a non-editable canvas child takes focus', () => {

@@ -391,6 +391,8 @@ function EditorPageShell({
       />
     ) : null,
     accountMenu: <AccountMenu />,
+    // The header's page links (Home, Gallery, Docs), for the phone overflow's Navigate group.
+    navigation: [{ label: 'Home', to: '/' }, { label: 'Gallery', to: '/gallery' }, { label: 'Docs', to: '/docs' }],
   };
 
   return (

@@ -1,5 +1,6 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeActions } from '../helpers/touchActions';
 import { TouchToolButtons } from '../../components/editor-layout/TouchToolButtons';
@@ -52,6 +53,29 @@ describe('OverflowMenu', () => {
         expect(actions.openGenerator).toHaveBeenCalled();
         expect(screen.getByText('cloud-menu')).toBeTruthy();
         expect(screen.getByText('account-menu')).toBeTruthy();
+    });
+
+    it('adds a final Navigate group of router links when the chrome provides page routes', () => {
+        const onClose = vi.fn();
+        const navigation = [{ label: 'Home', to: '/' }, { label: 'Gallery', to: '/gallery' }, { label: 'Docs', to: '/docs' }];
+        render(
+            <MemoryRouter>
+                <OverflowMenu open onClose={onClose} actions={makeActions()} chrome={{ ...chrome, navigation }} />
+            </MemoryRouter>,
+        );
+        const headings = screen.getAllByRole('heading').map(heading => heading.textContent);
+        expect(headings[headings.length - 1]).toBe('Navigate');
+        expect(screen.getByRole('link', { name: 'Home' }).getAttribute('href')).toBe('/');
+        expect(screen.getByRole('link', { name: 'Gallery' }).getAttribute('href')).toBe('/gallery');
+        expect(screen.getByRole('link', { name: 'Docs' }).getAttribute('href')).toBe('/docs');
+        fireEvent.click(screen.getByRole('link', { name: 'Gallery' }));
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows no Navigate group when the chrome has no page routes', () => {
+        render(<OverflowMenu open onClose={vi.fn()} actions={makeActions()} chrome={chrome} />);
+        expect(screen.queryByRole('heading', { name: 'Navigate' })).toBeNull();
+        expect(screen.queryByRole('link')).toBeNull();
     });
 
     it('hides the selection group with nothing selected', () => {
@@ -311,6 +335,7 @@ describe('TabletToolbar', () => {
         expect(dialog).toBeTruthy();
         // Tablet keeps the desktop page header, so cloud and account are not duplicated here.
         expect(screen.queryByText('cloud-menu')).toBeNull();
+        expect(screen.queryByRole('heading', { name: 'Navigate' })).toBeNull();
         expect(screen.getAllByRole('button', { name: 'Export PDF' })).toHaveLength(2);
     });
 });

@@ -1831,7 +1831,7 @@ function ProjectEditorView({
                 sidebarWidth={state.sidebarWidth}
                 propertiesPanelWidth={state.propertiesPanelWidth}
                 onStartResize={setResizingPanel}
-                touchActions={touchActions}
+                touchActions={isTouch ? touchActions : undefined}
                 selectionLabel={selectionLabel}
                 navigationKey={navigationKey}
             />

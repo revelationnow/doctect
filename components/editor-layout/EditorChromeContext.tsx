@@ -15,6 +15,12 @@ export interface EditorChrome {
     saveStatus: React.ReactNode;
     cloudMenu: React.ReactNode;
     accountMenu: React.ReactNode;
+    /**
+     * Page routes for the phone overflow's Navigate group: the same targets as the desktop
+     * header's Home / Gallery / Docs links, which the phone top bar replaces. Omitted by hosts
+     * without page routes (unit fixtures), in which case the group is not shown.
+     */
+    navigation?: { label: string; to: string }[];
 }
 
 export const EditorChromeContext = createContext<EditorChrome | null>(null);

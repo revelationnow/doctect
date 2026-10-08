@@ -177,13 +177,13 @@ describe('phone layout wired through the legacy editor', () => {
         expect(modals.preset).toBe(true);
     });
 
-    it('offers the preview-node choice only in templates view and routes it to the canvas', () => {
+    it('offers no preview-node choice in hierarchy view', () => {
         renderLegacy('phone');
         openOverflow();
         expect(screen.queryByRole('combobox', { name: 'Preview node' })).toBeNull();
-        fireEvent.click(screen.getByTestId('overflow-menu-backdrop'));
-        cleanup();
+    });
 
+    it('offers the preview-node choice in templates view and routes it to the canvas', () => {
         renderLegacy('phone', { viewMode: 'templates', selectedTemplateId: 'page', selectedTemplateIds: ['page'] });
         expect(canvasProps.currentNodeId).toBe('root');
         openOverflow();

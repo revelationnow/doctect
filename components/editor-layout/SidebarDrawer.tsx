@@ -32,11 +32,17 @@ export function SidebarDrawer({ open, onClose, children }: { open: boolean; onCl
     useEffect(() => {
         if (!open) return;
         opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-        panelRef.current?.focus({ preventScroll: true });
+        const panel = panelRef.current;
+        panel?.focus({ preventScroll: true });
         return () => {
             const target = opener.current;
             opener.current = null;
-            if (target?.isConnected) target.focus({ preventScroll: true });
+            // Hand focus back only when the drawer still owned it (focus was inside the panel, or
+            // fell to body when the panel left the DOM). A dialog that took focus while the drawer
+            // closed underneath it, e.g. on rotation, keeps it.
+            const active = document.activeElement;
+            const drawerOwnedFocus = !active || active === document.body || (panel !== null && panel.contains(active));
+            if (drawerOwnedFocus && target?.isConnected) target.focus({ preventScroll: true });
         };
     }, [open]);
 

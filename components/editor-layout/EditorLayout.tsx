@@ -57,7 +57,7 @@ export function DesktopEditorLayout(props: EditorLayoutProps) {
  * Browsers set `isContentEditable` (inherited editability too); the reflected `contentEditable`
  * property and the attribute cover jsdom, which only stores the property as a plain expando.
  */
-const isEditableTarget = (target: EventTarget | null) =>
+const isContentEditableTarget = (target: EventTarget | null) =>
     target instanceof HTMLElement
     && (target.isContentEditable || target.contentEditable === 'true' || target.getAttribute('contenteditable') === 'true');
 
@@ -104,7 +104,7 @@ function PhoneEditorLayout({ sidebar, canvas, properties, touchActions, navigati
     useEffect(() => {
         const el = canvasRef.current;
         if (!el) return;
-        const onFocusIn = (event: FocusEvent) => { if (isEditableTarget(event.target)) setDetent('peek'); };
+        const onFocusIn = (event: FocusEvent) => { if (isContentEditableTarget(event.target)) setDetent('peek'); };
         el.addEventListener('focusin', onFocusIn);
         return () => el.removeEventListener('focusin', onFocusIn);
     }, []);
@@ -116,10 +116,12 @@ function PhoneEditorLayout({ sidebar, canvas, properties, touchActions, navigati
                 style={{ paddingBottom: SHEET_PEEK_PX }}>
                 {canvas}
                 {detent === 'peek' && (
+                    // All nine tools stay reachable at phone widths: the row wraps inside the pill
+                    // (two rows below ~420px) instead of scrolling Fit off the edge.
                     <div data-testid="touch-tool-pill"
-                        className="absolute left-1/2 z-20 max-w-[calc(100vw-16px)] -translate-x-1/2 overflow-x-auto rounded-2xl border bg-white/95 px-1 shadow-lg"
+                        className="absolute left-1/2 z-20 max-w-[calc(100vw-16px)] -translate-x-1/2 rounded-2xl border bg-white/95 px-1 shadow-lg"
                         style={{ bottom: SHEET_PEEK_PX + 12 }}>
-                        <TouchToolButtons actions={touchActions} showFit />
+                        <TouchToolButtons actions={touchActions} showFit wrap />
                     </div>
                 )}
             </div>

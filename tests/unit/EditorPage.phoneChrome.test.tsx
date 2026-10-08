@@ -1,5 +1,5 @@
 import React from 'react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EditorPage } from '../../pages/EditorPage';
@@ -33,6 +33,7 @@ vi.mock('../../components/ProjectEditor', async () => {
                             <div data-testid="chrome-save">{chrome.saveStatus}</div>
                             <div data-testid="chrome-cloud">{chrome.cloudMenu}</div>
                             <div data-testid="chrome-account">{chrome.accountMenu}</div>
+                            <span data-testid="chrome-navigation">{(chrome.navigation ?? []).map(target => `${target.label}→${target.to}`).join('|')}</span>
                         </>
                     ) : <span>no-chrome</span>}
                 </div>
@@ -96,6 +97,7 @@ describe('EditorPage page chrome on touch', () => {
         // Only the phone top bar renders these now: no second copy anywhere on the page.
         expect(screen.getAllByText('Saved locally')).toHaveLength(1);
         expect(screen.getAllByText('account-menu')).toHaveLength(1);
+        expect(screen.getByTestId('chrome-navigation').textContent).toBe('Home→/|Gallery→/gallery|Docs→/docs');
 
         fireEvent.click(screen.getByRole('button', { name: 'chrome select b' }));
         await waitFor(() => expect(commit.mock.calls.map(([command]) => command))
@@ -116,8 +118,15 @@ describe('EditorPage page chrome on touch', () => {
     it.each(['desktop', 'tablet'] as const)('keeps the page header with the tab strip on %s', (value) => {
         formFactor.current = value;
         renderPage();
-        expect(screen.getByRole('banner')).toBeTruthy();
+        const banner = screen.getByRole('banner');
         expect(screen.getByTestId('tab-bar')).toBeTruthy();
         expect(screen.getByTestId('chrome-projects').textContent).toBe('Project A|Project B');
+        // The chrome's Navigate targets are exactly the header's own page links.
+        const headerLinks = [
+            `Home→${within(banner).getByTitle('Back to Home').getAttribute('href')}`,
+            `Gallery→${within(banner).getByRole('link', { name: 'Gallery' }).getAttribute('href')}`,
+            `Docs→${within(banner).getByRole('link', { name: 'Docs' }).getAttribute('href')}`,
+        ].join('|');
+        expect(screen.getByTestId('chrome-navigation').textContent).toBe(headerLinks);
     });
 });

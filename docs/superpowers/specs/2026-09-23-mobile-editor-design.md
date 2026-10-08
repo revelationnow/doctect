@@ -165,7 +165,8 @@ New touch-only components call the same `actions`; desktop JSX is untouched.
 - ⋯ opens an overflow sheet grouped as **Export** (Export PDF, Export all variants, Greyscale),
   **Canvas** (Snap to grid, Show grid, Preview node), **Project** (JSON, Generator, Save Preset,
   Import SVG, SVG placeholder), **Cloud** (existing `CloudMenu` actions), **Account** (existing
-  `AccountMenu`).
+  `AccountMenu`), **Navigate** (Home, Gallery, Docs — the page header's links, since the top bar
+  replaces that header on phone).
 - A floating tool pill sits above the sheet while it is at peek or closed:
   Select · Hand · Text · rect · ellipse · triangle · line · grid · fit. Hidden when the sheet is at
   half or full.

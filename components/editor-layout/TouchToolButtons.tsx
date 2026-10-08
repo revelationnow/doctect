@@ -17,10 +17,12 @@ const TOOLS = [
 /**
  * The touch tool row shared by the tablet toolbar and the phone tool pill. `fitToWidth` is the
  * only zoom control on touch: zoom is local to the touch viewport and never written to state.
+ * `wrap` lets the row break into further rows when its container is narrower than the buttons
+ * (the phone pill), so every tool keeps its 44px target without horizontal scrolling.
  */
-export function TouchToolButtons({ actions, showFit = false }: { actions: TouchEditorActions; showFit?: boolean }) {
+export function TouchToolButtons({ actions, showFit = false, wrap = false }: { actions: TouchEditorActions; showFit?: boolean; wrap?: boolean }) {
     return (
-        <div className="flex items-center gap-0.5">
+        <div className={clsx('flex items-center gap-0.5', wrap && 'flex-wrap justify-center')}>
             {TOOLS.map(({ tool, label, icon: Icon }) => (
                 <button key={tool} type="button" aria-label={label} aria-pressed={actions.tool === tool}
                     onClick={() => actions.setTool(tool)}

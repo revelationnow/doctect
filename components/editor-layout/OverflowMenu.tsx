@@ -1,5 +1,6 @@
 import React, { useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import type { TouchEditorActions } from './touchActions';
 import type { EditorChrome } from './EditorChromeContext';
 
@@ -118,6 +119,18 @@ export function OverflowMenu({ open, onClose, actions, chrome }: {
                     <>
                         <Group title="Cloud"><div className="px-4 py-2">{chrome.cloudMenu}</div></Group>
                         <Group title="Account"><div className="px-4 py-2">{chrome.accountMenu}</div></Group>
+                        {chrome.navigation && chrome.navigation.length > 0 && (
+                            // Router links, like the desktop header: the unsaved-work blocker applies.
+                            // The sheet closes first so a blocker dialog is not hidden beneath it.
+                            <Group title="Navigate">
+                                {chrome.navigation.map(target => (
+                                    <Link key={target.to} to={target.to} onClick={onClose}
+                                        className="flex min-h-11 w-full items-center px-4 text-sm text-slate-700">
+                                        {target.label}
+                                    </Link>
+                                ))}
+                            </Group>
+                        )}
                     </>
                 )}
             </div>

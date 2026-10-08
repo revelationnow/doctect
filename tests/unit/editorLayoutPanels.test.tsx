@@ -76,6 +76,29 @@ describe('SidebarDrawer', () => {
         expect(document.activeElement).toBe(trigger);
     });
 
+    it('leaves focus alone on close when something outside the drawer already holds it', () => {
+        // e.g. a confirm dialog that opened on top while the drawer closed underneath it on rotation.
+        function Owner() {
+            const [open, setOpen] = useState(false);
+            return (
+                <>
+                    <button type="button" onClick={() => setOpen(true)}>Open pages and templates</button>
+                    <button type="button" onClick={() => setOpen(false)}>Dialog confirm</button>
+                    <SidebarDrawer open={open} onClose={() => setOpen(false)}><p>tree</p></SidebarDrawer>
+                </>
+            );
+        }
+        render(<Owner />);
+        const trigger = screen.getByRole('button', { name: 'Open pages and templates' });
+        trigger.focus();
+        fireEvent.click(trigger);
+        const confirm = screen.getByRole('button', { name: 'Dialog confirm' });
+        confirm.focus();
+        fireEvent.click(confirm);
+        expect(screen.queryByRole('dialog')).toBeNull();
+        expect(document.activeElement).toBe(confirm);
+    });
+
     it('does not restore focus to an opener that has since left the document', () => {
         function Owner({ keepTrigger }: { keepTrigger: boolean }) {
             const [open, setOpen] = useState(false);
