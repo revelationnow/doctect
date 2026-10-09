@@ -40,17 +40,22 @@ const labelOf = (input: HTMLInputElement): string => {
 /** Touch slop: a tap within this square around a (20–24px) colour input's centre picks it. */
 const TOUCH_TARGET_PX = 44;
 const ANCESTOR_SEARCH_DEPTH = 3;
+/** Controls that own their taps: a tap on one never becomes a colour pick, however near a swatch. */
+const OTHER_CONTROL = 'button, a[href], input, select, textarea, [role="button"], [role="menuitem"], [role="slider"], [role="tab"], [contenteditable="true"]';
 
 /**
  * The colour input a click is for. On touch the inputs take no pointer events (touch CSS), so a tap
  * lands on whatever is under them; this finds the input nearest the tap among the hit element's
- * and its nearest ancestors' colour inputs, within the 44px touch target. A keyboard activation
- * (Enter/Space on a focused input) targets the input itself.
+ * and its nearest ancestors' colour inputs, within the 44px touch target. A tap on another control
+ * (a button beside a swatch) stays that control's. A keyboard activation (Enter/Space on a focused
+ * input) targets the input itself.
  */
 export function colourInputForClick(event: Pick<MouseEvent, 'target' | 'clientX' | 'clientY'>): HTMLInputElement | null {
     const target = event.target;
     if (target instanceof HTMLInputElement) return target.type === 'color' && !target.disabled ? target : null;
     if (!(target instanceof Element)) return null;
+    const control = target.closest(OTHER_CONTROL);
+    if (control && !control.querySelector('input[type="color"]')) return null;
     let best: { input: HTMLInputElement; distance: number } | null = null;
     let scope: Element | null = target;
     for (let depth = 0; scope && depth <= ANCESTOR_SEARCH_DEPTH; depth++, scope = scope.parentElement) {

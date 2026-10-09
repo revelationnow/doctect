@@ -209,4 +209,21 @@ describe('colourInputForClick', () => {
         a.disabled = true;
         expect(colourInputForClick({ target: wrapA, clientX: 112, clientY: 112 })).toBeNull();
     });
+
+    it('leaves a tap on another control alone, even inside a swatch touch target', () => {
+        const { container } = row();
+        const button = container.querySelector('button')!;
+        rect(button, 184, 100, 20);
+        expect(colourInputForClick({ target: button, clientX: 188, clientY: 110 })).toBeNull(); // inside b's target (148-192)
+        const icon = document.createElement('span'); button.appendChild(icon);
+        expect(colourInputForClick({ target: icon, clientX: 188, clientY: 110 })).toBeNull();
+    });
+
+    it('still maps a tap on a control that wraps the colour input', () => {
+        const container = document.createElement('div');
+        container.innerHTML = '<label><span class="icon"></span><input type="color"></label>';
+        document.body.appendChild(container);
+        const input = container.querySelector('input')!; rect(input, 100, 100, 24);
+        expect(colourInputForClick({ target: container.querySelector('.icon')!, clientX: 112, clientY: 112 })).toBe(input);
+    });
 });

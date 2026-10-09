@@ -1109,7 +1109,7 @@ test('colour fields open the touch colour picker; a palette pick fills the eleme
     // small swatch, inside its 44px touch target, still opens the in-app picker.
     expect(await fill.evaluate(el => getComputedStyle(el).pointerEvents)).toBe('none');
     const fillBox = await box(fill);
-    await page.touchscreen.tap(fillBox.b.x + fillBox.b.width + 8, fillBox.y);
+    await page.touchscreen.tap(fillBox.b.x - 8, fillBox.y);
     const picker = page.getByRole('dialog', { name: 'Fill' });
     await expect(picker).toBeVisible();
     // The picker fits the screen and every swatch keeps a 44px target.
@@ -1131,8 +1131,18 @@ test('colour fields open the touch colour picker; a palette pick fills the eleme
     await expect(fill).not.toHaveValue('#3b82f6');
     await picker.getByRole('button', { name: 'Done' }).click();
     await expect(picker).toBeHidden();
+    const squarePick = await fill.inputValue();
+
+    // The clear-fill button beside the swatch, inside the swatch's touch target, keeps its own tap.
+    const beside = { x: fillBox.b.x + fillBox.b.width + 8, y: fillBox.y };
+    expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('button')?.title, beside)).toBe('Clear fill color');
+    await page.touchscreen.tap(beside.x, beside.y);
+    await expect(page.getByTestId('appearance-section-body').getByTitle('No fill to clear')).toBeVisible();
+    await expect(picker).toHaveCount(0);
 
     const undo = page.getByRole('button', { name: 'Undo' });
+    await undo.click();
+    await expect(fill).toHaveValue(squarePick);
     await undo.click();
     await expect(fill).toHaveValue('#3b82f6');
     await undo.click();
