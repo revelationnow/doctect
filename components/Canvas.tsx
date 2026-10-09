@@ -17,6 +17,7 @@ import type { CanvasTextLayoutSession } from '../services/canvasTextLayout';
 import { readBrowserPreference } from '../services/browserPreferences';
 import type { EditorElementIntent } from '../services/document/contracts';
 import { useCanvasTouchGestures, TouchGestureHandlers } from '../hooks/useCanvasTouchGestures';
+import { useTouchFit, TOUCH_CANVAS_GUTTER } from '../hooks/useTouchFit';
 import { QuickFormatBar } from './canvas/QuickFormatBar';
 import { useKeepEditedElementVisible, useQuickFormatAnchor, useTouchGestureActivity } from './canvas/useQuickFormatBar';
 
@@ -63,7 +64,7 @@ interface CanvasProps {
 
 const MIN_DRAG_THRESHOLD = 5;
 const CREATION_TOOLS = ['rect', 'ellipse', 'triangle', 'text', 'grid', 'line'];
-export const TOUCH_CANVAS_GUTTER = 16;
+export { TOUCH_CANVAS_GUTTER };
 /** Marks the page's content wrapper inside the scroll container; the phone touch CSS pads it for the tool pill. */
 export const CANVAS_CONTENT_ATTR = 'data-canvas-content';
 export const TOUCH_DEFAULT_SIZE: Record<string, { w: number; h: number }> = {
@@ -462,15 +463,7 @@ export const Canvas: React.FC<CanvasProps> = ({
     useEffect(() => { pinchScaleRef.current = null; }, [scale]);
 
     // Touch "fit": zoom so the page width fills the viewport minus a gutter on each side.
-    useEffect(() => {
-        if (!isTouch || !fitSignal) return;
-        const outer = outerContainerRef.current;
-        if (!outer || template.width <= 0) return;
-        const available = outer.clientWidth - 2 * TOUCH_CANVAS_GUTTER;
-        if (available <= 0) return;
-        onZoom(Math.max(0.2, Math.min(10, available / template.width)));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [fitSignal, isTouch, template.width]);
+    useTouchFit(outerContainerRef, { enabled: isTouch, fitSignal, pageWidth: template.width, scale, onZoom });
 
     // Adjust scroll position after zoom to keep cursor over the same content point
     useLayoutEffect(() => {

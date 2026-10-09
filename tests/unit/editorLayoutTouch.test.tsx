@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EditorLayout, PILL_INSET_VAR } from '../../components/editor-layout/EditorLayout';
 import { TOUCH_OVERLAY_HOST_ATTR, useTouchOverlayHost } from '../../components/editor-layout/TouchOverlayHost';
+import { PILL_SCROLLER_ATTR } from '../../components/editor-layout/ToolPillScroller';
 import { makeActions } from '../helpers/touchActions';
 
 const slots = {
@@ -94,14 +95,19 @@ describe('EditorLayout touch branches', () => {
         expect(listeners.size).toBe(0);
     });
 
-    it('phone pill offers all ten controls (tools, Select multiple, Fit) by wrapping, never by horizontal scrolling', () => {
+    it('phone pill keeps all ten controls in one swipeable row with Fit pinned outside it (R43)', () => {
         render(<EditorLayout formFactor="phone" {...slots} touchActions={makeActions()} navigationKey="n1" selectionLabel="Page · Root" />);
         const pill = screen.getByTestId('touch-tool-pill');
-        expect(pill.className).not.toMatch(/overflow-x/);
-        expect(pill.firstElementChild!.className).toMatch(/\bflex-wrap\b/);
         expect(within(pill).getAllByRole('button')).toHaveLength(10);
-        expect(within(pill).getByRole('button', { name: 'Select multiple' })).toBeTruthy();
-        expect(within(pill).getByRole('button', { name: 'Fit page to width' })).toBeTruthy();
+        const scroller = pill.querySelector(`[${PILL_SCROLLER_ATTR}]`) as HTMLElement;
+        expect(scroller.className).toMatch(/\boverflow-x-auto\b/);
+        expect(scroller.className).toMatch(/\btouch-pan-x\b/);
+        expect(pill.innerHTML).not.toMatch(/flex-wrap/);
+        // Select multiple scrolls with the tools; Fit stays on screen however far the row is swiped.
+        expect(within(scroller).getAllByRole('button')).toHaveLength(9);
+        expect(within(scroller).getByRole('button', { name: 'Select multiple' })).toBeTruthy();
+        const fit = within(pill).getByRole('button', { name: 'Fit page to width' });
+        expect(scroller.contains(fit)).toBe(false);
         // R33: the quick format bar reads the pill as bottom chrome through this tag.
         expect(pill.getAttribute('data-touch-chrome')).toBe('tool-pill');
     });
@@ -119,9 +125,11 @@ describe('EditorLayout touch branches', () => {
             const wrapper = screen.getByTestId('canvas').parentElement!;
             const pill = screen.getByTestId('touch-tool-pill');
             expect(wrapper.style.getPropertyValue(PILL_INSET_VAR)).toBe('12px'); // jsdom lays out 0px tall
-            expect(observed.map(entry => entry.target)).toEqual([pill]);
-            Object.defineProperty(pill, 'offsetHeight', { configurable: true, value: 92 }); // two rows at phone width
-            act(() => observed[0].callback());
+            // The pill's scroller watches its own size for the edge fades; this test is about the pill.
+            const pillObservers = observed.filter(entry => entry.target === pill);
+            expect(pillObservers).toHaveLength(1);
+            Object.defineProperty(pill, 'offsetHeight', { configurable: true, value: 92 }); // whatever the pill measures
+            act(() => pillObservers[0].callback());
             expect(wrapper.style.getPropertyValue(PILL_INSET_VAR)).toBe('104px');
             fireEvent.click(screen.getByRole('button', { name: 'Resize properties sheet' })); // half: pill unmounts
             expect(screen.queryByTestId('touch-tool-pill')).toBeNull();

@@ -285,29 +285,104 @@ test('phone top bar controls do not overlap', async ({ page }, testInfo) => {
     }
 });
 
-test('phone tool pill keeps all ten controls, Select multiple and Fit included, inside the viewport', async ({ page }, testInfo) => {
+// R43 (supersedes R29's wrapping): the tools sit in one row that swipes sideways when the screen is
+// narrower than it, with Fit pinned outside the scroller so it never scrolls away.
+test('phone tool pill keeps all ten controls in one swipeable row, Fit pinned, inside the viewport', async ({ page }, testInfo) => {
     test.skip(!isPhone(testInfo), 'phone only');
     const pill = page.getByTestId('touch-tool-pill');
     const tools = pill.getByRole('button');
+    const scroller = pill.locator('[data-touch-pill-scroller]');
+    const fit = pill.getByRole('button', { name: 'Fit page to width' });
     for (const { width, height } of await phoneWidths(page)) {
         await page.setViewportSize({ width, height });
         await expect(tools).toHaveCount(10);
-        await expect(pill.getByRole('button', { name: 'Select multiple' })).toBeVisible();
-        await expect(pill.getByRole('button', { name: 'Fit page to width' })).toBeVisible();
         const screen = { x: 0, y: 0, width, height };
         const pillBox = await pill.boundingBox();
         expect(within(pillBox, screen), `pill inside the ${width}px viewport`).toBe(true);
+        expect(pillBox.height, `pill is one row at ${width}px`).toBeLessThan(2 * 44);
         for (let i = 0; i < 10; i++) {
             const b = await tools.nth(i).boundingBox();
             expect(b.width, `tool ${i} width at ${width}px`).toBeGreaterThanOrEqual(44);
             expect(b.height, `tool ${i} height at ${width}px`).toBeGreaterThanOrEqual(44);
-            expect(within(b, pillBox), `tool ${i} inside the pill at ${width}px`).toBe(true);
+        }
+        // The row is wider than any phone: it scrolls, and says so with the end fade.
+        expect(await scroller.evaluate(el => el.scrollWidth > el.clientWidth), `row overflows at ${width}px`).toBe(true);
+        await expect(pill.getByTestId('tool-pill-fade-end')).toBeVisible();
+        // Every tool can be scrolled into the pill; Fit stays put while the row moves.
+        const fitBefore = await fit.boundingBox();
+        expect(within(fitBefore, pillBox), `Fit inside the pill at ${width}px`).toBe(true);
+        for (const [name, edge] of [['Grid', 'end'], ['Select', 'start']]) {
+            await scroller.evaluate((el, toEnd) => { el.scrollLeft = toEnd ? el.scrollWidth : 0; }, edge === 'end');
+            const row = await scroller.boundingBox();
+            await expect.poll(async () => within(await pill.getByRole('button', { name, exact: true }).boundingBox(), row), `${name} scrolls into view at ${width}px`).toBe(true);
+            expect(await fit.boundingBox(), `Fit pinned at ${width}px`).toEqual(fitBefore);
         }
         // The pill floats above the properties sheet's grabber, never under it.
         const sheet = await page.getByTestId('properties-sheet').boundingBox();
         expect(pillBox.y + pillBox.height, `pill clears the sheet at ${width}px`).toBeLessThanOrEqual(sheet.y);
         expect(await horizontalOverflow(page), `no horizontal scroll at ${width}px`).toBeLessThanOrEqual(0);
     }
+});
+
+test('swiping the tool pill scrolls the row, not the canvas', async ({ page, browserName }, testInfo) => {
+    test.skip(!isPhone(testInfo), 'phone only');
+    test.skip(browserName !== 'chromium', 'CDP touch input');
+    const scroller = page.getByTestId('touch-tool-pill').locator('[data-touch-pill-scroller]');
+    const canvasScroll = activePane(page).locator('.canvas-scroll-container');
+    const canvasBefore = await canvasScroll.evaluate(el => [el.scrollLeft, el.scrollTop]);
+    const canvasBox = await activePane(page).getByTestId('editor-canvas').boundingBox();
+    const box = await scroller.boundingBox();
+    const client = await page.context().newCDPSession(page);
+    const y = box.y + box.height / 2;
+    const at = x => [{ id: 1, x, y }];
+    await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: at(box.x + box.width - 10) });
+    for (let step = 1; step <= 10; step++) {
+        await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: at(box.x + box.width - 10 - step * 15) });
+    }
+    await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await expect.poll(() => scroller.evaluate(el => el.scrollLeft), 'row scrolled').toBeGreaterThan(0);
+    expect(await canvasScroll.evaluate(el => [el.scrollLeft, el.scrollTop]), 'canvas not panned').toEqual(canvasBefore);
+    expect(await activePane(page).getByTestId('editor-canvas').boundingBox(), 'canvas not zoomed or moved').toEqual(canvasBox);
+    await expect(page.getByTestId('tool-pill-fade-start')).toBeVisible();
+});
+
+/** The page is fitted: its box spans the scroll container's width minus the 16px gutter each side (TOUCH_CANVAS_GUTTER). */
+const expectPageFitted = async (page, label) => {
+    const pane = activePane(page);
+    const canvas = pane.getByTestId('editor-canvas');
+    const outer = pane.locator('.canvas-scroll-container');
+    await expect.poll(async () => {
+        const c = await canvas.boundingBox();
+        const o = await outer.boundingBox();
+        if (!c || !o) return 'no box';
+        const inner = await outer.evaluate(el => el.clientWidth);
+        return Math.abs(c.width - (inner - 32)) <= 1 && c.x >= o.x && c.x + c.width <= o.x + o.width ? 'fitted' : `page ${c.x}..${c.x + c.width} in container ${o.x}..${o.x + o.width} (inner ${inner})`;
+    }, label).toBe('fitted');
+};
+
+// Task 24: a page that is wider than the phone must not load cut off at the right edge (fit runs
+// on first load, on a project switch and on rotation, not only from the Fit button).
+test('phone fits the page to the width on first load, on a project switch and after rotation', async ({ page }, testInfo) => {
+    test.skip(!isPhone(testInfo), 'phone only');
+    const device = await viewport(page);
+    // Every open project keeps its pane (and top bar) mounted; only the active one is on screen.
+    const activeBar = () => activePane(page).locator('[data-touch-chrome="top-bar"]');
+    await expectPageFitted(page, 'first load');
+    // A fresh Blank Project (A4) from the switcher: a new pane whose canvas mounts while the switch happens.
+    await activeBar().getByRole('button', { name: 'Mobile' }).click();
+    await page.getByRole('menuitem', { name: 'New project' }).click();
+    await page.getByRole('dialog', { name: 'Create New Project' }).getByRole('button', { name: /^Blank Project/ }).click();
+    await expect(activeBar().getByRole('button', { name: 'Blank Project' })).toBeVisible();
+    await expectPageFitted(page, 'new blank project');
+    // Back to the first project through the switcher, then rotate both ways.
+    await activeBar().getByRole('button', { name: 'Blank Project' }).click();
+    await page.getByRole('menuitem', { name: /^Mobile/ }).click();
+    await expect(activeBar().getByRole('button', { name: 'Mobile' })).toBeVisible();
+    await expectPageFitted(page, 'switched back');
+    await page.setViewportSize({ width: device.height, height: device.width });
+    await expectPageFitted(page, 'landscape');
+    await page.setViewportSize(device);
+    await expectPageFitted(page, 'portrait again');
 });
 
 /** Refit the page to the canvas container (the layout refits on rotation, not on a plain resize). */

@@ -20,13 +20,13 @@ const buttonClass = (pressed: boolean) => clsx('flex h-11 w-11 shrink-0 items-ce
 /**
  * The touch tool row shared by the tablet toolbar and the phone tool pill. `fitToWidth` is the
  * only zoom control on touch: zoom is local to the touch viewport and never written to state.
- * `wrap` lets the row break into further rows when its container is narrower than the buttons
- * (the phone pill), so every tool keeps its 44px target without horizontal scrolling.
+ * The phone pill renders the row without Fit inside a swipeable scroller and pins `TouchFitButton`
+ * beside it, so Fit is always on screen however far the row is scrolled.
  * "Select multiple" sits beside Select: it is a mode of that tool (see useTouchMultiSelect).
  */
-export function TouchToolButtons({ actions, showFit = false, wrap = false }: { actions: TouchEditorActions; showFit?: boolean; wrap?: boolean }) {
+export function TouchToolButtons({ actions, showFit = false }: { actions: TouchEditorActions; showFit?: boolean }) {
     return (
-        <div className={clsx('flex items-center gap-0.5', wrap && 'flex-wrap justify-center')}>
+        <div className="flex items-center gap-0.5">
             {TOOLS.map(({ tool, label, icon: Icon }) => (
                 <React.Fragment key={tool}>
                     <button type="button" aria-label={label} aria-pressed={actions.tool === tool}
@@ -41,12 +41,16 @@ export function TouchToolButtons({ actions, showFit = false, wrap = false }: { a
                     )}
                 </React.Fragment>
             ))}
-            {showFit && (
-                <button type="button" aria-label="Fit page to width" onClick={actions.fitToWidth}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-600">
-                    <Maximize2 size={18} />
-                </button>
-            )}
+            {showFit && <TouchFitButton actions={actions} />}
         </div>
+    );
+}
+
+export function TouchFitButton({ actions }: { actions: TouchEditorActions }) {
+    return (
+        <button type="button" aria-label="Fit page to width" onClick={actions.fitToWidth}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-600">
+            <Maximize2 size={18} />
+        </button>
     );
 }

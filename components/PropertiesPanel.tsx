@@ -12,6 +12,7 @@ import {
 } from './properties/SingleElementEditor';
 import { NodeProperties } from './properties/NodeProperties';
 import { CollapsibleSection } from './CollapsibleSection';
+import { useFormFactor } from './editor-layout/FormFactorContext';
 import clsx from 'clsx';
 import { resolveTextPadding, TEXT_PADDING_SIDES } from '../services/textPadding';
 import type { TextPaddingSelection } from './properties/TextPaddingControls';
@@ -50,6 +51,10 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, activeP
     // Session-local: Template Settings starts expanded, collapsible from its header.
     const [localSettingsExpanded, setSettingsExpanded] = React.useState(true);
     const settingsExpanded = incrementalActions ? incrementalActions.panelsExpanded['template-settings'] ?? true : localSettingsExpanded;
+    // Touch with a selection: the element's settings come first and the page/node section sits below,
+    // collapsed (its own session-only state, so the desktop/persisted expansion is untouched).
+    const isTouch = useFormFactor() !== 'desktop';
+    const [touchSettingsExpanded, setTouchSettingsExpanded] = React.useState(false);
     const [localElementPropertySections, setElementPropertySections] = React.useState<ElementPropertySectionState>(
         () => ({ ...INITIAL_ELEMENT_PROPERTY_SECTIONS }),
     );
@@ -75,6 +80,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, activeP
         if (!template) return [];
         return selectedElementIds.map(id => template.elements.find(el => el.id === id)).filter(Boolean) as TemplateElement[];
     }, [selectedElementIds, template]);
+    const touchElementFirst = isTouch && selectedElements.length > 0;
     const selectionIsTextOnly = selectedElements.length > 0
         && selectedElements.every(element => element.type === 'text');
     const enabledAutoWidthCount = selectionIsTextOnly
@@ -253,14 +259,56 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, activeP
 
     if (!template) return <div className="p-4 text-slate-400">Select a template</div>;
 
+    const elementSection = (
+    <div className={touchElementFirst ? 'p-4' : 'p-4 flex-1'}>
+        <h3 className="font-bold text-slate-700 mb-4 flex justify-between items-center">
+            Element Properties
+            {selectedElements.length > 0 && (
+                <button onClick={() => onDeleteElements(state.selectedElementIds)} className="text-red-500 hover:bg-red-50 p-1 rounded">
+                    <Trash size={16} />
+                </button>
+            )}
+        </h3>
+
+        {selectedElements.length > 0 && displayElement ? (
+            <>
+                {selectedElements.length > 1 && (
+                    <div className="bg-blue-50 text-blue-700 px-3 py-2 text-xs font-medium border-b border-blue-100 flex items-center justify-between mb-4 rounded">
+                        <span>{selectedElements.length} items selected</span>
+                        <span className="text-[10px] opacity-75">Editing all</span>
+                    </div>
+                )}
+                <SingleElementEditor
+                    key={incrementalActions ? JSON.stringify([activeVariantId, effectiveTemplateId, selectedElementIds, incrementalActions.contextEpoch]) : selectedElements[0].id}
+                    // (this also remounts SvgSourceSection on selection change, resetting its draft + pending debounce timer)
+                    element={displayElement}
+                    onUpdate={handleUpdate}
+                    onOpenNodeSelector={handleOpenNodeSelector}
+                    state={state}
+                    selectionIsTextOnly={selectionIsTextOnly}
+                    autoWidthSelection={autoWidthSelection}
+                    textPaddingSelection={textPaddingSelection}
+                    textPaddingSelectionKey={textPaddingSelectionKey}
+                    sectionExpanded={elementPropertySections}
+                    onToggleSection={toggleElementPropertySection}
+                    activeNode={activePreviewNode}
+                />
+            </>
+        ) : (
+            <div className="text-sm text-slate-400 italic text-center mt-10">Select an element</div>
+        )}
+    </div>
+    );
+
     return (
         <div className="flex flex-col h-full overflow-y-auto bg-white border-l" data-prevent-finish-edit="true">
+            {touchElementFirst && elementSection}
             <CollapsibleSection
                 title={isHierarchyMode ? 'Node Properties' : 'Template Settings'}
                 icon={Settings2}
                 testId="template-settings-section"
-                expanded={settingsExpanded}
-                onToggle={() => incrementalActions ? incrementalActions.setPanelExpanded('template-settings', !settingsExpanded) : setSettingsExpanded(v => !v)}
+                expanded={touchElementFirst ? touchSettingsExpanded : settingsExpanded}
+                onToggle={touchElementFirst ? () => setTouchSettingsExpanded(v => !v) : () => incrementalActions ? incrementalActions.setPanelExpanded('template-settings', !settingsExpanded) : setSettingsExpanded(v => !v)}
             >
                 <div className="px-4 pb-4">
 
@@ -408,44 +456,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, activeP
 
             {layersSlot}
 
-            <div className="p-4 flex-1">
-                <h3 className="font-bold text-slate-700 mb-4 flex justify-between items-center">
-                    Element Properties
-                    {selectedElements.length > 0 && (
-                        <button onClick={() => onDeleteElements(state.selectedElementIds)} className="text-red-500 hover:bg-red-50 p-1 rounded">
-                            <Trash size={16} />
-                        </button>
-                    )}
-                </h3>
-
-                {selectedElements.length > 0 && displayElement ? (
-                    <>
-                        {selectedElements.length > 1 && (
-                            <div className="bg-blue-50 text-blue-700 px-3 py-2 text-xs font-medium border-b border-blue-100 flex items-center justify-between mb-4 rounded">
-                                <span>{selectedElements.length} items selected</span>
-                                <span className="text-[10px] opacity-75">Editing all</span>
-                            </div>
-                        )}
-                        <SingleElementEditor
-                            key={incrementalActions ? JSON.stringify([activeVariantId, effectiveTemplateId, selectedElementIds, incrementalActions.contextEpoch]) : selectedElements[0].id}
-                            // (this also remounts SvgSourceSection on selection change, resetting its draft + pending debounce timer)
-                            element={displayElement}
-                            onUpdate={handleUpdate}
-                            onOpenNodeSelector={handleOpenNodeSelector}
-                            state={state}
-                            selectionIsTextOnly={selectionIsTextOnly}
-                            autoWidthSelection={autoWidthSelection}
-                            textPaddingSelection={textPaddingSelection}
-                            textPaddingSelectionKey={textPaddingSelectionKey}
-                            sectionExpanded={elementPropertySections}
-                            onToggleSection={toggleElementPropertySection}
-                            activeNode={activePreviewNode}
-                        />
-                    </>
-                ) : (
-                    <div className="text-sm text-slate-400 italic text-center mt-10">Select an element</div>
-                )}
-            </div>
+            {!touchElementFirst && elementSection}
         </div >
     );
 };

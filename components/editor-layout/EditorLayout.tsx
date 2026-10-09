@@ -5,7 +5,8 @@ import { SidebarDrawer } from './SidebarDrawer';
 import { PropertiesSheet, SHEET_PEEK_PX, SheetDetent } from './PropertiesSheet';
 import { TabletToolbar } from './TabletToolbar';
 import { PhoneTopBar } from './PhoneTopBar';
-import { TouchToolButtons } from './TouchToolButtons';
+import { TouchFitButton, TouchToolButtons } from './TouchToolButtons';
+import { ToolPillScroller } from './ToolPillScroller';
 import { TouchOverlayHostProvider } from './TouchOverlayHost';
 
 export interface EditorLayoutProps {
@@ -110,8 +111,8 @@ function PhoneEditorLayout({ sidebar, canvas, properties, touchActions, navigati
 
     // Scroll room under the page for the pill: the wrapper publishes the pill's height plus its gap
     // as a CSS variable, which the touch CSS adds to the canvas content's bottom padding, so the page
-    // bottom can be scrolled clear of the pill. Measured live: the pill wraps to one or two rows
-    // with the width. 0 while the pill is unmounted (sheet at half/full).
+    // bottom can be scrolled clear of the pill. Measured live rather than assumed one row high.
+    // 0 while the pill is unmounted (sheet at half/full).
     useLayoutEffect(() => {
         const wrapper = canvasRef.current;
         if (!wrapper) return;
@@ -142,13 +143,17 @@ function PhoneEditorLayout({ sidebar, canvas, properties, touchActions, navigati
                     style={{ paddingBottom: SHEET_PEEK_PX }}>
                     {canvas}
                     {detent === 'peek' && (
-                        // All nine tools stay reachable at phone widths: the row wraps inside the pill
-                        // instead of scrolling Fit off the edge. `w-max` sizes the pill to the full row,
-                        // capped by max-w, so it wraps only as much as the screen requires.
+                        // One row at every phone width (R43): the tools swipe sideways inside the pill
+                        // when the screen is narrower than them, and Fit is pinned outside the scroller.
+                        // `w-max` sizes the pill to the full row, capped by max-w.
                         <div ref={pillRef} data-testid="touch-tool-pill" data-touch-chrome="tool-pill"
-                            className="absolute left-1/2 z-20 w-max max-w-[calc(100vw-16px)] -translate-x-1/2 rounded-2xl border bg-white/95 px-1 shadow-lg"
+                            className="absolute left-1/2 z-20 flex w-max max-w-[calc(100vw-16px)] -translate-x-1/2 items-center rounded-2xl border bg-white/95 px-1 shadow-lg"
                             style={{ bottom: SHEET_PEEK_PX + PILL_BOTTOM_GAP_PX }}>
-                            <TouchToolButtons actions={touchActions} showFit wrap />
+                            <ToolPillScroller activeKey={`${touchActions.tool}:${touchActions.multiSelect}`}>
+                                <TouchToolButtons actions={touchActions} />
+                            </ToolPillScroller>
+                            <span aria-hidden className="mx-0.5 h-7 w-px shrink-0 bg-slate-200" />
+                            <TouchFitButton actions={touchActions} />
                         </div>
                     )}
                 </div>

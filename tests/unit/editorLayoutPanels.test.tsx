@@ -345,4 +345,29 @@ describe('PropertiesSheet', () => {
         );
         expect(screen.getByRole('button', { name: 'Delete' })).toBeTruthy();
     });
+
+    // Task 24: the bare grabber did not read as "this opens"; a labelled toggle does.
+    it('has a labelled Edit/Done toggle that opens to half and closes to peek', () => {
+        const onDetentChange = vi.fn();
+        const sheet = (detent: 'peek' | 'half' | 'full') => (
+            <PropertiesSheet detent={detent} onDetentChange={onDetentChange} title="x"><p>props</p></PropertiesSheet>
+        );
+        const { rerender } = render(sheet('peek'));
+        const toggle = () => screen.getByTestId('properties-sheet-toggle');
+        expect(toggle()).toHaveTextContent('Edit');
+        expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+        expect(toggle()).toHaveAttribute('aria-controls', screen.getByTestId('properties-sheet-content').id);
+        expect(screen.getByTestId('properties-sheet-content')).not.toBeVisible(); // nothing to tab into at peek
+        fireEvent.click(toggle());
+        expect(onDetentChange).toHaveBeenLastCalledWith('half');
+        for (const detent of ['half', 'full'] as const) {
+            rerender(sheet(detent));
+            expect(toggle()).toHaveTextContent('Done');
+            expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+            expect(screen.getByTestId('properties-sheet-content')).toBeVisible();
+            fireEvent.click(toggle());
+            expect(onDetentChange).toHaveBeenLastCalledWith('peek');
+        }
+        expect(toggle().className).toContain('min-h-11');
+    });
 });

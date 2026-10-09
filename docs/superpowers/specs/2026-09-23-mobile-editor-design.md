@@ -79,7 +79,10 @@ preview-node selection).
 - **phone** — full-screen canvas. Sidebar is the same left drawer. Properties live in a bottom
   sheet with detents *peek* (selected element name/type), *half* (canvas above, properties below)
   and *full*. Selecting an element opens the sheet at peek; tapping empty canvas closes it. Layers
-  stays inside the sheet (it is already a `PropertiesPanel` slot).
+  stays inside the sheet (it is already a `PropertiesPanel` slot). The peek row ends in a labelled
+  **Edit**/**Done** toggle (peek ↔ half), because a bare grabber did not read as openable (T24).
+- On touch with a selection, `PropertiesPanel` shows the element's settings first and Node/Template
+  Settings below, collapsed (session-only state; desktop order and expansion unchanged) (T24).
 - Drawer and sheet are presentational wrappers; their content is the unchanged `Sidebar` and
   `PropertiesPanel`.
 - On rotation: close the drawer, keep the sheet detent, re-fit the canvas.
@@ -172,7 +175,9 @@ New touch-only components call the same `actions`; desktop JSX is untouched.
   replaces that header on phone).
 - A floating tool pill sits above the sheet while it is at peek or closed:
   Select · Hand · Text · rect · ellipse · triangle · line · grid · fit. Hidden when the sheet is at
-  half or full.
+  half or full. One row at every width (R43, superseding R29's wrapping): the tools swipe sideways
+  inside the pill when the screen is narrower than them, with edge fades on the side that has more,
+  and Fit is pinned outside the scrolling part.
 
 ### Tablet
 

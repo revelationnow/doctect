@@ -158,6 +158,18 @@
         flex-basis: 100%;
         margin-top: 8px;
       }
+      /* Phone tool pill: its one row of tools swipes sideways on narrow screens (R43), so the row
+         scrolls without a visible scrollbar and each 44px tool snaps to the row's start edge. */
+      [data-form-factor="phone"] [data-touch-pill-scroller] {
+        scrollbar-width: none;
+        scroll-snap-type: x proximity;
+      }
+      [data-form-factor="phone"] [data-touch-pill-scroller]::-webkit-scrollbar {
+        display: none;
+      }
+      [data-form-factor="phone"] [data-touch-pill-scroller] button {
+        scroll-snap-align: start;
+      }
       /* touch-editor:end */
     </style>
   <script type="importmap">

@@ -1,4 +1,5 @@
-import React, { useRef } from 'react';
+import React, { useId, useRef } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 export type SheetDetent = 'peek' | 'half' | 'full';
 export const SHEET_PEEK_PX = 72;
@@ -14,8 +15,9 @@ const isSecondaryPointer = (event: React.PointerEvent): boolean => event.isPrima
 /**
  * Bottom sheet that hosts the unchanged `PropertiesPanel` on phone. Presentational only:
  * the owner holds the detent. The grabber row is always visible (it is the whole sheet at
- * peek); a tap cycles peek → half → full → peek, a drag lands on the detent nearest the
- * release point.
+ * peek); a tap on the grabber cycles peek → half → full → peek, a drag lands on the detent
+ * nearest the release point, and the labelled toggle at its right end ("Edit" at peek, "Done"
+ * once open) says that the row opens: it takes peek to half and half or full back to peek.
  */
 export function PropertiesSheet({ detent, onDetentChange, title, actions, children }: {
     detent: SheetDetent; onDetentChange: (d: SheetDetent) => void; title: string;
@@ -23,6 +25,8 @@ export function PropertiesSheet({ detent, onDetentChange, title, actions, childr
 }) {
     const dragStartY = useRef<number | null>(null);
     const suppressClick = useRef(false);
+    const contentId = useId();
+    const open = detent !== 'peek';
 
     const onPointerDown = (event: React.PointerEvent) => {
         if (isSecondaryPointer(event)) return;
@@ -53,16 +57,21 @@ export function PropertiesSheet({ detent, onDetentChange, title, actions, childr
         <section data-testid="properties-sheet" data-touch-chrome="sheet" aria-label="Properties"
             className="absolute inset-x-0 bottom-0 z-30 flex flex-col rounded-t-2xl border-t bg-white shadow-[0_-8px_24px_rgba(15,23,42,0.12)] transition-[height] duration-200"
             style={{ height: HEIGHT[detent] }}>
-            <div className="flex items-center gap-2 px-3" style={{ minHeight: SHEET_PEEK_PX }}>
+            <div className="flex items-center gap-2 pl-3 pr-2" style={{ minHeight: SHEET_PEEK_PX }}>
                 <button type="button" aria-label="Resize properties sheet"
-                    className="flex min-h-11 flex-1 self-stretch items-center gap-3 text-left touch-none"
+                    className="flex min-h-11 min-w-0 flex-1 self-stretch items-center gap-3 text-left touch-none"
                     onPointerDown={onPointerDown} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} onClick={onClick}>
                     <span className="h-1.5 w-10 shrink-0 rounded-full bg-slate-300" />
                     <span className="truncate text-sm font-semibold text-slate-700">{title}</span>
                 </button>
                 {actions}
+                <button type="button" data-testid="properties-sheet-toggle" aria-expanded={open} aria-controls={contentId}
+                    className="flex min-h-11 shrink-0 items-center gap-1 rounded-xl border border-blue-200 bg-blue-50 px-4 text-sm font-semibold text-blue-700"
+                    onClick={() => onDetentChange(open ? 'peek' : 'half')}>
+                    {open ? <>Done <ChevronDown size={16} aria-hidden /></> : <>Edit <ChevronUp size={16} aria-hidden /></>}
+                </button>
             </div>
-            <div data-testid="properties-sheet-content" className="min-h-0 flex-1 overflow-y-auto overscroll-contain" hidden={detent === 'peek'}>{children}</div>
+            <div id={contentId} data-testid="properties-sheet-content" className="min-h-0 flex-1 overflow-y-auto overscroll-contain" hidden={!open}>{children}</div>
         </section>
     );
 }
