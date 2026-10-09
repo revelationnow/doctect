@@ -42,6 +42,7 @@ import type {
 import type { GeneratedProject } from '../services/validateGeneratedProject';
 import type { CloudProject } from '../services/cloudApi';
 import type { AppState } from '../types';
+import { TouchColorPickerHost } from '../components/color/TouchColorPickerHost';
 
 export type Project = WorkspaceProject;
 
@@ -423,6 +424,7 @@ function EditorPageShell({
   return (
     <FormFactorProvider value={formFactor}>
     <BackDismissProvider hold={navigationBlocked}>
+    <TouchColorPickerHost />
     <EditorChromeContext.Provider value={chrome}>
     <div
       ref={editorShellRef}

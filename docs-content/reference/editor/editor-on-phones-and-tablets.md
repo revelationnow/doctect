@@ -32,6 +32,8 @@ On a phone or tablet the editor rearranges itself around the canvas. Nothing cha
 
 While a single text or grid element is selected, a small bar floats beside it with font size −/+, bold, italic, underline, alignment and text colour. Each tap is one undo step, and so is a colour pick, however long you drag around inside the picker.
 
+**Colours:** tapping any colour swatch — Fill, Stroke, text colour, grid colours — opens a colour picker at the bottom of the screen: drag in the square to set saturation and brightness, drag the rainbow bar to set the hue, tap a recent colour or one from the palette, or type a hex code. Each pick applies straight away and is one undo step; the picker stays open for further picks until you tap **Done**, tap outside it or go back. Recent colours are remembered until you close the tab.
+
 In the **Generator**, Template and Hierarchy become two tabs at the top of a full-screen dialog; both scripts are kept when you switch, and a red dot marks the other tab when its script has an error.
 
 **Not available on touch yet:** rotating by dragging (the **Rot** field's −/+ still turn an element), and drawing a selection box around several elements. Layers reorder with ▲/▼ instead of drag-and-drop. Zooming on a phone or tablet is for your screen only — it never changes the zoom saved with the project.

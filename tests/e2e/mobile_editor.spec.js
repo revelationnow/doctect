@@ -1091,3 +1091,64 @@ test('phone overflow menu lists Cloud and Account as rows, and Save to cloud run
     await expect.poll(() => overlayDepth(page)).toBe(0);
     expect(pathname(page)).toBe('/app');
 });
+
+// Touch colour picker: every native colour input opens the in-app picker (square, hue, palette, hex)
+// instead of the platform one; a pick writes through the field's own handlers, one undo step each.
+test('colour fields open the touch colour picker; a palette pick fills the element and undoes in one step', async ({ page }, testInfo) => {
+    const phone = isPhone(testInfo);
+    const pane = activePane(page);
+    const rect = pane.locator('[data-element-id="box"]');
+    const start = await box(rect);
+    await page.touchscreen.tap(start.x, start.y);
+    await expect(pane.locator('[data-resize-handle="se"]')).toBeVisible();
+    if (phone) await page.getByTestId('properties-sheet-toggle').click();
+    const fill = page.getByTestId('appearance-section-body').locator('input[type="color"]').first();
+    await fill.scrollIntoViewIfNeeded();
+    const original = await fill.inputValue();
+    const fillBox = await box(fill);
+    await page.touchscreen.tap(fillBox.x, fillBox.y);
+    const picker = page.getByRole('dialog', { name: 'Fill' });
+    await expect(picker).toBeVisible();
+    // The picker fits the screen and every swatch keeps a 44px target.
+    const { width } = await viewport(page);
+    const panel = await picker.boundingBox();
+    expect(panel.x).toBeGreaterThanOrEqual(0);
+    expect(panel.x + panel.width).toBeLessThanOrEqual(width + 0.5);
+    for (const swatch of await picker.getByRole('group', { name: 'Palette' }).getByRole('button').all()) {
+        const b = await swatch.boundingBox();
+        expect(Math.min(b.width, b.height)).toBeGreaterThanOrEqual(44);
+    }
+
+    await picker.getByRole('button', { name: 'Palette #3b82f6' }).click();
+    await expect(fill).toHaveValue('#3b82f6');
+    await expect.poll(() => rect.evaluate(el => [el, ...el.querySelectorAll('*')].some(node => getComputedStyle(node).backgroundColor === 'rgb(59, 130, 246)')), 'canvas shows the pick').toBe(true);
+    // A drag on the square commits once, on release.
+    const square = await picker.getByTestId('colour-picker-square').boundingBox();
+    await page.touchscreen.tap(square.x + square.width * 0.9, square.y + 4);
+    await expect(fill).not.toHaveValue('#3b82f6');
+    await picker.getByRole('button', { name: 'Done' }).click();
+    await expect(picker).toBeHidden();
+
+    const undo = page.getByRole('button', { name: 'Undo' });
+    await undo.click();
+    await expect(fill).toHaveValue('#3b82f6');
+    await undo.click();
+    await expect(fill).toHaveValue(original);
+});
+
+test('the quick format bar colour opens the touch colour picker', async ({ page }) => {
+    const pane = activePane(page);
+    const title = await box(pane.locator('[data-element-id="title"]'));
+    await page.touchscreen.tap(title.x, title.y);
+    const swatch = page.getByRole('toolbar', { name: 'Text formatting' }).getByLabel('Text colour');
+    await expect(swatch).toBeVisible();
+    const s = await box(swatch);
+    await page.touchscreen.tap(s.x, s.y);
+    const picker = page.getByRole('dialog', { name: 'Text colour' });
+    await expect(picker).toBeVisible();
+    await picker.getByRole('button', { name: 'Palette #ef4444' }).click();
+    await expect(swatch).toHaveValue('#ef4444');
+    await page.goBack(); // the back gesture closes the picker and stays in the editor
+    await expect(picker).toBeHidden();
+    await expect(page).toHaveURL(/\/app$/);
+});

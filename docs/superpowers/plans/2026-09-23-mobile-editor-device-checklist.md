@@ -37,6 +37,10 @@ below is what emulation cannot prove.
 - [ ] Android tablet: tapping a property field raises the keyboard without flipping the layout to phone;
       the layout is re-checked only once the field loses focus
 - [ ] iPad with trackpad/mouse: mouse drags still move and marquee-select as on desktop
+- [ ] First open with the browser's address bar showing (Android Chrome, iOS Safari): the properties
+      sheet's bottom bar (title + Edit) is on screen without scrolling anything first
+- [ ] Colour picker (Fill, Stroke, text colour from the format bar): tapping a swatch opens the in-app
+      picker, never the platform one; square and hue drags track the finger; one undo step per pick
 - [ ] CI: the `mobile-phone-webkit` and `mobile-tablet-webkit` Playwright projects need a run on a host
       where WebKit launches (it cannot on the dev host); watch PDF download detection and the
       synthetic-pointer pinch fallback there

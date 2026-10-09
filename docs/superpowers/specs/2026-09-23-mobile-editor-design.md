@@ -153,6 +153,13 @@ When a text or grid element is selected or being edited, a floating bar appears 
 text colour. It calls the existing `onUpdateElements` only (no new state), tracks the element through
 pan and zoom, and hides during drags and pinches.
 
+Touch colour picker (follow-up, user decision 2026-10-08): on touch every native `<input type="color">`
+opens an in-app picker (saturation/brightness square, hue bar, session-only recents, preset palette,
+hex field) instead of the platform one. A capture-phase click listener cancels the native activation;
+picks are written back into the input (prototype value setter + one `input` and one `change` event),
+so every existing handler runs unchanged, once per pick (drag release, swatch tap, hex entry). Desktop
+keeps the native picker. Recents are not persisted: browser storage keys are a pinned security boundary.
+
 ### Inline editing baseline
 
 Double-tap goes through the gesture hook (iOS does not fire `dblclick` reliably). While
