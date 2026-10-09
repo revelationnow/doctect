@@ -7,7 +7,8 @@ import { makeIncrementalProject } from '../../../helpers/incrementalFixtures';
 import { makeWorkHarness } from '../../../helpers/normalizationWorkHarness';
 import * as references from '../../../../services/document/references';
 import * as folds from '../../../../services/localWorkspace/normalized/validateChanges';
-import type { BulkDocumentBatch, NormalizedProject } from '../../../../services/localWorkspace/normalized/schema';
+import { NORMALIZED_STORE_NAMES, type BulkDocumentBatch, type NormalizedProject, type ProjectStoreName } from '../../../../services/localWorkspace/normalized/schema';
+import { createPlannerProject } from '../../../../services/presets';
 
 const modules = import.meta.glob<typeof import('../../../../services/localWorkspace/normalized/bulkProject')>(
   '../../../../services/localWorkspace/normalized/bulkProject.ts');
@@ -241,3 +242,62 @@ it.each(['references', 'folds'] as const)('retains %s index accounting until cal
   } finally { lease.release(); }
   expect(h.work.snapshot().ownedBytes).toBe(0);
 });
+
+const sha256Hex = async (text: string) => Array.from(new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))),
+  byte => byte.toString(16).padStart(2, '0')).join('');
+const unicodeState = (state: BulkDocumentBatch['state']) => {
+  const root = state.nodes[state.rootId];
+  root.title = 'Café 雪 😀 lone \ud800 tail \udc00 "quote" \\ back\nline\u0001';
+  root.data = { ...root.data, '😀 key': 'value ', '': '' };
+  return state;
+};
+const replacements: [string, (h: ReturnType<typeof fixture>) => void][] = [
+  ['incremental replacement with wrapper and state extensions', () => {}],
+  ['2026 planner preset', h => {
+    h.batch.state = createPlannerProject(); h.batch.preferences = partitionState(h.batch.state).preferences;
+  }],
+  ['unicode and escapes', h => { unicodeState(h.batch.state); h.batch.preferences = { ...partitionState(h.batch.state).preferences, panelsExpanded: { appearance: true } }; }],
+  ['linked root metadata', h => { h.batch.metadata = { kind: 'linked-root', name: 'Replacement' }; }],
+];
+
+it.each(replacements)('trusted request digest equals the metered digest: %s', async (_name, edit) => {
+  const bulk = await api(), h = fixture(); edit(h);
+  expect(await bulk.hashTrustedBulkDocumentRequest(h.batch, sha256Hex)).toBe(await bulk.hashBulkDocumentRequest(h.batch, h.work));
+});
+
+it.each(replacements)('trusted preparation writes exactly the metered records and ack: %s', { timeout: 120_000 }, async (_name, edit) => {
+  const bulk = await api(), h = fixture(); edit(h);
+  const metered = await bulk.prepareBulkProject(h.current, structuredClone(h.batch), now, h.work);
+  const trusted = await bulk.prepareTrustedBulkProject(h.current, reconstructProject(h.current), structuredClone(h.batch), now, h.work, sha256Hex);
+  try {
+    expect(trusted.ack).toEqual(metered.ack);
+    for (const store of NORMALIZED_STORE_NAMES.filter((name): name is ProjectStoreName => name !== 'normalizationLedger')) {
+      expect([...trusted.project[store].keys()]).toEqual([...metered.project[store].keys()]);
+      for (const [key, record] of metered.project[store]) expect(frameRecord(store, trusted.project[store].get(key)!)).toBe(frameRecord(store, record));
+    }
+    expect(trusted.project).toEqual(metered.project);
+    expect(trusted.external).toEqual(reconstructProject(metered.project));
+    await bulk.verifyBulkProjectBaseline(trusted.project, h.work);
+  } finally { metered.release(); trusted.release(); }
+  expect(h.work.snapshot().ownedBytes).toBe(0);
+});
+
+it.each(['schema', 'root', 'active-variant', 'text-padding', 'nonfinite', 'wrapper-depth', 'preferences', 'stale'] as const)(
+  'trusted preparation keeps strict validation of %s', async kind => {
+    const bulk = await api(), h = fixture();
+    if (kind === 'schema') h.batch.state.schemaVersion--;
+    if (kind === 'root') h.batch.state.rootId = 'missing';
+    if (kind === 'active-variant') h.batch.state.activeVariantId = 'missing';
+    if (kind === 'text-padding') Object.assign(h.batch.state.variants.default.templates['page-0'].elements[0],
+      { textPadding: { top: -1, right: 0, bottom: 0, left: 0 } });
+    if (kind === 'nonfinite') Object.assign(h.batch.state, { extension: Infinity });
+    if (kind === 'wrapper-depth') {
+      let extension: object = {};
+      for (let index = 0; index < 511; index++) extension = { child: extension };
+      Object.assign(h.batch.state, { extension });
+    }
+    if (kind === 'preferences') h.batch.preferences.sidebarWidth = 999;
+    if (kind === 'stale') h.batch.expected.documentRevision = Number.MAX_SAFE_INTEGER;
+    await expect(bulk.prepareTrustedBulkProject(h.current, reconstructProject(h.current), h.batch, now, h.work, sha256Hex)).rejects.toThrow();
+    expect(h.work.snapshot().ownedBytes).toBe(0);
+  });

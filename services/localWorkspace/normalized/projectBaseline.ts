@@ -69,8 +69,11 @@ const projectFrame = (project: NormalizedProject, part: Part, kind: 'birth' | 'b
 };
 
 /** Native twin of the birth frame text for a worker's own fresh write. Tests pin byte equality with projectBirthFrame. */
-export function projectBirthFrameText(project: NormalizedProject, part: Part): string {
-  const parts = [`[${JSON.stringify(`doctect-project-birth-${part}-v1`)}`];
+export const projectBirthFrameText = (project: NormalizedProject, part: Part): string => projectFrameText(project, part, 'birth');
+/** Native twin of the bulk frame text for a worker's own fresh replacement. Tests pin byte equality with projectBulkFrame. */
+export const projectBulkFrameText = (project: NormalizedProject, part: Part): string => projectFrameText(project, part, 'bulk');
+function projectFrameText(project: NormalizedProject, part: Part, kind: 'birth' | 'bulk'): string {
+  const parts = [`[${JSON.stringify(`doctect-project-${kind}-${part}-v1`)}`];
   for (const store of stores) {
     const entries: PhysicalRecord[] = [];
     for (const [key, candidate] of project[store]) {
@@ -85,18 +88,23 @@ export function projectBirthFrameText(project: NormalizedProject, part: Part): s
     });
     for (const record of entries) {
       const fields = exactFields(record, recordFields, optionalRecordFields(store)); const projection: Record<string, unknown> = {};
-      for (const name of Object.keys(fields)) if (projected(store, name, 'birth')) Object.defineProperty(projection, name, { value: fields[name], enumerable: true });
+      for (const name of Object.keys(fields)) if (projected(store, name, kind)) Object.defineProperty(projection, name, { value: fields[name], enumerable: true });
       parts.push(',', frameRecord(store, projection));
     }
   }
   parts.push(']');
   return parts.join('');
 }
-export async function createTrustedProjectBirthDigests(project: NormalizedProject, hash: (text: string) => Promise<string>): Promise<ProjectBaselineDigests> {
+export const createTrustedProjectBirthDigests = (project: NormalizedProject, hash: (text: string) => Promise<string>): Promise<ProjectBaselineDigests> =>
+  createTrustedDigests(project, hash, projectBirthFrameText);
+export const createTrustedProjectBulkDigests = (project: NormalizedProject, hash: (text: string) => Promise<string>): Promise<ProjectBaselineDigests> =>
+  createTrustedDigests(project, hash, projectBulkFrameText);
+async function createTrustedDigests(project: NormalizedProject, hash: (text: string) => Promise<string>,
+  text: (project: NormalizedProject, part: Part) => string): Promise<ProjectBaselineDigests> {
   let recordCount = 0;
   for (const store of stores) { recordCount += project[store].size; safeCounter(recordCount); }
-  return { imageDigest: await hash(projectBirthFrameText(project, 'image')), documentDigest: await hash(projectBirthFrameText(project, 'document')),
-    preferenceDigest: await hash(projectBirthFrameText(project, 'preferences')), foldDigest: await hash(projectBirthFrameText(project, 'folds')), recordCount };
+  return { imageDigest: await hash(text(project, 'image')), documentDigest: await hash(text(project, 'document')),
+    preferenceDigest: await hash(text(project, 'preferences')), foldDigest: await hash(text(project, 'folds')), recordCount };
 }
 
 export async function createProjectBirthDigests(project: NormalizedProject, work: WorkRuntime): Promise<ProjectBaselineDigests> {

@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
 import { decomposeProject, reconstructProject } from '../../../../services/localWorkspace/normalized/codec';
-import { createProjectBirthDigests, createTrustedProjectBirthDigests, projectBirthFrame, projectBirthFrameText, verifyProjectBirth } from '../../../../services/localWorkspace/normalized/projectBaseline';
+import { createProjectBirthDigests, createProjectBulkDigests, createTrustedProjectBirthDigests, createTrustedProjectBulkDigests, projectBirthFrame,
+  projectBirthFrameText, projectBulkFrame, projectBulkFrameText, verifyProjectBirth } from '../../../../services/localWorkspace/normalized/projectBaseline';
 import { deriveWorkspaceIncarnation, type WorkspaceBirthOrigin, type WorkspaceMember } from '../../../../services/localWorkspace/normalized/workspaceManifest';
 import { hashFrame } from '../../../../services/localWorkspace/normalized/work';
 import { validateWorkspaceBirthOriginWork } from '../../../../services/localWorkspace/normalized/commitProof';
@@ -152,4 +153,26 @@ it('trusted birth frame rejects a record stored under a mismatched key', async (
   const h = await fixture(); const [key, record] = h.image.projectNodes.entries().next().value!;
   h.image.projectNodes.delete(key); h.image.projectNodes.set(`${key} `, record);
   expect(() => projectBirthFrameText(h.image, 'image')).toThrow('Mismatched birth record key');
+});
+
+const drainedBulk = (image: Parameters<typeof projectBulkFrame>[0], part: Parameters<typeof projectBulkFrame>[1]) => {
+  const fragments: string[] = [];
+  runSync(projectBulkFrame(image, part)(function* (fragment: string) { fragments.push(fragment); }));
+  return fragments.join('');
+};
+
+it.each([
+  ['incremental fixture', () => makeIncrementalProject(2)],
+  ['2026 planner preset', () => ({ id: 'planner', name: 'Planner 2026', initialState: createPlannerProject() })],
+])('trusted bulk digests are byte-identical to the metered frames: %s', { timeout: 120_000 }, async (_name, make) => {
+  const project = make(); const w = makeWorkHarness('reopen');
+  const image = decomposeProject(project, { storageGeneration: 'g1', projectId: project.id, incarnation: 'i1' });
+  const header = image.projectHeaders.values().next().value!, preferences = image.projectPreferences.values().next().value!;
+  // Bulk framing drops the outer self-referential baseline fields; give them values so the projection is exercised.
+  Object.assign(header, { bulkBaseline: { excluded: true } }); Object.assign(preferences, { bulkBoundary: 'excluded' });
+  for (const part of ['image', 'document', 'preferences', 'folds'] as const) {
+    expect(projectBulkFrameText(image, part)).toBe(drainedBulk(image, part));
+    expect(projectBulkFrameText(image, part)).not.toContain('excluded');
+  }
+  expect(await createTrustedProjectBulkDigests(image, sha256Hex)).toEqual(await createProjectBulkDigests(image, w.runtime));
 });
