@@ -37,11 +37,44 @@ const labelOf = (input: HTMLInputElement): string => {
     return 'Colour';
 };
 
+/** Touch slop: a tap within this square around a (20–24px) colour input's centre picks it. */
+const TOUCH_TARGET_PX = 44;
+const ANCESTOR_SEARCH_DEPTH = 3;
+
+/**
+ * The colour input a click is for. On touch the inputs take no pointer events (touch CSS), so a tap
+ * lands on whatever is under them; this finds the input nearest the tap among the hit element's
+ * and its nearest ancestors' colour inputs, within the 44px touch target. A keyboard activation
+ * (Enter/Space on a focused input) targets the input itself.
+ */
+export function colourInputForClick(event: Pick<MouseEvent, 'target' | 'clientX' | 'clientY'>): HTMLInputElement | null {
+    const target = event.target;
+    if (target instanceof HTMLInputElement) return target.type === 'color' && !target.disabled ? target : null;
+    if (!(target instanceof Element)) return null;
+    let best: { input: HTMLInputElement; distance: number } | null = null;
+    let scope: Element | null = target;
+    for (let depth = 0; scope && depth <= ANCESTOR_SEARCH_DEPTH; depth++, scope = scope.parentElement) {
+        for (const input of scope.querySelectorAll<HTMLInputElement>('input[type="color"]')) {
+            if (input.disabled) continue;
+            const box = input.getBoundingClientRect();
+            const slopX = Math.max(0, (TOUCH_TARGET_PX - box.width) / 2), slopY = Math.max(0, (TOUCH_TARGET_PX - box.height) / 2);
+            const dx = Math.max(box.left - slopX - event.clientX, 0, event.clientX - box.right - slopX);
+            const dy = Math.max(box.top - slopY - event.clientY, 0, event.clientY - box.bottom - slopY);
+            if (dx > 0 || dy > 0) continue;
+            const distance = Math.hypot(event.clientX - (box.left + box.width / 2), event.clientY - (box.top + box.height / 2));
+            if (!best || distance < best.distance) best = { input, distance };
+        }
+        if (best) break;
+    }
+    return best?.input ?? null;
+}
+
 /**
  * On touch, every `<input type="color">` in the editor opens `TouchColorPicker` instead of the
- * platform picker (Android's is a small swatch grid). A capture-phase click listener cancels the
- * native activation and remembers the input; picks are written back into it. Desktop registers
- * nothing and keeps the native picker.
+ * platform picker (Android's is a small swatch grid). The touch CSS makes the inputs ignore
+ * pointer events, so no engine can open its own picker from a tap (Firefox and WebKit do not all
+ * honour a cancelled click); a capture-phase click listener maps the tap to the input under it.
+ * Picks are written back into the input. Desktop registers nothing and keeps the native picker.
  */
 export function TouchColorPickerHost() {
     const touch = useFormFactor() !== 'desktop';
@@ -52,9 +85,10 @@ export function TouchColorPickerHost() {
     useEffect(() => {
         if (!touch) return;
         const onClick = (event: MouseEvent) => {
-            const input = event.target;
-            if (!(input instanceof HTMLInputElement) || input.type !== 'color' || input.disabled) return;
+            const input = colourInputForClick(event);
+            if (!input) return;
             event.preventDefault();
+            event.stopPropagation(); // the tap is the picker's, not the row's
             setRecents(sessionRecents);
             setOpenCount(n => n + 1);
             setTarget(input);

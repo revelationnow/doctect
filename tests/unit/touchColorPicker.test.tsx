@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { hexToHsv, hsvToHex, normalizeHex } from '../../components/color/colorMath';
 import { COLOUR_PALETTE, TouchColorPicker } from '../../components/color/TouchColorPicker';
-import { commitToColourInput, resetTouchColourRecents, TouchColorPickerHost } from '../../components/color/TouchColorPickerHost';
+import { colourInputForClick, commitToColourInput, resetTouchColourRecents, TouchColorPickerHost } from '../../components/color/TouchColorPickerHost';
 import { FormFactorProvider } from '../../components/editor-layout/FormFactorContext';
 import type { FormFactor } from '../../hooks/useEditorFormFactor';
 
@@ -175,5 +175,38 @@ describe('TouchColorPickerHost', () => {
         commitToColourInput(input, '#123456');
         expect(seen).toHaveBeenCalledTimes(1);
         input.remove();
+    });
+});
+
+describe('colourInputForClick', () => {
+    const rect = (el: Element, left: number, top: number, size: number) => {
+        el.getBoundingClientRect = () => ({ left, top, right: left + size, bottom: top + size, width: size, height: size, x: left, y: top, toJSON: () => ({}) });
+    };
+    const row = () => {
+        const container = document.createElement('div');
+        container.innerHTML = '<div class="row"><span class="wrap"><input type="color"></span><span class="wrap"><input type="color"></span><button>x</button></div>';
+        document.body.appendChild(container);
+        const [a, b] = container.querySelectorAll('input');
+        rect(a, 100, 100, 24); // centre 112,112
+        rect(b, 160, 100, 20); // centre 170,110
+        return { container, a, b, wrapA: a.parentElement!, rowEl: container.querySelector('.row')! };
+    };
+    afterEach(() => { document.querySelectorAll('div').forEach(el => el.remove()); });
+
+    it('takes a keyboard activation on the input itself, and ignores other inputs', () => {
+        const { a } = row();
+        expect(colourInputForClick({ target: a, clientX: 0, clientY: 0 })).toBe(a);
+        const text = document.createElement('input');
+        expect(colourInputForClick({ target: text, clientX: 0, clientY: 0 })).toBeNull();
+    });
+
+    it('maps a tap on the wrapper or the row to the colour input under it, with a 44px touch target', () => {
+        const { a, b, wrapA, rowEl } = row();
+        expect(colourInputForClick({ target: wrapA, clientX: 112, clientY: 112 })).toBe(a);
+        expect(colourInputForClick({ target: rowEl, clientX: 91, clientY: 112 })).toBe(a); // 21px left of centre: inside 44px
+        expect(colourInputForClick({ target: rowEl, clientX: 89, clientY: 112 })).toBeNull(); // 23px: outside
+        expect(colourInputForClick({ target: rowEl, clientX: 150, clientY: 110 })).toBe(b); // inside b's target (148-192), outside a's (78-146)
+        a.disabled = true;
+        expect(colourInputForClick({ target: wrapA, clientX: 112, clientY: 112 })).toBeNull();
     });
 });

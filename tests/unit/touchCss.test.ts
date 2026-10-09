@@ -97,6 +97,12 @@ describe('touch CSS', () => {
         expect(readFileSync('pages/EditorPage.tsx', 'utf8')).toMatch(/data-editor-shell=""\s*\n\s*className="flex h-screen /);
     });
 
+    // No engine may open its platform colour picker from a tap (Firefox for Android ignores a
+    // cancelled click); TouchColorPickerHost hit-tests the tap instead.
+    it('takes pointer events away from colour inputs on touch', () => {
+        expect(rules).toMatch(/\[data-form-factor\] input\[type="color"\]\s*\{\s*pointer-events:\s*none;\s*\}/);
+    });
+
     it('only uses hover-reveal patterns the touch CSS knows about', () => {
         const pairs = revealPairs();
         expect(pairs).toEqual(expect.arrayContaining([['opacity-0', 'group-hover:opacity-100'], ['hidden', 'group-hover:flex']]));

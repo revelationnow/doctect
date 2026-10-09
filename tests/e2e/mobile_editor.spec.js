@@ -1105,8 +1105,11 @@ test('colour fields open the touch colour picker; a palette pick fills the eleme
     const fill = page.getByTestId('appearance-section-body').locator('input[type="color"]').first();
     await fill.scrollIntoViewIfNeeded();
     const original = await fill.inputValue();
+    // The native input never takes the tap (no platform picker can open); a tap just beside the
+    // small swatch, inside its 44px touch target, still opens the in-app picker.
+    expect(await fill.evaluate(el => getComputedStyle(el).pointerEvents)).toBe('none');
     const fillBox = await box(fill);
-    await page.touchscreen.tap(fillBox.x, fillBox.y);
+    await page.touchscreen.tap(fillBox.b.x + fillBox.b.width + 8, fillBox.y);
     const picker = page.getByRole('dialog', { name: 'Fill' });
     await expect(picker).toBeVisible();
     // The picker fits the screen and every swatch keeps a 44px target.

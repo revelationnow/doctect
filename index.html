@@ -177,6 +177,12 @@
       [data-form-factor] [data-editor-shell] {
         height: 100dvh;
       }
+      /* Colour inputs: TouchColorPickerHost opens the in-app picker for a tap on (or within 44px of)
+         one. The inputs themselves take no pointer events, so no engine can open its own picker
+         from a tap: Firefox for Android does not reliably honour a cancelled click. */
+      [data-form-factor] input[type="color"] {
+        pointer-events: none;
+      }
       /* touch-editor:end */
     </style>
   <script type="importmap">
