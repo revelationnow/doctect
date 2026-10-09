@@ -9,7 +9,7 @@ import type { WorkspaceProject, WorkspaceSnapshot } from '../contracts';
 import { reconstructWorkspaceRecords, type MigrationPreparationEnvironment } from '../migration';
 import { isRecognizedLedger, isRecognizedLedgerWork, validateHistoricalBackup } from '../historicalBootstrap';
 import { assertWorkRuntime, createWorkRuntime, effect, primitive, runSync, type Ownership, type Phase, type Work, type WorkRuntime } from '../../../shared/cooperativeWork.js';
-import { compareStringsWork, copyEnumerableWork, enumerableEntriesWork, equalFrameWork, jsonTextWork, quoteWork, rawValueWeightWork, stableSortWork, textWork, utf8LengthWork, type Frame } from '../../../shared/jsonWork.js';
+import { canonicalText, compareStringsWork, copyEnumerableWork, enumerableEntriesWork, equalFrameWork, jsonTextWork, quoteWork, rawValueWeightWork, stableSortWork, textWork, utf8LengthWork, type Frame } from '../../../shared/jsonWork.js';
 import { canonicalFrame, envelopeFrame, frameBytesWork, hashFrame, listFrame, orderedFrame } from './work';
 import { equalSourceArchiveWork, hashSourceImages } from './sourceDigests';
 import { compareArchiveWork, compareEnvelopeWork, compareRecordWork, emitComparedRecordWork } from './frameComparison';
@@ -17,7 +17,7 @@ import { createInitialWorkspaceManifest, deriveWorkspaceIncarnation, projectWork
   type NormalizedWorkspaceManifest, type WorkspaceMember } from './workspaceManifest';
 import { verifyWorkspaceReceipts } from './workspaceCommitProof';
 import { verifyProjectBirth } from './projectBaseline';
-import { captureBulkDocumentBatch, frameBulkDocumentBatch, hashBulkDocumentRequest, prepareBulkProject,
+import { captureBulkDocumentBatch, frameBulkDocumentBatch, hashBulkDocumentRequest, prepareBulkProject, prepareTrustedBulkProject,
   verifyBulkProjectBaseline, verifyBulkProjectProof, type PreparedBulkProject } from './bulkProject';
 import { diffWorkspaceCatalogWork, projectWorkspaceCatalogWork } from '../workspaceCatalog';
 import { captureWorkspaceBatch, frameWorkspaceBatch, hashTrustedWorkspaceRequest, hashWorkspaceRequest, prepareWorkspaceMutation, verifyWorkspacePostconditions, WorkspaceCommandConflict,
@@ -1914,7 +1914,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
   }
 
   async function sealWorkspaceCapture(capture: WorkspaceCapture, work: WorkRuntime,
-    mutation?: RecordMutation, committed?: () => void): Promise<void> {
+    mutation?: RecordMutation, committed?: () => void, options: { nativeProjectCompare?: boolean } = {}): Promise<void> {
     let db: IDBDatabase | undefined;
     const observations = environment.onWorkspaceOperation ? [] as WorkspaceRepositoryOperation[] : undefined;
     const operations: { store: WorkspaceStoreName; key: IDBValidKey; value?: unknown; method: 'add' | 'put' | 'delete' }[] = [];
@@ -1965,6 +1965,18 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
             : selection.store === 'legacyBackup' && (raw as { kind: string }).kind === 'normalization-source'
               ? archiveSealFrame(raw as object) : envelopeFrame('workspace-seal', raw as object);
           let compared = 0, complete = false;
+          if (options.nativeProjectCompare && stores.includes(selection.store as ProjectStoreName)) {
+            // Trusted Document Replace: the native twin of recordFrame's text; equal text is an equal frame.
+            const text = frameRecord(selection.store as ProjectStoreName, value as object);
+            try {
+              complete = text === frameRecord(selection.store as ProjectStoreName, before.value as object);
+              requireContract(complete, 'Workspace captured record changed');
+            } finally {
+              work.note('primitiveExceptions'); work.note('sealRows'); work.note('sealBytes', text.length);
+              if (!complete) work.note('unmeasuredValues');
+            }
+            return;
+          }
           const observed: Frame = function* (emit) {
             yield* frame(value)(function* (fragment) { compared += yield* utf8LengthWork(fragment); yield* emit(fragment); });
           };
@@ -2930,6 +2942,25 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
       return { store, lower, upper };
     }) };
   }
+  /** The replacement's captured rows as records, natively (no reconstruction, no proof). */
+  function replacementRecords(capture: WorkspaceCapture, scope: ProjectScope): NormalizedProject {
+    const project = image(scope);
+    capture.selections.forEach((selection, index) => {
+      for (const row of capture.rows[index]) setRecord(project, selection.store as ProjectStoreName, row.value as PhysicalRecord);
+    });
+    return project;
+  }
+  /** Same membership and byte-identical record text in every project store. */
+  function sameRecords(left: NormalizedProject, right: NormalizedProject): boolean {
+    for (const store of stores) {
+      if (left[store].size !== right[store].size) return false;
+      for (const [key, record] of left[store]) {
+        const other = (right[store] as Map<string, PhysicalRecord>).get(key);
+        if (!other || frameRecord(store, record) !== frameRecord(store, other)) return false;
+      }
+    }
+    return true;
+  }
   async function replacementImage(capture: WorkspaceCapture, scope: ProjectScope, work: WorkRuntime) {
     const project = image(scope);
     for (let index = 0; index < capture.selections.length; index++) {
@@ -3000,15 +3031,17 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
       input = await captured;
       const batch = input.batch;
       return await serial(batch.scope, async () => {
-        capture = await captureWorkspaceRows(replacementPlan(batch.scope), work, 'prepare-read');
-        const { project: current, external: currentExternal } = await replacementImage(capture, batch.scope, work);
+        capture = await captureWorkspaceRowsAtomic(replacementPlan(batch.scope), work, 'prepare-read');
+        // Trusted Document Replace: the captured rows are proved by equality with the admitted
+        // cache (native record text), not by re-verifying and reconstructing them.
+        const current = replacementRecords(capture, batch.scope);
         const currentPair = pair(current), cachedPair = pair(owner.records);
         if (currentPair.header.bulkBaseline?.proof.manifestDigest !== cachedPair.header.bulkBaseline?.proof.manifestDigest) throw new RepositoryConflict('ingress-required');
-        requireContract(await work.run(equalFrameWork(
-          canonicalFrame([currentPair.header.migrationBaseline ?? null, currentPair.header.workspaceBirth ?? null]),
-          canonicalFrame([cachedPair.header.migrationBaseline ?? null, cachedPair.header.workspaceBirth ?? null]))), 'Replacement ancestry changed');
-        await verifyBulk(current, true, work, currentExternal);
+        requireContract(canonicalText([currentPair.header.migrationBaseline ?? null, currentPair.header.workspaceBirth ?? null])
+          === canonicalText([cachedPair.header.migrationBaseline ?? null, cachedPair.header.workspaceBirth ?? null]), 'Replacement ancestry changed');
         if (currentPair.header.bulkBaseline?.proof.identity.commitId === batch.commitId) {
+          // Rare retry of a replacement that already landed: the full independent verification.
+          await verifyBulk(current, true, work, await work.run(reconstructProjectWork(current)));
           const result = await inspectReplacementCaptured(batch, work);
           if (result.type !== 'committed') throw new RepositoryConflict(result.type === 'conflict' ? result.reason : 'proof-unavailable');
           return result.ack;
@@ -3017,18 +3050,12 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
         // A live admitted cache anchors unchanged records too. A newer scalar proof
         // cannot bless unexplained document/wrapper corruption before replacement.
         if (!sameAuthority(owner.stamp, batch.expected)) throw new RepositoryConflict('ingress-required');
-        for (const store of stores) {
-          if (current[store].size !== owner.records[store].size) throw new RepositoryConflict('verification-failed');
-          for (const [key, record] of current[store]) {
-            const known = owner.records[store].get(key);
-            if (!known || !await work.run(equalFrameWork(recordFrame(store, record), recordFrame(store, known))))
-              throw new RepositoryConflict('verification-failed');
-          }
-        }
+        if (!sameRecords(current, owner.records)) throw new RepositoryConflict('verification-failed');
+        work.assertCurrent();
         const identity = replacementIdentity(batch);
         if (proofs(currentPair).some(proof => proof.identity.clientId === identity.clientId && proof.identity.commitGeneration >= identity.commitGeneration))
           throw new RepositoryConflict('identity-mismatch');
-        prepared = await prepareBulkProject(current, batch, environment.now(), work);
+        prepared = await prepareTrustedBulkProject(current, reconstructProject(current), batch, environment.now(), work, hash);
         const proof = pair(prepared.project).header.bulkBaseline!.proof;
         const original = attempts.get(attemptKey(batch.scope, batch.commitId));
         if (original && (original.requestDigest !== proof.requestDigest || original.lower !== batch.expected.documentRevision
@@ -3038,23 +3065,23 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
           work.setContext('activate', 'target', 'proof');
           await sealWorkspaceCapture(capture, work, { removeProjects: [batch.scope], addProjects: [prepared.project] }, () => {
             durable = true; owner.valid = false;
-          });
+          }, { nativeProjectCompare: true });
           environment.workspaceFault?.({ phase: 'after-commit' }); work.assertCurrent();
           capture.release(); capture = undefined;
           environment.workspaceFault?.({ phase: 'before-readback' }); work.setContext('verify', 'target', 'proof');
-          capture = await captureWorkspaceRows(replacementPlan(batch.scope), work, 'verify-read');
-          const { project: fresh, external: freshExternal } = await replacementImage(capture, batch.scope, work);
-          const freshPair = pair(fresh);
-          const admitted = await verifyBulk(fresh, true, work, freshExternal);
-          requireContract(sameAuthority(admitted.stamp, prepared.ack.authority)
+          // One readonly transaction is a consistent snapshot: no closing seal. The rows must be
+          // exactly the records this command wrote; they are not re-proved.
+          capture = await captureWorkspaceRowsAtomic(replacementPlan(batch.scope), work, 'verify-read');
+          const fresh = replacementRecords(capture, batch.scope), freshPair = pair(fresh);
+          requireContract(sameRecords(fresh, prepared.project)
             && freshPair.header.bulkBaseline?.proof.manifestDigest === proof.manifestDigest, 'Replacement readback mismatch');
-          const parts = await work.run(partitionStateWork(admitted.external.initialState));
-          const references = await work.run(buildReferenceIndexWork(parts.document));
-          const exceptions = fresh.projectExtensions.get(await work.run(jsonTextWork([...prefix(batch.scope), 'folds'])))!;
-          const folds = await work.run(createFoldOverlayIndexWork(freshPair.preferences, exceptions));
-          await sealWorkspaceCapture(capture, work); environment.workspaceFault?.({ phase: 'after-readback' }); work.assertCurrent();
-          owners.set(ownerKey(batch.scope), { records: fresh, references, folds, stamp: admitted.stamp, lastVerified: { ...admitted.stamp }, valid: true });
-          observePublication(batch.scope, admitted.stamp, 'local');
+          const stamp = authority(freshPair.header, freshPair.preferences);
+          requireContract(sameAuthority(stamp, prepared.ack.authority), 'Replacement readback mismatch');
+          const references = buildReferenceIndex(partitionState(prepared.external!.initialState).document);
+          const folds = createFoldOverlayIndex(freshPair.preferences, fresh.projectExtensions.get(recordKey([...prefix(batch.scope), 'folds']))!);
+          environment.workspaceFault?.({ phase: 'after-readback' }); work.assertCurrent();
+          owners.set(ownerKey(batch.scope), { records: fresh, references, folds, stamp, lastVerified: { ...stamp }, valid: true });
+          observePublication(batch.scope, stamp, 'local');
           return prepared.ack;
         } catch (error) {
           remember(batch.scope, identity, proof.requestDigest, batch.expected.documentRevision, !durable);

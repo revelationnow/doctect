@@ -125,27 +125,42 @@ it('classifies corrupted committed replacement as verification conflict, not una
   await expect(createNormalizedRepository(h.environment).inspectReplacement(batch)).resolves.toEqual({ type: 'conflict', reason: 'verification-failed' });
 });
 
-it('replacement verification never uses synchronous environment hashing outside Work', async () => {
-  const hash = h.environment.hash; let calls = 0;
-  h.environment.hash = input => { calls++; return hash(input); };
+it('replacement hashes only the fresh write, once per digest, and never re-proves the current image', async () => {
+  const hash = h.environment.hash, tags: string[] = [], oldTitle = JSON.stringify(h.a.initialState.nodes.root.title);
+  expect(oldTitle).not.toBe(JSON.stringify('Replacement'));
+  h.environment.hash = input => {
+    tags.push(JSON.parse(input.slice(0, input.indexOf(',')) + ']')[0]);
+    expect(input.includes(oldTitle)).toBe(false);
+    return hash(input);
+  };
   await h.repository.commitReplacement(batch);
-  expect(calls).toBe(0);
+  // Fold record, request, header/preference cores, the four bulk baselines and the manifest; no readback re-hash.
+  expect(tags).toEqual(['doctect-normalized-record-v1', 'doctect-bulk-document-request-v1', 'doctect-normalized-bulk-core-v1',
+    'doctect-normalized-bulk-core-v1', 'doctect-project-bulk-image-v1', 'doctect-project-bulk-document-v1',
+    'doctect-project-bulk-preferences-v1', 'doctect-project-bulk-folds-v1', 'doctect-bulk-project-baseline-v1']);
 });
 
-it('reconstructs each fresh replacement image once while independently verifying durable readback', async () => {
-  const reconstruct = vi.spyOn(codec, 'reconstructProjectWork');
+it('validates the fresh replacement once and verifies durable readback by record equality, not reconstruction', async () => {
+  const metered = vi.spyOn(codec, 'reconstructProjectWork'), native = vi.spyOn(codec, 'reconstructProject');
   try {
     await h.repository.commitReplacement(batch);
-    const images = new Map<NormalizedProject, number>();
-    for (const [image] of reconstruct.mock.calls) {
-      if (image.projectHeaders.values().next().value!.storageRevision === 1) images.set(image, (images.get(image) ?? 0) + 1);
-    }
-    // Prepared output and the independently captured durable image are distinct.
-    expect(images.size).toBe(2);
-    expect([...images.values()]).toEqual([1, 1]);
+    const replaced = (image: NormalizedProject) => image.projectHeaders.values().next().value!.storageRevision === 1;
+    expect(metered.mock.calls.filter(([image]) => replaced(image))).toHaveLength(0);
+    expect(native.mock.calls.filter(([image]) => replaced(image))).toHaveLength(1);
     expect((await createNormalizedRepository(h.environment).exportProjectForRecovery(scope)).project.initialState.nodes.root.title)
       .toBe('Replacement');
-  } finally { reconstruct.mockRestore(); }
+  } finally { metered.mockRestore(); native.mockRestore(); }
+});
+
+it('refuses to acknowledge a replacement whose durable readback differs from what was written', async () => {
+  let fired = false;
+  h.environment.workspaceReadResult = (operation, value) => {
+    const row = value as { key?: string[]; value?: { title?: string } };
+    if (operation.phase !== 'verify-read' || operation.store !== 'projectNodes' || row.key?.[3] !== 'root') return value;
+    fired = true; return { ...row, value: { ...row.value, title: 'Replacemenx' } };
+  };
+  await expect(h.repository.commitReplacement(batch)).rejects.toThrow('Replacement readback mismatch');
+  expect(fired).toBe(true);
 });
 
 it('same committed attempt returns verified success without writing a second replacement', async () => {

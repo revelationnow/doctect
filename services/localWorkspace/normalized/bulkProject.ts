@@ -1,14 +1,18 @@
-import { assertWorkRuntime, effect, primitive, type Ownership, type WorkRuntime } from '../../../shared/cooperativeWork.js';
-import { copyEnumerableWork, jsonTextWork, plainJsonBytesWork, rawValueWeightWork, textWork, type Frame } from '../../../shared/jsonWork.js';
-import { decomposeProjectWork, reconstructProjectWork } from './codec';
-import { authority, canonicalTimestamp, dataObjectWork, exactFields, isBulkCommitProof, recordFrame, requireContract,
+import { assertWorkRuntime, effect, primitive, runSync, type Ownership, type WorkRuntime } from '../../../shared/cooperativeWork.js';
+import { canonicalText, copyEnumerableWork, jsonTextWork, plainJsonBytesWork, rawValueWeightWork, textWork, type Frame } from '../../../shared/jsonWork.js';
+import { decomposeProject, decomposeProjectWork, reconstructProject, reconstructProjectWork } from './codec';
+import { authority, canonicalTimestamp, dataObject, dataObjectWork, exactFields, frameRecord, isBulkCommitProof, recordFrame, requireContract,
   safeCounter, sameAuthority, validateBulkBaselineWork, validateIdentity, validDigest } from './commitProof';
-import { createProjectBulkDigests, projectBulkFrame } from './projectBaseline';
+import { createProjectBulkDigests, createTrustedProjectBulkDigests, projectBulkFrame } from './projectBaseline';
 import { canonicalFrame, equalFrameWork, hashFrame, orderedFrame } from './work';
 import { NORMALIZED_STORE_NAMES, type BulkCommitProof, type BulkDocumentAck, type BulkDocumentBatch,
   type BulkProjectBaseline, type CommitIdentity, type NormalizedProject, type ProjectScope } from './schema';
 
-export interface PreparedBulkProject { project: NormalizedProject; ack: BulkDocumentAck; release(): void }
+export interface PreparedBulkProject {
+  project: NormalizedProject; ack: BulkDocumentAck; release(): void;
+  /** Trusted preparation only: the validated reconstruction of `project`. */
+  external?: ReturnType<typeof reconstructProject>;
+}
 export function frameBulkDocumentBatch(value: unknown): asserts value is BulkDocumentBatch {
   const batch = exactFields(value, ['scope', 'clientId', 'commitGeneration', 'commitId', 'editorGeneration', 'expected', 'state', 'preferences'], ['metadata']);
   const scope = exactFields(batch.scope, ['storageGeneration', 'projectId', 'incarnation']);
@@ -54,6 +58,21 @@ const baselineFrame = (scope: ProjectScope, proof: Omit<BulkCommitProof, 'manife
   yield* canonicalFrame(proof)(emit); yield* textWork(',', emit);
   yield* canonicalFrame(digests)(emit); yield* textWork(']', emit);
 };
+
+/**
+ * Native twin of hashBulkDocumentRequest for the worker's own commit: canonical validation admits
+ * only plain JSON data, which JSON.stringify frames in ordered form. Tests pin byte equality.
+ */
+export async function hashTrustedBulkDocumentRequest(batch: BulkDocumentBatch, hash: (text: string) => Promise<string>): Promise<string> {
+  frameBulkDocumentBatch(batch); canonicalText(batch.state); canonicalText(batch.preferences);
+  return hash(`["doctect-bulk-document-request-v1",${canonicalText({ scope: batch.scope, clientId: batch.clientId,
+    commitGeneration: batch.commitGeneration, commitId: batch.commitId, editorGeneration: batch.editorGeneration,
+    expected: batch.expected, metadata: batch.metadata ?? null })},${JSON.stringify(batch.state)},${JSON.stringify(batch.preferences)}]`);
+}
+/** Native twin of baselineFrame's text. Tests pin byte equality. */
+export const bulkBaselineText = (scope: ProjectScope, proof: Omit<BulkCommitProof, 'manifestDigest'>,
+  digests: BulkProjectBaseline['digests']): string =>
+  `["doctect-bulk-project-baseline-v1",${canonicalText(scope)},${canonicalText(proof)},${canonicalText(digests)}]`;
 
 /** Inputs are repository-owned, detached immutable captures; no storage authority is granted here. */
 export async function prepareBulkProject(current: NormalizedProject, batch: BulkDocumentBatch, now: string,
@@ -111,6 +130,70 @@ export async function prepareBulkProject(current: NormalizedProject, batch: Bulk
     return { project, ack: { type: 'document-replaced', projectId: batch.scope.projectId, incarnation: batch.scope.incarnation,
       commitId: batch.commitId, editorGeneration: batch.editorGeneration, authority: after, boundaryDigest: proof.manifestDigest },
       release: () => lease!.release() };
+  } catch (error) { lease?.release(); throw error; }
+}
+
+/**
+ * prepareBulkProject for a replacement whose current rows the repository has just matched,
+ * record for record, against its admitted cache (Trusted Document Replace). Same records, proof
+ * and ack, built with one synchronous decomposition (which validates the wrapper and AppState),
+ * one synchronous reconstruction of the result (codec/size/lineage validation) and native
+ * hashing. `currentWrapper` is the current project reconstructed once, and is consumed.
+ */
+export async function prepareTrustedBulkProject(current: NormalizedProject, currentWrapper: ReturnType<typeof reconstructProject>,
+  batch: BulkDocumentBatch, now: string, work: WorkRuntime, hash: (text: string) => Promise<string>): Promise<PreparedBulkProject> {
+  assertWorkRuntime(work); frameBulkDocumentBatch(batch); canonicalTimestamp(now);
+  let lease: Ownership | undefined;
+  try {
+    await work.run(effect(1, () => { lease = work.own(0); }));
+    requireContract(canonicalText(current.scope) === canonicalText(batch.scope), 'Replacement scope mismatch');
+    const beforeHeader = current.projectHeaders.values().next().value!, beforePreferences = current.projectPreferences.values().next().value!;
+    dataObject(beforeHeader); dataObject(beforePreferences);
+    const before = authority(beforeHeader, beforePreferences);
+    requireContract(sameAuthority(before, batch.expected), 'Replacement authority changed');
+    const after = { documentRevision: before.documentRevision + 1, preferenceRevision: before.preferenceRevision + 1,
+      foldStructureGeneration: before.foldStructureGeneration + 1 };
+    Object.values(after).forEach(safeCounter);
+    const wrapper = currentWrapper;
+    wrapper.initialState = batch.state;
+    if (batch.metadata) {
+      requireContract(batch.state.nodes[batch.state.rootId]?.title === batch.metadata.name, 'Linked project name must match final root title');
+      wrapper.name = batch.metadata.name;
+    }
+    const project = decomposeProject(wrapper, batch.scope);
+    await work.run(effect(1, () => {})); // a cancellation point between the two large synchronous passes
+    const header = project.projectHeaders.values().next().value!, preferences = project.projectPreferences.values().next().value!;
+    dataObject(batch.preferences);
+    const supplied = runSync(copyEnumerableWork(batch.preferences));
+    supplied.panelsExpanded = {};
+    requireContract(canonicalText(supplied) === canonicalText(preferences.value), 'Replacement preference/state mismatch');
+    preferences.value = runSync(copyEnumerableWork(batch.preferences)) as typeof preferences.value;
+    preferences.encodedSize.valueBytes = runSync(plainJsonBytesWork(preferences.value));
+    header.storageRevision = after.documentRevision; header.foldStructureGeneration = after.foldStructureGeneration;
+    header.lastCommitId = batch.commitId; header.updatedAt = now;
+    if (beforeHeader.migrationBaseline) header.migrationBaseline = beforeHeader.migrationBaseline;
+    if (beforeHeader.workspaceBirth) header.workspaceBirth = beforeHeader.workspaceBirth;
+    preferences.revision = after.preferenceRevision; preferences.lastCommitId = batch.commitId;
+    const folds = project.projectExtensions.get(canonicalText([batch.scope.storageGeneration, batch.scope.projectId, batch.scope.incarnation, 'folds']))!;
+    preferences.foldRecordDigest = await hash(frameRecord('projectExtensions', folds));
+    header.commitWindow = { floorRevision: after.documentRevision, entries: [] };
+    preferences.commitWindow = { floorRevision: after.preferenceRevision, entries: [] };
+    const identity: CommitIdentity = { clientId: batch.clientId, commitGeneration: batch.commitGeneration,
+      commitId: batch.commitId, editorGeneration: batch.editorGeneration, lane: 'document' };
+    const core = { kind: 'bulk-document' as const, identity, requestDigest: await hashTrustedBulkDocumentRequest(batch, hash), before, after,
+      headerCoreDigest: await hash(frameRecord('projectHeaders', header, 'bulk')),
+      preferenceCoreDigest: await hash(frameRecord('projectPreferences', preferences, 'bulk')) };
+    const digests = await createTrustedProjectBulkDigests(project, hash);
+    const proof: BulkCommitProof = { ...core, manifestDigest: await hash(bulkBaselineText(batch.scope, core, digests)) };
+    header.bulkBaseline = { proof, digests }; preferences.bulkBoundary = proof.manifestDigest;
+    header.commitProof = proof; preferences.commitProof = proof;
+    work.assertCurrent();
+    const external = reconstructProject(project); // Full codec/size/lineage validation of exactly what will be written.
+    const weight = runSync(rawValueWeightWork(project));
+    await work.run(effect(1, () => lease!.grow(weight.bytes)));
+    return { project, ack: { type: 'document-replaced', projectId: batch.scope.projectId, incarnation: batch.scope.incarnation,
+      commitId: batch.commitId, editorGeneration: batch.editorGeneration, authority: after, boundaryDigest: proof.manifestDigest },
+      external, release: () => lease!.release() };
   } catch (error) { lease?.release(); throw error; }
 }
 
