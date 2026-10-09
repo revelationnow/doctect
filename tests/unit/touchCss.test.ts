@@ -90,6 +90,13 @@ describe('touch CSS', () => {
         expect(rules).not.toMatch(/\.canvas-scroll-container\s*>/);
     });
 
+    // Mobile browsers size 100vh with the address bar hidden: on a first load the bar shows and a
+    // 100vh shell put the phone sheet below the screen. The touch shell follows the visible viewport.
+    it('sizes the touch editor shell to the dynamic viewport, which the editor page marks', () => {
+        expect(rules).toMatch(/\[data-form-factor\] \[data-editor-shell\]\s*\{\s*height:\s*100dvh;\s*\}/);
+        expect(readFileSync('pages/EditorPage.tsx', 'utf8')).toMatch(/data-editor-shell=""\s*\n\s*className="flex h-screen /);
+    });
+
     it('only uses hover-reveal patterns the touch CSS knows about', () => {
         const pairs = revealPairs();
         expect(pairs).toEqual(expect.arrayContaining([['opacity-0', 'group-hover:opacity-100'], ['hidden', 'group-hover:flex']]));

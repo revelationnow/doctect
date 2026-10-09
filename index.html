@@ -170,6 +170,13 @@
       [data-form-factor="phone"] [data-touch-pill-scroller] button {
         scroll-snap-align: start;
       }
+      /* Touch editor shell: the visible viewport, not 100vh. Mobile browsers size 100vh as if their
+         address bar were hidden, so on a first load (bar showing) the bottom of the editor, the
+         phone's properties sheet included, sat below the screen until something scrolled the bar
+         away. dvh tracks the bar. Desktop keeps h-screen. */
+      [data-form-factor] [data-editor-shell] {
+        height: 100dvh;
+      }
       /* touch-editor:end */
     </style>
   <script type="importmap">

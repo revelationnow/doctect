@@ -426,6 +426,7 @@ function EditorPageShell({
     <EditorChromeContext.Provider value={chrome}>
     <div
       ref={editorShellRef}
+      data-editor-shell=""
       className="flex h-screen w-screen flex-col overflow-hidden bg-slate-200"
     >
       {formFactor !== 'phone' && (
