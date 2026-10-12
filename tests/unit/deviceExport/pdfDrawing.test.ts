@@ -1,10 +1,14 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import { jsPDF } from 'jspdf';
+import { fileURLToPath } from 'node:url';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { FLATTEN_TOLERANCE, extractDrawing, greyHex, readPdfPageDrawing, type Drawing, type FillItem, type StrokeItem, type TextItemLike } from '../../../services/deviceExport/pdfDrawing';
 
 const OPS = pdfjs.OPS as Record<string, number>;
+// The standard-14 font data keeps pdf.js from warning about `standardFontDataUrl` when it resolves Helvetica.
+const STANDARD_FONTS = fileURLToPath(new URL('../../../node_modules/pdfjs-dist/standard_fonts/', import.meta.url));
+const loadPdf = (doc: jsPDF) => pdfjs.getDocument({ data: new Uint8Array(doc.output('arraybuffer')), standardFontDataUrl: STANDARD_FONTS }).promise;
 const VIEW = [0, 0, 200, 300];
 const list = (...ops: [number, unknown][]) => ({ fnArray: ops.map(op => op[0]), argsArray: ops.map(op => op[1]) });
 const path = (paint: number, data: number[]): [number, unknown] => [OPS.constructPath, [paint, [Float32Array.from(data)], null]];
@@ -153,7 +157,7 @@ describe('readPdfPageDrawing (real jsPDF + pdf.js)', () => {
         doc.setLineWidth(2); doc.setLineDashPattern([3, 2], 0); doc.line(10, 100, 150, 100);
         doc.setLineDashPattern([], 0); doc.ellipse(100, 200, 30, 20, 'S');
         doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.text('Hello', 20, 150);
-        const pdf = await pdfjs.getDocument({ data: new Uint8Array(doc.output('arraybuffer')) }).promise;
+        const pdf = await loadPdf(doc);
         const drawing = await readPdfPageDrawing(await pdf.getPage(1) as never, OPS);
         expect(drawing).toMatchObject({ width: 200, height: 300 });
         const fill = drawing.items.find((item): item is FillItem => item.kind === 'fill')!;
@@ -171,7 +175,7 @@ describe('readPdfPageDrawing (real jsPDF + pdf.js)', () => {
         doc.saveGraphicsState(); doc.setDrawColor(100, 100, 100); doc.setLineWidth(1); doc.setLineCap('round'); doc.setLineDashPattern([0, 10], 0);
         doc.moveTo(10, 20); doc.lineTo(50, 20); doc.stroke();
         doc.setLineCap('butt'); doc.setLineDashPattern([], 0); doc.restoreGraphicsState();
-        const pdf = await pdfjs.getDocument({ data: new Uint8Array(doc.output('arraybuffer')) }).promise;
+        const pdf = await loadPdf(doc);
         const drawing = await readPdfPageDrawing(await pdf.getPage(1) as never, OPS);
         expect(drawing.items.map(item => item.kind)).toEqual(['fill']);
         const { subpaths: dots, grey } = drawing.items[0] as FillItem;
