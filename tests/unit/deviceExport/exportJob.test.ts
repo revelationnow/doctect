@@ -69,6 +69,22 @@ describe('runDeviceExport', () => {
         expect(forced.calls.generate.map(call => call.isGreyscale)).toEqual([true]);
     });
 
+    it('renders a colour reMarkable from the colour PDF but reads its .template drawing from the grey one', async () => {
+        const drawn: FakePage[] = [];
+        const { deps, calls } = fakeDeps({ async readDrawing(page) {
+            drawn.push(page);
+            return { width: 468, height: 624, notes: [], items: [] };
+        } });
+        const result = await runDeviceExport(request({ deviceIds: ['rm_pp'] }), { deps });
+        expect(calls.generate).toEqual([{ pageNodeIds: ['root', 'p3'], isGreyscale: false }, { pageNodeIds: ['root', 'p3'], isGreyscale: true }]);
+        expect(calls.render).toHaveLength(2);
+        expect(calls.render.every(call => call.page.grey === false)).toBe(true);
+        expect(drawn).toHaveLength(2);
+        expect(drawn.every(page => page.grey === true)).toBe(true);
+        expect(calls.destroyed).toBe(2);
+        expect((await entries(result.blob)).filter(name => name.endsWith('.template'))).toHaveLength(2);
+    });
+
     it('keeps the PDF bytes intact after pdf.js has read them', async () => {
         const { deps } = fakeDeps();
         const result = await runDeviceExport(request({ deviceIds: ['supernote_manta', 'rm2'], includePdf: true }), { deps });
