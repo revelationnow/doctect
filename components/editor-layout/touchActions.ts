@@ -3,7 +3,7 @@ import type { AlignType } from '../../services/alignElements';
 export interface PreviewNodeChoice { options: { id: string; title: string }[]; selectedId: string; onSelect: (id: string) => void; }
 export interface TouchEditorActions {
     undo: () => void; redo: () => void; canUndo: boolean; canRedo: boolean;
-    exportPdf: () => void; exportAllVariants: () => void; canExportAllVariants: boolean; isExporting: boolean;
+    exportPdf: () => void; exportAllVariants: () => void; exportForDevice: () => void; canExportAllVariants: boolean; isExporting: boolean;
     greyscale: boolean; toggleGreyscale: () => void;
     openJson: () => void; openGenerator: () => void; savePreset: () => void;
     importSvg: (file: File) => void; insertSvgPlaceholder: () => void;

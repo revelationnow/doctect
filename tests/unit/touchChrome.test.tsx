@@ -81,6 +81,17 @@ describe('OverflowMenu', () => {
         expect(screen.getByText('account-menu')).toBeTruthy();
     });
 
+    it('opens Export for device from the Export group and closes the sheet', () => {
+        const actions = makeActions();
+        const onClose = vi.fn();
+        render(<OverflowMenu open onClose={onClose} actions={actions} chrome={chrome} />);
+        const item = screen.getByRole('button', { name: 'Export for device…' });
+        expect(item.previousElementSibling?.textContent).toContain('Export all variants');
+        fireEvent.click(item);
+        expect(actions.exportForDevice).toHaveBeenCalledTimes(1);
+        expect(onClose).toHaveBeenCalled();
+    });
+
     it('hosts the cloud and account slots as sheet rows whose completed actions close the sheet', () => {
         // CloudMenu / AccountMenu switch to their row rendering under this host (their own tests
         // cover the rows); here a probe stands in for them. Slots outside the sheet get no host.
