@@ -2,6 +2,8 @@
 // (Supernote rejects \ / : * ?), so names are plain printable ASCII with no reserved characters.
 
 const RESERVED = /[\\/:*?"<>|\u0000-\u001f\u007f]/g;
+// Windows device names: Explorer cannot extract CON.png or aux.png, and the whole folder fails with them.
+const WINDOWS_RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
 export const MAX_NAME_LENGTH = 80;
 
 /** A device-safe name for `raw`, or `fallback` when nothing usable is left. */
@@ -16,7 +18,7 @@ export function slugify(raw: string, fallback: string): string {
         .replace(/\s+/g, '_')
         .slice(0, MAX_NAME_LENGTH)
         .replace(/^[._-]+|[._-]+$/g, '');
-    return cleaned || fallback;
+    return cleaned && !WINDOWS_RESERVED.test(cleaned) ? cleaned : fallback;
 }
 
 /** Hands out unique names within one folder; case-insensitive, as the device filesystems are. */

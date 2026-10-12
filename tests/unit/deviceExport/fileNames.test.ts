@@ -20,6 +20,16 @@ describe('slugify', () => {
         expect(slugify('   ', 'page-4')).toBe('page-4');
     });
 
+    it('falls back for Windows reserved device names, whatever their case or trailing punctuation', () => {
+        // Explorer refuses to extract a folder holding CON.png / aux.png, so the whole zip fails for that user.
+        for (const title of ['con', 'CON', 'Prn', 'aux', 'NUL', 'com1', 'COM9', 'lpt1', 'Lpt9', 'CON.', ' nul ']) {
+            expect(slugify(title, 'page-7'), title).toBe('page-7');
+        }
+        for (const title of ['Console', 'com10', 'lpt0', 'aux-notes', 'Nulls', 'con_1']) {
+            expect(slugify(title, 'x'), title).not.toBe('x');
+        }
+    });
+
     it('caps the length', () => {
         expect(slugify('a'.repeat(200), 'x')).toHaveLength(MAX_NAME_LENGTH);
     });
