@@ -84,18 +84,42 @@ describe('createDeviceZip', () => {
     it('writes install guides that name each device folder', async () => {
         const zip = createDeviceZip('P');
         zip.addPng(rm2, 'A', png(), false);
+        zip.addMethods(rm2, methods);
         zip.addPng(manta, 'A', png(), false);
         zip.addPng(air, 'A', png(), false);
         zip.addPng(bigme, 'A', png(), false);
         const out = await open(await zip.finish());
         const read = (path: string) => out.file(path)!.async('string');
         const rm = await read('reMarkable/reMarkable_2/INSTALL.txt');
-        expect(rm).toContain('/home/root/.local/share/remarkable/xochitl/');
+        expect(rm).toContain('scp methods/* root@10.11.99.1:/home/root/.local/share/remarkable/xochitl/');
         expect(rm).toContain('/usr/share/remarkable/templates/');
         expect(rm).toContain('templates.json');
         expect(await read('Supernote/Manta/INSTALL.txt')).toContain('Note/MyStyle');
         expect(await read('Boox/Note_Air_4C_Tab_Ultra_C_Pro/INSTALL.txt')).toContain('Storage/noteTemplate');
         expect(await read('Bigme/inkNote_Color/INSTALL.txt')).toContain('Storage/noteTemplate');
         expect(await read('README.txt')).toContain('Supernote/Manta');
+    });
+
+    it('sends a reMarkable folder without Methods files to the report instead of an scp that would fail', async () => {
+        // Every page of this model hit the .template cap: methods/ is absent, so "scp methods/*" would say "No such file".
+        const zip = createDeviceZip('P');
+        zip.addPng(rm2, 'A', png(), false);
+        zip.report('A (reMarkable 2, .template): too many shapes (30000) for a .template; only the PNG is included');
+        const out = await open(await zip.finish());
+        const install = await out.file('reMarkable/reMarkable_2/INSTALL.txt')!.async('string');
+        expect(install).not.toContain('scp methods/*');
+        expect(install).toMatch(/Option A[^\n]*\n[\s\S]*no Methods templates[\s\S]*CONVERSION-REPORT\.txt/);
+        expect(install).toContain('Option B');
+        expect(Object.keys(out.files).some(name => name.includes('/methods/'))).toBe(false);
+    });
+
+    it('points the README at the conversion report, or says there is none', async () => {
+        const noisy = createDeviceZip('P');
+        noisy.addPng(manta, 'Day', png(), false);
+        noisy.report('Day (Manta (A5 X2)): skipped: canvas lost');
+        expect(await (await open(await noisy.finish())).file('README.txt')!.async('string')).toMatch(/CONVERSION-REPORT\.txt lists/);
+        const quiet = createDeviceZip('P');
+        quiet.addPng(manta, 'Day', png(), false);
+        expect(await (await open(await quiet.finish())).file('README.txt')!.async('string')).toMatch(/no CONVERSION-REPORT\.txt/);
     });
 });

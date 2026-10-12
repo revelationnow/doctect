@@ -21,7 +21,7 @@ export interface DeviceZip {
 
 /** One entry of the tablet's /usr/share/remarkable/templates/templates.json "templates" list. */
 interface LegacyEntry { name: string; filename: string; iconCode: string; categories: string[]; landscape?: true }
-interface ModelFolder { profile: DeviceProfile; root: string; nextName: (base: string) => string; pngCount: number; legacy: LegacyEntry[]; hasPdf: boolean }
+interface ModelFolder { profile: DeviceProfile; root: string; nextName: (base: string) => string; pngCount: number; legacy: LegacyEntry[]; hasPdf: boolean; hasMethods: boolean }
 
 const numbered = (steps: string[]): string[] => steps.map((step, i) => `${i + 1}. ${step}`);
 
@@ -46,11 +46,19 @@ function installGuide(folder: ModelFolder, projectSlug: string): string {
             'GPLv3 Compliance (software 3.9 to 3.18: Settings > Help > About > Copyrights and licenses).',
             '',
             `Option A: Methods templates (survive software updates${isRm2 ? '; needs software 3.17 or later' : ''})`,
-            '1. Copy every file in methods/ to /home/root/.local/share/remarkable/xochitl/',
-            '     scp methods/* root@10.11.99.1:/home/root/.local/share/remarkable/xochitl/',
-            '2. Restart the interface:  ssh root@10.11.99.1 systemctl restart xochitl',
-            '   Methods templates are line drawings. If anything had to be simplified,',
-            '   CONVERSION-REPORT.txt at the top of this zip says what.',
+            // Every page of this model may have been skipped for Methods (shape or size cap, or a failed
+            // conversion): then there is no methods/ folder, and the scp below would fail with "No such file".
+            ...(folder.hasMethods ? [
+                '1. Copy every file in methods/ to /home/root/.local/share/remarkable/xochitl/',
+                '     scp methods/* root@10.11.99.1:/home/root/.local/share/remarkable/xochitl/',
+                '2. Restart the interface:  ssh root@10.11.99.1 systemctl restart xochitl',
+                '   Methods templates are line drawings. If anything had to be simplified,',
+                '   CONVERSION-REPORT.txt at the top of this zip says what.',
+            ] : [
+                '   This export has no Methods templates for this model: none of its pages could be',
+                '   converted to a .template file. CONVERSION-REPORT.txt at the top of this zip says why.',
+                '   Use Option B.',
+            ]),
             '',
             'Option B: PNG templates (exact look; every software update removes them)',
             ...numbered([
@@ -91,12 +99,16 @@ function installGuide(folder: ModelFolder, projectSlug: string): string {
     ].join('\n');
 }
 
-function readme(projectName: string, folders: ModelFolder[]): string {
+function readme(projectName: string, folders: ModelFolder[], hasReport: boolean): string {
     return [
         `Note templates exported from Doctect: ${projectName}`,
         '',
         'Each folder holds the templates for one device model, with an INSTALL.txt:',
         ...folders.map(folder => `  ${folder.root}/  (${folder.profile.width} x ${folder.profile.height} px)`),
+        '',
+        hasReport
+            ? 'CONVERSION-REPORT.txt lists the pages that were simplified or skipped, and why.'
+            : 'Nothing had to be simplified or skipped, so there is no CONVERSION-REPORT.txt.',
         '',
     ].join('\n');
 }
@@ -110,7 +122,7 @@ export function createDeviceZip(projectName: string): DeviceZip {
     const folderFor = (profile: DeviceProfile): ModelFolder => {
         let folder = folders.get(profile.id);
         if (!folder) {
-            folder = { profile, root: `${PLATFORM_LABELS[profile.platform]}/${profile.folder}`, nextName: createNameAllocator(), pngCount: 0, legacy: [], hasPdf: false };
+            folder = { profile, root: `${PLATFORM_LABELS[profile.platform]}/${profile.folder}`, nextName: createNameAllocator(), pngCount: 0, legacy: [], hasPdf: false, hasMethods: false };
             folders.set(profile.id, folder);
         }
         return folder;
@@ -136,7 +148,9 @@ export function createDeviceZip(projectName: string): DeviceZip {
             }
         },
         addMethods(profile, files) {
-            const dir = `${folderFor(profile).root}/methods`;
+            const folder = folderFor(profile);
+            folder.hasMethods = true;
+            const dir = `${folder.root}/methods`;
             zip.file(`${dir}/${files.stem}.template`, files.template);
             zip.file(`${dir}/${files.stem}.metadata`, files.metadata);
             zip.file(`${dir}/${files.stem}.content`, files.content);
@@ -152,7 +166,7 @@ export function createDeviceZip(projectName: string): DeviceZip {
                 if (folder.legacy.length > 0) zip.file(`${folder.root}/png/templates.json`, asciiJson({ templates: folder.legacy }));
                 zip.file(`${folder.root}/INSTALL.txt`, installGuide(folder, projectSlug));
             }
-            zip.file('README.txt', readme(projectName, [...folders.values()]));
+            zip.file('README.txt', readme(projectName, [...folders.values()], reportLines.length > 0));
             if (reportLines.length > 0) {
                 zip.file('CONVERSION-REPORT.txt', ['Some pages were simplified or skipped:', '', ...reportLines.map(line => `- ${line}`), ''].join('\n'));
             }
