@@ -7,6 +7,7 @@ const trackEvent = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock('../../../services/analytics', () => ({ trackEvent }));
 
 import { DeviceExportDialog } from '../../../components/export/DeviceExportDialog';
+import { FormFactorProvider } from '../../../components/editor-layout/FormFactorContext';
 
 const node = (id: string, type: string, title: string, children: string[] = []) => ({ id, parentId: null, type, title, data: {}, children });
 const makeState = (dailyCount: number) => {
@@ -182,6 +183,51 @@ describe('DeviceExportDialog', () => {
         }
         expect(editorKeys).not.toHaveBeenCalled();
         expect(props.onClose).toHaveBeenCalled();
+    });
+
+    it('Escape in the search box clears the query and keeps the dialog (and its ticks); Escape again closes', () => {
+        const { dialog, props } = setup();
+        fireEvent.click(within(dialog).getByRole('button', { name: '… 2 more' }));
+        fireEvent.click(box(dialog, 'Jan 4'));
+        const search = within(dialog).getByRole('searchbox', { name: 'Search pages' }) as HTMLInputElement;
+        fireEvent.change(search, { target: { value: 'jan 4' } });
+        expect(within(dialog).queryByRole('checkbox', { name: 'Index' })).toBeNull();
+        fireEvent.keyDown(search, { key: 'Escape' });
+        expect(search.value).toBe('');
+        expect(props.onClose).not.toHaveBeenCalled();
+        expect(box(dialog, 'Index')).toBeTruthy();
+        expect(box(dialog, 'Jan 4').checked).toBe(true);
+        fireEvent.keyDown(search, { key: 'Escape' });
+        expect(props.onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the progress live region outside any aria-busy subtree during a run', () => {
+        let progress!: (p: { phase: 'rendering'; done: number; total: number }) => void;
+        const runExport = vi.fn().mockImplementationOnce((_req, { onProgress }) => new Promise(() => { progress = onProgress; }));
+        const { dialog } = setup({ runExport });
+        fireEvent.click(box(dialog, 'reMarkable 2'));
+        act(() => { fireEvent.click(within(dialog).getByRole('button', { name: 'Export' })); });
+        act(() => progress({ phase: 'rendering', done: 1, total: 2 }));
+        const live = within(dialog).getByRole('status');
+        expect(live.textContent).toBe('Rendering 1 / 2');
+        // NVDA and VoiceOver mute live-region changes inside an aria-busy="true" subtree.
+        expect(live.closest('[aria-busy="true"]')).toBeNull();
+        expect(dialog).not.toHaveAttribute('aria-busy');
+    });
+
+    it('gives "all", "none" and "… N more" touch-sized targets on phone only', () => {
+        const desktop = setup();
+        const links = (dialog: HTMLElement) => ['Select all pages of Daily', 'none (clear pages of Daily)', '… 2 more']
+            .map(name => within(dialog).getByRole('button', { name }));
+        for (const link of links(desktop.dialog)) expect(link).not.toHaveClass('min-h-11');
+        cleanup();
+        render(
+            <FormFactorProvider value="phone">
+                <DeviceExportDialog isOpen onClose={vi.fn()} getState={() => makeState(5)} projectName="Plan" initialForceGreyscale={false} />
+            </FormFactorProvider>,
+        );
+        const phone = screen.getByRole('dialog', { name: 'Export for device' });
+        for (const link of links(phone)) expect(link).toHaveClass('min-h-11', 'px-2');
     });
 
     it('keeps focus and key isolation after a click on the backdrop', () => {

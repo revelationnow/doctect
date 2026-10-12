@@ -61,6 +61,7 @@ function OpenDeviceExportDialog({ onClose, getState, projectName, initialForceGr
     const run = useRef<AbortController | null>(null);
     const dialog = useRef<HTMLDivElement>(null);
     const exportButton = useRef<HTMLButtonElement>(null);
+    const searchInput = useRef<HTMLInputElement>(null);
 
     const running = phase.kind === 'running';
     const visible = filterGroups(groups, query);
@@ -128,10 +129,19 @@ function OpenDeviceExportDialog({ onClose, getState, projectName, initialForceGr
             // and the next Delete or Ctrl+Z would reach the editor's window listener. Cancelling it keeps
             // focus on whatever the user had, so the dialog never loses the keyboard.
             onMouseDown={event => { if (event.target === event.currentTarget) event.preventDefault(); }}>
-            <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby="device-export-title" aria-busy={running || undefined} tabIndex={-1}
+            {/* No aria-busy here while a run is on: NVDA and VoiceOver mute live-region changes inside an
+                aria-busy subtree, and the role="status" line below is how progress reaches a screen reader. */}
+            <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby="device-export-title" tabIndex={-1}
                 onKeyDown={event => {
                     event.stopPropagation();
-                    if (event.key === 'Escape') { event.preventDefault(); close(); return; }
+                    if (event.key === 'Escape') {
+                        event.preventDefault();
+                        // Escape in a search field clears it (the browser default that preventDefault just
+                        // suppressed). Closing instead would discard every ticked page; only an empty box closes.
+                        if (event.target === searchInput.current && query) { setQuery(''); return; }
+                        close();
+                        return;
+                    }
                     trapTab(event, dialog.current);
                 }}
                 className={clsx('flex flex-col bg-white outline-none', phone ? 'h-full w-full' : 'max-h-[90dvh] w-full max-w-2xl rounded-xl shadow-2xl')}>
@@ -148,7 +158,7 @@ function OpenDeviceExportDialog({ onClose, getState, projectName, initialForceGr
                     <section aria-labelledby="device-export-pages">
                         <div className="mb-2 flex items-center justify-between gap-3">
                             <h3 id="device-export-pages" className="text-sm font-semibold text-slate-800">Pages</h3>
-                            <input type="search" aria-label="Search pages" placeholder="Search pages" value={query} onChange={event => setQuery(event.target.value)}
+                            <input ref={searchInput} type="search" aria-label="Search pages" placeholder="Search pages" value={query} onChange={event => setQuery(event.target.value)}
                                 className="w-48 rounded border border-slate-300 px-2 py-1 text-sm" />
                         </div>
                         {groups.length === 0 && <p className="text-sm text-slate-500">This project has no pages to export.</p>}
@@ -210,7 +220,10 @@ function PageGroup({ group, selected, disabled, rowClass, showAll, onToggle, onS
     group: TemplateGroup; selected: ReadonlySet<string>; disabled: boolean; rowClass: string; showAll: boolean;
     onToggle: (nodeId: string) => void; onSetAll: (on: boolean) => void; onExpand: () => void;
 }) {
+    const phone = useFormFactor() === 'phone';
     const ticked = group.pages.filter(page => selected.has(page.nodeId)).length;
+    // Text links sit beside 44 px rows on touch; give them the same height so a thumb can hit them.
+    const link = clsx('text-xs text-blue-600 hover:underline', phone && 'min-h-11 px-2');
     const all = useRef<HTMLInputElement>(null);
     useEffect(() => { if (all.current) all.current.indeterminate = ticked > 0 && ticked < group.pages.length; });
     const shown = showAll ? group.pages : group.pages.slice(0, COLLAPSED_PAGES);
@@ -231,9 +244,9 @@ function PageGroup({ group, selected, disabled, rowClass, showAll, onToggle, onS
                     <input ref={all} type="checkbox" checked={ticked === group.pages.length} disabled={disabled} onChange={event => onSetAll(event.target.checked)} />
                     {group.name} ({group.pages.length})
                 </label>
-                <button type="button" disabled={disabled} onClick={() => onSetAll(true)} aria-label={`Select all pages of ${group.name}`} className="text-xs text-blue-600 hover:underline">all</button>
+                <button type="button" disabled={disabled} onClick={() => onSetAll(true)} aria-label={`Select all pages of ${group.name}`} className={link}>all</button>
                 {/* The accessible name keeps the visible word (WCAG 2.5.3), so "click none" works for voice control. */}
-                <button type="button" disabled={disabled} onClick={() => onSetAll(false)} aria-label={`none (clear pages of ${group.name})`} className="text-xs text-blue-600 hover:underline">none</button>
+                <button type="button" disabled={disabled} onClick={() => onSetAll(false)} aria-label={`none (clear pages of ${group.name})`} className={link}>none</button>
             </div>
             <ul className="ml-6">
                 {shown.map((page, index) => (
@@ -246,7 +259,7 @@ function PageGroup({ group, selected, disabled, rowClass, showAll, onToggle, onS
                 ))}
             </ul>
             {hidden > 0 && (
-                <button type="button" onClick={() => { focusRevealed.current = true; onExpand(); }} className="ml-6 text-xs text-blue-600 hover:underline">… {hidden} more</button>
+                <button type="button" onClick={() => { focusRevealed.current = true; onExpand(); }} className={clsx(link, 'ml-6')}>… {hidden} more</button>
             )}
         </div>
     );
