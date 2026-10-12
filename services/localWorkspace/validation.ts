@@ -81,6 +81,15 @@ const validateWarningPolicy = (options: ProjectPreparationOptions): void => {
   }
 };
 
+/** The oldest document schema the IndexedDB workspace store has written (it shipped at schema 11). */
+const OLDEST_STORED_SCHEMA_VERSION = 11;
+
+/** Whether a stored project's schema is one an earlier release wrote and the current release upgrades. */
+export function isUpgradableStoredSchemaVersion(version: unknown): boolean {
+  return Number.isSafeInteger(version)
+    && (version as number) >= OLDEST_STORED_SCHEMA_VERSION && (version as number) < CURRENT_SCHEMA_VERSION;
+}
+
 export function validateMigratedState(state: unknown): AppState {
   return runSync(migratedStateTraversal(state, 'sync'));
 }
