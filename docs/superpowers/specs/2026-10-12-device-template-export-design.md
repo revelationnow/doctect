@@ -138,7 +138,7 @@ implementation, and the row's `source` is filled in then):
 | Boox | Note Max | 2400×3200 † | no |
 | Boox | Palma | 824×1648 † | no |
 | Bigme | inkNote Color+ / inkNote Color Lite | 1860×2480 † | yes |
-| Bigme | B751c (7.8″) | 1404×1872 † | yes |
+| Bigme | B751c (7″) | 1264×1680 | yes |
 
 **Orientation.** A page wider than it is tall is exported landscape: the profile's width and
 height are swapped for that page. The reMarkable legacy entry then gets `landscape: true`, and
