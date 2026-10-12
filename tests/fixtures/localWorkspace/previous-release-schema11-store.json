@@ -1,0 +1,344 @@
+{
+ "description": "IndexedDB written by the previous release (3a32465, schema 11) after migrating two legacy localStorage projects; regenerate only from that build.",
+ "version": 2,
+ "stores": {
+  "legacyBackup": {
+   "keyPath": "id",
+   "rows": [
+    {
+     "id": "local-storage-to-indexeddb-v1:original:1af10e0b31dfa9272de47c679cc4e777122b06fc079a7d68bacf9db3ff5ecaac",
+     "kind": "original",
+     "capturedAt": "2026-10-12T01:15:17.283Z",
+     "snapshot": {
+      "hype_projects": {
+       "present": true,
+       "raw": "[{\"id\":\"proj_schema11_blank\",\"name\":\"Blank Project\",\"initialState\":{\"nodes\":{\"root\":{\"id\":\"root\",\"parentId\":null,\"type\":\"a4_blank\",\"title\":\"Blank Project\",\"data\":{},\"children\":[]}},\"rootId\":\"root\",\"viewMode\":\"hierarchy\",\"selectedNodeId\":\"root\",\"selectedNodeIds\":[\"root\"],\"selectedTemplateId\":\"a4_blank\",\"selectedTemplateIds\":[\"a4_blank\"],\"selectedElementIds\":[],\"scale\":0.8,\"tool\":\"select\",\"showJsonModal\":false,\"showNodeSelector\":false,\"nodeSelectorMode\":\"grid_source\",\"editingElementId\":null,\"sidebarWidth\":288,\"propertiesPanelWidth\":320,\"snapToGrid\":false,\"showGrid\":false,\"clipboard\":[],\"variants\":{\"default\":{\"id\":\"default\",\"name\":\"Default\",\"templates\":{\"a4_blank\":{\"id\":\"a4_blank\",\"name\":\"A4 Blank\",\"width\":595.28,\"height\":841.89,\"elements\":[],\"layers\":[{\"id\":\"layer_r5pzqo3z4\",\"name\":\"Layer 1\",\"order\":0,\"visible\":true,\"locked\":false}]}}}},\"activeVariantId\":\"default\",\"schemaVersion\":11}},{\"id\":\"proj_schema11_text\",\"name\":\"Schema 11 text\",\"initialState\":{\"nodes\":{\"root\":{\"id\":\"root\",\"parentId\":null,\"type\":\"page-0\",\"title\":\"Racine 根\",\"data\":{\"label\":\"Café ☕\"},\"children\":[]}},\"rootId\":\"root\",\"viewMode\":\"hierarchy\",\"selectedNodeId\":\"root\",\"selectedNodeIds\":[\"root\"],\"selectedTemplateId\":\"page-0\",\"selectedTemplateIds\":[\"page-0\"],\"selectedElementIds\":[],\"scale\":0.8,\"tool\":\"select\",\"showJsonModal\":false,\"sidebarWidth\":288,\"propertiesPanelWidth\":320,\"snapToGrid\":false,\"showGrid\":false,\"showNodeSelector\":false,\"nodeSelectorMode\":\"grid_source\",\"editingElementId\":null,\"clipboard\":[],\"variants\":{\"default\":{\"id\":\"default\",\"name\":\"Default\",\"templates\":{\"page-0\":{\"id\":\"page-0\",\"name\":\"Page 1\",\"width\":500,\"height\":700,\"elements\":[{\"id\":\"title\",\"type\":\"text\",\"x\":12,\"y\":24,\"w\":240,\"h\":48,\"rotation\":0,\"fill\":\"#ffffff\",\"stroke\":\"#111111\",\"strokeWidth\":1,\"opacity\":1,\"text\":\"Café ☕ 😀\",\"autoWidth\":false,\"layerId\":\"content\",\"textOverflow\":\"visible\",\"textWrap\":true,\"textPadding\":{\"top\":0,\"right\":1.25,\"bottom\":2,\"left\":3}}],\"layers\":[{\"id\":\"content\",\"name\":\"Content\",\"order\":0,\"visible\":true,\"locked\":false}]},\"page-1\":{\"id\":\"page-1\",\"name\":\"Page 2\",\"width\":500,\"height\":700,\"elements\":[{\"id\":\"title\",\"type\":\"text\",\"x\":12,\"y\":24,\"w\":240,\"h\":48,\"rotation\":0,\"fill\":\"#ffffff\",\"stroke\":\"#111111\",\"strokeWidth\":1,\"opacity\":1,\"text\":\"Café ☕ 😀\",\"autoWidth\":false,\"layerId\":\"content\",\"textOverflow\":\"visible\",\"textWrap\":true,\"textPadding\":{\"top\":0,\"right\":1.25,\"bottom\":2,\"left\":3}}],\"layers\":[{\"id\":\"content\",\"name\":\"Content\",\"order\":0,\"visible\":true,\"locked\":false}]}}}},\"activeVariantId\":\"default\",\"schemaVersion\":11,\"generator\":{\"formatVersion\":1,\"templateScript\":\"const café = \\\"☕\\\";\\nreturn {};\",\"hierarchyScript\":\"return { rootId: \\\"根\\\" };\\n\",\"generatedAt\":\"2026-08-14T12:34:56.000Z\"},\"activeLayerId\":\"content\"}}]"
+      },
+      "hype_active_project": {
+       "present": true,
+       "raw": "proj_schema11_text"
+      },
+      "hype_custom_presets": {
+       "present": false,
+       "raw": null
+      },
+      "hype_import_pending": {
+       "present": false,
+       "raw": null
+      }
+     },
+     "digest": "1af10e0b31dfa9272de47c679cc4e777122b06fc079a7d68bacf9db3ff5ecaac"
+    }
+   ]
+  },
+  "migrationLedger": {
+   "keyPath": "id",
+   "rows": [
+    {
+     "id": "local-storage-to-indexeddb-v1",
+     "indexedDbVersion": 2,
+     "state": "verified",
+     "origin": "legacy",
+     "ledgerRevision": 1,
+     "sourceDigest": "1af10e0b31dfa9272de47c679cc4e777122b06fc079a7d68bacf9db3ff5ecaac",
+     "expectedTargetDigest": "f563028698fa048b918b5cb5d52e2a6e960cbe8871fee7d5e535f1b29fb776ba",
+     "acceptedLegacyDigest": "1af10e0b31dfa9272de47c679cc4e777122b06fc079a7d68bacf9db3ff5ecaac",
+     "originalLegacyBackupId": "local-storage-to-indexeddb-v1:original:1af10e0b31dfa9272de47c679cc4e777122b06fc079a7d68bacf9db3ff5ecaac",
+     "acceptedLegacyBackupId": "local-storage-to-indexeddb-v1:original:1af10e0b31dfa9272de47c679cc4e777122b06fc079a7d68bacf9db3ff5ecaac",
+     "keyFingerprints": [
+      {
+       "key": "hype_projects",
+       "present": true,
+       "digest": "5290764b2da4d18d3f7ea5797773f781482e86fc2fd79b0690da9c848e830784"
+      },
+      {
+       "key": "hype_active_project",
+       "present": true,
+       "digest": "0ed7691701cf545c17ab609028083f325a033209e36f530eab325f08431afb5f"
+      },
+      {
+       "key": "hype_custom_presets",
+       "present": false,
+       "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+       "key": "hype_import_pending",
+       "present": false,
+       "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+     ],
+     "projectFingerprints": [
+      {
+       "sourceIndex": 0,
+       "id": "proj_schema11_blank",
+       "digest": "ca1fa892e0d22ed08ce770ca725f4f203d9204e54d1f1a68809ec162a9ec812c"
+      },
+      {
+       "sourceIndex": 1,
+       "id": "proj_schema11_text",
+       "digest": "53b89a2eb02d5192f5453e3da6bac3e24b50252179ae5e99aafb8db1c17394a0"
+      }
+     ],
+     "presetFingerprints": [],
+     "counts": {
+      "sourceProjects": 2,
+      "targetProjects": 2,
+      "customPresets": 0,
+      "pendingImports": 0
+     },
+     "migratedAt": "2026-10-12T01:15:17.283Z",
+     "verifiedAt": "2026-10-12T01:15:17.298Z",
+     "persistenceRolloutEpoch": 1,
+     "unresolvedRecovery": null
+    }
+   ]
+  },
+  "pendingImports": {
+   "keyPath": "id",
+   "rows": []
+  },
+  "presets": {
+   "keyPath": "id",
+   "rows": []
+  },
+  "projects": {
+   "keyPath": "id",
+   "rows": [
+    {
+     "id": "proj_schema11_blank",
+     "project": {
+      "id": "proj_schema11_blank",
+      "name": "Blank Project",
+      "initialState": {
+       "nodes": {
+        "root": {
+         "id": "root",
+         "parentId": null,
+         "type": "a4_blank",
+         "title": "Blank Project",
+         "data": {},
+         "children": []
+        }
+       },
+       "rootId": "root",
+       "viewMode": "hierarchy",
+       "selectedNodeId": "root",
+       "selectedNodeIds": [
+        "root"
+       ],
+       "selectedTemplateId": "a4_blank",
+       "selectedTemplateIds": [
+        "a4_blank"
+       ],
+       "selectedElementIds": [],
+       "scale": 0.8,
+       "tool": "select",
+       "showJsonModal": false,
+       "showNodeSelector": false,
+       "nodeSelectorMode": "grid_source",
+       "editingElementId": null,
+       "sidebarWidth": 288,
+       "propertiesPanelWidth": 320,
+       "snapToGrid": false,
+       "showGrid": false,
+       "clipboard": [],
+       "variants": {
+        "default": {
+         "id": "default",
+         "name": "Default",
+         "templates": {
+          "a4_blank": {
+           "id": "a4_blank",
+           "name": "A4 Blank",
+           "width": 595.28,
+           "height": 841.89,
+           "elements": [],
+           "layers": [
+            {
+             "id": "layer_r5pzqo3z4",
+             "name": "Layer 1",
+             "order": 0,
+             "visible": true,
+             "locked": false
+            }
+           ]
+          }
+         }
+        }
+       },
+       "activeVariantId": "default",
+       "schemaVersion": 11
+      }
+     },
+     "incarnation": "8c26d89c-ef0f-45f0-8e6b-54d4bdb8e23d",
+     "storageRevision": 0,
+     "updatedAt": "2026-10-12T01:15:17.283Z"
+    },
+    {
+     "id": "proj_schema11_text",
+     "project": {
+      "id": "proj_schema11_text",
+      "name": "Schema 11 text",
+      "initialState": {
+       "nodes": {
+        "root": {
+         "id": "root",
+         "parentId": null,
+         "type": "page-0",
+         "title": "Racine 根",
+         "data": {
+          "label": "Café ☕"
+         },
+         "children": []
+        }
+       },
+       "rootId": "root",
+       "viewMode": "hierarchy",
+       "selectedNodeId": "root",
+       "selectedNodeIds": [
+        "root"
+       ],
+       "selectedTemplateId": "page-0",
+       "selectedTemplateIds": [
+        "page-0"
+       ],
+       "selectedElementIds": [],
+       "scale": 0.8,
+       "tool": "select",
+       "showJsonModal": false,
+       "sidebarWidth": 288,
+       "propertiesPanelWidth": 320,
+       "snapToGrid": false,
+       "showGrid": false,
+       "showNodeSelector": false,
+       "nodeSelectorMode": "grid_source",
+       "editingElementId": null,
+       "clipboard": [],
+       "variants": {
+        "default": {
+         "id": "default",
+         "name": "Default",
+         "templates": {
+          "page-0": {
+           "id": "page-0",
+           "name": "Page 1",
+           "width": 500,
+           "height": 700,
+           "elements": [
+            {
+             "id": "title",
+             "type": "text",
+             "x": 12,
+             "y": 24,
+             "w": 240,
+             "h": 48,
+             "rotation": 0,
+             "fill": "#ffffff",
+             "stroke": "#111111",
+             "strokeWidth": 1,
+             "opacity": 1,
+             "text": "Café ☕ 😀",
+             "autoWidth": false,
+             "layerId": "content",
+             "textOverflow": "visible",
+             "textWrap": true,
+             "textPadding": {
+              "top": 0,
+              "right": 1.25,
+              "bottom": 2,
+              "left": 3
+             }
+            }
+           ],
+           "layers": [
+            {
+             "id": "content",
+             "name": "Content",
+             "order": 0,
+             "visible": true,
+             "locked": false
+            }
+           ]
+          },
+          "page-1": {
+           "id": "page-1",
+           "name": "Page 2",
+           "width": 500,
+           "height": 700,
+           "elements": [
+            {
+             "id": "title",
+             "type": "text",
+             "x": 12,
+             "y": 24,
+             "w": 240,
+             "h": 48,
+             "rotation": 0,
+             "fill": "#ffffff",
+             "stroke": "#111111",
+             "strokeWidth": 1,
+             "opacity": 1,
+             "text": "Café ☕ 😀",
+             "autoWidth": false,
+             "layerId": "content",
+             "textOverflow": "visible",
+             "textWrap": true,
+             "textPadding": {
+              "top": 0,
+              "right": 1.25,
+              "bottom": 2,
+              "left": 3
+             }
+            }
+           ],
+           "layers": [
+            {
+             "id": "content",
+             "name": "Content",
+             "order": 0,
+             "visible": true,
+             "locked": false
+            }
+           ]
+          }
+         }
+        }
+       },
+       "activeVariantId": "default",
+       "schemaVersion": 11,
+       "generator": {
+        "formatVersion": 1,
+        "templateScript": "const café = \"☕\";\nreturn {};",
+        "hierarchyScript": "return { rootId: \"根\" };\n",
+        "generatedAt": "2026-08-14T12:34:56.000Z"
+       },
+       "activeLayerId": "content"
+      }
+     },
+     "incarnation": "2bd6dc12-1954-4843-b0fc-c292410d1f2d",
+     "storageRevision": 0,
+     "updatedAt": "2026-10-12T01:15:17.283Z"
+    }
+   ]
+  },
+  "workspace": {
+   "keyPath": "id",
+   "rows": [
+    {
+     "id": "current",
+     "projectOrder": [
+      "proj_schema11_blank",
+      "proj_schema11_text"
+     ],
+     "activeProjectId": "proj_schema11_text",
+     "revision": 0
+    }
+   ]
+  }
+ },
+ "localStorage": {
+  "hype_active_project": "proj_schema11_text",
+  "hype_projects": "[{\"id\":\"proj_schema11_blank\",\"name\":\"Blank Project\",\"initialState\":{\"nodes\":{\"root\":{\"id\":\"root\",\"parentId\":null,\"type\":\"a4_blank\",\"title\":\"Blank Project\",\"data\":{},\"children\":[]}},\"rootId\":\"root\",\"viewMode\":\"hierarchy\",\"selectedNodeId\":\"root\",\"selectedNodeIds\":[\"root\"],\"selectedTemplateId\":\"a4_blank\",\"selectedTemplateIds\":[\"a4_blank\"],\"selectedElementIds\":[],\"scale\":0.8,\"tool\":\"select\",\"showJsonModal\":false,\"showNodeSelector\":false,\"nodeSelectorMode\":\"grid_source\",\"editingElementId\":null,\"sidebarWidth\":288,\"propertiesPanelWidth\":320,\"snapToGrid\":false,\"showGrid\":false,\"clipboard\":[],\"variants\":{\"default\":{\"id\":\"default\",\"name\":\"Default\",\"templates\":{\"a4_blank\":{\"id\":\"a4_blank\",\"name\":\"A4 Blank\",\"width\":595.28,\"height\":841.89,\"elements\":[],\"layers\":[{\"id\":\"layer_r5pzqo3z4\",\"name\":\"Layer 1\",\"order\":0,\"visible\":true,\"locked\":false}]}}}},\"activeVariantId\":\"default\",\"schemaVersion\":11}},{\"id\":\"proj_schema11_text\",\"name\":\"Schema 11 text\",\"initialState\":{\"nodes\":{\"root\":{\"id\":\"root\",\"parentId\":null,\"type\":\"page-0\",\"title\":\"Racine 根\",\"data\":{\"label\":\"Café ☕\"},\"children\":[]}},\"rootId\":\"root\",\"viewMode\":\"hierarchy\",\"selectedNodeId\":\"root\",\"selectedNodeIds\":[\"root\"],\"selectedTemplateId\":\"page-0\",\"selectedTemplateIds\":[\"page-0\"],\"selectedElementIds\":[],\"scale\":0.8,\"tool\":\"select\",\"showJsonModal\":false,\"sidebarWidth\":288,\"propertiesPanelWidth\":320,\"snapToGrid\":false,\"showGrid\":false,\"showNodeSelector\":false,\"nodeSelectorMode\":\"grid_source\",\"editingElementId\":null,\"clipboard\":[],\"variants\":{\"default\":{\"id\":\"default\",\"name\":\"Default\",\"templates\":{\"page-0\":{\"id\":\"page-0\",\"name\":\"Page 1\",\"width\":500,\"height\":700,\"elements\":[{\"id\":\"title\",\"type\":\"text\",\"x\":12,\"y\":24,\"w\":240,\"h\":48,\"rotation\":0,\"fill\":\"#ffffff\",\"stroke\":\"#111111\",\"strokeWidth\":1,\"opacity\":1,\"text\":\"Café ☕ 😀\",\"autoWidth\":false,\"layerId\":\"content\",\"textOverflow\":\"visible\",\"textWrap\":true,\"textPadding\":{\"top\":0,\"right\":1.25,\"bottom\":2,\"left\":3}}],\"layers\":[{\"id\":\"content\",\"name\":\"Content\",\"order\":0,\"visible\":true,\"locked\":false}]},\"page-1\":{\"id\":\"page-1\",\"name\":\"Page 2\",\"width\":500,\"height\":700,\"elements\":[{\"id\":\"title\",\"type\":\"text\",\"x\":12,\"y\":24,\"w\":240,\"h\":48,\"rotation\":0,\"fill\":\"#ffffff\",\"stroke\":\"#111111\",\"strokeWidth\":1,\"opacity\":1,\"text\":\"Café ☕ 😀\",\"autoWidth\":false,\"layerId\":\"content\",\"textOverflow\":\"visible\",\"textWrap\":true,\"textPadding\":{\"top\":0,\"right\":1.25,\"bottom\":2,\"left\":3}}],\"layers\":[{\"id\":\"content\",\"name\":\"Content\",\"order\":0,\"visible\":true,\"locked\":false}]}}}},\"activeVariantId\":\"default\",\"schemaVersion\":11,\"generator\":{\"formatVersion\":1,\"templateScript\":\"const café = \\\"☕\\\";\\nreturn {};\",\"hierarchyScript\":\"return { rootId: \\\"根\\\" };\\n\",\"generatedAt\":\"2026-08-14T12:34:56.000Z\"},\"activeLayerId\":\"content\"}}]",
+  "doctect_workspace_migration_receipt_seen:local-storage-to-indexeddb-v1:1af10e0b31dfa9272de47c679cc4e777122b06fc079a7d68bacf9db3ff5ecaac": "1"
+ }
+}

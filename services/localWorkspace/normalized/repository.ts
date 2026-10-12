@@ -6,7 +6,7 @@ import { canonicalStringify } from '../canonical';
 import { createWorkspaceReconstructor, withSourceRecords, prepareNormalizationTarget, reconstructProject, reconstructProjectWork, validateRecords, type PlannedTargetCursor, type SourceTargetCursors } from './codec';
 import { disposeEmissionPlan, openEmissionCursor, type EmissionCursor, type EmissionPlan } from './emissionPlan';
 import type { WorkspaceProject, WorkspaceSnapshot } from '../contracts';
-import { reconstructWorkspaceRecords, type MigrationPreparationEnvironment } from '../migration';
+import { reconstructWorkspaceRecords, upgradeStoredProjectRecordWork, type MigrationPreparationEnvironment } from '../migration';
 import { isRecognizedLedger, isRecognizedLedgerWork, validateHistoricalBackup } from '../historicalBootstrap';
 import { assertWorkRuntime, createWorkRuntime, effect, primitive, runSync, type Ownership, type Phase, type Work, type WorkRuntime } from '../../../shared/cooperativeWork.js';
 import { canonicalText, compareStringsWork, copyEnumerableWork, enumerableEntriesWork, equalFrameWork, jsonTextWork, quoteWork, rawValueWeightWork, stableSortWork, textWork, utf8LengthWork, type Frame } from '../../../shared/jsonWork.js';
@@ -776,7 +776,11 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
       const rows = {} as SourceCapture;
       for (const store of [...sourceStores, 'normalizationLedger'] as const) {
         rows[store] = [];
-        for (const row of candidate.rows.get(store) ?? []) await work.run(effect(1, () => { rows[store].push(row.value); }));
+        for (const row of candidate.rows.get(store) ?? []) {
+          // Projects an earlier release stored at an older document schema are normalized as their upgrade.
+          const value = store === 'projects' ? await work.run(upgradeStoredProjectRecordWork(row.value)) : row.value;
+          await work.run(effect(1, () => { rows[store].push(value); }));
+        }
       }
       requireContract(rows.normalizationLedger.length <= 1, 'Unrecognized normalization attempt');
       const marker = rows.normalizationLedger[0] as NormalizationAttempt | undefined;

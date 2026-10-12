@@ -47,9 +47,39 @@ import {
   validateWorkspaceProjectWork,
   validateCustomPresetWork,
   preparePendingImportWork,
+  isUpgradableStoredSchemaVersion,
 } from './validation';
 
 const REJECT_WARNINGS = { warningPolicy: 'reject' as const };
+
+/**
+ * A stored project record as the current release reads it. A project that an earlier release stored
+ * at an older document schema is upgraded exactly as a legacy import upgrades a project (migrated,
+ * then fully validated, into a new object) and returned in a copy of the record; any other record is
+ * returned as it is, for the usual validation. Deterministic: every reader of a record derives the
+ * same result. Descriptors only, so a record's accessors are never invoked.
+ */
+export function* upgradeStoredProjectRecordWork(record: unknown): Work<unknown> {
+  const project = yield* effect(4, () => {
+    if (!isPlainObject(record)) return undefined;
+    const entry = Object.getOwnPropertyDescriptor(record, 'project');
+    if (!entry || !('value' in entry) || !isPlainObject(entry.value)) return undefined;
+    const state = Object.getOwnPropertyDescriptor(entry.value, 'initialState');
+    if (!state || !('value' in state) || !isPlainObject(state.value)) return undefined;
+    const version = Object.getOwnPropertyDescriptor(state.value, 'schemaVersion');
+    return version && 'value' in version && isUpgradableStoredSchemaVersion(version.value) ? entry.value : undefined;
+  });
+  if (project === undefined) return record;
+  const upgraded = yield* validateWorkspaceProjectWork(project, REJECT_WARNINGS);
+  const copy = yield* copyEnumerableWork(record as Record<string, unknown>);
+  yield* effect(1, () => { copy.project = upgraded; });
+  return copy;
+}
+
+export function upgradeStoredProjectRecord(record: unknown): unknown {
+  return runSync(upgradeStoredProjectRecordWork(record));
+}
+
 const LEGACY_PENDING_KEYS = new Set(['name', 'state', 'cloud']);
 const STORED_PENDING_KEYS = new Set([
   'id',
