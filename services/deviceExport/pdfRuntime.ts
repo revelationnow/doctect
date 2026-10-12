@@ -44,3 +44,6 @@ export async function renderPng(page: Page, box: Size): Promise<Blob> {
 }
 
 export const readDrawing = (page: Page): Promise<Drawing> => readPdfPageDrawing(page, pdfjsLib.OPS as Record<string, number>);
+
+/** Drops the page's operator list and resources; the document keeps working and can fetch the page again. */
+export const cleanupPage = (page: Page): void => { page.cleanup(); };

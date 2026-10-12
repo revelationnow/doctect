@@ -132,6 +132,24 @@ describe('runDeviceExport', () => {
         expect(stems).toEqual(['doctect-plan-same-2-rm_pp', 'doctect-plan-same-rm_pp', 'doctect-plan-same-2-rm2', 'doctect-plan-same-rm2']);
     });
 
+    it('releases each pdf.js page once every device has used it, and never before', async () => {
+        const events: string[] = [];
+        const { deps } = fakeDeps({
+            async renderPng(page) { events.push(`render:${page.n}`); return new Blob([new Uint8Array([1])]); },
+            async readDrawing(page) { events.push(`draw:${page.n}`); return { width: 468, height: 624, notes: [], items: [] }; },
+            cleanupPage(page) { events.push(`cleanup:${page.n}`); },
+        });
+        await runDeviceExport(request(), { deps });
+        // rm2 renders, then reads the drawing, then Manta renders; only then is page 1 released.
+        expect(events).toEqual(['render:1', 'draw:1', 'render:1', 'cleanup:1', 'render:2', 'draw:2', 'render:2', 'cleanup:2']);
+
+        // A colour reMarkable opens two proxies per page (colour for the PNG, grey for the drawing): both are released.
+        const cleaned: FakePage[] = [];
+        const twoDocs = fakeDeps({ cleanupPage(page) { cleaned.push(page); } });
+        await runDeviceExport(request({ deviceIds: ['rm_pp'] }), { deps: twoDocs.deps });
+        expect(cleaned.map(page => `${page.n}:${page.grey ? 'grey' : 'colour'}`).sort()).toEqual(['1:colour', '1:grey', '2:colour', '2:grey']);
+    });
+
     it('fails when nothing could be produced', async () => {
         const { deps } = fakeDeps({ async renderPng() { throw new Error('no canvas'); } });
         await expect(runDeviceExport(request(), { deps })).rejects.toThrow(DeviceExportError);

@@ -17,6 +17,8 @@ export interface ExportDeps<P = unknown> {
     pageSize(page: P): { width: number; height: number };
     renderPng(page: P, box: { width: number; height: number }): Promise<Blob>;
     readDrawing(page: P): Promise<Drawing>;
+    /** Release a page's resources once every device has rendered it (pdf.js `page.cleanup()`). */
+    cleanupPage?(page: P): void | Promise<void>;
 }
 
 const runtime = () => import('./pdfRuntime');
@@ -30,6 +32,7 @@ const defaultDeps: ExportDeps = {
     },
     renderPng: async (page, box) => (await runtime()).renderPng(page as never, box),
     readDrawing: async page => (await runtime()).readDrawing(page as never),
+    cleanupPage: async page => (await runtime()).cleanupPage(page as never),
 };
 
 const isAbort = (error: unknown): boolean => error instanceof DOMException && error.name === 'AbortError';
@@ -115,6 +118,12 @@ export async function runDeviceExport(request: DeviceExportRequest, {
                 }
                 done += 1;
                 onProgress({ phase: 'rendering', done, total });
+            }
+            // Every render and drawing read for this page was awaited above. Release its proxies now:
+            // pdf.js otherwise holds each page's operator list until destroy(), and 400 pages of that
+            // is the memory curve the image cap exists to protect on phones. Best effort only.
+            for (const page of loaded.values()) {
+                await page.then(loadedPage => deps.cleanupPage?.(loadedPage)).catch(() => undefined);
             }
         }
         if (images === 0) throw new DeviceExportError(`No templates could be produced: ${messageOf(firstError)}`);
