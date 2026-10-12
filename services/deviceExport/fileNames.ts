@@ -8,7 +8,7 @@ export const MAX_NAME_LENGTH = 80;
 export function slugify(raw: string, fallback: string): string {
     // NFKD splits accented letters into base letter + combining mark (U+0300–U+036F), so
     // dropping the marks keeps "Café" readable as "Cafe" instead of losing the letter.
-    const ascii = String(raw ?? '').normalize('NFKD').replace(/[̀-ͯ]/g, '');
+    const ascii = String(raw ?? '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
     const cleaned = ascii
         .replace(RESERVED, '')
         .replace(/[^\x20-\x7e]/g, '')
@@ -24,8 +24,15 @@ export function createNameAllocator(): (base: string) => string {
     const used = new Set<string>();
     return base => {
         let name = base;
-        for (let n = 2; used.has(name.toLowerCase()); n += 1) name = `${base}-${n}`;
+        for (let n = 2; used.has(name.toLowerCase()); n += 1) name = withSuffix(base, `-${n}`);
         used.add(name.toLowerCase());
         return name;
     };
+}
+
+/** `base` + `suffix`, cutting the base back (and dropping punctuation left at the cut) so the result stays within MAX_NAME_LENGTH. */
+function withSuffix(base: string, suffix: string): string {
+    const room = MAX_NAME_LENGTH - suffix.length;
+    const head = base.length > room ? base.slice(0, room).replace(/[._-]+$/, '') : base;
+    return head + suffix;
 }
