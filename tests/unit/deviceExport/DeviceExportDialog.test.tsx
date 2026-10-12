@@ -65,7 +65,7 @@ describe('DeviceExportDialog', () => {
         expect(box(dialog, 'Daily (5)').checked).toBe(true);
         fireEvent.click(within(dialog).getByRole('button', { name: '… 2 more' }));
         expect(box(dialog, 'Jan 5').checked).toBe(true);
-        fireEvent.click(within(dialog).getByRole('button', { name: 'Clear pages of Daily' }));
+        fireEvent.click(within(dialog).getByRole('button', { name: 'none (clear pages of Daily)' }));
         expect(box(dialog, 'Jan 1').checked).toBe(false);
         expect(box(dialog, 'Jan 5').checked).toBe(false);
         fireEvent.change(within(dialog).getByRole('searchbox', { name: 'Search pages' }), { target: { value: 'jan 4' } });
@@ -182,6 +182,26 @@ describe('DeviceExportDialog', () => {
         }
         expect(editorKeys).not.toHaveBeenCalled();
         expect(props.onClose).toHaveBeenCalled();
+    });
+
+    it('keeps focus and key isolation after a click on the backdrop', () => {
+        const { dialog } = setup();
+        const page = box(dialog, 'Index');
+        page.focus();
+        const editorKeys = vi.fn();
+        window.addEventListener('keydown', editorKeys);
+        try {
+            // A browser moves focus to <body> on a mousedown over a non-focusable element unless the
+            // event is cancelled; jsdom leaves focus alone, so replay that default here.
+            const notCancelled = fireEvent.mouseDown(dialog.parentElement!);
+            if (notCancelled) (document.activeElement as HTMLElement | null)?.blur();
+            fireEvent.keyDown(document.activeElement!, { key: 'Delete' });
+        } finally {
+            window.removeEventListener('keydown', editorKeys);
+        }
+        expect(editorKeys).not.toHaveBeenCalled();
+        expect(document.activeElement).toBe(page);
+        expect(dialog.contains(document.activeElement)).toBe(true);
     });
 
     it('renders nothing when closed', () => {

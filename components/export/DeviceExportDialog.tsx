@@ -123,7 +123,11 @@ function OpenDeviceExportDialog({ onClose, getState, projectName, initialForceGr
     const row = clsx('flex items-center gap-2 text-sm text-slate-700', phone && 'min-h-11');
 
     return createPortal(
-        <div className={clsx('fixed inset-0 z-50 flex bg-black/50', !phone && 'items-center justify-center p-4')}>
+        <div className={clsx('fixed inset-0 z-50 flex bg-black/50', !phone && 'items-center justify-center p-4')}
+            // A mousedown on the backdrop would move focus to <body>, past the dialog's keydown handling,
+            // and the next Delete or Ctrl+Z would reach the editor's window listener. Cancelling it keeps
+            // focus on whatever the user had, so the dialog never loses the keyboard.
+            onMouseDown={event => { if (event.target === event.currentTarget) event.preventDefault(); }}>
             <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby="device-export-title" aria-busy={running || undefined} tabIndex={-1}
                 onKeyDown={event => {
                     event.stopPropagation();
@@ -228,7 +232,8 @@ function PageGroup({ group, selected, disabled, rowClass, showAll, onToggle, onS
                     {group.name} ({group.pages.length})
                 </label>
                 <button type="button" disabled={disabled} onClick={() => onSetAll(true)} aria-label={`Select all pages of ${group.name}`} className="text-xs text-blue-600 hover:underline">all</button>
-                <button type="button" disabled={disabled} onClick={() => onSetAll(false)} aria-label={`Clear pages of ${group.name}`} className="text-xs text-blue-600 hover:underline">none</button>
+                {/* The accessible name keeps the visible word (WCAG 2.5.3), so "click none" works for voice control. */}
+                <button type="button" disabled={disabled} onClick={() => onSetAll(false)} aria-label={`none (clear pages of ${group.name})`} className="text-xs text-blue-600 hover:underline">none</button>
             </div>
             <ul className="ml-6">
                 {shown.map((page, index) => (
