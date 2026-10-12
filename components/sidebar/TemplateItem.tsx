@@ -1,8 +1,10 @@
 
 import React, { useState } from 'react';
 import { PageTemplate } from '../../types';
-import { LayoutTemplate, Edit2, Trash2, Copy } from 'lucide-react';
+import { LayoutTemplate, Edit2, Trash2, Copy, MoreHorizontal } from 'lucide-react';
 import clsx from 'clsx';
+import { useFormFactor } from '../editor-layout/FormFactorContext';
+import { RowActionSheet, type RowAction } from './RowActionSheet';
 
 interface TemplateItemProps {
     template: PageTemplate;
@@ -16,6 +18,14 @@ interface TemplateItemProps {
 export const TemplateItem: React.FC<TemplateItemProps> = ({ template, isSelected, onSelect, onDelete, onDuplicate, onUpdateName }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState(template.name);
+    // Touch: the row's actions sit behind one ⋯ button, so the template name keeps the row's width.
+    const touch = useFormFactor() !== 'desktop';
+    const [actionsOpen, setActionsOpen] = useState(false);
+    const touchActions: RowAction[] = [
+        { label: 'Rename', onSelect: () => { setEditName(template.name); setIsEditing(true); } },
+        { label: 'Duplicate', onSelect: onDuplicate },
+        { label: 'Delete', onSelect: onDelete, destructive: true },
+    ];
 
     const handleSubmit = () => {
         if (editName.trim()) onUpdateName(editName);
@@ -24,11 +34,12 @@ export const TemplateItem: React.FC<TemplateItemProps> = ({ template, isSelected
     };
 
     return (
+        <>
         <div 
             data-template-id={template.id}
             onClick={(e) => onSelect(e.ctrlKey || e.metaKey, e.shiftKey)}
             className={clsx(
-                "flex items-center justify-between p-2 cursor-pointer select-none text-sm hover:bg-slate-100 group",
+                `flex items-center justify-between ${touch ? 'min-h-11 py-0 pl-2 pr-0' : 'p-2'} cursor-pointer select-none text-sm hover:bg-slate-100 group`,
                 isSelected && "bg-blue-50 text-blue-700 font-medium"
             )}
         >
@@ -51,6 +62,15 @@ export const TemplateItem: React.FC<TemplateItemProps> = ({ template, isSelected
                 )}
              </div>
 
+             {touch ? (
+                !isEditing && (
+                    <button type="button" aria-haspopup="dialog" aria-label={`Actions for ${template.name}`}
+                        className="flex flex-none items-center justify-center rounded text-slate-500"
+                        onClick={(e) => { e.stopPropagation(); setActionsOpen(true); }}>
+                        <MoreHorizontal size={18} className="pointer-events-none" />
+                    </button>
+                )
+             ) : (
              <div className="hidden group-hover:flex items-center gap-1">
                 <button type="button"
                     className="p-1 hover:bg-slate-200 rounded text-slate-500" 
@@ -71,6 +91,11 @@ export const TemplateItem: React.FC<TemplateItemProps> = ({ template, isSelected
                     <Trash2 size={12} className="pointer-events-none" />
                 </button>
              </div>
+             )}
         </div>
+        {touch && (
+            <RowActionSheet open={actionsOpen} title={template.name} actions={touchActions} onClose={() => setActionsOpen(false)} />
+        )}
+        </>
     );
 };
