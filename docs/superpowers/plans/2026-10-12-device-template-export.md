@@ -267,7 +267,7 @@ export const MAX_NAME_LENGTH = 80;
 
 /** A device-safe name for `raw`, or `fallback` when nothing usable is left. */
 export function slugify(raw: string, fallback: string): string {
-    const ascii = String(raw ?? '').normalize('NFKD').replace(/[̀-ͯ]/g, '');
+    const ascii = String(raw ?? '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
     const cleaned = ascii
         .replace(RESERVED, '')
         .replace(/[^\x20-\x7e]/g, '')
@@ -1523,7 +1523,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Produces:
 
 ```ts
-export const LEGACY_ICON_CODE = '';
+export const LEGACY_ICON_CODE = '\ue9fe';
 export interface DeviceZip {
     readonly fileName: string;
     addPng(profile: DeviceProfile, pageTitle: string, png: Blob, landscape: boolean): void;
@@ -1647,7 +1647,7 @@ import { createNameAllocator, slugify } from './fileNames';
 import type { MethodsFiles } from './remarkableTemplate';
 
 /** Icon of the stock "Blank" template in templates.json (device checklist item 1). */
-export const LEGACY_ICON_CODE = '';
+export const LEGACY_ICON_CODE = '\ue9fe';
 
 export interface DeviceZip {
     readonly fileName: string;
