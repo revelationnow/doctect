@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getProfile } from '../../../services/deviceExport/deviceProfiles';
 import type { Drawing, DrawingItem } from '../../../services/deviceExport/pdfDrawing';
-import { MAX_METHODS_ITEMS, buildMethodsTemplate, fnv1a8, mergeItems, rotateForCanvas } from '../../../services/deviceExport/remarkableTemplate';
+import { MAX_METHODS_BYTES, MAX_METHODS_ITEMS, buildMethodsTemplate, fnv1a8, mergeItems, rotateForCanvas } from '../../../services/deviceExport/remarkableTemplate';
 
 const rmPP = getProfile('rm_pp')!;
 const rm2 = getProfile('rm2')!;
@@ -90,6 +90,15 @@ describe('buildMethodsTemplate', () => {
         const result = buildMethodsTemplate(drawing(items, 5000, 7000), options());
         expect(result.files).toBeNull();
         expect(result.notes.at(-1)).toMatch(/only the PNG is included/);
+    });
+
+    it('skips pages whose .template would pass 4 MB and says only the PNG is included', () => {
+        // One text item carrying a MAX_METHODS_BYTES string: the JSON around it pushes the file past the cap.
+        const text = 'x'.repeat(MAX_METHODS_BYTES);
+        const result = buildMethodsTemplate(drawing([{ kind: 'text', text, x: 0, baseline: 10, size: 10, bold: false }]), options());
+        expect(result.files).toBeNull();
+        expect(result.itemCount).toBe(1);
+        expect(result.notes.at(-1)).toMatch(/larger than 4 MB.*only the PNG is included/);
     });
 
     it('changes the stem when the drawing changes', () => {
