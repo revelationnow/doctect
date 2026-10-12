@@ -111,13 +111,15 @@ manufacturer documentation.
 | `id` | Stable key, e.g. `rm2`, `supernote_manta` (used in storage, analytics, folder names) |
 | `platform` | `remarkable` \| `supernote` \| `boox` \| `bigme` |
 | `name` | Display name |
+| `folder` | Folder name inside the zip, e.g. `reMarkable_2`, `Manta` |
 | `width`, `height` | Portrait pixel size the PNG is rendered at |
 | `colour` | `true` for colour screens (default keeps colour) |
-| `outputs` | Which files this model gets (see section 6) |
 | `remarkableScreen` | Methods `supportedScreens` value (reMarkable rows only) |
 | `rotateMethods` | `true` where the Methods canvas is rotated (rM2) |
 | `source` | URL the size came from |
 | `verified` | `'device'` once checked on hardware, else `'docs'` |
+
+Which files a model gets follows from its platform (section 6), so there is no per-row outputs field.
 
 Initial rows (sizes marked † are re-checked against the manufacturer spec page during
 implementation, and the row's `source` is filled in then):
@@ -214,7 +216,9 @@ Bigme       [ ] inkNote Color+ …
 **Progress**
 
 - The dialog shows "Preparing pages…", then "Rendering 37 / 90", with Cancel.
-- Cancel is checked between images; nothing downloads.
+- Cancel is checked between images; nothing downloads, and the dialog returns to the picker so
+  the export can be retried. Closing the dialog (×, Escape, back gesture) also cancels a run.
+- Settings are saved when Export is pressed.
 
 ## 5. Rendering pipeline
 
@@ -306,6 +310,11 @@ sub-paths.
   - `{"ox": "(templateWidth - W * s) / 2"}`;
   - `{"oy": "(templateHeight - H * s) / 2"}`.
 - Each point is emitted as `"<x> * s + ox"` and `"<y> * s + oy"`, with numbers rounded to 0.01.
+- `strokeWidth` and `fontSize` are plain numbers, not expressions (only positions are known to
+  accept expressions). They are scaled to a 1404-pixel-wide logical canvas
+  (`REMARKABLE_CANVAS_WIDTH`): page points × fit scale × 1404 / profile width. A text item's
+  `position` is the top of its line: baseline − 0.8 × size (`TEXT_TOP_FROM_BASELINE`). Device
+  checklist item 4 confirms both.
 - For `rotateMethods` models (rM2), points are pre-rotated 90° clockwise in page space before
   emission, and W and H are swapped. The rotation is one function, `rotateForCanvas`, so if the
   device shows it the wrong way the fix is one line.
@@ -313,8 +322,9 @@ sub-paths.
 **Files**
 
 - One set per page and reMarkable model: stem `doctect-<project-slug>-<page-slug>-<model>-<hash8>`.
-- `hash8` is the first 8 hex characters of SHA-256 over the `.template` JSON. A changed page
-  therefore gets a new stem and a fresh picker icon.
+- `hash8` is an FNV-1a 32-bit hash of the `.template` JSON, as 8 hex characters. It is
+  synchronous and needs no secure context (Web Crypto is missing on plain-http LAN pages). A
+  changed page therefore gets a new stem and a fresh picker icon.
 - `supportedScreens` holds the model's screen code. `categories` is `["Custom"]` and `labels` is
   `[<project name>]`.
 - `iconData` is a 150×200 SVG drawn from the same paths, scaled; curves are allowed in the icon.
@@ -391,9 +401,9 @@ In `shared/galleryFacets.js`:
   category from the untouched published data. No project, commit or `published_*` column is
   written.
 
-Expected effect: a project named "Weekly Planner Template" (name scores 1:1) moves from Planners
-to Note templates. A project tagged `planner, weekly` with "template" only in its name stays in
-Planners (4:1).
+Expected effect: a project named "Planner Template" (name scores 1:1) moves from Planners to
+Note templates. "Weekly Planner Template" stays in Planners (2:1), as does a project tagged
+`planner, weekly` with "template" only in its name (5:1).
 
 Tests:
 
@@ -467,7 +477,8 @@ merge)
 3. Paper Pro Move's `supportedScreens` code. The candidate is read from a stock Methods template
    on the Move (`grep supportedScreens` in xochitl); record the value.
 4. Methods fidelity on one grid page and one text-heavy page: line weights, grey fills, text size
-   and position against the PNG.
+   and position against the PNG. If `strokeWidth`/`fontSize` look wrongly scaled, adjust
+   `REMARKABLE_CANVAS_WIDTH`; if text sits too high or low, adjust `TEXT_TOP_FROM_BASELINE`.
 5. Picker responsiveness with the largest exported page (item count noted).
 6. Whether Paper Pro shows colour `fillColor` values. This is informational: v1 emits grey.
 
