@@ -37,6 +37,23 @@ describe('Export for device dialog and the editor shortcuts', () => {
         expect(screen.queryByTestId('element-row-title')).toBeNull();
     });
 
+    it('legacy editor: Delete on window leaves the selection alone while New Variant is open (matches the incremental list)', () => {
+        render(<ProjectEditor {...editorProps()} />);
+        fireEvent.click(screen.getByRole('button', { name: 'Templates' }));
+        selectTitleElement();
+        fireEvent.click(screen.getByTitle('Add New Variant'));
+        expect(screen.getByText('New Variant')).toBeInTheDocument();
+        // Focus on <body>, as after a click on the modal's backdrop: the handler's input/textarea check does not apply.
+        (document.activeElement as HTMLElement | null)?.blur();
+        fireEvent.keyDown(window, { key: 'Delete' });
+        fireEvent.keyDown(window, { key: 'Backspace' });
+        expect(screen.getByTestId('element-row-title')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+        expect(screen.queryByText('New Variant')).toBeNull();
+        fireEvent.keyDown(window, { key: 'Delete' });
+        expect(screen.queryByTestId('element-row-title')).toBeNull();
+    });
+
     it('incremental editor: Delete and undo on window emit no document edit while the dialog is open', () => {
         const onDocumentEdit = vi.fn();
         render(

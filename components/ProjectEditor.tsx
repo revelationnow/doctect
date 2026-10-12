@@ -163,7 +163,7 @@ function useLegacyEditor({ projectId, projectName, initialState, isActive, onNam
         if (!isActive) return;
 
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (state.showJsonModal || state.showNodeSelector || deleteConfirmState.isOpen || showScriptGenModal || showSavePresetModal || showDeviceExport) return;
+            if (state.showJsonModal || state.showNodeSelector || deleteConfirmState.isOpen || showScriptGenModal || showSavePresetModal || showNewVariantModal || showDeviceExport) return;
             const activeTag = document.activeElement?.tagName.toLowerCase();
             if (activeTag === 'input' || activeTag === 'textarea') return;
 
@@ -283,7 +283,7 @@ function useLegacyEditor({ projectId, projectName, initialState, isActive, onNam
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [state, undo, redo, saveToHistory, isActive, showScriptGenModal, showSavePresetModal, showDeviceExport]);
+    }, [state, undo, redo, saveToHistory, isActive, showScriptGenModal, showSavePresetModal, showNewVariantModal, showDeviceExport]);
 
 
     // Helper: Get templates from active variant
