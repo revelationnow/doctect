@@ -315,9 +315,9 @@ sub-paths.
   (`REMARKABLE_CANVAS_WIDTH`): page points × fit scale × 1404 / profile width. A text item's
   `position` is the top of its line: baseline − 0.8 × size (`TEXT_TOP_FROM_BASELINE`). Device
   checklist item 4 confirms both.
-- For `rotateMethods` models (rM2), points are pre-rotated 90° clockwise in page space before
-  emission, and W and H are swapped. The rotation is one function, `rotateForCanvas`, so if the
-  device shows it the wrong way the fix is one line.
+- For `rotateMethods` models (rM2), points are pre-rotated 90° in page space before emission,
+  as (x, y) → (y, W − x), to be confirmed on hardware, and W and H are swapped. The rotation is
+  one function, `rotateForCanvas`, so if the device shows it the wrong way the fix is one line.
 
 **Files**
 
@@ -473,7 +473,15 @@ merge)
 1. Legacy PNG route: install per INSTALL.txt; the template appears in the picker and fills the
    screen; the landscape flag works.
 2. Methods route: copy `methods/` files and restart; the template appears and is drawn upright on
-   all three devices. Record the correct rM2 rotation direction.
+   all three devices. On the rM2 also:
+   - export a near-square portrait page (e.g. 500×600 pt) to confirm what `templateWidth` and
+     `templateHeight` mean on the turned canvas; if it overflows horizontally, the fix is to fit
+     against the unswapped `targetBox(profile, page)` (`remarkableTemplate.ts:123`, the `frame`
+     and `targetBox` lines of `buildMethodsTemplate`);
+   - include a text item and confirm rotated text reads correctly;
+   - the implemented mapping (x, y) → (y, W − x) is a counter-clockwise turn in y-down space
+     (an earlier draft of section 5.4 said clockwise); record which direction is right on
+     hardware.
 3. Paper Pro Move's `supportedScreens` code. The candidate is read from a stock Methods template
    on the Move (`grep supportedScreens` in xochitl); record the value.
 4. Methods fidelity on one grid page and one text-heavy page: line weights, grey fills, text size
