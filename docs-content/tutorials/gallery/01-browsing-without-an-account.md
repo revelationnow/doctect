@@ -25,7 +25,7 @@ Below them, the landing view is a set of curated rows:
 - **In the spotlight** — one project picked from the best rated, changing once a day, with its own **Open in editor** button.
 - **Trending** — projects people are opening and forking right now. New projects get a fair shot here, and old favourites gradually make room.
 - **New** — the most recently published.
-- **One row per category** — Planners, Trackers & habits, Journals & writing, Learning & study, Work & money, Home & hobbies, Games & play. The gallery works out each project's category by itself from its tags and name, so nobody has to file anything.
+- **One row per category** — Note templates, Planners, Trackers & habits, Journals & writing, Learning & study, Work & money, Home & hobbies, Games & play. The gallery works out each project's category by itself from its tags and name, so nobody has to file anything.
 
 Each row holds up to eight cards, and its **See all →** link opens the full, pageable list behind it. At the bottom, **Browse all projects** opens everything, and a cloud of the most-used [**tag chips**](/docs/reference/gallery-tags) shows how many projects carry each tag.
 
