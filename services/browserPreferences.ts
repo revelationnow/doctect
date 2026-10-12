@@ -8,6 +8,7 @@ const fixedBrowserPreferenceKeys = [
   'doctect_last_align',
   'gallery-explainer-dismissed',
   'doctect-onboarding',
+  'doctect-device-export',
 ] as const;
 
 const migrationReceiptPrefix = 'doctect_workspace_migration_receipt_seen:';
