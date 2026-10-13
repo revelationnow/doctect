@@ -147,6 +147,7 @@ describe('GalleryDetailPage version history', () => {
             id: 'c1', message: 'Initial save', createdAt: '2026-01-01T00:00:00.000Z',
             state: galleryState,
         });
+        const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
         const failure = Promise.reject(new Error('quota'));
         void failure.catch(() => {});
         vi.mocked(importProject.stageImport).mockReturnValue(failure);
@@ -162,6 +163,8 @@ describe('GalleryDetailPage version history', () => {
         );
         expect(importError.closest('[role="alert"]')).toBeInTheDocument();
         expect(screen.getByRole('heading', { name: 'Version history' })).toBeVisible();
+        expect(logged).toHaveBeenCalledWith('Could not stage the gallery version for the editor:', new Error('quota'));
+        logged.mockRestore();
         expect(screen.queryByText('APP_MARKER')).not.toBeInTheDocument();
     });
 });
@@ -240,6 +243,7 @@ describe('GalleryDetailPage generator source staging', () => {
         vi.mocked(importProject.stageImport)
             .mockRejectedValueOnce(new Error('post-commit readback failed'))
             .mockResolvedValueOnce('retained-fork-import');
+        const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
         renderAt();
 
         fireEvent.click(await screen.findByRole('button', { name: /fork this project/i }));
@@ -249,6 +253,8 @@ describe('GalleryDetailPage generator source staging', () => {
         fireEvent.click(screen.getByRole('button', { name: /fork this project/i }));
 
         expect(await screen.findByText('APP_MARKER')).toBeInTheDocument();
+        expect(logged).toHaveBeenCalledWith('Could not stage the fork for the editor:', new Error('post-commit readback failed'));
+        logged.mockRestore();
         expect(fork).toHaveBeenCalledTimes(2);
         expect(fork.mock.calls[1]).toEqual(fork.mock.calls[0]);
         expect(getCommit).toHaveBeenCalledTimes(2);
@@ -273,6 +279,8 @@ describe('GalleryDetailPage generator source staging', () => {
         mockUseSession.mockReturnValue({ data: null });
         vi.spyOn(cloudApi, 'galleryState').mockResolvedValue({ name: 'Test Project', state: rawGalleryState });
         vi.mocked(importProject.stageImport).mockRejectedValue(new Error('quota'));
+        const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+
         renderAt();
 
         fireEvent.click(await screen.findByRole('button', { name: /open in editor/i }));
@@ -284,6 +292,8 @@ describe('GalleryDetailPage generator source staging', () => {
         expect(screen.getByRole('heading', { name: 'Test Project' })).toBeVisible();
         expect(screen.queryByText('APP_MARKER')).not.toBeInTheDocument();
         expect(screen.getByRole('button', { name: /open in editor/i })).toBeEnabled();
+        expect(logged).toHaveBeenCalledWith('Could not stage the gallery project for the editor:', new Error('quota'));
+        logged.mockRestore();
     });
 });
 

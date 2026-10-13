@@ -23,7 +23,8 @@ export function Spotlight({ item }: { item: GalleryItem }) {
                 { sourceKey: `gallery-open:${item.id}` },
             );
             navigate('/app');
-        } catch {
+        } catch (error) {
+            console.error('Could not stage the gallery project for the editor:', error);
             setError(IMPORT_STAGE_ERROR_MESSAGE);
             setBusy(false);
         }
