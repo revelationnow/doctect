@@ -32,8 +32,8 @@ test.beforeEach(async ({ page: browserPage }) => {
 });
 
 test('exports chosen pages for several devices as one zip', async ({ page: browserPage }) => {
-    await browserPage.getByRole('button', { name: 'Devices' }).click();
-    const dialog = browserPage.getByRole('dialog', { name: 'Export for device' });
+    await browserPage.getByRole('button', { name: 'Export as template' }).click();
+    const dialog = browserPage.getByRole('dialog', { name: 'Export as template' });
     await expect(dialog.getByRole('checkbox', { name: 'Guard Page' })).toBeChecked();
     await expect(dialog.getByRole('checkbox', { name: 'Day 1' })).not.toBeChecked();
     await expect(dialog.getByRole('checkbox', { name: 'Cover', exact: true })).toBeChecked();

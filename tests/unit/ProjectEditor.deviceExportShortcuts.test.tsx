@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { ProjectEditor } from '../../components/ProjectEditor';
 import { makeIncrementalProject } from '../helpers/incrementalFixtures';
 
-// Both editors' window keydown shortcut handlers bail out while "Export for device" is open, as they do
+// Both editors' window keydown shortcut handlers bail out while "Export as template" is open, as they do
 // for the JSON, preset and variant modals. The keys here are dispatched on window directly, past the
 // dialog's own stopPropagation, so a key that reaches the handler with focus outside the dialog is covered.
 const editorProps = () => {
@@ -18,11 +18,11 @@ const selectTitleElement = () => {
     fireEvent.click(screen.getByTitle('Layers'));
     fireEvent.click(screen.getByTestId('element-row-title'));
 };
-const deviceDialog = () => screen.queryByRole('dialog', { name: 'Export for device' });
+const deviceDialog = () => screen.queryByRole('dialog', { name: 'Export as template' });
 const openDeviceExport = () => fireEvent.click(screen.getByTitle('Export templates for e-ink devices'));
 const closeDeviceExport = () => fireEvent.click(screen.getByRole('button', { name: 'Close export for device' }));
 
-describe('Export for device dialog and the editor shortcuts', () => {
+describe('Export as template dialog and the editor shortcuts', () => {
     it('legacy editor: Delete on window leaves the selection alone while the dialog is open', () => {
         render(<ProjectEditor {...editorProps()} />);
         selectTitleElement();

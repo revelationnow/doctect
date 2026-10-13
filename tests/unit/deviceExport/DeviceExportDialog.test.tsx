@@ -30,7 +30,7 @@ const setup = (overrides: Partial<React.ComponentProps<typeof DeviceExportDialog
         ...overrides,
     };
     render(<DeviceExportDialog {...props} />);
-    return { props, dialog: screen.getByRole('dialog', { name: 'Export for device' }) };
+    return { props, dialog: screen.getByRole('dialog', { name: 'Export as template' }) };
 };
 const box = (dialog: HTMLElement, name: string) => within(dialog).getByRole('checkbox', { name }) as HTMLInputElement;
 const status = (dialog: HTMLElement) => within(dialog).getByRole('status').textContent;
@@ -226,7 +226,7 @@ describe('DeviceExportDialog', () => {
                 <DeviceExportDialog isOpen onClose={vi.fn()} getState={() => makeState(5)} projectName="Plan" initialForceGreyscale={false} />
             </FormFactorProvider>,
         );
-        const phone = screen.getByRole('dialog', { name: 'Export for device' });
+        const phone = screen.getByRole('dialog', { name: 'Export as template' });
         for (const link of links(phone)) expect(link).toHaveClass('min-h-11', 'px-2');
     });
 

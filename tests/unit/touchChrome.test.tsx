@@ -81,11 +81,11 @@ describe('OverflowMenu', () => {
         expect(screen.getByText('account-menu')).toBeTruthy();
     });
 
-    it('opens Export for device from the Export group and closes the sheet', () => {
+    it('opens Export as template from the Export group and closes the sheet', () => {
         const actions = makeActions();
         const onClose = vi.fn();
         render(<OverflowMenu open onClose={onClose} actions={actions} chrome={chrome} />);
-        const item = screen.getByRole('button', { name: 'Export for device…' });
+        const item = screen.getByRole('button', { name: 'Export as template…' });
         expect(item.previousElementSibling?.textContent).toContain('Export all variants');
         fireEvent.click(item);
         expect(actions.exportForDevice).toHaveBeenCalledTimes(1);

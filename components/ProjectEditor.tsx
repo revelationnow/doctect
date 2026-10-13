@@ -1719,7 +1719,7 @@ function ProjectEditorView({
                             )}
                             title="Export templates for e-ink devices"
                         >
-                            <Tablet size={14} /> Devices
+                            <Tablet size={14} /> Export as template
                         </button>
                     </div>
                 </div>

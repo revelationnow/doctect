@@ -37,7 +37,7 @@ const toggled = (set: ReadonlySet<string>, id: string) => {
 };
 
 /**
- * "Export for device": pick template/page combinations and e-ink models, then download one zip.
+ * "Export as template": pick template/page combinations and e-ink models, then download one zip.
  * A centred modal on desktop and tablet, full screen on phone. Keydown stops at the dialog so the
  * editor's shortcuts (Delete, undo) never act on the canvas behind it.
  */
@@ -147,7 +147,7 @@ function OpenDeviceExportDialog({ onClose, getState, projectName, initialForceGr
                 className={clsx('flex flex-col bg-white outline-none', phone ? 'h-full w-full' : 'max-h-[90dvh] w-full max-w-2xl rounded-xl shadow-2xl')}>
                 <div className="flex items-center justify-between border-b px-4 py-3">
                     <h2 id="device-export-title" className="flex items-center gap-2 text-lg font-bold text-slate-800">
-                        <Tablet size={18} className="text-blue-600" /> Export for device
+                        <Tablet size={18} className="text-blue-600" /> Export as template
                     </h2>
                     <button type="button" onClick={close} aria-label="Close export for device"
                         className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">

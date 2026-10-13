@@ -150,20 +150,20 @@ the Methods file gets `orientation: "landscape"`.
 
 - Desktop:
   - The export split button (`Export PDF` | `All`) in `components/ProjectEditor.tsx` gains a
-    third segment, "Devices", with a tablet icon and the title "Export templates for e-ink
+    third segment, "Export as template", with a tablet icon and the title "Export templates for e-ink
     devices".
   - This is a deliberate desktop UI change. If a desktop snapshot covers the header, the user is
     asked before that snapshot is updated.
 - Phone and tablet:
   - The overflow menu's Export group (`components/editor-layout/OverflowMenu.tsx`) gains
-    "Export for device…", between "Export all variants" and "Greyscale export".
+    "Export as template…", between "Export all variants" and "Greyscale export".
   - It goes through a new `TouchEditorActions.exportForDevice`.
 
 **Dialog** (`components/export/DeviceExportDialog.tsx`): a modal on desktop; full screen on
 phone, with `useBackDismiss` and `trapTab` like the other touch overlays.
 
 ```
-Export for device
+Export as template
 
 Pages            [search........]
 [-] Daily (365)        all · none

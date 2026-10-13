@@ -953,9 +953,9 @@ test('back gesture closes the open overlay and keeps the editor; any other close
 
 // Device template export from the ⋯ menu: the sheet hands its history entry to the dialog (back
 // closes the dialog alone), and an export through the real pdf.js/canvas/JSZip path downloads a zip.
-test('Export for device opens from the ⋯ menu, closes on back, and downloads a zip', async ({ page }) => {
-    const open = () => openFromOverflow(page, 'Export for device…');
-    const dialog = page.getByRole('dialog', { name: 'Export for device' });
+test('Export as template opens from the ⋯ menu, closes on back, and downloads a zip', async ({ page }) => {
+    const open = () => openFromOverflow(page, 'Export as template…');
+    const dialog = page.getByRole('dialog', { name: 'Export as template' });
     await open();
     await expect(dialog).toBeVisible();
     await expect(overflowMenu(page)).toBeHidden();

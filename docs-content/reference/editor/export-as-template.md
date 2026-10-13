@@ -1,15 +1,15 @@
 ---
-title: Export for Device
-summary: The Devices segment of the export button (⋯ › Export for device… on touch) renders chosen pages as note templates sized for reMarkable, Supernote, Boox and Bigme e-ink tablets, and downloads them as one zip with install notes.
+title: Export as Template
+summary: The Export as template segment of the export button (⋯ › Export as template… on touch) renders chosen pages as note templates sized for reMarkable, Supernote, Boox and Bigme e-ink tablets, and downloads them as one zip with install notes.
 aliases: e-ink templates, note templates, device templates, remarkable template, supernote template, boox template, bigme template, methods template, png template, export for device
 keywords: export, device, devices, e-ink, eink, remarkable, paper pro, supernote, manta, nomad, boox, note air, palma, bigme, template, png, zip, methods, templates.json, mystyle, notetemplate, install, greyscale, conversion report
 ---
 
-**Export for device** turns pages of your project into the note *templates* an e-ink tablet draws behind your handwriting: one PNG per page at the exact pixel size of each device you pick, in the folder layout that device expects, plus a short INSTALL.txt per model. Everything renders in the browser and arrives as a single `.zip`; nothing is sent to a device for you.
+**Export as template** turns pages of your project into the note *templates* an e-ink tablet draws behind your handwriting: one PNG per page at the exact pixel size of each device you pick, in the folder layout that device expects, plus a short INSTALL.txt per model. Everything renders in the browser and arrives as a single `.zip`; nothing is sent to a device for you.
 
 ## Opening it
 
-On a computer the export controls at the top bar's right end are a split button: [**Export PDF**](/docs/reference/export-pdf), the **All** half, and a third segment, **Devices**, with a tablet icon — its tooltip reads "Export templates for e-ink devices". On a [phone or tablet](/docs/reference/editor-on-phones-and-tablets) the **⋯** menu's Export group has an **Export for device…** row between *Export all variants* and *Greyscale export*. Both open the **Export for device** dialog: a centred modal on desktop and tablet, full screen on a phone, where the back gesture closes it.
+On a computer the export controls at the top bar's right end are a split button: [**Export PDF**](/docs/reference/export-pdf), the **All** half, and a third segment, **Export as template**, with a tablet icon — its tooltip reads "Export templates for e-ink devices". On a [phone or tablet](/docs/reference/editor-on-phones-and-tablets) the **⋯** menu's Export group has an **Export as template…** row between *Export all variants* and *Greyscale export*. Both open the **Export as template** dialog: a centred modal on desktop and tablet, full screen on a phone, where the back gesture closes it.
 
 The export uses the *active* [variant](/docs/reference/variants), as it is when the dialog opens.
 
