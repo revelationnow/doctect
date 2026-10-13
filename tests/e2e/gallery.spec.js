@@ -490,4 +490,43 @@ test.describe('Gallery', () => {
         const stale = await (await page.request.get(`${API_BASE}/api/gallery?tag=stale${listingRun}`)).json();
         expect(stale.items.map(p => p.id)).not.toContain(project.id);
     });
+
+    test('opens a project published before layers existed in the editor', async ({ page, browser }) => {
+        test.setTimeout(90000);
+        // Schema 7 predates layers, so staging adds a default layer. The local workspace
+        // prepares a staged import twice (store, then verify); a random layer id made the two
+        // differ and every pre-layer gallery project failed to open.
+        await signUpAndVerify(page, { name: 'Legacy Owner', username: `legacy${listingRun}`.slice(0, 30),
+            email: `legacy-${listingRun}@test.dev` });
+        const name = `Legacy Open ${listingRun}`;
+        const state = listingState('Root');
+        state.variants.default.templates.page.elements = [{
+            id: 'box', type: 'rect', x: 20, y: 20, w: 100, h: 40, rotation: 0,
+            fill: '#eeeeee', stroke: '#000000', strokeWidth: 1, opacity: 1, zIndex: 0,
+        }];
+        const created = await page.request.post(`${API_BASE}/api/projects`, { data: { name, state } });
+        expect(created.ok()).toBeTruthy();
+        const project = (await created.json()).project;
+        const published = await page.request.post(`${API_BASE}/api/projects/${project.id}/publish`, {
+            headers: { 'If-Match': `"${project.headCommitId}"` },
+            data: { description: 'pre-layer project', tags: [], thumbnails: [PNG_1X1], previewNodeIds: ['root'] },
+        });
+        expect(published.ok()).toBeTruthy();
+        const publicState = await (await page.request.get(`${API_BASE}/api/gallery/${project.id}/state`)).json();
+        expect(publicState.state.schemaVersion).toBe(7);
+
+        const visitor = await browser.newContext();
+        try {
+            const anonymous = await visitor.newPage();
+            const errors = [];
+            anonymous.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+            await anonymous.goto(`/gallery/${project.id}`);
+            await anonymous.getByRole('button', { name: /open in editor/i }).click();
+            await anonymous.waitForURL('**/app', { timeout: 20000 });
+            await expect(anonymous.getByTestId('project-tab').filter({ hasText: name })).toBeVisible();
+            expect(errors.filter(text => text.includes('Could not stage'))).toEqual([]);
+        } finally {
+            await visitor.close();
+        }
+    });
 });

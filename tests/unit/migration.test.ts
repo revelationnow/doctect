@@ -334,15 +334,17 @@ describe('loadPreset: undeclared variants-shaped preset', () => {
         expect(state.variants.default.templates.page.elements[1]).toMatchObject({ textOverflow: 'clip', textWrap: false });
     });
 
-    it('produces independent layer ids per call and never mutates the source preset data (Fix 1)', () => {
+    it('produces independent documents per call and never mutates the source preset data (Fix 1)', () => {
         // Same source object reference for both calls, exactly like the module-level preset constants.
         const source = variantsPresetData();
         const a: any = loadPreset(source);
         const b: any = loadPreset(source);
 
-        const idA = a.variants.default.templates.page.layers[0].id;
-        const idB = b.variants.default.templates.page.layers[0].id;
-        expect(idA).not.toBe(idB); // independent documents, not a shared object graph
+        // The added layer's id is fixed (preparation must be deterministic), so independence
+        // is shown by mutation: changing one document's layer leaves the other untouched.
+        expect(a.variants.default.templates.page.layers[0].id).toBe(b.variants.default.templates.page.layers[0].id);
+        a.variants.default.templates.page.layers[0].name = 'Changed';
+        expect(b.variants.default.templates.page.layers[0].name).toBe('Layer 1');
 
         // Source preset data must remain untouched (no layers leaked back into it).
         expect(source.variants.default.templates.page).not.toHaveProperty('layers');

@@ -4,13 +4,21 @@ import { copyEnumerableWork, stableSortWork } from '../shared/jsonWork.js';
 
 export const createLayerId = () => `layer_${Math.random().toString(36).substr(2, 9)}`;
 
-export const createDefaultLayer = (): Layer => ({
-    id: createLayerId(),
+export const createDefaultLayer = (id: string = createLayerId()): Layer => ({
+    id,
     name: 'Layer 1',
     order: 0,
     visible: true,
     locked: false,
 });
+
+/**
+ * Id of the layer the repair below adds to a template that has none. Fixed, not random:
+ * migration and import preparation must give the same output for the same input, because
+ * the local workspace prepares a staged import twice (store, then verify) and compares them.
+ * Layer ids only need to be unique within their template, and the repair adds exactly one.
+ */
+export const DEFAULT_LAYER_ID = 'layer_default';
 
 /**
  * Idempotent Shape-B repair: guarantees template.layers is a non-empty array and every
@@ -24,7 +32,7 @@ export function ensureTemplateLayers(template: PageTemplate): PageTemplate {
 
 export function* ensureTemplateLayersWork(template: PageTemplate): Work<PageTemplate> {
     const existing = Array.isArray(template.layers) ? template.layers : [];
-    const layers = existing.length > 0 ? existing : [yield* effect(1, createDefaultLayer)];
+    const layers = existing.length > 0 ? existing : [yield* effect(1, () => createDefaultLayer(DEFAULT_LAYER_ID))];
     const layerIds = new Set<string>();
     for (let index = 0, length = layers.length; index < length; index++) {
         yield* effect(1, () => { layerIds.add(index in layers ? layers[index].id : undefined); });

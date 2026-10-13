@@ -6,7 +6,7 @@ import { normalizeTextOverflow, normalizeTextOverflowWork, normalizeOwnedTextOve
   normalizeTextOverflowElementWork, normalizeTextOverflowTemplateWork, normalizeTextOverflowTemplatesWork } from '../../services/textOverflow';
 import { normalizeProjectTextPadding, normalizeProjectTextPaddingWork, normalizeOwnedProjectTextPaddingWork,
   normalizeTextPaddingElementWork, normalizeTextPaddingTemplateWork, normalizeTextPaddingTemplatesWork } from '../../services/textPadding';
-import { ensureTemplateLayers, ensureTemplateLayersWork } from '../../services/layers';
+import { DEFAULT_LAYER_ID, ensureTemplateLayers, ensureTemplateLayersWork } from '../../services/layers';
 import { loadProjectState, loadProjectStateWork, loadOwnedProjectStateWork } from '../../services/loadProjectState';
 import { migrateState, migrateStateWork, migrateOwnedStateWork } from '../../services/migration';
 import { historicalState } from '../helpers/localWorkspaceFixtures';
@@ -71,14 +71,18 @@ describe('cooperative versioned loader', () => {
     expect(Object.is(result.extension.zero, -0)).toBe(false);
   });
 
-  it('pins variant-first then flat-template ID generation and independent border sides', () => {
-    let calls = 0; vi.spyOn(Math, 'random').mockImplementation(() => (++calls) / 100);
+  it('gives variant and flat templates the fixed default layer without randomness, and independent border sides', () => {
+    // Migration must be deterministic: a staged import is prepared twice and compared.
+    const random = vi.spyOn(Math, 'random');
     const template = () => ({ elements: [{ type: 'rect', stroke: '#abc', strokeWidth: 2 }] });
     const raw: any = { schemaVersion: 6, variants: { z: { templates: { b: template(), a: template() } } }, templates: { p: template() } };
     const result = runSync(migrateStateWork(raw, 'plain')) as any;
     const templates = [result.variants.z.templates.b, result.variants.z.templates.a, result.templates.p];
-    expect(calls).toBe(3);
-    expect(templates.map(t => t.layers[0].id)).toEqual([1, 2, 3].map(i => `layer_${(i / 100).toString(36).substr(2, 9)}`));
+    expect(random).not.toHaveBeenCalled();
+    random.mockRestore();
+    expect(templates.map(t => t.layers[0].id)).toEqual([DEFAULT_LAYER_ID, DEFAULT_LAYER_ID, DEFAULT_LAYER_ID]);
+    expect(templates.map(t => t.elements[0].layerId)).toEqual([DEFAULT_LAYER_ID, DEFAULT_LAYER_ID, DEFAULT_LAYER_ID]);
+    expect(templates[0].layers).not.toBe(templates[1].layers);
     const sides = templates[0].elements[0].borderSides;
     expect(sides.top).toEqual({ width: 2, color: '#abc', style: 'solid' });
     expect(sides.top).not.toBe(sides.bottom);
@@ -201,13 +205,14 @@ describe('cooperative normalization helpers', () => {
     expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
   });
 
-  it('yields in a wide template and generates a default ID only once', async () => {
-    const random = vi.spyOn(Math, 'random').mockReturnValue(0.25);
+  it('yields in a wide template and adds the fixed default layer without randomness', async () => {
+    const random = vi.spyOn(Math, 'random');
     const template: any = { elements: Array.from({ length: 4000 }, (_, i) => ({ id: String(i), type: 'rect' })) };
     const h = makeWorkHarness('prepare', true);
     let task = false; setTimeout(() => { task = true; }, 0);
     const out = await h.runtime.run(ensureTemplateLayersWork(template));
-    expect(task).toBe(true); expect(random).toHaveBeenCalledTimes(1);
+    expect(task).toBe(true); expect(random).not.toHaveBeenCalled(); random.mockRestore();
+    expect(out.layers.map((layer: any) => layer.id)).toEqual([DEFAULT_LAYER_ID]);
     expect(h.runtime.snapshot().yields).toBeGreaterThan(0);
     expect(out.elements.every((e: any) => e.layerId === out.layers[0].id)).toBe(true);
     expect(ensureTemplateLayers(out)).toBe(out);

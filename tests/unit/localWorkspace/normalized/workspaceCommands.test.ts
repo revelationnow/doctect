@@ -285,6 +285,25 @@ describe('workspace command preparation', () => {
     } finally { p.release(); }
   });
 
+  it('verifies a staged import whose pre-layer state gets a default layer during preparation', async () => {
+    // Gallery projects published at schema 7 have no layers; preparation adds one. The
+    // postcondition prepares the same input again, so the added layer must come out identical.
+    const legacy = structuredClone(makeIncrementalProject(2).initialState) as any;
+    legacy.schemaVersion = 7;
+    for (const variant of Object.values(legacy.variants) as any[]) {
+      for (const template of Object.values(variant.templates) as any[]) {
+        delete template.layers;
+        for (const element of template.elements) delete element.layerId;
+      }
+    }
+    const p = await prepare({ type: 'stage-import', pendingImport: { id: 'legacy-stage', targetProjectId: 'legacy-later', name: 'Legacy',
+      state: legacy, createdAt: h.preparation.now() } });
+    try {
+      const checked = await commands.verifyWorkspacePostconditions(p.result.batch, after(p.result), p.result.manifest.lastCommit!, makeWorkHarness().runtime);
+      expect(checked.outcome).toBe('staged');
+    } finally { p.release(); }
+  });
+
   it('deletes a preset and prepares exact later-position compaction', async () => {
     const preset = (id: string) => ({ id, title: id, desc: '', isCustom: true as const, initialState: makeIncrementalProject(2).initialState });
     const first = await prepare({ type: 'save-custom-preset', preset: preset('first') });
