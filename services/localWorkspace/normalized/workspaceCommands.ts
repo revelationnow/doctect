@@ -11,8 +11,8 @@ import { deriveWorkspaceIncarnation, validateWorkspaceManifestWork, workspaceMan
   type NormalizedWorkspaceManifest, type WorkspaceMember, type WorkspaceBirthOrigin } from './workspaceManifest';
 import { appendWorkspaceReceipt, verifyWorkspaceReceipts, workspaceReceiptFrame } from './workspaceCommitProof';
 import { diffWorkspaceCatalogWork, projectWorkspaceCatalogWork } from '../workspaceCatalog';
-import { checkCustomPresetWork, checkMigratedStateWork, checkPendingImportWork,
-  preparePendingImportWork, validateCustomPresetWork, validateWorkspaceProject, validateWorkspaceProjectWork } from '../validation';
+import { checkCustomPresetWork, checkMigratedStateWork, checkPendingImportWork, preparePendingImport,
+  preparePendingImportWork, validateCustomPresetWork, validateMigratedState, validateWorkspaceProject, validateWorkspaceProjectWork } from '../validation';
 import type { WorkspaceImportAttemptProvenance, WorkspaceProject } from '../contracts';
 import type { StoredPendingImport, StoredPreset, StoredImportAttemptProvenance } from '../schema';
 import { NORMALIZED_STORE_NAMES, type ProjectHeader, type ProjectStoreName } from './schema';
@@ -285,7 +285,30 @@ export async function trustedImportDescriptor(row: StoredPendingImport, hash: (t
     pendingImportDigest: await hash(canonicalText(row.pendingImport)),
     ...(Object.hasOwn(row, 'attemptProvenance') ? { attemptProvenance: { ...row.attemptProvenance! } } : {}) };
 }
-async function validateCapture(captured: CapturedWorkspaceCommand, batch: WorkspaceBatch, work: WorkRuntime, before = true): Promise<void> {
+interface TrustedCaptureCheck { hash(text: string): Promise<string>; writtenImports?: readonly StoredPendingImport[] }
+/** Trusted Import: validateCapture's pending-import row checks with the sync traversals and native digests.
+ * A row this commit just wrote is proved by equal frame text; it was prepared once from the batch. */
+async function checkTrustedImportRow(row: StoredPendingImport, manifest: NormalizedWorkspaceManifest, trusted: TrustedCaptureCheck): Promise<void> {
+  const written = trusted.writtenImports?.find(value => value.id === row.id);
+  if (written) {
+    requireContract(envelopeFrameText('workspace-import-v1', row) === envelopeFrameText('workspace-import-v1', written), 'Pending import readback mismatch');
+  } else {
+    runSync(exactFieldsWork(row, ['id', 'pendingImport', 'position'], ['attemptProvenance', ''])); externalId(row.id); safeCounter(row.position);
+    const pending = row.pendingImport;
+    runSync(exactFieldsWork(pending, ['id', 'targetProjectId', 'name', 'state', 'createdAt', 'warnings'], ['cloud', '']));
+    requireContract(Array.isArray(pending.warnings), 'Invalid retained import warnings');
+    for (let i = 0; i < pending.warnings.length; i++) {
+      if (i in pending.warnings) requireContract(typeof pending.warnings[i] === 'string', 'Invalid retained import warning');
+    }
+    const input = runSync(copyEnumerableWork(pending)) as unknown as Record<string, unknown>; delete input.warnings;
+    validateMigratedState(pending.state); preparePendingImport(input, { warningPolicy: 'reject' });
+    requireContract(row.id === pending.id, 'Pending import identity mismatch');
+    if (row.attemptProvenance !== undefined) provenance(row.attemptProvenance, true);
+  }
+  const descriptor = manifest.pendingImports.find(value => value.id === row.id);
+  requireContract(descriptor && canonicalText(descriptor) === canonicalText(await trustedImportDescriptor(row, trusted.hash)), 'Import descriptor mismatch');
+}
+async function validateCapture(captured: CapturedWorkspaceCommand, batch: WorkspaceBatch, work: WorkRuntime, before = true, trusted?: TrustedCaptureCheck): Promise<void> {
   await work.run(capturedFrameWork(batch)); await work.run(validateWorkspaceManifestWork(captured.manifest));
   await verifyWorkspaceReceipts(captured.manifest, captured.initial, work);
   requireContract(captured.manifest.storageGeneration === batch.storageGeneration, 'Workspace generation changed');
@@ -300,6 +323,7 @@ async function validateCapture(captured: CapturedWorkspaceCommand, batch: Worksp
     requireContract(descriptor && await same(work, descriptor, await presetDescriptor(row, work)), 'Preset descriptor mismatch');
   }
   for (const row of captured.pendingImports) {
+    if (trusted) { await work.run(effect(1, () => {})); await checkTrustedImportRow(row, captured.manifest, trusted); continue; }
     await work.run(exactFieldsWork(row, ['id', 'pendingImport', 'position'], ['attemptProvenance', ''])); externalId(row.id); safeCounter(row.position);
     const pending = row.pendingImport;
     await work.run(exactFieldsWork(pending, ['id', 'targetProjectId', 'name', 'state', 'createdAt', 'warnings'], ['cloud', '']));
@@ -358,7 +382,7 @@ export async function prepareWorkspaceMutation(captured: CapturedWorkspaceComman
   assertWorkRuntime(work); canonicalTimestamp(now); const owner = work.own(0);
   let recoveryCopies: Awaited<ReturnType<typeof prepareWorkspaceRecoveryCopies>> | undefined;
   try {
-    await validateCapture(captured, batch, work);
+    await validateCapture(captured, batch, work, true, trusted ? { hash: trusted.hash } : undefined);
     requireContract(captured.manifest.revision < Number.MAX_SAFE_INTEGER, 'Workspace revision exhausted');
     const next: NormalizedWorkspaceManifest = { ...captured.manifest, revision: captured.manifest.revision + 1,
       members: await work.run(copyListWork(captured.manifest.members, owner)),
@@ -367,6 +391,8 @@ export async function prepareWorkspaceMutation(captured: CapturedWorkspaceComman
     const addProjects: NormalizedProject[] = [], removeProjects: ProjectScope[] = [];
     const putPresets: StoredPreset[] = [], deletePresetIds: string[] = [], putImports: StoredPendingImport[] = [], deleteImportIds: string[] = [];
     const requestDigest = trusted?.requestDigest ?? await hashWorkspaceRequest(batch, work);
+    // Trusted Import: native twin of hashFrame(work, 'proof', canonicalFrame(value)).
+    const proofDigest = (value: unknown) => trusted ? trusted.hash(canonicalText(value)) : hashFrame(work, 'proof', canonicalFrame(value));
     const member = (id: string) => work.run(findWork(next.members, id, value => value.projectId));
     const addProject = async (raw: WorkspaceProject, consumedImport: WorkspaceMember['consumedImport'] = {}) => {
       const project = trusted ? validateWorkspaceProject(raw, { warningPolicy: 'reject' })
@@ -414,7 +440,7 @@ export async function prepareWorkspaceMutation(captured: CapturedWorkspaceComman
       if (!found) values.push(descriptor); next.presets = values; putPresets.push(row);
     };
     const setImport = async (row: StoredPendingImport) => {
-      const descriptor = await importDescriptor(row, work); const values: ImportDescriptor[] = []; let found = false;
+      const descriptor = trusted ? await trustedImportDescriptor(row, trusted.hash) : await importDescriptor(row, work); const values: ImportDescriptor[] = []; let found = false;
       for (const previous of next.pendingImports) {
         const match = (await work.run(compareStringsWork(previous.id, row.id))) === 0;
         await work.run(effect(1, () => { owner.grow(8); values.push(match ? descriptor : previous); })); found ||= match;
@@ -426,7 +452,7 @@ export async function prepareWorkspaceMutation(captured: CapturedWorkspaceComman
       const descriptor = await work.run(findWork(next.pendingImports, pending.id, value => value.id));
       requireContract(Boolean(row) === Boolean(descriptor), 'Missing pending import capture');
       const consumed = await consumedFor(pending.id); requireContract(!(row && consumed), 'Ambiguous import evidence');
-      const digest = await hashFrame(work, 'proof', canonicalFrame(pending));
+      const digest = await proofDigest(pending);
       const storedAttempt = attempt ? { ...attempt, pendingImportDigest: digest } : undefined;
       if (row) {
         requireContract(await same(work, row.pendingImport, pending)
@@ -502,7 +528,8 @@ export async function prepareWorkspaceMutation(captured: CapturedWorkspaceComman
         outcome = 'preset-deleted'; break;
       }
       case 'stage-import': {
-        const pending = await work.run(preparePendingImportWork(intent.pendingImport, { warningPolicy: 'retain' }));
+        const pending = trusted ? preparePendingImport(intent.pendingImport, { warningPolicy: 'retain' })
+          : await work.run(preparePendingImportWork(intent.pendingImport, { warningPolicy: 'retain' }));
         const match = await matchingPending(pending, intent.attemptProvenance);
         if (match.outcome) outcome = match.outcome;
         else {
@@ -514,7 +541,8 @@ export async function prepareWorkspaceMutation(captured: CapturedWorkspaceComman
       }
       case 'replace-staged-import': {
         const expected = intent.expected, replacement = intent.replacement;
-        const pending = await work.run(preparePendingImportWork(replacement.pendingImport, { warningPolicy: 'retain' }));
+        const pending = trusted ? preparePendingImport(replacement.pendingImport, { warningPolicy: 'retain' })
+          : await work.run(preparePendingImportWork(replacement.pendingImport, { warningPolicy: 'retain' }));
         requireContract(expected.sourceKeyDigest === replacement.attemptProvenance.sourceKeyDigest
           && expected.payloadDigest !== replacement.attemptProvenance.payloadDigest
           && (await work.run(compareStringsWork(expected.importId, pending.id))) !== 0
@@ -530,7 +558,7 @@ export async function prepareWorkspaceMutation(captured: CapturedWorkspaceComman
           requireContract((await work.run(compareStringsWork(old.pendingImport.targetProjectId, expected.targetProjectId))) === 0
             && old.pendingImport.createdAt === expected.createdAt && old.attemptProvenance
             && old.attemptProvenance.sourceKeyDigest === expected.sourceKeyDigest && old.attemptProvenance.payloadDigest === expected.payloadDigest
-            && old.attemptProvenance.pendingImportDigest === await hashFrame(work, 'proof', canonicalFrame(old.pendingImport)), 'Staged import changed');
+            && old.attemptProvenance.pendingImportDigest === await proofDigest(old.pendingImport), 'Staged import changed');
           position = old.position; next.pendingImports = await work.run(withoutWork(next.pendingImports, old.id, value => value.id, owner)); deleteImportIds.push(old.id);
         } else { await ensureAvailableTarget(expected.targetProjectId); position = (next.pendingImports.at(-1)?.position ?? -1) + 1; }
         safeCounter(position);
@@ -546,7 +574,7 @@ export async function prepareWorkspaceMutation(captured: CapturedWorkspaceComman
         // Historical admission permits two pending imports to name one unused target.
         // Consumption claims the project ID; it must not erase or reject the other pending record.
         const pending = row.pendingImport; requireContract(!(await member(pending.targetProjectId)), 'Import target is occupied');
-        const digest = await hashFrame(work, 'proof', canonicalFrame(pending));
+        const digest = await proofDigest(pending);
         await addProject({ id: pending.targetProjectId, name: pending.name, initialState: pending.state,
           ...(pending.cloud === undefined ? {} : { cloud: pending.cloud }) }, { consumedImportId: pending.id,
           consumedImportCreatedAt: pending.createdAt, consumedImportDigest: digest,
@@ -571,7 +599,8 @@ export async function prepareWorkspaceMutation(captured: CapturedWorkspaceComman
     next.commitWindow = await appendWorkspaceReceipt(captured.manifest.commitWindow, next.lastCommit, work);
     await work.run(validateWorkspaceManifestWork(next));
     const delta = await work.run(diffWorkspaceCatalogWork(await work.run(projectWorkspaceCatalogWork(captured.manifest)), await work.run(projectWorkspaceCatalogWork(next))));
-    owner.grow((await work.run(rawValueWeightWork({ manifest: next, putPresets, putImports, delta }))).bytes);
+    owner.grow((trusted ? runSync(rawValueWeightWork({ manifest: next, putPresets, putImports, delta }))
+      : await work.run(rawValueWeightWork({ manifest: next, putPresets, putImports, delta }))).bytes);
     return { batch, requestDigest, manifest: next, outcome, addProjects, removeProjects, putPresets, deletePresetIds, putImports, deleteImportIds, delta,
       ...(recoveryCopies ? { addBackup: recoveryCopies.backup } : {}), release() { recoveryCopies?.release(); owner.release(); } };
   } catch (error) { recoveryCopies?.release(); owner.release(); throw error; }
