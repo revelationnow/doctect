@@ -10,7 +10,7 @@ import { reconstructWorkspaceRecords, upgradeStoredProjectRecordWork, type Migra
 import { isRecognizedLedger, isRecognizedLedgerWork, validateHistoricalBackup } from '../historicalBootstrap';
 import { assertWorkRuntime, createWorkRuntime, effect, primitive, runSync, type Ownership, type Phase, type Work, type WorkRuntime } from '../../../shared/cooperativeWork.js';
 import { canonicalText, compareStringsWork, copyEnumerableWork, enumerableEntriesWork, equalFrameWork, jsonTextWork, quoteWork, rawValueWeightWork, stableSortWork, textWork, utf8LengthWork, type Frame } from '../../../shared/jsonWork.js';
-import { canonicalFrame, envelopeFrame, frameBytesWork, hashFrame, listFrame, orderedFrame } from './work';
+import { canonicalFrame, envelopeFrame, envelopeFrameText, frameBytesWork, hashFrame, listFrame, orderedFrame } from './work';
 import { equalSourceArchiveWork, hashSourceImages } from './sourceDigests';
 import { compareArchiveWork, compareEnvelopeWork, compareRecordWork, emitComparedRecordWork } from './frameComparison';
 import { createInitialWorkspaceManifest, deriveWorkspaceIncarnation, projectWorkspaceOrderWork, validateWorkspaceManifestWork,
@@ -1918,7 +1918,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
   }
 
   async function sealWorkspaceCapture(capture: WorkspaceCapture, work: WorkRuntime,
-    mutation?: RecordMutation, committed?: () => void, options: { nativeProjectCompare?: boolean } = {}): Promise<void> {
+    mutation?: RecordMutation, committed?: () => void, options: { nativeProjectCompare?: boolean; nativeImportCompare?: boolean } = {}): Promise<void> {
     let db: IDBDatabase | undefined;
     const observations = environment.onWorkspaceOperation ? [] as WorkspaceRepositoryOperation[] : undefined;
     const operations: { store: WorkspaceStoreName; key: IDBValidKey; value?: unknown; method: 'add' | 'put' | 'delete' }[] = [];
@@ -1974,6 +1974,18 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
             const text = frameRecord(selection.store as ProjectStoreName, value as object);
             try {
               complete = text === frameRecord(selection.store as ProjectStoreName, before.value as object);
+              requireContract(complete, 'Workspace captured record changed');
+            } finally {
+              work.note('primitiveExceptions'); work.note('sealRows'); work.note('sealBytes', text.length);
+              if (!complete) work.note('unmeasuredValues');
+            }
+            return;
+          }
+          if (options.nativeImportCompare && selection.store === 'pendingImports') {
+            // Trusted Import: the native twin of envelopeFrame's text; equal text is an equal frame.
+            const text = envelopeFrameText('workspace-seal', value as object);
+            try {
+              complete = text === envelopeFrameText('workspace-seal', before.value as object);
               requireContract(complete, 'Workspace captured record changed');
             } finally {
               work.note('primitiveExceptions'); work.note('sealRows'); work.note('sealBytes', text.length);
@@ -2164,7 +2176,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
           // Durable facts must be applied before the caller's post-completion lifecycle guard can reject.
           state.lastBefore = { identity: { ...input!.batch.identity }, catalog: beforeCatalog };
           for (const key of retiredKeys) { const owner = owners.get(key); if (owner) owner.valid = false; owners.delete(key); }
-        });
+        }, { nativeImportCompare: true });
         environment.workspaceFault?.({ phase: 'after-commit' }); work.assertCurrent();
         capture.release(); capture = undefined;
         work.setContext('verify', 'target', 'proof');
@@ -2173,7 +2185,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
         const after = await workspaceCommandCapture(capture, work);
         requireContract(await work.run(equalFrameWork(canonicalFrame(after.marker), canonicalFrame(state.authority))), 'Workspace activation changed after commit');
         const verified = await verifyWorkspacePostconditions(input.batch, after, prepared.manifest.lastCommit!, work,
-          { requestDigest, written: prepared.addProjects });
+          { requestDigest, written: prepared.addProjects, writtenImports: prepared.putImports, hash });
         environment.workspaceFault?.({ phase: 'after-readback' }); work.assertCurrent();
         state.workspace = after.manifest;
         return { type: 'workspace-committed', outcome: verified.outcome, receipt: verified.receipt, delta: prepared.delta,

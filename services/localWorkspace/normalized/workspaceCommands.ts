@@ -617,10 +617,12 @@ const outcomeTags: Record<WorkspaceBatch['intent']['type'], readonly WorkspaceCo
 
 /** Checks fresh after-state; never reconstructs an old workspace or treats receipt presence as sufficient. */
 export async function verifyWorkspacePostconditions(batch: WorkspaceBatch, current: CapturedWorkspaceCommand,
-  receipt: WorkspaceReceipt, work: WorkRuntime, trusted?: { requestDigest: string; written: readonly NormalizedProject[] }): Promise<WorkspaceInspectedResult> {
+  receipt: WorkspaceReceipt, work: WorkRuntime, trusted?: { requestDigest: string; written: readonly NormalizedProject[];
+    writtenImports?: readonly StoredPendingImport[]; hash?(text: string): Promise<string> }): Promise<WorkspaceInspectedResult> {
   assertWorkRuntime(work); const owner = work.own(0);
   try {
-    await validateCapture(current, batch, work, false);
+    const importCheck = trusted?.hash ? { hash: trusted.hash, writtenImports: trusted.writtenImports ?? [] } : undefined;
+    await validateCapture(current, batch, work, false, importCheck);
     const manifest = current.manifest;
     requireContract(await same(work, receipt.identity, batch.identity) && await same(work, receipt.before, batch.expected)
       && await same(work, receipt.after, { revision: manifest.revision, coreDigest: manifest.coreDigest })
@@ -736,10 +738,6 @@ export async function verifyWorkspacePostconditions(batch: WorkspaceBatch, curre
       case 'stage-import':
       case 'replace-staged-import': {
         const input = intent.type === 'stage-import' ? intent.pendingImport : intent.replacement.pendingImport;
-        const provenanceInput = intent.type === 'stage-import' ? intent.attemptProvenance : intent.replacement.attemptProvenance;
-        const expected = await work.run(preparePendingImportWork(input, { warningPolicy: 'retain' }));
-        const digest = await hashFrame(work, 'proof', canonicalFrame(expected));
-        const expectedAttempt = provenanceInput ? { ...provenanceInput, pendingImportDigest: digest } : undefined;
         const row = await work.run(findWork(current.pendingImports, input.id, value => value.id));
         let consumed: WorkspaceMember | undefined;
         for (const member of manifest.members) {
@@ -749,15 +747,26 @@ export async function verifyWorkspacePostconditions(batch: WorkspaceBatch, curre
             requireContract(!consumed, 'Ambiguous consumed result'); consumed = member;
           }
         }
-        if (outcome === 'already-consumed') {
-          requireContract(!row && consumed && (await work.run(compareStringsWork(consumed.projectId, expected.targetProjectId))) === 0
-            && consumed.consumedImport.consumedImportCreatedAt === expected.createdAt && consumed.consumedImport.consumedImportDigest === digest
-            && await same(work, consumed.consumedImport.consumedImportAttempt ?? null, expectedAttempt ?? null), 'Consumed import result mismatch');
-          await requireLiveMember(current, consumed, work);
-        } else {
-          requireContract(row && !consumed && await same(work, row.pendingImport, expected)
-            && await same(work, row.attemptProvenance ?? null, expectedAttempt ?? null), 'Staged import result mismatch');
+        const written = importCheck?.writtenImports.find(value => value.id === input.id);
+        if (written && (outcome === 'staged' || outcome === 'replaced')) {
+          // Trusted Import: validateCapture proved this row equals the row this commit prepared once and wrote.
+          requireContract(row && !consumed, 'Staged import result mismatch');
           pendingImports.push(row.pendingImport);
+        } else {
+          const provenanceInput = intent.type === 'stage-import' ? intent.attemptProvenance : intent.replacement.attemptProvenance;
+          const expected = await work.run(preparePendingImportWork(input, { warningPolicy: 'retain' }));
+          const digest = await hashFrame(work, 'proof', canonicalFrame(expected));
+          const expectedAttempt = provenanceInput ? { ...provenanceInput, pendingImportDigest: digest } : undefined;
+          if (outcome === 'already-consumed') {
+            requireContract(!row && consumed && (await work.run(compareStringsWork(consumed.projectId, expected.targetProjectId))) === 0
+              && consumed.consumedImport.consumedImportCreatedAt === expected.createdAt && consumed.consumedImport.consumedImportDigest === digest
+              && await same(work, consumed.consumedImport.consumedImportAttempt ?? null, expectedAttempt ?? null), 'Consumed import result mismatch');
+            await requireLiveMember(current, consumed, work);
+          } else {
+            requireContract(row && !consumed && await same(work, row.pendingImport, expected)
+              && await same(work, row.attemptProvenance ?? null, expectedAttempt ?? null), 'Staged import result mismatch');
+            pendingImports.push(row.pendingImport);
+          }
         }
         if (intent.type === 'replace-staged-import') requireContract(!(await work.run(findWork(manifest.pendingImports, intent.expected.importId, value => value.id))), 'Replaced import remains');
         break;

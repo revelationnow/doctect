@@ -1,6 +1,6 @@
 // @vitest-environment node
 import 'fake-indexeddb/auto';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runSync } from '../../../../shared/cooperativeWork.js';
 import { canonicalText } from '../../../../shared/jsonWork.js';
 import { canonicalFrame, envelopeFrame, envelopeFrameText, hashFrame } from '../../../../services/localWorkspace/normalized/work';
@@ -164,6 +164,35 @@ describe('trusted import preparation', () => {
     expect(trusted.outcome).toBe('consumed');
   });
 
+  it('consumes beside another stored pending import through the trusted capture check only', async () => {
+    const pendingCheck = vi.spyOn(validation, 'checkPendingImportWork'), stateCheck = vi.spyOn(validation, 'checkMigratedStateWork');
+    try {
+      const captured = await capture();
+      expect(captured.pendingImports.map((row: any) => row.id).sort()).toEqual(['eaten', 'kept']);
+      const request: WorkspaceBatch = { ...h.request({ type: 'consume-import', importId: 'eaten' }),
+        expected: { revision: captured.manifest.revision, coreDigest: captured.manifest.coreDigest } };
+      const w = makeWorkHarness(); const input = await commands.captureWorkspaceBatch(request, w.runtime);
+      try {
+        const requestDigest = await commands.hashTrustedWorkspaceRequest(input.batch, sha256Hex);
+        pendingCheck.mockClear(); stateCheck.mockClear();
+        const result = await commands.prepareWorkspaceMutation(captured, input.batch, h.preparation.now(), w.runtime, undefined, { requestDigest, hash: sha256Hex });
+        expect(result.outcome).toBe('consumed'); result.release();
+      } finally { input.release(); }
+      expect(pendingCheck).not.toHaveBeenCalled();
+      expect(stateCheck).not.toHaveBeenCalled();
+    } finally { pendingCheck.mockRestore(); stateCheck.mockRestore(); }
+  });
+
+  it('replaces a staged import exactly like the metered preparation', async () => {
+    const sourceKeyDigest = 'f'.repeat(64), old = pendingInput(createPlannerProject(), 'replace-old');
+    expect((await h.commit({ type: 'stage-import', pendingImport: old, attemptProvenance: { sourceKeyDigest, payloadDigest: '1'.repeat(64) } })).outcome).toBe('staged');
+    const { metered, trusted } = await preparePair({ type: 'replace-staged-import',
+      expected: { importId: old.id, targetProjectId: old.targetProjectId, createdAt: old.createdAt, sourceKeyDigest, payloadDigest: '1'.repeat(64) },
+      replacement: { pendingImport: pendingInput(legacyState(), 'replace-new'), attemptProvenance: { sourceKeyDigest, payloadDigest: '2'.repeat(64) } } });
+    expect(trusted).toEqual(metered);
+    expect(trusted.outcome).toBe('replaced');
+  });
+
   it('still refuses a corrupt descriptor on an untouched pending import', async () => {
     const captured = await capture();
     const kept = captured.manifest.pendingImports.find((row: any) => row.id === 'kept');
@@ -192,5 +221,74 @@ describe('trusted import preparation', () => {
       await expect(commands.prepareWorkspaceMutation(captured, input.batch, h.preparation.now(), w.runtime, undefined, { requestDigest, hash: sha256Hex }))
         .rejects.toThrow('Import descriptor mismatch');
     } finally { input.release(); }
+  });
+});
+
+describe('trusted import commits', () => {
+  let h: Awaited<ReturnType<typeof createWorkspaceCommandHarness>>;
+  beforeEach(async () => { h = await createWorkspaceCommandHarness(); });
+  afterEach(() => h?.adapter.close());
+
+  it('verifies a fresh stage by readback equality, preparing the input once', async () => {
+    const metered = vi.spyOn(validation, 'preparePendingImportWork'), sync = vi.spyOn(validation, 'preparePendingImport');
+    try {
+      const result = await h.commit({ type: 'stage-import', pendingImport: pendingInput(legacyState(), 'fresh') });
+      expect(result.outcome).toBe('staged');
+      expect(metered).not.toHaveBeenCalled();
+      expect(sync.mock.calls.filter(([input]) => (input as { id?: string }).id === 'fresh')).toHaveLength(1);
+    } finally { metered.mockRestore(); sync.mockRestore(); }
+    const stored = (await physicalRows(h, ['pendingImports'])).pendingImports;
+    expect(stored.map((row: any) => row.id)).toEqual(['fresh']);
+  });
+
+  it('refuses to acknowledge a stage whose durable readback differs from what was written', async () => {
+    let fired = false;
+    h.environment.workspaceReadResult = (operation, value) => {
+      if (operation.phase !== 'verify-read' || operation.store !== 'pendingImports') return value;
+      fired = true; const row = value as any; return { ...row, pendingImport: { ...row.pendingImport, name: 'Changed' } };
+    };
+    await expect(h.commit({ type: 'stage-import', pendingImport: pendingInput(legacyState(), 'tampered') })).rejects.toThrow('Pending import readback mismatch');
+    expect(fired).toBe(true);
+  });
+
+  it('still answers a retried stage and a repeated consume with full verification', async () => {
+    const pendingImport = pendingInput(legacyState(), 'retried');
+    const attemptProvenance = { sourceKeyDigest: 'd'.repeat(64), payloadDigest: 'e'.repeat(64) };
+    expect((await h.commit({ type: 'stage-import', pendingImport, attemptProvenance })).outcome).toBe('staged');
+    const metered = vi.spyOn(validation, 'preparePendingImportWork');
+    try {
+      expect((await h.commit({ type: 'stage-import', pendingImport, attemptProvenance })).outcome).toBe('already-staged');
+      expect(metered).toHaveBeenCalled();
+    } finally { metered.mockRestore(); }
+    expect((await h.commit({ type: 'consume-import', importId: 'retried' })).outcome).toBe('consumed');
+    await h.commit({ type: 'activate-project', projectId: h.a.id });
+    expect((await h.commit({ type: 'consume-import', importId: 'retried' })).outcome).toBe('already-consumed');
+  });
+
+  it('refuses a consume whose pending-import row changed between capture and seal', async () => {
+    await h.commit({ type: 'stage-import', pendingImport: pendingInput(legacyState(), 'raced') });
+    const [row] = (await physicalRows(h, ['pendingImports'])).pendingImports;
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const opening = h.indexedDB.open(h.databaseName); opening.onsuccess = () => resolve(opening.result); opening.onerror = () => reject(opening.error);
+    });
+    try {
+      h.environment.workspaceFault = point => {
+        // A transaction created now is ordered before the seal's own transaction on the same store.
+        if (point.phase === 'before-cas') db.transaction('pendingImports', 'readwrite').objectStore('pendingImports')
+          .put({ ...row, pendingImport: { ...row.pendingImport, name: 'Raced' } });
+      };
+      await expect(h.commit({ type: 'consume-import', importId: 'raced' })).rejects.toThrow('Workspace captured record changed');
+    } finally { h.environment.workspaceFault = undefined; db.close(); }
+  });
+
+  it('stores the same rows through the trusted commit as the metered preparation describes', async () => {
+    await h.commit({ type: 'stage-import', pendingImport: pendingInput(legacyState(), 'bytes') });
+    const [row] = (await physicalRows(h, ['pendingImports'])).pendingImports;
+    const [workspace] = (await physicalRows(h, ['workspace'])).workspace;
+    const descriptor = workspace.pendingImports.find((value: any) => value.id === 'bytes');
+    const w = makeWorkHarness();
+    expect(descriptor.recordDigest).toBe(await hashFrame(w.runtime, 'proof', envelopeFrame('workspace-import-v1', row)));
+    expect(descriptor.pendingImportDigest).toBe(await hashFrame(w.runtime, 'proof', canonicalFrame(row.pendingImport)));
+    expect(row.pendingImport).toEqual(await makeWorkHarness().runtime.run(preparePendingImportWork(pendingInput(legacyState(), 'bytes'), { warningPolicy: 'retain' })));
   });
 });
