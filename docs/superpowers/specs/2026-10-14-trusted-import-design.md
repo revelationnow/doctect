@@ -118,3 +118,16 @@ The branch reports the measured numbers in its final commit message and in this 
 - The cooperative Work runtime and its guard checks. Making them cheaper everywhere is a separate,
   later change.
 - Ordinary incremental edits.
+
+## Result
+
+| 2026 Planner gallery project | before | after |
+|---|---|---|
+| click → editor, Chromium dev build, desktop | 33s | 6.7s |
+| Node bench `stage-import` | 10.3s | 1.3s |
+| Node bench `consume-import` | 5.7s | 2.9s |
+
+The click-to-editor and stage targets are met. Consume misses its 2s bench target. Its remaining time is
+native canonical text work that this design keeps: the trusted project-create birth digests (about 0.85s,
+listed under Unchanged) and the synchronous re-validation of the captured pending-import row (about 0.5s),
+plus garbage collection. Lowering it further means changing the create path, which is a separate change.
