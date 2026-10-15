@@ -62,8 +62,10 @@ create, open and replace already do.
      is already native (`hashTrustedWorkspaceRequest`).
    - Post-write verification receives the written import rows (as `written` already does for created
      projects). A readback row must equal the written row by native canonical text; the input is not
-     prepared a second time. An outcome of `already-staged` or `already-consumed` (nothing was written)
-     keeps the full metered verification.
+     prepared a second time. For an outcome of `already-staged` or `already-consumed` (nothing was
+     written) the captured rows are validated with the sync traversals (same rules), as in every
+     trusted command, while the postcondition branch keeps its metered re-preparation of the input and
+     its digest checks.
 3. **Trusted consume.** For `consume-import`:
    - The captured pending-import rows that `prepareWorkspaceMutation` re-validates (exact fields,
      `checkMigratedStateWork`, `checkPendingImportWork`, descriptor equality) are validated once,
