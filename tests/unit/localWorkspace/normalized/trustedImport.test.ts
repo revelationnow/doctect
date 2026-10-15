@@ -14,7 +14,7 @@ import { createWorkspaceCommandHarness } from '../../../helpers/workspaceCommand
 import { mutateRow, physicalRows } from '../../../helpers/normalizationHarness';
 import { makeIncrementalProject } from '../../../helpers/incrementalFixtures';
 import { createPlannerProject } from '../../../../services/presets';
-import { createNormalizedRepository } from '../../../../services/localWorkspace/normalized/repository';
+import { createNormalizedRepository, type ActiveRead } from '../../../../services/localWorkspace/normalized/repository';
 import { NORMALIZED_STORE_NAMES, type NormalizedProject } from '../../../../services/localWorkspace/normalized/schema';
 import type { StoredPendingImport } from '../../../../services/localWorkspace/schema';
 
@@ -305,8 +305,14 @@ describe('trusted active read', () => {
   beforeEach(async () => { h = await createWorkspaceCommandHarness(); });
   afterEach(() => h?.adapter.close());
   const both = async () => {
-    const repository = createNormalizedRepository(h.environment) as any;
+    const repository = createNormalizedRepository(h.environment);
     return { metered: await repository.readActiveSnapshot(), trusted: await repository.readTrustedActiveSnapshot() };
+  };
+  const project = (read: ActiveRead | undefined, id: string) => read!.snapshot.projects.find(value => value.id === id)!;
+  /** The trusted read and the trusted open (admitWorkspace) refuse the same durable corruption with the same message. */
+  const refusesBoth = async (message: string) => {
+    await expect(createNormalizedRepository(h.environment).readTrustedActiveSnapshot()).rejects.toThrow(message);
+    await expect(createNormalizedRepository(h.environment).admitWorkspace()).rejects.toThrow(message);
   };
 
   it('returns exactly the metered active read after stage, consume, a preset save and a saved edit', async () => {
@@ -319,16 +325,41 @@ describe('trusted active read', () => {
     const created = await h.commit({ type: 'create-and-activate-project', project: { ...makeIncrementalProject(2), id: 'edited' } });
     const material = created.projects[0];
     await h.repository.bindAdmittedProject(material.records);
-    const root = (await both()).metered.snapshot.projects.find((project: any) => project.id === 'edited').initialState.nodes.root;
+    ({ metered, trusted } = await both()); expect(trusted).toEqual(metered);
+    const root = project(metered, 'edited').initialState.nodes.root;
     await h.repository.commitDocument({ scope: material.scope, clientId: 'trusted-read', commitGeneration: 1, commitId: 'edit-1', editorGeneration: 1,
       expectedRevision: 0, changes: [{ type: 'put-node', node: { ...root, title: 'Saved edit' } }] });
     ({ metered, trusted } = await both());
     expect(trusted).toEqual(metered);
-    expect(trusted.snapshot.projects.find((project: any) => project.id === 'edited').initialState.nodes.root.title).toBe('Saved edit');
+    expect(project(trusted, 'edited').initialState.nodes.root.title).toBe('Saved edit');
   }, 360_000);
 
   it('refuses an active generation without exactly one workspace row', async () => {
     await mutateRow(h, 'workspace', store => store.clear());
-    await expect((createNormalizedRepository(h.environment) as any).readTrustedActiveSnapshot()).rejects.toThrow('Invalid active workspace');
+    await expect(createNormalizedRepository(h.environment).readTrustedActiveSnapshot()).rejects.toThrow('Invalid active workspace');
+  });
+
+  it('refuses a preferences row whose fold record digest no longer matches its fold record, like trusted open', async () => {
+    const scope = h.catalog().members.find(member => member.projectId === h.a.id)!;
+    await h.repository.openAdmittedProject(scope);
+    await h.repository.commitPreferences({ scope, clientId: 'trusted-read', commitId: 'pref-1', commitGeneration: 1, editorGeneration: 1,
+      observedPreferenceRevision: 0, patch: { scale: 2 } });
+    const row = (await physicalRows(h, ['projectPreferences'])).projectPreferences.find((row: any) => row.key[1] === h.a.id);
+    expect(row.revision).toBe(1);
+    await mutateRow(h, 'projectPreferences', store => store.put({ ...row, foldRecordDigest: 'f'.repeat(64) }));
+    await refusesBoth('Fold record mismatch');
+  });
+
+  it('refuses a stored preset whose position differs from its manifest descriptor, like trusted open', async () => {
+    await h.commit({ type: 'save-custom-preset', preset: { id: 'preset', title: 'Preset', desc: '', isCustom: true, initialState: makeIncrementalProject(2).initialState } });
+    const [row] = (await physicalRows(h, ['presets'])).presets;
+    await mutateRow(h, 'presets', store => store.put({ ...row, position: row.position + 1 }));
+    await refusesBoth('Active ancillary descriptor mismatch');
+  });
+
+  it('refuses a missing pending-import row whose manifest descriptor remains, like trusted open', async () => {
+    await h.commit({ type: 'stage-import', pendingImport: pendingInput(legacyState(), 'orphaned') });
+    await mutateRow(h, 'pendingImports', store => store.delete('orphaned'));
+    await refusesBoth('Active ancillary membership mismatch');
   });
 });
