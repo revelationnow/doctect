@@ -4,7 +4,7 @@ import type { ImportDescriptor, PresetDescriptor, WorkspaceCommandIdentity, Work
 import { assertWorkRuntime, effect, primitive, runSync, type Ownership, type Work, type WorkRuntime } from '../../../shared/cooperativeWork.js';
 import { canonicalBytesWork, canonicalText, compareStringsWork, copyEnumerableWork, rawValueWeightWork, stableSortWork } from '../../../shared/jsonWork.js';
 import { authority, canonicalTimestamp, denseDataArrayWork, exactFieldsWork, frameRecord, privateId, requireContract, safeCounter, validDigest } from './commitProof';
-import { canonicalFrame, envelopeFrame, equalFrameWork, hashFrame, orderedFrame } from './work';
+import { canonicalFrame, envelopeFrame, envelopeFrameText, equalFrameWork, hashFrame, orderedFrame } from './work';
 import { decomposeProject, decomposeProjectWork, reconstructProjectWork } from './codec';
 import { createProjectBirthDigests, createTrustedProjectBirthDigests, verifyProjectBirth } from './projectBaseline';
 import { deriveWorkspaceIncarnation, validateWorkspaceManifestWork, workspaceManifestCoreFrame,
@@ -276,6 +276,13 @@ async function importDescriptor(row: StoredPendingImport, work: WorkRuntime): Pr
   return { id: row.id, position: row.position, targetProjectId: row.pendingImport.targetProjectId, createdAt: row.pendingImport.createdAt,
     recordDigest: await hashFrame(work, 'proof', envelopeFrame('workspace-import-v1', row)),
     pendingImportDigest: await hashFrame(work, 'proof', canonicalFrame(row.pendingImport)),
+    ...(Object.hasOwn(row, 'attemptProvenance') ? { attemptProvenance: { ...row.attemptProvenance! } } : {}) };
+}
+/** Native twin of importDescriptor for the worker's own commit; tests pin equality. */
+export async function trustedImportDescriptor(row: StoredPendingImport, hash: (text: string) => Promise<string>): Promise<ImportDescriptor> {
+  return { id: row.id, position: row.position, targetProjectId: row.pendingImport.targetProjectId, createdAt: row.pendingImport.createdAt,
+    recordDigest: await hash(envelopeFrameText('workspace-import-v1', row)),
+    pendingImportDigest: await hash(canonicalText(row.pendingImport)),
     ...(Object.hasOwn(row, 'attemptProvenance') ? { attemptProvenance: { ...row.attemptProvenance! } } : {}) };
 }
 async function validateCapture(captured: CapturedWorkspaceCommand, batch: WorkspaceBatch, work: WorkRuntime, before = true): Promise<void> {

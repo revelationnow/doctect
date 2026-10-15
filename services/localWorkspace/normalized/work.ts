@@ -1,5 +1,5 @@
 import { effect, primitive, type FrameKind, type WorkRuntime } from '../../../shared/cooperativeWork.js';
-import { canonicalWork, orderedJsonWork, compareStringsWork, quoteWork, stableSortWork, textWork, type Frame } from '../../../shared/jsonWork.js';
+import { canonicalText, canonicalWork, orderedJsonWork, compareStringsWork, quoteWork, stableSortWork, textWork, type Frame } from '../../../shared/jsonWork.js';
 import { digestFrame } from '../canonical';
 
 export { equalFrameWork, frameBytesWork } from '../../../shared/jsonWork.js';
@@ -26,6 +26,14 @@ export const envelopeFrame = (label: string, value: object): Frame => function* 
     yield* canonicalWork(item, emit); // Each payload starts at its original depth.
   }
   yield* textWork('}]', emit);
+};
+
+/** Native twin of envelopeFrame's text for the worker's own fresh rows: lexical
+ * code-unit key order, each payload framed canonically at its original depth.
+ * Tests pin byte equality with envelopeFrame. */
+export const envelopeFrameText = (label: string, value: object): string => {
+  const keys = Object.keys(value).sort((a, b) => a < b ? -1 : a > b ? 1 : 0);
+  return `[${canonicalText(label)},{${keys.map(key => `${canonicalText(key)}:${canonicalText((value as Record<string, unknown>)[key])}`).join(',')}}]`;
 };
 
 export const listFrame = (label: string, values: readonly object[]): Frame => function* (emit) {
