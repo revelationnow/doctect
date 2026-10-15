@@ -133,6 +133,11 @@ describe('trusted import preparation', () => {
     };
     return { metered: await run(false), trusted: await run(true) };
   };
+  /** The refusal tests corrupt one untouched pending import; stage it unless an earlier test in this run already has. */
+  const stageKept = async () => {
+    if (h.catalog().pendingImports.some(row => row.id === 'kept')) return;
+    expect((await h.commit({ type: 'stage-import', pendingImport: pendingInput(createPlannerProject(), 'kept') })).outcome).toBe('staged');
+  };
 
   it.each([['planner', () => createPlannerProject()], ['schema-7 pre-layer', legacyState]])('stages a %s import exactly like the metered preparation', async (_name, state) => {
     const { metered, trusted } = await preparePair({ type: 'stage-import', pendingImport: pendingInput(state(), `stage-${sequence + 1}`),
@@ -159,7 +164,7 @@ describe('trusted import preparation', () => {
   });
 
   it('consumes beside another stored pending import exactly like the metered preparation', async () => {
-    await h.commit({ type: 'stage-import', pendingImport: pendingInput(createPlannerProject(), 'kept') });
+    await stageKept();
     await h.commit({ type: 'stage-import', pendingImport: pendingInput(legacyState(), 'eaten') });
     const { metered, trusted } = await preparePair({ type: 'consume-import', importId: 'eaten' });
     expect(trusted).toEqual(metered);
@@ -196,6 +201,7 @@ describe('trusted import preparation', () => {
   });
 
   it('still refuses a corrupt descriptor on an untouched pending import', async () => {
+    await stageKept();
     const captured = await capture();
     const kept = captured.manifest.pendingImports.find((row: any) => row.id === 'kept');
     expect(kept).toBeDefined();
@@ -211,6 +217,7 @@ describe('trusted import preparation', () => {
   });
 
   it('refuses a changed pending import row whose manifest descriptor is intact', async () => {
+    await stageKept();
     const captured = await capture();
     expect(captured.pendingImports.some((row: any) => row.id === 'kept')).toBe(true);
     captured.pendingImports = captured.pendingImports.map((row: any) => row.id === 'kept'
@@ -264,7 +271,17 @@ describe('trusted import commits', () => {
     } finally { metered.mockRestore(); }
     expect((await h.commit({ type: 'consume-import', importId: 'retried' })).outcome).toBe('consumed');
     await h.commit({ type: 'activate-project', projectId: h.a.id });
-    expect((await h.commit({ type: 'consume-import', importId: 'retried' })).outcome).toBe('already-consumed');
+    // A repeated consume names only the import id and its row is gone, so there is no input to prepare in either mode.
+    // It is verified by the consumed member's live header (requireLiveMember) and the metered postcondition digest
+    // of the 'already-consumed' outcome, which hashFrame computes; pin that digest and the absence of re-preparation.
+    const prepared = vi.spyOn(validation, 'preparePendingImportWork'), proofs = vi.spyOn(frames, 'hashFrame');
+    try {
+      expect((await h.commit({ type: 'consume-import', importId: 'retried' })).outcome).toBe('already-consumed');
+      expect(prepared).not.toHaveBeenCalled();
+      const postconditions = proofs.mock.calls.filter(([, kind, frame]) => kind === 'proof'
+        && frameText(frame).includes('"doctect-workspace-postconditions-v1"') && frameText(frame).includes('"outcome":"already-consumed"'));
+      expect(postconditions.length).toBeGreaterThan(0);
+    } finally { prepared.mockRestore(); proofs.mockRestore(); }
   });
 
   it('refuses a consume whose pending-import row changed between capture and seal', async () => {

@@ -285,29 +285,9 @@ export async function trustedImportDescriptor(row: StoredPendingImport, hash: (t
     pendingImportDigest: await hash(canonicalText(row.pendingImport)),
     ...(Object.hasOwn(row, 'attemptProvenance') ? { attemptProvenance: { ...row.attemptProvenance! } } : {}) };
 }
+/** Trusted Import: pending-import rows are checked with the sync traversals and native digests;
+ * a row this commit just wrote was prepared once from the batch and is proved by equal frame text. */
 interface TrustedCaptureCheck { hash(text: string): Promise<string>; writtenImports?: readonly StoredPendingImport[] }
-/** Trusted Import: validateCapture's pending-import row checks with the sync traversals and native digests.
- * A row this commit just wrote is proved by equal frame text; it was prepared once from the batch. */
-async function checkTrustedImportRow(row: StoredPendingImport, manifest: NormalizedWorkspaceManifest, trusted: TrustedCaptureCheck): Promise<void> {
-  const written = trusted.writtenImports?.find(value => value.id === row.id);
-  if (written) {
-    requireContract(envelopeFrameText('workspace-import-v1', row) === envelopeFrameText('workspace-import-v1', written), 'Pending import readback mismatch');
-  } else {
-    runSync(exactFieldsWork(row, ['id', 'pendingImport', 'position'], ['attemptProvenance', ''])); externalId(row.id); safeCounter(row.position);
-    const pending = row.pendingImport;
-    runSync(exactFieldsWork(pending, ['id', 'targetProjectId', 'name', 'state', 'createdAt', 'warnings'], ['cloud', '']));
-    requireContract(Array.isArray(pending.warnings), 'Invalid retained import warnings');
-    for (let i = 0; i < pending.warnings.length; i++) {
-      if (i in pending.warnings) requireContract(typeof pending.warnings[i] === 'string', 'Invalid retained import warning');
-    }
-    const input = runSync(copyEnumerableWork(pending)) as unknown as Record<string, unknown>; delete input.warnings;
-    validateMigratedState(pending.state); preparePendingImport(input, { warningPolicy: 'reject' });
-    requireContract(row.id === pending.id, 'Pending import identity mismatch');
-    if (row.attemptProvenance !== undefined) provenance(row.attemptProvenance, true);
-  }
-  const descriptor = manifest.pendingImports.find(value => value.id === row.id);
-  requireContract(descriptor && canonicalText(descriptor) === canonicalText(await trustedImportDescriptor(row, trusted.hash)), 'Import descriptor mismatch');
-}
 async function validateCapture(captured: CapturedWorkspaceCommand, batch: WorkspaceBatch, work: WorkRuntime, before = true, trusted?: TrustedCaptureCheck): Promise<void> {
   await work.run(capturedFrameWork(batch)); await work.run(validateWorkspaceManifestWork(captured.manifest));
   await verifyWorkspaceReceipts(captured.manifest, captured.initial, work);
@@ -323,20 +303,27 @@ async function validateCapture(captured: CapturedWorkspaceCommand, batch: Worksp
     requireContract(descriptor && await same(work, descriptor, await presetDescriptor(row, work)), 'Preset descriptor mismatch');
   }
   for (const row of captured.pendingImports) {
-    if (trusted) { await work.run(effect(1, () => {})); await checkTrustedImportRow(row, captured.manifest, trusted); continue; }
-    await work.run(exactFieldsWork(row, ['id', 'pendingImport', 'position'], ['attemptProvenance', ''])); externalId(row.id); safeCounter(row.position);
-    const pending = row.pendingImport;
-    await work.run(exactFieldsWork(pending, ['id', 'targetProjectId', 'name', 'state', 'createdAt', 'warnings'], ['cloud', '']));
-    requireContract(Array.isArray(pending.warnings), 'Invalid retained import warnings');
-    for (let i = 0; i < pending.warnings.length; i++) await work.run(effect(1, () => {
-      if (i in pending.warnings) requireContract(typeof pending.warnings[i] === 'string', 'Invalid retained import warning');
-    }));
-    const input = await work.run(copyEnumerableWork(pending)) as unknown as Record<string, unknown>; delete input.warnings;
-    await work.run(checkMigratedStateWork(pending.state)); await work.run(checkPendingImportWork(input, { warningPolicy: 'reject' }));
-    requireContract((await work.run(compareStringsWork(row.id, pending.id))) === 0, 'Pending import identity mismatch');
-    if (row.attemptProvenance !== undefined) provenance(row.attemptProvenance, true);
+    if (trusted) await work.run(effect(1, () => {}));
+    const written = trusted?.writtenImports?.find(value => value.id === row.id);
+    if (written) {
+      requireContract(envelopeFrameText('workspace-import-v1', row) === envelopeFrameText('workspace-import-v1', written), 'Pending import readback mismatch');
+    } else {
+      await work.run(exactFieldsWork(row, ['id', 'pendingImport', 'position'], ['attemptProvenance', ''])); externalId(row.id); safeCounter(row.position);
+      const pending = row.pendingImport;
+      await work.run(exactFieldsWork(pending, ['id', 'targetProjectId', 'name', 'state', 'createdAt', 'warnings'], ['cloud', '']));
+      requireContract(Array.isArray(pending.warnings), 'Invalid retained import warnings');
+      for (let i = 0; i < pending.warnings.length; i++) await work.run(effect(1, () => {
+        if (i in pending.warnings) requireContract(typeof pending.warnings[i] === 'string', 'Invalid retained import warning');
+      }));
+      const input = await work.run(copyEnumerableWork(pending)) as unknown as Record<string, unknown>; delete input.warnings;
+      trusted ? validateMigratedState(pending.state) : await work.run(checkMigratedStateWork(pending.state));
+      trusted ? preparePendingImport(input, { warningPolicy: 'reject' }) : await work.run(checkPendingImportWork(input, { warningPolicy: 'reject' }));
+      requireContract((await work.run(compareStringsWork(row.id, pending.id))) === 0, 'Pending import identity mismatch');
+      if (row.attemptProvenance !== undefined) provenance(row.attemptProvenance, true);
+    }
     const descriptor = await work.run(findWork(captured.manifest.pendingImports, row.id, value => value.id));
-    requireContract(descriptor && await same(work, descriptor, await importDescriptor(row, work)), 'Import descriptor mismatch');
+    requireContract(descriptor && (trusted ? canonicalText(descriptor) === canonicalText(await trustedImportDescriptor(row, trusted.hash))
+      : await same(work, descriptor, await importDescriptor(row, work))), 'Import descriptor mismatch');
   }
 }
 
@@ -618,11 +605,10 @@ const outcomeTags: Record<WorkspaceBatch['intent']['type'], readonly WorkspaceCo
 /** Checks fresh after-state; never reconstructs an old workspace or treats receipt presence as sufficient. */
 export async function verifyWorkspacePostconditions(batch: WorkspaceBatch, current: CapturedWorkspaceCommand,
   receipt: WorkspaceReceipt, work: WorkRuntime, trusted?: { requestDigest: string; written: readonly NormalizedProject[];
-    writtenImports?: readonly StoredPendingImport[]; hash?(text: string): Promise<string> }): Promise<WorkspaceInspectedResult> {
+    writtenImports: readonly StoredPendingImport[]; hash(text: string): Promise<string> }): Promise<WorkspaceInspectedResult> {
   assertWorkRuntime(work); const owner = work.own(0);
   try {
-    const importCheck = trusted?.hash ? { hash: trusted.hash, writtenImports: trusted.writtenImports ?? [] } : undefined;
-    await validateCapture(current, batch, work, false, importCheck);
+    await validateCapture(current, batch, work, false, trusted);
     const manifest = current.manifest;
     requireContract(await same(work, receipt.identity, batch.identity) && await same(work, receipt.before, batch.expected)
       && await same(work, receipt.after, { revision: manifest.revision, coreDigest: manifest.coreDigest })
@@ -747,7 +733,7 @@ export async function verifyWorkspacePostconditions(batch: WorkspaceBatch, curre
             requireContract(!consumed, 'Ambiguous consumed result'); consumed = member;
           }
         }
-        const written = importCheck?.writtenImports.find(value => value.id === input.id);
+        const written = trusted?.writtenImports.find(value => value.id === input.id);
         if (written && (outcome === 'staged' || outcome === 'replaced')) {
           // Trusted Import: validateCapture proved this row equals the row this commit prepared once and wrote.
           requireContract(row && !consumed, 'Staged import result mismatch');
