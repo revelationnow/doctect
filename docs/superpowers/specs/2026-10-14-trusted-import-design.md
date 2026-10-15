@@ -29,9 +29,8 @@ The redundant work:
 
 - **Post-commit re-read.** `NormalizedWorkspaceStore.commit` ends every structural command with
   `snapshot()` → `readActiveSnapshot()`: a full metered reopen that re-derives and re-verifies every
-  project in the workspace (`deriveTarget`, `verifyBulk`, metered reconstruct). The editing session
-  already holds the same workspace: `commitStructural` applies the verified command result
-  (`apply(result)`, which opens any new project) before the re-read starts.
+  project in the workspace (`deriveTarget`, `verifyBulk`, metered reconstruct), although the command
+  was just verified against an atomic readback and ordinary editor opens already use the trusted read.
 - **Stage: prepared twice.** `prepareWorkspaceMutation` prepares the pending import through the metered
   `preparePendingImportWork` (v7 → v12 migration, validation, canonical check). After the write,
   `verifyWorkspacePostconditions` prepares the same input again from the batch, hashes it again, and
@@ -46,10 +45,14 @@ The redundant work:
 The worker trusts its own fresh write and the editing session trusts its verified command result, as
 create, open and replace already do.
 
-1. **No post-commit re-read.** After `session.commitStructural`, `NormalizedWorkspaceStore.commit`
-   returns the session's published workspace snapshot instead of `readActiveSnapshot()`. It is built
-   from the command result, which `commitWorkspace` verified against an atomic readback. This applies to
-   every structural command (create, activate, close, presets, stage, replace-staged, consume).
+1. **Trusted post-commit read.** `NormalizedWorkspaceStore`'s `snapshot()` (returned after
+   `session.commitStructural`, and on bootstrap re-entry with a live editor) reads the active generation
+   the way Trusted Active Open does: one readonly transaction, every project reconstructed once with the
+   plain codec, fold records checked, ancillary rows matched to their descriptors. No proof chains,
+   `deriveTarget`, `verifyBulk` or metered reconstruct. It is still a fresh durable read, so callers get
+   the same snapshot as before. (The session's published view is not used: it holds project
+   initializers, which lag behind saved edits.) The repository gains `readTrustedActiveSnapshot`;
+   `readActiveSnapshot` keeps the full metered read for recovery export and legacy-drift checks.
 2. **Trusted stage.** For `stage-import` and `replace-staged-import`:
    - The pending import is prepared once, synchronously, with `preparePendingImport` (the `'sync'` mode
      of the same traversal as `preparePendingImportWork`).
@@ -97,8 +100,10 @@ The branch reports the measured numbers in its final commit message and in this 
   retry outcomes still verify fully.
 - **Consume.** A changed pending-import row between capture and seal is refused, and a digest mismatch is
   refused.
-- **Post-commit snapshot.** After each structural command type, the returned snapshot deep-equals
-  `readActiveSnapshot().snapshot` read independently, and `readActiveSnapshot` is not called by `commit`.
+- **Post-commit snapshot.** `readTrustedActiveSnapshot` returns exactly what `readActiveSnapshot` returns
+  (authority, workspace, snapshot, source) after stage, consume, a preset save and a saved document edit,
+  including the planner; it refuses the same corrupt rows that trusted open refuses. `commit` of a
+  structural command no longer calls `readActiveSnapshot`.
 - **End to end.** The existing gallery e2e ("opens a project published before layers existed in the
   editor") and the fork e2e pass unchanged.
 
@@ -109,7 +114,7 @@ The branch reports the measured numbers in its final commit message and in this 
   row comparison becomes native).
 - `inspectWorkspaceAttempt`, retry, restart, recovery and bootstrap verification: no in-memory written
   rows, so they keep the full metered verification.
-- `readActiveSnapshot` and its other callers (bootstrap, recovery export, legacy-drift checks).
+- `readActiveSnapshot` and its other callers (recovery export, legacy-drift and recovery checks).
 - The cooperative Work runtime and its guard checks. Making them cheaper everywhere is a separate,
   later change.
 - Ordinary incremental edits.
