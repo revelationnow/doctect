@@ -99,6 +99,7 @@ export interface NormalizedRepository extends WorkspaceRepositoryMethods {
   commitWorkspaceRecovery(admission: WorkspaceRepositoryAdmission, preparation: WorkspaceRepositoryRecovery): Promise<WorkspaceCommandResult>;
   discardWorkspaceRecovery(preparation: WorkspaceRepositoryRecovery): void;
   readActiveSnapshot(work?: WorkRuntime): Promise<ActiveRead | undefined>;
+  readTrustedActiveSnapshot(work?: WorkRuntime): Promise<ActiveRead | undefined>;
   readRetainedSource(work?: WorkRuntime): Promise<NormalizationSource>;
   openNormalizationSession(work: WorkRuntime): NormalizationPreparationSession;
   readNormalizationSource(): Promise<NormalizationSource>;
@@ -565,6 +566,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
     session: NormalizationPreparationSession; retained(): Promise<NormalizationSource>; selected(scope: ProjectScope): Promise<SelectedActiveRead | undefined>;
     trustedSelected(scope: ProjectScope): Promise<SelectedActiveRead | undefined>;
     workspaceAdmission(editingCustody?: Ownership): Promise<WorkspaceAdmissionRead | undefined>;
+    trustedActive(): Promise<ActiveRead | undefined>;
     recoveryCapture(): Promise<WorkspaceCapture>;
     source(): Promise<NormalizationSource>;
     stagedRead(attempt: NormalizationAttempt, projectId: string): Promise<NormalizedProject>;
@@ -1278,11 +1280,21 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
       const { external, preferences, stamp, foldRecordDigest } = await trustedProject(records);
       return { records, admission: { external, preferences, stamp, foldRecordDigest } };
     }
+    /** Ancillary rows ordered by position and matched to their manifest descriptors by id and position. */
+    function trustedAncillary<T extends { position: number }>(rows: Map<string, unknown[]>, name: 'presets' | 'pendingImports',
+      descriptors: readonly { id: string; position: number }[]): T[] {
+      const live = [...rows.get(name)! as T[]].sort((a, b) => a.position - b.position);
+      if (live.length !== descriptors.length) trustedFailure('Active ancillary membership mismatch');
+      live.forEach((row, index) => {
+        const descriptor = descriptors[index], id = (row as { id?: unknown }).id;
+        if (typeof id !== 'string' || id !== descriptor.id || row.position !== descriptor.position) trustedFailure('Active ancillary descriptor mismatch');
+      });
+      return live;
+    }
     async function trustedWorkspaceAdmission(editingCustody?: Ownership): Promise<WorkspaceAdmissionRead | undefined> {
       const captured = await trustedCapture();
       if (!captured) return undefined;
       const { marker, workspace, images, rows } = captured;
-      const fail = trustedFailure;
 
       const projectAuthorities: { scope: ProjectScope; authority: AuthorityStamp }[] = [];
       const editingProjects: WorkspaceProject[] = [], editingOwners: Owner[] = [];
@@ -1297,17 +1309,8 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
           ...(preferences.revision === 0 && preferences.commitProof === null ? { initialFoldRecordDigest: foldRecordDigest } : {}) });
       }
 
-      const ordered = <T extends { position: number }>(name: 'presets' | 'pendingImports', descriptors: readonly { id: string; position: number }[]): T[] => {
-        const live = [...rows.get(name)! as T[]].sort((a, b) => a.position - b.position);
-        if (live.length !== descriptors.length) fail('Active ancillary membership mismatch');
-        live.forEach((row, index) => {
-          const descriptor = descriptors[index], id = (row as { id?: unknown }).id;
-          if (typeof id !== 'string' || id !== descriptor.id || row.position !== descriptor.position) fail('Active ancillary descriptor mismatch');
-        });
-        return live;
-      };
-      const presets = ordered<{ position: number; preset: WorkspaceSnapshot['customPresets'][number] }>('presets', workspace.presets);
-      const pendingImports = ordered<StoredPendingImport>('pendingImports', workspace.pendingImports);
+      const presets = trustedAncillary<{ position: number; preset: WorkspaceSnapshot['customPresets'][number] }>(rows, 'presets', workspace.presets);
+      const pendingImports = trustedAncillary<StoredPendingImport>(rows, 'pendingImports', workspace.pendingImports);
       work.assertCurrent();
 
       const result: WorkspaceAdmissionRead = { authority: marker as ActiveAuthority, workspace,
@@ -1319,6 +1322,24 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
           source: { kind: marker.sourceKind, acceptedLegacyDigest: workspace.legacyAcceptance.kind === 'accepted' ? workspace.legacyAcceptance.digest : null } } };
       }
       return result;
+    }
+    /** Trusted Import: a structural commit's fresh durable snapshot, read the way a trusted open
+     * admits the workspace: one readonly transaction, each project reconstructed once with the
+     * plain codec and its fold record checked. */
+    async function trustedActiveRead(): Promise<ActiveRead | undefined> {
+      const captured = await trustedCapture();
+      if (!captured) return undefined;
+      const { marker, workspace, images, rows } = captured;
+      const projects = new Map<string, WorkspaceProject>();
+      for (const member of workspace.members) projects.set(member.projectId, (await trustedProject(images.get(member.projectId)!)).external);
+      const presets = trustedAncillary<{ position: number; preset: WorkspaceSnapshot['customPresets'][number] }>(rows, 'presets', workspace.presets);
+      const pendingImports = trustedAncillary<StoredPendingImport>(rows, 'pendingImports', workspace.pendingImports);
+      const order = runSync(projectWorkspaceOrderWork(workspace));
+      work.assertCurrent();
+      const snapshot: WorkspaceSnapshot = { projects: order.projectOrder.map(id => projects.get(id)!), activeProjectId: order.activeProjectId,
+        customPresets: presets.map(row => row.preset), pendingImports: pendingImports.map(row => row.pendingImport) };
+      return { authority: marker as ActiveAuthority, workspace, snapshot,
+        source: { kind: marker.sourceKind, acceptedLegacyDigest: workspace.legacyAcceptance.kind === 'accepted' ? workspace.legacyAcceptance.digest : null } };
     }
     async function retainedRead(allowFresh = false): Promise<NormalizationSource> {
       releasePreparation();
@@ -1526,6 +1547,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
     return { session, retained: () => operation('retained', () => retainedRead()),
       source: () => operation('prepare', () => retainedRead(true)), stagedRead, strictTransition, strictReserve, strictStage,
       workspaceAdmission: editingCustody => operation('reopen', () => trustedWorkspaceAdmission(editingCustody)),
+      trustedActive: () => operation('reopen', () => trustedActiveRead()),
       recoveryCapture: () => operation('reopen', async () => {
         retainActiveCapture = true;
         const active = await activeRead(undefined, true);
@@ -1549,6 +1571,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
     finally { context?.session.dispose(); if (!provided) work.dispose(); }
   }
   const readActiveSnapshot = (work?: WorkRuntime) => withRead(work, context => context.session.reopen());
+  const readTrustedActiveSnapshot = (work?: WorkRuntime) => withRead(work, context => context.trustedActive());
   const readRetainedSource = (work?: WorkRuntime) => withRead(work, context => context.retained());
 
   async function admitWorkspace(): Promise<WorkspaceAdmission> {
@@ -3148,7 +3171,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
     commitWorkspace, fenceWorkspace, inspectWorkspaceAttempt,
     prepareWorkspaceRecovery, commitWorkspaceRecovery, discardWorkspaceRecovery,
     openNormalizationSession,
-    readActiveSnapshot, readRetainedSource,
+    readActiveSnapshot, readTrustedActiveSnapshot, readRetainedSource,
     readNormalizationSource,
     reserveNormalization,
     stageNormalization, readStagedProject, markNormalizationVerified, activateNormalization, readActiveAuthority, exportGeneration,

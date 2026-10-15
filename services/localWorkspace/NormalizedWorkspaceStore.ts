@@ -137,7 +137,8 @@ export function createNormalizedWorkspaceStore(environment: LocalWorkspaceEnviro
   }
   async function snapshot(): Promise<WorkspaceSnapshot> {
     current(); const read = async () => {
-      const active = await repository.readActiveSnapshot(); current();
+      // Trusted Import: a fresh durable read of the active generation, the way trusted open reads it.
+      const active = await repository.readTrustedActiveSnapshot(); current();
       if (!active) throw new WorkspaceStoreError('No verified normalized workspace.', 'authority-lost'); return active.snapshot;
     };
     return session ? session.exclusiveRead(read) : read();

@@ -11,9 +11,10 @@ import * as validation from '../../../../services/localWorkspace/validation';
 import { preparePendingImport, preparePendingImportWork } from '../../../../services/localWorkspace/validation';
 import { makeWorkHarness } from '../../../helpers/normalizationWorkHarness';
 import { createWorkspaceCommandHarness } from '../../../helpers/workspaceCommandHarness';
-import { physicalRows } from '../../../helpers/normalizationHarness';
+import { mutateRow, physicalRows } from '../../../helpers/normalizationHarness';
 import { makeIncrementalProject } from '../../../helpers/incrementalFixtures';
 import { createPlannerProject } from '../../../../services/presets';
+import { createNormalizedRepository } from '../../../../services/localWorkspace/normalized/repository';
 import { NORMALIZED_STORE_NAMES, type NormalizedProject } from '../../../../services/localWorkspace/normalized/schema';
 import type { StoredPendingImport } from '../../../../services/localWorkspace/schema';
 
@@ -296,5 +297,38 @@ describe('trusted import commits', () => {
     expect(descriptor.recordDigest).toBe(await hashFrame(w.runtime, 'proof', envelopeFrame('workspace-import-v1', row)));
     expect(descriptor.pendingImportDigest).toBe(await hashFrame(w.runtime, 'proof', canonicalFrame(row.pendingImport)));
     expect(row.pendingImport).toEqual(await makeWorkHarness().runtime.run(preparePendingImportWork(pendingInput(legacyState(), 'bytes'), { warningPolicy: 'retain' })));
+  });
+});
+
+describe('trusted active read', () => {
+  let h: Awaited<ReturnType<typeof createWorkspaceCommandHarness>>;
+  beforeEach(async () => { h = await createWorkspaceCommandHarness(); });
+  afterEach(() => h?.adapter.close());
+  const both = async () => {
+    const repository = createNormalizedRepository(h.environment) as any;
+    return { metered: await repository.readActiveSnapshot(), trusted: await repository.readTrustedActiveSnapshot() };
+  };
+
+  it('returns exactly the metered active read after stage, consume, a preset save and a saved edit', async () => {
+    await h.commit({ type: 'stage-import', pendingImport: pendingInput(createPlannerProject(), 'planner') });
+    let { metered, trusted } = await both(); expect(trusted).toEqual(metered);
+    await h.commit({ type: 'consume-import', importId: 'planner' });
+    ({ metered, trusted } = await both()); expect(trusted).toEqual(metered);
+    await h.commit({ type: 'save-custom-preset', preset: { id: 'preset', title: 'Preset', desc: '', isCustom: true, initialState: makeIncrementalProject(2).initialState } });
+    ({ metered, trusted } = await both()); expect(trusted).toEqual(metered);
+    const created = await h.commit({ type: 'create-and-activate-project', project: { ...makeIncrementalProject(2), id: 'edited' } });
+    const material = created.projects[0];
+    await h.repository.bindAdmittedProject(material.records);
+    const root = (await both()).metered.snapshot.projects.find((project: any) => project.id === 'edited').initialState.nodes.root;
+    await h.repository.commitDocument({ scope: material.scope, clientId: 'trusted-read', commitGeneration: 1, commitId: 'edit-1', editorGeneration: 1,
+      expectedRevision: 0, changes: [{ type: 'put-node', node: { ...root, title: 'Saved edit' } }] });
+    ({ metered, trusted } = await both());
+    expect(trusted).toEqual(metered);
+    expect(trusted.snapshot.projects.find((project: any) => project.id === 'edited').initialState.nodes.root.title).toBe('Saved edit');
+  }, 360_000);
+
+  it('refuses an active generation without exactly one workspace row', async () => {
+    await mutateRow(h, 'workspace', store => store.clear());
+    await expect((createNormalizedRepository(h.environment) as any).readTrustedActiveSnapshot()).rejects.toThrow('Invalid active workspace');
   });
 });
