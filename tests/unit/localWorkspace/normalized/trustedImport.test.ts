@@ -4,6 +4,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { runSync } from '../../../../shared/cooperativeWork.js';
 import { canonicalText } from '../../../../shared/jsonWork.js';
 import { canonicalFrame, envelopeFrame, envelopeFrameText, hashFrame } from '../../../../services/localWorkspace/normalized/work';
+import * as frames from '../../../../services/localWorkspace/normalized/work';
 import * as commands from '../../../../services/localWorkspace/normalized/workspaceCommands';
 import type { WorkspaceBatch, WorkspaceLifecycleIntent } from '../../../../services/localWorkspace/normalized/workspaceCommands';
 import * as validation from '../../../../services/localWorkspace/validation';
@@ -271,6 +272,7 @@ describe('trusted import commits', () => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       const opening = h.indexedDB.open(h.databaseName); opening.onsuccess = () => resolve(opening.result); opening.onerror = () => reject(opening.error);
     });
+    const metered = vi.spyOn(frames, 'envelopeFrame');
     try {
       h.environment.workspaceFault = point => {
         // A transaction created now is ordered before the seal's own transaction on the same store.
@@ -278,7 +280,11 @@ describe('trusted import commits', () => {
           .put({ ...row, pendingImport: { ...row.pendingImport, name: 'Raced' } });
       };
       await expect(h.commit({ type: 'consume-import', importId: 'raced' })).rejects.toThrow('Workspace captured record changed');
-    } finally { h.environment.workspaceFault = undefined; db.close(); }
+      // The seal framed its other rows (ledger, manifest) the metered way but compared the pending-import row natively.
+      const sealed = metered.mock.calls.filter(([label]) => label === 'workspace-seal');
+      expect(sealed.length).toBeGreaterThan(0);
+      expect(sealed.filter(([, value]) => Object.hasOwn(value, 'pendingImport'))).toHaveLength(0);
+    } finally { metered.mockRestore(); h.environment.workspaceFault = undefined; db.close(); }
   });
 
   it('stores the same rows through the trusted commit as the metered preparation describes', async () => {

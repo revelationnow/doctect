@@ -1969,23 +1969,15 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
             : selection.store === 'legacyBackup' && (raw as { kind: string }).kind === 'normalization-source'
               ? archiveSealFrame(raw as object) : envelopeFrame('workspace-seal', raw as object);
           let compared = 0, complete = false;
-          if (options.nativeProjectCompare && stores.includes(selection.store as ProjectStoreName)) {
-            // Trusted Document Replace: the native twin of recordFrame's text; equal text is an equal frame.
-            const text = frameRecord(selection.store as ProjectStoreName, value as object);
+          // Trusted Document Replace / Trusted Import: the native twins of recordFrame's and envelopeFrame's text; equal text is an equal frame.
+          const nativeText = options.nativeProjectCompare && stores.includes(selection.store as ProjectStoreName)
+            ? (raw: unknown) => frameRecord(selection.store as ProjectStoreName, raw as object)
+            : options.nativeImportCompare && selection.store === 'pendingImports'
+              ? (raw: unknown) => envelopeFrameText('workspace-seal', raw as object) : undefined;
+          if (nativeText) {
+            const text = nativeText(value);
             try {
-              complete = text === frameRecord(selection.store as ProjectStoreName, before.value as object);
-              requireContract(complete, 'Workspace captured record changed');
-            } finally {
-              work.note('primitiveExceptions'); work.note('sealRows'); work.note('sealBytes', text.length);
-              if (!complete) work.note('unmeasuredValues');
-            }
-            return;
-          }
-          if (options.nativeImportCompare && selection.store === 'pendingImports') {
-            // Trusted Import: the native twin of envelopeFrame's text; equal text is an equal frame.
-            const text = envelopeFrameText('workspace-seal', value as object);
-            try {
-              complete = text === envelopeFrameText('workspace-seal', before.value as object);
+              complete = text === nativeText(before.value);
               requireContract(complete, 'Workspace captured record changed');
             } finally {
               work.note('primitiveExceptions'); work.note('sealRows'); work.note('sealBytes', text.length);
