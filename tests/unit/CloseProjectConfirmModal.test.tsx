@@ -164,4 +164,27 @@ describe('CloseProjectConfirmModal', () => {
 
     expect(onSaveAndClose).toHaveBeenCalledOnce();
   });
+
+  it('shows a spinner and "Closing…" on the pressed button until the close settles', async () => {
+    const pending = deferred<void>();
+    renderModal({ onConfirmClose: vi.fn(() => pending.promise) });
+    const discard = screen.getByRole('button', { name: 'Close without Saving' });
+    fireEvent.click(discard);
+    expect(discard).toHaveTextContent('Closing…');
+    expect(discard.querySelector('.animate-spin')).toHaveClass('motion-reduce:animate-none');
+    expect(screen.getByRole('status')).toHaveTextContent('Closing project…');
+    await act(async () => pending.resolve());
+  });
+
+  it('shows "Saving…" for save and close, and restores the labels after a failure', async () => {
+    const pending = deferred<void>();
+    renderModal({ onSaveAndClose: vi.fn(() => pending.promise) });
+    const save = screen.getByRole('button', { name: 'Save JSON & Close' });
+    fireEvent.click(save);
+    expect(save).toHaveTextContent('Saving…');
+    await act(async () => { pending.reject(new Error('no')); await pending.promise.catch(() => {}); });
+    expect(save).toHaveTextContent('Save JSON & Close');
+    expect(save).toBeEnabled();
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+  });
 });
