@@ -98,9 +98,16 @@ it('opens a request: fetches at once, creates the target, settles, and lifts the
   expect(settled).toHaveBeenCalledTimes(1);
   expect(loadGalleryProject).toHaveBeenCalledTimes(1);
   expect(screen.getByRole('heading', { name: 'Opening “Listed”' })).toBeVisible();
+  // Spec section 3: the editor is mounted under the screen, hidden from assistive tech and input, but painted.
+  const wrapper = screen.getByTestId('editor').parentElement!;
+  expect(wrapper).toHaveAttribute('inert');
+  expect(wrapper).toHaveAttribute('aria-hidden', 'true');
+  expect(wrapper.style.display).not.toBe('none');
   await act(async () => { ready.resolve(); });
   expect(screen.queryByRole('heading', { name: 'Opening “Listed”' })).not.toBeInTheDocument();
   expect(screen.getByTestId('editor')).toBeVisible();
+  expect(wrapper).not.toHaveAttribute('inert');
+  expect(wrapper).not.toHaveAttribute('aria-hidden');
 });
 
 it('advances the steps as the workspace, download, create, and editor each complete', async () => {
@@ -164,6 +171,22 @@ it('shows the failure screen when the download fails, with try again, continue t
   expect(back).toHaveBeenCalledWith('g1');
 });
 
+it('clears a gallery failure on the next attempt: a recovery retry after a failed download opens the project once', async () => {
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  loadGalleryProject.mockRejectedValueOnce(Error('offline')).mockResolvedValue(source);
+  const store = fakeStore();
+  commitBy(store, { 'create-and-activate-project': async () => opened() });
+  renderGate(store, { galleryOpen: request });
+  await screen.findByRole('heading', { name: 'Couldn’t open “Listed”' });
+  await act(async () => { store.emitAuthorityLost(recoveryResult(workspaceRecovery({ message: 'Needs review.' }))); });
+  expect(screen.queryByRole('heading', { name: 'Couldn’t open “Listed”' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+  expect(await screen.findByTestId('editor')).toHaveTextContent(request.targetProjectId);
+  expect(screen.queryByRole('heading', { name: 'Couldn’t open “Listed”' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('main')).not.toBeInTheDocument();
+  expect(store.commit.mock.calls.filter(([command]) => command.type === 'create-and-activate-project')).toHaveLength(1);
+});
+
 it('shows the failure screen when the create is refused and preparation has no warnings', async () => {
   vi.spyOn(console, 'error').mockImplementation(() => {});
   const prepare = vi.spyOn(validation, 'prepareProjectState').mockReturnValue({ state: {} as never, warnings: [] });
@@ -212,8 +235,13 @@ it('shows the opening overlay for a pending import, with the pending steps, unti
     .toEqual(['Opening your projects', 'Preparing the project', 'Opening the editor']);
   expect(await screen.findByTestId('editor')).toBeInTheDocument();
   expect(currentStep()).toBe('Opening the editor');
+  const wrapper = screen.getByTestId('editor').parentElement!;
+  expect(wrapper).toHaveAttribute('inert');
+  expect(wrapper).toHaveAttribute('aria-hidden', 'true');
   await act(async () => { ready.resolve(); });
   expect(screen.queryByRole('heading', { name: 'Opening “Forked”' })).not.toBeInTheDocument();
+  expect(wrapper).not.toHaveAttribute('inert');
+  expect(wrapper).not.toHaveAttribute('aria-hidden');
   expect(loadGalleryProject).not.toHaveBeenCalled();
 });
 

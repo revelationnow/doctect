@@ -35,13 +35,15 @@ export function NormalizedWorkspaceBootstrapGate({ store, renderEditor, galleryO
     const controller = lifetime.current; if (!controller || controller.signal.aborted) return;
     const authority = authorityVersion.current, attempt = ++attemptVersion.current;
     const current = () => !controller.signal.aborted && authorityVersion.current === authority && attemptVersion.current === attempt;
-    setBusy(true); setError(null);
-    // The download starts now, overlapping the local bootstrap. `openGalleryRequest` ignores it when the target
-    // already exists, and an attempt may be superseded, so its rejection is never left unhandled.
-    const requested = settled.current ? undefined : request.current;
-    const download = requested && loadGalleryProject(requested.galleryId);
-    void download?.catch(() => {});
+    // Every attempt (a gallery retry, a recovery retry, a receipt resume) starts from a clean gallery state.
+    setBusy(true); setError(null); setGalleryFailure(false);
     try {
+      // The download starts now, overlapping the local bootstrap. `openGalleryRequest` ignores it when the target
+      // already exists, and an attempt may be superseded, so its rejection is never left unhandled.
+      const requested = settled.current ? undefined : request.current;
+      const download = requested && loadGalleryProject(requested.galleryId);
+      void download?.catch(() => {});
+      if (requested) setOpening({ name: requested.name, steps: GALLERY_OPEN_STEPS, step: 'workspace' });
       let result = acknowledged ?? await store.bootstrap({ signal: controller.signal, onPhase: value => { if (!controller.signal.aborted) setPhase(value); },
         onAuthorityLost: value => { if (!controller.signal.aborted) { authorityVersion.current++; setBlocking(value); } } });
       if (!current()) return;
@@ -97,18 +99,17 @@ export function NormalizedWorkspaceBootstrapGate({ store, renderEditor, galleryO
     catch (value) { setError(value instanceof Error ? value.message : 'Recovery failed.'); }
     finally { setBusy(false); }
   };
-  const retryGalleryOpen = () => {
-    const requested = request.current; if (!requested) return;
-    setGalleryFailure(false); setOpening({ name: requested.name, steps: GALLERY_OPEN_STEPS, step: 'workspace' }); void start();
-  };
   const continueToEditor = () => {
     const ready = readyFor.current; if (!ready) return;
     request.current = undefined; settled.current = true; onGalleryOpenSettled?.();
     setGalleryFailure(false); setOpening(undefined);
     setInitial(previous => previous?.store === store ? previous : { store, snapshot: ready.snapshot, warnings: ready.warnings });
   };
+  // Under recovery the editor is hidden outright; under the opening screen (spec section 3) it stays painted, so its
+  // first frame means "drawn", but takes no input and is out of the accessibility tree until the screen lifts.
+  const covered = Boolean(blocking || (opening && !editorReady));
   return <>
-    {mounted && <div inert={Boolean(blocking) || undefined} aria-hidden={blocking ? true : undefined} style={blocking ? { display: 'none' } : undefined}>
+    {mounted && <div inert={covered || undefined} aria-hidden={covered ? true : undefined} style={blocking ? { display: 'none' } : undefined}>
       {renderEditor({ store, initialWorkspace: mounted.snapshot, initialWarnings: mounted.warnings, onWorkspaceChange() {}, onReady: () => setEditorReady(true) })}
     </div>}
     {blocking ? <WorkspaceRecoveryScreen result={blocking} onRetry={busy ? undefined : () => { void start(); }}
@@ -116,7 +117,7 @@ export function NormalizedWorkspaceBootstrapGate({ store, renderEditor, galleryO
       onExportOpenWorkspace={mounted ? () => { try { const value = getNormalizedWorkspaceSession(store)?.readWorkingWorkspace(); if (!value) throw Error('Open work unavailable.');
         downloadJson(value, OPEN_WORKSPACE_PRESENTATION.filename); } catch (value) { setError(value instanceof Error ? value.message : 'Download failed.'); } } : undefined}
       onRecoverAsCopies={blocking.status === 'recovery' && blocking.recovery.canRecoverLegacyAsCopies ? () => { void recover(); } : undefined} />
-      : galleryFailure ? <GalleryOpenErrorScreen name={request.current?.name ?? ''} onRetry={retryGalleryOpen} onContinue={continueToEditor}
+      : galleryFailure ? <GalleryOpenErrorScreen name={request.current?.name ?? ''} onRetry={() => { void start(); }} onContinue={continueToEditor}
         onBack={() => { if (request.current) onBackToGallery?.(request.current.galleryId); }} />
       : !mounted ? (receipt ? <MigrationReceiptScreen receipt={receipt.receipt} onContinue={receipt.resume}
         onDownloadOriginal={() => { void exportSource('legacy-original'); }} isDownloading={activeExport === 'legacy-original'} downloadError={error} />
