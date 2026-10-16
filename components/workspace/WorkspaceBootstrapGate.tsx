@@ -12,6 +12,7 @@ import type {
   WorkspaceBootstrapResult,
   WorkspaceSnapshot,
 } from '../../services/localWorkspace/index';
+import type { GalleryOpenRequest } from '../../services/galleryOpen';
 import { MigrationReceipt as MigrationReceiptScreen } from './MigrationReceipt';
 import { isNormalizedWorkspaceStore } from '../../services/localWorkspace/NormalizedWorkspaceStore';
 import { NormalizedWorkspaceBootstrapGate } from './NormalizedWorkspaceBootstrapGate';
@@ -32,11 +33,18 @@ export interface WorkspaceEditorMount {
   initialWorkspace: WorkspaceSnapshot;
   initialWarnings: string[];
   onWorkspaceChange(snapshot: WorkspaceSnapshot): void;
+  /** Gallery Direct Open: the editor reports its first drawn frame, so the gate can lift its loading screen. */
+  onReady(): void;
 }
 
 export interface WorkspaceBootstrapGateProps {
   store: LocalWorkspaceStore;
   renderEditor: (mount: WorkspaceEditorMount) => React.ReactElement;
+  /** Gallery Direct Open (normalized stores only): a request to open behind the loading screen. */
+  galleryOpen?: GalleryOpenRequest;
+  /** Called once when the request is opened or dropped, before the editor mounts, so the route can clear it. */
+  onGalleryOpenSettled?(): void;
+  onBackToGallery?(galleryId: string): void;
 }
 
 type ReadyResult = Extract<WorkspaceBootstrapResult, { status: 'ready' }>;
@@ -598,6 +606,7 @@ function HistoricalWorkspaceBootstrapGate({
     store: state.store,
     initialWorkspace: state.result.snapshot,
     initialWarnings: state.initialWarnings,
+    onReady() {},
     onWorkspaceChange(snapshot) {
       const current = committedStateRef.current;
       if (current.kind !== 'ready'

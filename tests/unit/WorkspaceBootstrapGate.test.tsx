@@ -289,6 +289,7 @@ describe('WorkspaceBootstrapGate', () => {
       initialWorkspace: snapshot,
       initialWarnings: [],
       onWorkspaceChange: expect.any(Function),
+      onReady: expect.any(Function),
     });
   });
 
