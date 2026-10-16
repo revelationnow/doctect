@@ -30,10 +30,12 @@ export const envelopeFrame = (label: string, value: object): Frame => function* 
 
 /** Native twin of envelopeFrame's text for the worker's own fresh rows: lexical
  * code-unit key order, each payload framed canonically at its original depth.
- * Tests pin byte equality with envelopeFrame. */
-export const envelopeFrameText = (label: string, value: object): string => {
+ * Tests pin byte equality with envelopeFrame. `known` supplies a payload's canonical
+ * text the caller already computed, so a large payload is framed once. */
+export const envelopeFrameText = (label: string, value: object, known: Readonly<Record<string, string>> = {}): string => {
   const keys = Object.keys(value).sort((a, b) => a < b ? -1 : a > b ? 1 : 0);
-  return `[${canonicalText(label)},{${keys.map(key => `${canonicalText(key)}:${canonicalText((value as Record<string, unknown>)[key])}`).join(',')}}]`;
+  return `[${canonicalText(label)},{${keys.map(key => `${canonicalText(key)}:${Object.hasOwn(known, key) ? known[key]
+    : canonicalText((value as Record<string, unknown>)[key])}`).join(',')}}]`;
 };
 
 export const listFrame = (label: string, values: readonly object[]): Frame => function* (emit) {

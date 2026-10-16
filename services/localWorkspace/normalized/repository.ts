@@ -294,6 +294,29 @@ const recordKey = (key: readonly string[]) => JSON.stringify(key);
 function image(scope: ProjectScope): NormalizedProject {
   return { scope: { ...scope }, ...Object.fromEntries(NORMALIZED_STORE_NAMES.map(store => [store, new Map()])) } as NormalizedProject;
 }
+/** Strict value identity of stored rows: plain objects and arrays with the same own keys in any order, holes included,
+ * primitives compared with Object.is. Any other kind of value never matches, so it is reconstructed instead. */
+function sameValue(left: unknown, right: unknown): boolean {
+  if (Object.is(left, right)) return true;
+  if (typeof left !== 'object' || typeof right !== 'object' || left === null || right === null) return false;
+  if (Array.isArray(left) || Array.isArray(right)) {
+    if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) return false;
+  } else if (Object.getPrototypeOf(left) !== Object.prototype || Object.getPrototypeOf(right) !== Object.prototype) return false;
+  const keys = Object.keys(left);
+  if (keys.length !== Object.keys(right).length) return false;
+  for (const key of keys)
+    if (!Object.hasOwn(right, key) || !sameValue((left as Record<string, unknown>)[key], (right as Record<string, unknown>)[key])) return false;
+  return true;
+}
+function sameRecords(left: NormalizedProject, right: NormalizedProject): boolean {
+  if (!sameValue(left.scope, right.scope)) return false;
+  for (const store of NORMALIZED_STORE_NAMES) {
+    const a = left[store] as Map<string, unknown>, b = right[store] as Map<string, unknown>;
+    if (a.size !== b.size) return false;
+    for (const [key, value] of a) if (!b.has(key) || !sameValue(value, b.get(key))) return false;
+  }
+  return true;
+}
 function setRecord(records: NormalizedProject, store: ProjectStoreName, record: PhysicalRecord): void {
   (records[store] as Map<string, PhysicalRecord>).set(recordKey(record.key), record);
 }
@@ -323,6 +346,10 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
   const workspaceFences = new WeakMap<WorkspaceRepositoryFence, WorkspaceOwner>();
   const workspaceQueues = new Map<string, Promise<unknown>>();
   let currentWorkspaceOwner: WorkspaceOwner | undefined;
+  /** Fast Open and Close: a trusted read's last reconstruction per project with a copy of the records it was built
+   * from. A later read whose records are value-identical (sameRecords) reuses it instead of reconstructing again;
+   * any other difference, including a row changed outside a commit, reconstructs and validates in full. */
+  const trustedReconstructions = new Map<string, { records: NormalizedProject; external: WorkspaceProject }>();
   interface RecoveryPreparationState {
     owner: WorkspaceOwner; token: WorkspaceRepositoryAdmission; batch: WorkspaceBatch; work: WorkRuntime;
     prepared: PreparedWorkspaceMutation; capture: WorkspaceCapture; used: boolean; executing: boolean;
@@ -1266,7 +1293,13 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
       await checkpoint();
       const { header, preferences } = pair(records);
       let external: WorkspaceProject;
-      try { external = reconstructProject(records); } catch (error) { return trustedFailure(`Invalid active project: ${String((error as Error)?.message ?? error)}`); }
+      const reused = trustedReconstructions.get(records.scope.projectId);
+      if (reused && sameRecords(reused.records, records)) external = structuredClone(reused.external);
+      else {
+        trustedReconstructions.delete(records.scope.projectId);
+        try { external = reconstructProject(records); } catch (error) { return trustedFailure(`Invalid active project: ${String((error as Error)?.message ?? error)}`); }
+        trustedReconstructions.set(records.scope.projectId, { records: structuredClone(records), external: structuredClone(external) });
+      }
       const foldsRecord = records.projectExtensions.get(recordKey([...prefix(records.scope), 'folds']))!;
       const foldRecordDigest = await hash(frameRecord('projectExtensions', foldsRecord));
       if (preferences.revision && foldRecordDigest !== preferences.foldRecordDigest) trustedFailure('Fold record mismatch');
@@ -2161,7 +2194,9 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
           && previous.catalog.stamp.coreDigest === input.batch.expected.coreDigest
           && await work.run(equalFrameWork(canonicalFrame(previous.identity), canonicalFrame(input.batch.identity)));
         requireContract(admittedBefore || repeated, 'Workspace authority changed');
-        capture = await captureWorkspaceRows(await workspaceSelections(input.batch, state.workspace, work), work, 'prepare-read');
+        // Fast Open and Close: one readonly transaction instead of one per row, as Trusted Document Replace reads;
+        // the seal still compares every captured row inside the writing transaction.
+        capture = await captureWorkspaceRowsAtomic(await workspaceSelections(input.batch, state.workspace, work), work, 'prepare-read');
         const current = await workspaceCommandCapture(capture, work);
         requireContract(await work.run(equalFrameWork(canonicalFrame(current.marker), canonicalFrame(state.authority))), 'Workspace activation changed');
         if (current.manifest.revision !== input.batch.expected.revision || current.manifest.coreDigest !== input.batch.expected.coreDigest) {
@@ -2191,7 +2226,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
           // Durable facts must be applied before the caller's post-completion lifecycle guard can reject.
           state.lastBefore = { identity: { ...input!.batch.identity }, catalog: beforeCatalog };
           for (const key of retiredKeys) { const owner = owners.get(key); if (owner) owner.valid = false; owners.delete(key); }
-        }, { nativeImportCompare: true });
+        }, { nativeImportCompare: true, nativeProjectCompare: true });
         environment.workspaceFault?.({ phase: 'after-commit' }); work.assertCurrent();
         capture.release(); capture = undefined;
         work.setContext('verify', 'target', 'proof');
