@@ -183,7 +183,7 @@ it('clears a gallery failure on the next attempt: a recovery retry after a faile
   fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
   expect(await screen.findByTestId('editor')).toHaveTextContent(request.targetProjectId);
   expect(screen.queryByRole('heading', { name: 'Couldn’t open “Listed”' })).not.toBeInTheDocument();
-  expect(screen.queryByRole('main')).not.toBeInTheDocument();
+  await waitFor(() => expect(screen.queryByRole('main')).not.toBeInTheDocument());
   expect(store.commit.mock.calls.filter(([command]) => command.type === 'create-and-activate-project')).toHaveLength(1);
 });
 
