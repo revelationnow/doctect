@@ -62,7 +62,8 @@ export function useGalleryDetail(id: string | undefined): UseGalleryDetailResult
                 { sourceKey: `gallery-open:${id}` },
             );
             navigate('/app');
-        } catch {
+        } catch (error) {
+            console.error('Could not stage the gallery project for the editor:', error);
             setImportError(IMPORT_STAGE_ERROR_MESSAGE);
             setBusy(null);
         }
@@ -80,6 +81,7 @@ export function useGalleryDetail(id: string | undefined): UseGalleryDetailResult
                 navigate('/welcome', { state: { from: location.pathname } });
                 return;
             }
+            console.error('Could not stage the fork for the editor:', e);
             setImportError(IMPORT_STAGE_ERROR_MESSAGE);
             setBusy(null);
         }
@@ -137,7 +139,8 @@ export function useGalleryDetail(id: string | undefined): UseGalleryDetailResult
                 { sourceKey: `gallery-history:${project.id}:${commitId}` },
             );
             navigate('/app');
-        } catch {
+        } catch (error) {
+            console.error('Could not stage the gallery version for the editor:', error);
             throw new Error(IMPORT_STAGE_ERROR_MESSAGE);
         } finally {
             setBusy(null);

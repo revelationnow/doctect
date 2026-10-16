@@ -61,6 +61,7 @@ describe('Spotlight', () => {
 
     it('failed staging shows the exact alert and preserves the spotlight', async () => {
         vi.spyOn(cloudApi, 'galleryState').mockResolvedValue({ name: 'Novel Story Studio', state: { nodes: [] } });
+        const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
         vi.mocked(importProject.stageImport).mockRejectedValue(new Error('quota'));
         renderIt();
         fireEvent.click(screen.getByRole('button', { name: /open in editor/i }));
@@ -70,6 +71,8 @@ describe('Spotlight', () => {
         expect(screen.getByText('Novel Story Studio')).toBeVisible();
         expect(screen.queryByText('EDITOR_MARKER')).toBeNull();
         expect(screen.getByRole('button', { name: /open in editor/i })).toBeEnabled();
+        expect(logged).toHaveBeenCalledWith('Could not stage the gallery project for the editor:', new Error('quota'));
+        logged.mockRestore();
     });
 
     it('"See details" links to the project', () => {

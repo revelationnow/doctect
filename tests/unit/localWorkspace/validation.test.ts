@@ -116,7 +116,7 @@ describe('cooperative project preparation', () => {
     expect(h.runtime.snapshot().ownedHighWater).toBeGreaterThan(0);
   });
 
-  it('matches alias duplication, nonfinite border conversion and random-ID order during owned checking', async () => {
+  it('matches alias duplication and nonfinite border conversion, and adds layers without random IDs, during owned checking', async () => {
     const raw: any = { ...project(), initialState: historicalState(6) };
     const templates = raw.initialState.variants.default.templates;
     templates.alias = templates.page;
@@ -126,7 +126,7 @@ describe('cooperative project preparation', () => {
     const expected = validateWorkspaceProject(raw); const expectedCalls = calls; calls = 0;
     const clone = vi.spyOn(globalThis, 'structuredClone'), h = makeWorkHarness();
     await expect(h.runtime.run(checkWorkspaceProjectWork(raw))).resolves.toBeUndefined();
-    expect(calls).toBe(expectedCalls); expect(expectedCalls).toBe(2);
+    expect(calls).toBe(expectedCalls); expect(expectedCalls).toBe(0); // the added default layer has a fixed id
     expect((expected.initialState.variants.default.templates.page.elements[1] as any).borderSides.top.width).toBeNull();
     expect(clone).toHaveBeenCalledTimes(1); expect(raw).toEqual(before);
     expect(raw.initialState.variants.default.templates.alias).toBe(raw.initialState.variants.default.templates.page);

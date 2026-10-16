@@ -76,6 +76,7 @@ export function createWorkspaceStartupOwner(repository: NormalizedRepository, as
             case 'activate': value = await current.session.activate(); break;
             case 'reopen': value = await current.session.reopen(); break;
             case 'active': value = await repository.readActiveSnapshot(current.work); break;
+            case 'trusted-active': value = await repository.readTrustedActiveSnapshot(current.work); break;
             case 'retained': value = await repository.readRetainedSource(current.work); break;
           }
           current.work.assertCurrent();

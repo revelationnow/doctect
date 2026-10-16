@@ -2,7 +2,7 @@ import type { ActiveRead, PreparationInfo } from './normalized/repository';
 import type { AuthorityStamp, ProjectScope, BulkDocumentAck, BulkDocumentBatch, NormalizationAttempt, NormalizationSource } from './normalized/schema';
 import type { WorkspaceCatalog } from './workspaceCatalog';
 
-export type StartupOperation = 'prepare' | 'reserve' | 'stage' | 'verify' | 'activate' | 'reopen' | 'active' | 'retained' | 'replace' | 'editor';
+export type StartupOperation = 'prepare' | 'reserve' | 'stage' | 'verify' | 'activate' | 'reopen' | 'active' | 'trusted-active' | 'retained' | 'replace' | 'editor';
 export interface StartupEditorAdmission {
   active: ActiveRead;
   workspace: { type: 'workspace-bootstrapped'; admissionId: number; catalog: WorkspaceCatalog;
@@ -20,7 +20,7 @@ export type WorkspaceStartupResponse = { type: 'normalization-opened' | 'normali
   | { type: 'normalization-progress'; sessionId: number; operationId: number; operation: StartupOperation; phase: string; completed: number }
   | { type: 'normalization-result'; sessionId: number; operationId: number; operation: StartupOperation; value: StartupValue }
   | { type: 'normalization-failed'; sessionId: number; operationId: number; name: string; message: string; reason?: string };
-const operations: readonly string[] = ['prepare', 'reserve', 'stage', 'verify', 'activate', 'reopen', 'active', 'retained', 'replace', 'editor'];
+const operations: readonly string[] = ['prepare', 'reserve', 'stage', 'verify', 'activate', 'reopen', 'active', 'trusted-active', 'retained', 'replace', 'editor'];
 function check(value: unknown): asserts value { if (!value) throw Error('Invalid workspace startup frame'); }
 function counter(value: unknown): asserts value is number { check(Number.isSafeInteger(value) && (value as number) > 0); }
 function fields(value: unknown, required: readonly string[], optional: readonly string[] = []): Record<string, unknown> {

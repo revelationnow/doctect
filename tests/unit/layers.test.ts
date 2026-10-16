@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Layer, PageTemplate, TemplateElement } from '../../types';
 import {
-    createDefaultLayer, ensureTemplateLayers, sortElementsForRender,
+    createDefaultLayer, DEFAULT_LAYER_ID, ensureTemplateLayers, sortElementsForRender,
     resolveActiveLayerId, nextZIndexInLayer, moveElementsToLayer, getElementLabel,
     addLayer, removeLayerFromTemplate, moveLayerToIndex
 } from '../../services/layers';
@@ -37,6 +37,12 @@ describe('ensureTemplateLayers', () => {
         out.elements.forEach(el => expect(el.layerId).toBe(out.layers![0].id));
         // zIndex preserved untouched
         expect(out.elements.map(e => e.zIndex)).toEqual([5, 2]);
+    });
+    it('gives the added default layer the same id every time, so repeated preparation of one input matches', () => {
+        const first = ensureTemplateLayers(makeTemplate([makeEl('a')]));
+        const second = ensureTemplateLayers(makeTemplate([makeEl('a')]));
+        expect(first.layers![0].id).toBe(DEFAULT_LAYER_ID);
+        expect(second).toEqual(first);
     });
     it('re-tags elements whose layerId does not exist in template.layers (lowest-order layer)', () => {
         const layers = [makeLayer('top', 1), makeLayer('bottom', 0)];

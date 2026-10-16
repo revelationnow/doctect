@@ -92,3 +92,19 @@ it('normal store lifecycle commands use normalized authority and admit new edito
   await editing.commitStructural({ type: 'close-project', projectId: 'created' }, editing.getSnapshot().authorityEpochs.get('created'));
   expect(editing.getSnapshot().workspace.projects.some(value => value.id === 'created')).toBe(false);
 });
+it('returns a fresh trusted workspace read after a structural commit, not the metered reopen', async () => {
+  expect(initial.status).toBe('ready');
+  requests = [];
+  const pendingImport = { id: 'store-import', targetProjectId: 'store-target', name: 'Store import',
+    state: initial.snapshot.projects[0].initialState, createdAt: '2026-10-14T00:00:00.000Z' };
+  const staged = await store.commit({ type: 'stage-import', pendingImport });
+  expect(requests).toContain('trusted-active');
+  expect(requests).not.toContain('active');
+  const { createNormalizedRepository } = await import('../../../../services/localWorkspace/normalized/repository');
+  expect(staged).toEqual((await createNormalizedRepository(h.environment).readActiveSnapshot())!.snapshot);
+  requests = [];
+  const consumed = await store.commit({ type: 'consume-import', importId: 'store-import' });
+  expect(requests).not.toContain('active');
+  expect(consumed.projects.some((project: any) => project.id === 'store-target')).toBe(true);
+  expect(consumed).toEqual((await createNormalizedRepository(h.environment).readActiveSnapshot())!.snapshot);
+});

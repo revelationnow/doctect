@@ -10,7 +10,7 @@ import { reconstructWorkspaceRecords, upgradeStoredProjectRecordWork, type Migra
 import { isRecognizedLedger, isRecognizedLedgerWork, validateHistoricalBackup } from '../historicalBootstrap';
 import { assertWorkRuntime, createWorkRuntime, effect, primitive, runSync, type Ownership, type Phase, type Work, type WorkRuntime } from '../../../shared/cooperativeWork.js';
 import { canonicalText, compareStringsWork, copyEnumerableWork, enumerableEntriesWork, equalFrameWork, jsonTextWork, quoteWork, rawValueWeightWork, stableSortWork, textWork, utf8LengthWork, type Frame } from '../../../shared/jsonWork.js';
-import { canonicalFrame, envelopeFrame, frameBytesWork, hashFrame, listFrame, orderedFrame } from './work';
+import { canonicalFrame, envelopeFrame, envelopeFrameText, frameBytesWork, hashFrame, listFrame, orderedFrame } from './work';
 import { equalSourceArchiveWork, hashSourceImages } from './sourceDigests';
 import { compareArchiveWork, compareEnvelopeWork, compareRecordWork, emitComparedRecordWork } from './frameComparison';
 import { createInitialWorkspaceManifest, deriveWorkspaceIncarnation, projectWorkspaceOrderWork, validateWorkspaceManifestWork,
@@ -99,6 +99,7 @@ export interface NormalizedRepository extends WorkspaceRepositoryMethods {
   commitWorkspaceRecovery(admission: WorkspaceRepositoryAdmission, preparation: WorkspaceRepositoryRecovery): Promise<WorkspaceCommandResult>;
   discardWorkspaceRecovery(preparation: WorkspaceRepositoryRecovery): void;
   readActiveSnapshot(work?: WorkRuntime): Promise<ActiveRead | undefined>;
+  readTrustedActiveSnapshot(work?: WorkRuntime): Promise<ActiveRead | undefined>;
   readRetainedSource(work?: WorkRuntime): Promise<NormalizationSource>;
   openNormalizationSession(work: WorkRuntime): NormalizationPreparationSession;
   readNormalizationSource(): Promise<NormalizationSource>;
@@ -565,6 +566,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
     session: NormalizationPreparationSession; retained(): Promise<NormalizationSource>; selected(scope: ProjectScope): Promise<SelectedActiveRead | undefined>;
     trustedSelected(scope: ProjectScope): Promise<SelectedActiveRead | undefined>;
     workspaceAdmission(editingCustody?: Ownership): Promise<WorkspaceAdmissionRead | undefined>;
+    trustedActive(): Promise<ActiveRead | undefined>;
     recoveryCapture(): Promise<WorkspaceCapture>;
     source(): Promise<NormalizationSource>;
     stagedRead(attempt: NormalizationAttempt, projectId: string): Promise<NormalizedProject>;
@@ -1278,11 +1280,21 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
       const { external, preferences, stamp, foldRecordDigest } = await trustedProject(records);
       return { records, admission: { external, preferences, stamp, foldRecordDigest } };
     }
+    /** Ancillary rows ordered by position and matched to their manifest descriptors by id and position. */
+    function trustedAncillary<T extends { position: number }>(rows: Map<string, unknown[]>, name: 'presets' | 'pendingImports',
+      descriptors: readonly { id: string; position: number }[]): T[] {
+      const live = [...rows.get(name)! as T[]].sort((a, b) => a.position - b.position);
+      if (live.length !== descriptors.length) trustedFailure('Active ancillary membership mismatch');
+      live.forEach((row, index) => {
+        const descriptor = descriptors[index], id = (row as { id?: unknown }).id;
+        if (typeof id !== 'string' || id !== descriptor.id || row.position !== descriptor.position) trustedFailure('Active ancillary descriptor mismatch');
+      });
+      return live;
+    }
     async function trustedWorkspaceAdmission(editingCustody?: Ownership): Promise<WorkspaceAdmissionRead | undefined> {
       const captured = await trustedCapture();
       if (!captured) return undefined;
       const { marker, workspace, images, rows } = captured;
-      const fail = trustedFailure;
 
       const projectAuthorities: { scope: ProjectScope; authority: AuthorityStamp }[] = [];
       const editingProjects: WorkspaceProject[] = [], editingOwners: Owner[] = [];
@@ -1297,17 +1309,8 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
           ...(preferences.revision === 0 && preferences.commitProof === null ? { initialFoldRecordDigest: foldRecordDigest } : {}) });
       }
 
-      const ordered = <T extends { position: number }>(name: 'presets' | 'pendingImports', descriptors: readonly { id: string; position: number }[]): T[] => {
-        const live = [...rows.get(name)! as T[]].sort((a, b) => a.position - b.position);
-        if (live.length !== descriptors.length) fail('Active ancillary membership mismatch');
-        live.forEach((row, index) => {
-          const descriptor = descriptors[index], id = (row as { id?: unknown }).id;
-          if (typeof id !== 'string' || id !== descriptor.id || row.position !== descriptor.position) fail('Active ancillary descriptor mismatch');
-        });
-        return live;
-      };
-      const presets = ordered<{ position: number; preset: WorkspaceSnapshot['customPresets'][number] }>('presets', workspace.presets);
-      const pendingImports = ordered<StoredPendingImport>('pendingImports', workspace.pendingImports);
+      const presets = trustedAncillary<{ position: number; preset: WorkspaceSnapshot['customPresets'][number] }>(rows, 'presets', workspace.presets);
+      const pendingImports = trustedAncillary<StoredPendingImport>(rows, 'pendingImports', workspace.pendingImports);
       work.assertCurrent();
 
       const result: WorkspaceAdmissionRead = { authority: marker as ActiveAuthority, workspace,
@@ -1319,6 +1322,24 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
           source: { kind: marker.sourceKind, acceptedLegacyDigest: workspace.legacyAcceptance.kind === 'accepted' ? workspace.legacyAcceptance.digest : null } } };
       }
       return result;
+    }
+    /** Trusted Import: a structural commit's fresh durable snapshot, read the way a trusted open
+     * admits the workspace: one readonly transaction, each project reconstructed once with the
+     * plain codec and its fold record checked. */
+    async function trustedActiveRead(): Promise<ActiveRead | undefined> {
+      const captured = await trustedCapture();
+      if (!captured) return undefined;
+      const { marker, workspace, images, rows } = captured;
+      const projects = new Map<string, WorkspaceProject>();
+      for (const member of workspace.members) projects.set(member.projectId, (await trustedProject(images.get(member.projectId)!)).external);
+      const presets = trustedAncillary<{ position: number; preset: WorkspaceSnapshot['customPresets'][number] }>(rows, 'presets', workspace.presets);
+      const pendingImports = trustedAncillary<StoredPendingImport>(rows, 'pendingImports', workspace.pendingImports);
+      const order = runSync(projectWorkspaceOrderWork(workspace));
+      work.assertCurrent();
+      const snapshot: WorkspaceSnapshot = { projects: order.projectOrder.map(id => projects.get(id)!), activeProjectId: order.activeProjectId,
+        customPresets: presets.map(row => row.preset), pendingImports: pendingImports.map(row => row.pendingImport) };
+      return { authority: marker as ActiveAuthority, workspace, snapshot,
+        source: { kind: marker.sourceKind, acceptedLegacyDigest: workspace.legacyAcceptance.kind === 'accepted' ? workspace.legacyAcceptance.digest : null } };
     }
     async function retainedRead(allowFresh = false): Promise<NormalizationSource> {
       releasePreparation();
@@ -1526,6 +1547,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
     return { session, retained: () => operation('retained', () => retainedRead()),
       source: () => operation('prepare', () => retainedRead(true)), stagedRead, strictTransition, strictReserve, strictStage,
       workspaceAdmission: editingCustody => operation('reopen', () => trustedWorkspaceAdmission(editingCustody)),
+      trustedActive: () => operation('reopen', () => trustedActiveRead()),
       recoveryCapture: () => operation('reopen', async () => {
         retainActiveCapture = true;
         const active = await activeRead(undefined, true);
@@ -1549,6 +1571,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
     finally { context?.session.dispose(); if (!provided) work.dispose(); }
   }
   const readActiveSnapshot = (work?: WorkRuntime) => withRead(work, context => context.session.reopen());
+  const readTrustedActiveSnapshot = (work?: WorkRuntime) => withRead(work, context => context.trustedActive());
   const readRetainedSource = (work?: WorkRuntime) => withRead(work, context => context.retained());
 
   async function admitWorkspace(): Promise<WorkspaceAdmission> {
@@ -1918,7 +1941,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
   }
 
   async function sealWorkspaceCapture(capture: WorkspaceCapture, work: WorkRuntime,
-    mutation?: RecordMutation, committed?: () => void, options: { nativeProjectCompare?: boolean } = {}): Promise<void> {
+    mutation?: RecordMutation, committed?: () => void, options: { nativeProjectCompare?: boolean; nativeImportCompare?: boolean } = {}): Promise<void> {
     let db: IDBDatabase | undefined;
     const observations = environment.onWorkspaceOperation ? [] as WorkspaceRepositoryOperation[] : undefined;
     const operations: { store: WorkspaceStoreName; key: IDBValidKey; value?: unknown; method: 'add' | 'put' | 'delete' }[] = [];
@@ -1969,11 +1992,15 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
             : selection.store === 'legacyBackup' && (raw as { kind: string }).kind === 'normalization-source'
               ? archiveSealFrame(raw as object) : envelopeFrame('workspace-seal', raw as object);
           let compared = 0, complete = false;
-          if (options.nativeProjectCompare && stores.includes(selection.store as ProjectStoreName)) {
-            // Trusted Document Replace: the native twin of recordFrame's text; equal text is an equal frame.
-            const text = frameRecord(selection.store as ProjectStoreName, value as object);
+          // Trusted Document Replace / Trusted Import: the native twins of recordFrame's and envelopeFrame's text; equal text is an equal frame.
+          const nativeText = options.nativeProjectCompare && stores.includes(selection.store as ProjectStoreName)
+            ? (raw: unknown) => frameRecord(selection.store as ProjectStoreName, raw as object)
+            : options.nativeImportCompare && selection.store === 'pendingImports'
+              ? (raw: unknown) => envelopeFrameText('workspace-seal', raw as object) : undefined;
+          if (nativeText) {
+            const text = nativeText(value);
             try {
-              complete = text === frameRecord(selection.store as ProjectStoreName, before.value as object);
+              complete = text === nativeText(before.value);
               requireContract(complete, 'Workspace captured record changed');
             } finally {
               work.note('primitiveExceptions'); work.note('sealRows'); work.note('sealBytes', text.length);
@@ -2164,7 +2191,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
           // Durable facts must be applied before the caller's post-completion lifecycle guard can reject.
           state.lastBefore = { identity: { ...input!.batch.identity }, catalog: beforeCatalog };
           for (const key of retiredKeys) { const owner = owners.get(key); if (owner) owner.valid = false; owners.delete(key); }
-        });
+        }, { nativeImportCompare: true });
         environment.workspaceFault?.({ phase: 'after-commit' }); work.assertCurrent();
         capture.release(); capture = undefined;
         work.setContext('verify', 'target', 'proof');
@@ -2173,7 +2200,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
         const after = await workspaceCommandCapture(capture, work);
         requireContract(await work.run(equalFrameWork(canonicalFrame(after.marker), canonicalFrame(state.authority))), 'Workspace activation changed after commit');
         const verified = await verifyWorkspacePostconditions(input.batch, after, prepared.manifest.lastCommit!, work,
-          { requestDigest, written: prepared.addProjects });
+          { requestDigest, written: prepared.addProjects, writtenImports: prepared.putImports, hash });
         environment.workspaceFault?.({ phase: 'after-readback' }); work.assertCurrent();
         state.workspace = after.manifest;
         return { type: 'workspace-committed', outcome: verified.outcome, receipt: verified.receipt, delta: prepared.delta,
@@ -3144,7 +3171,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
     commitWorkspace, fenceWorkspace, inspectWorkspaceAttempt,
     prepareWorkspaceRecovery, commitWorkspaceRecovery, discardWorkspaceRecovery,
     openNormalizationSession,
-    readActiveSnapshot, readRetainedSource,
+    readActiveSnapshot, readTrustedActiveSnapshot, readRetainedSource,
     readNormalizationSource,
     reserveNormalization,
     stageNormalization, readStagedProject, markNormalizationVerified, activateNormalization, readActiveAuthority, exportGeneration,

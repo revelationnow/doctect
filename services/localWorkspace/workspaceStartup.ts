@@ -92,7 +92,7 @@ function* editorAdmissionWork(value: unknown, operationId: number): Work<Startup
 export function createWorkspaceStartupRepository(client: WorkspaceWorkerClient, options: {
   onProgress?(progress: Extract<WorkspaceStartupResponse, { type: 'normalization-progress' }>): void;
   forEditing?: boolean;
-} = {}): Pick<NormalizedRepository, 'openNormalizationSession' | 'readActiveSnapshot' | 'readRetainedSource'> & {
+} = {}): Pick<NormalizedRepository, 'openNormalizationSession' | 'readActiveSnapshot' | 'readTrustedActiveSnapshot' | 'readRetainedSource'> & {
   replace(admissionId: number, batch: BulkDocumentBatch): Promise<BulkDocumentAck>;
 } {
   let tail: Promise<unknown> = Promise.resolve();
@@ -153,6 +153,7 @@ export function createWorkspaceStartupRepository(client: WorkspaceWorkerClient, 
     async replace(admissionId, batch) { const owner = open(); try { return await owner.call('replace', undefined, { admissionId, batch }) as BulkDocumentAck; } finally { await owner.close(); } },
     openNormalizationSession: work => open(work).session,
     async readActiveSnapshot(work) { const owner = open(work); try { return await owner.call('active') as Awaited<ReturnType<NormalizedRepository['readActiveSnapshot']>>; } finally { owner.close(); } },
+    async readTrustedActiveSnapshot(work) { const owner = open(work); try { return await owner.call('trusted-active') as Awaited<ReturnType<NormalizedRepository['readTrustedActiveSnapshot']>>; } finally { owner.close(); } },
     async readRetainedSource(work) { const owner = open(work); try { return await owner.call('retained') as Awaited<ReturnType<NormalizedRepository['readRetainedSource']>>; } finally { owner.close(); } },
   };
 }
