@@ -51,6 +51,8 @@ export interface EditorPageProps {
   initialWorkspace: WorkspaceSnapshot;
   initialWarnings: string[];
   onWorkspaceChange?: (snapshot: WorkspaceSnapshot) => void;
+  /** Gallery Direct Open: called once after the editor's first drawn frame, so the gate can lift its loading screen. */
+  onReady?: () => void;
 }
 
 interface ClosingProjectIntent {
@@ -124,9 +126,14 @@ function EditorPageShell({
   initialWorkspace,
   initialWarnings,
   onWorkspaceChange,
+  onReady,
   writes,
   editing,
 }: EditorPageProps & { writes: PageWrites; editing?: WorkspaceEditingSession }): React.ReactElement {
+  // Gallery Direct Open: tell the bootstrap gate the editor has drawn its first frame, so it can lift the loading screen.
+  const onReadyRef = useRef(onReady);
+  useLayoutEffect(() => { onReadyRef.current = onReady; });
+  useEffect(() => { const frame = requestAnimationFrame(() => onReadyRef.current?.()); return () => cancelAnimationFrame(frame); }, []);
   const {
     workspace,
     authorityEpochs,

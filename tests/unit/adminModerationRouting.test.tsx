@@ -25,8 +25,9 @@ vi.mock('../../pages/EditorPage', () => ({
     ),
 }));
 vi.mock('../../components/workspace/WorkspaceBootstrapGate', () => ({
-    WorkspaceBootstrapGate: ({ store, renderEditor }: any) => (
+    WorkspaceBootstrapGate: ({ store, renderEditor, onBackToGallery }: any) => (
         <div data-testid="workspace-bootstrap-gate">
+            {onBackToGallery && <button onClick={() => onBackToGallery('g1')}>Back to gallery</button>}
             {renderEditor({
                 store,
                 initialWorkspace: {
@@ -138,6 +139,21 @@ describe('moderator routing', () => {
 
         expect(screen.getByTestId('workspace-bootstrap-gate')).toBeVisible();
         expect(screen.getByText('EDITOR_READY:verified-project:verified warning')).toBeVisible();
+    });
+
+    it('replaces the /app entry when a gallery open goes back to the gallery, so browser back cannot repeat the open', async () => {
+        await act(async () => { await appRouter.navigate('/gallery'); });
+        const galleryOpen = { galleryId: 'g1', targetProjectId: 'proj_123e4567-e89b-12d3-a456-426614174000', name: 'Listed' };
+        await act(async () => { await appRouter.navigate('/app', { state: { galleryOpen } }); });
+        render(<App />);
+        const entries = window.history.length;
+
+        fireEvent.click(screen.getByRole('button', { name: 'Back to gallery' }));
+
+        expect(await screen.findByText('GALLERY_DETAIL_PAGE')).toBeVisible();
+        expect(appRouter.state.location.pathname).toBe('/gallery/g1');
+        expect(appRouter.state.historyAction).toBe('REPLACE');
+        expect(window.history.length).toBe(entries);
     });
 
     it('preserves gallery background content under a data-router modal location', async () => {

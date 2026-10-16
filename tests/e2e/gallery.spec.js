@@ -51,6 +51,20 @@ const listingState = title => ({
 // listing test is separated by this.
 const nextSecond = () => new Promise(resolve => { setTimeout(resolve, 1200); });
 
+// Creates and publishes a one-page project as the signed-in `page`, the way the pre-layer
+// test seeds its listing. Returns the project so a visitor can open `/gallery/<id>`.
+const seedPublishedProject = async (page, name, description) => {
+    const created = await page.request.post(`${API_BASE}/api/projects`, { data: { name, state: listingState('Root') } });
+    expect(created.ok()).toBeTruthy();
+    const project = (await created.json()).project;
+    const published = await page.request.post(`${API_BASE}/api/projects/${project.id}/publish`, {
+        headers: { 'If-Match': `"${project.headCommitId}"` },
+        data: { description, tags: [], thumbnails: [PNG_1X1], previewNodeIds: ['root'] },
+    });
+    expect(published.ok()).toBeTruthy();
+    return project;
+};
+
 const seedSavedGenerator = async (page, source) => {
     await setActiveProjectGenerator(page, source);
     await page.reload();
@@ -525,6 +539,70 @@ test.describe('Gallery', () => {
             await anonymous.waitForURL('**/app', { timeout: 20000 });
             await expect(anonymous.getByTestId('project-tab').filter({ hasText: name })).toBeVisible();
             expect(errors.filter(text => text.includes('Could not stage'))).toEqual([]);
+        } finally {
+            await visitor.close();
+        }
+    });
+
+    test('gallery open shows the loading screen and opens the project once', async ({ page, browser }) => {
+        test.setTimeout(90000);
+        // Gallery Direct Open: "Open in editor" navigates to /app at once and the bootstrap gate
+        // downloads and creates the project behind the loading screen. Settling the request
+        // replaces the history entry, so a reload afterwards bootstraps the saved workspace
+        // instead of opening the listing a second time.
+        await signUpAndVerify(page, { name: 'Direct Owner', username: `direct${listingRun}`.slice(0, 30),
+            email: `direct-${listingRun}@test.dev` });
+        const name = `Direct Open ${listingRun}`;
+        const project = await seedPublishedProject(page, name, 'direct open project');
+
+        const visitor = await browser.newContext();
+        try {
+            const anonymous = await visitor.newPage();
+            const errors = [];
+            anonymous.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+            const tabs = anonymous.getByTestId('project-tab').filter({ hasText: name });
+            const errorHeading = anonymous.getByRole('heading', { name: /Couldn’t open/ });
+            await anonymous.goto(`/gallery/${project.id}`);
+            await anonymous.getByRole('button', { name: /open in editor/i }).click();
+            // The heading must be on screen as soon as the route changes; 5s is generous.
+            await expect(anonymous.getByRole('heading', { name: `Opening “${name}”` })).toBeVisible({ timeout: 5000 });
+            await expect(tabs).toBeVisible({ timeout: 20000 });
+            await expect(errorHeading).toHaveCount(0);
+
+            await anonymous.reload();
+            await expect(tabs).toHaveCount(1, { timeout: 20000 });
+            await expect(errorHeading).toHaveCount(0);
+            // The gate logs this exactly when it shows the error screen, so an error screen that
+            // came and went between the checks above would still be caught here.
+            expect(errors.filter(text => text.includes('Could not open the gallery project'))).toEqual([]);
+        } finally {
+            await visitor.close();
+        }
+    });
+
+    test('a reload during a gallery open does not duplicate the project', async ({ page, browser }) => {
+        test.setTimeout(90000);
+        // The request names its target project id, so a reload while the open is in flight
+        // repeats the request against the same id: the gate activates the target when it already
+        // exists and creates it otherwise. Either way the workspace ends up with one project.
+        await signUpAndVerify(page, { name: 'Reload Owner', username: `reload${listingRun}`.slice(0, 30),
+            email: `reload-${listingRun}@test.dev` });
+        const name = `Reload Open ${listingRun}`;
+        const project = await seedPublishedProject(page, name, 'reload during open');
+
+        const visitor = await browser.newContext();
+        try {
+            const anonymous = await visitor.newPage();
+            const tabs = anonymous.getByTestId('project-tab').filter({ hasText: name });
+            await anonymous.goto(`/gallery/${project.id}`);
+            await anonymous.getByRole('button', { name: /open in editor/i }).click();
+            await anonymous.waitForURL('**/app');
+            await anonymous.reload();
+            await expect(tabs).toHaveCount(1, { timeout: 20000 });
+            // The opening screen lifts once the editor has drawn; the count must hold after that.
+            await expect(anonymous.getByRole('heading', { name: `Opening “${name}”` })).toBeHidden({ timeout: 20000 });
+            await expect(tabs).toHaveCount(1);
+            await expect(anonymous.getByRole('heading', { name: /Couldn’t open/ })).toHaveCount(0);
         } finally {
             await visitor.close();
         }

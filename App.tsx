@@ -1,5 +1,5 @@
-import React from 'react';
-import { createBrowserRouter, RouterProvider, Routes, Route, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { createBrowserRouter, RouterProvider, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import type { Location } from 'react-router-dom';
 import { LandingPage } from './pages/LandingPage';
 import { EditorPage } from './pages/EditorPage';
@@ -21,6 +21,7 @@ import { Navigate } from 'react-router-dom';
 import { useCurrentUser } from './hooks/useCurrentUser';
 import { WorkspaceBootstrapGate } from './components/workspace/WorkspaceBootstrapGate';
 import { localWorkspaceStore } from './services/localWorkspace/index';
+import { readGalleryOpenRequest } from './services/galleryOpen';
 
 // Code-split the docs subsystem: its bundled markdown corpus (108 files) and
 // pages are large and only ever needed on /docs/*, so lazy-load them into a
@@ -57,22 +58,7 @@ function AppRoutes() {
     <ErrorBoundary>
       <Routes location={backgroundLocation || location}>
         <Route path="/" element={<LandingPage />} />
-        <Route
-          path="/app"
-          element={(
-            <WorkspaceBootstrapGate
-              store={localWorkspaceStore}
-              renderEditor={({ store, initialWorkspace, initialWarnings, onWorkspaceChange }) => (
-                <EditorPage
-                  store={store}
-                  initialWorkspace={initialWorkspace}
-                  initialWarnings={initialWarnings}
-                  onWorkspaceChange={onWorkspaceChange}
-                />
-              )}
-            />
-          )}
-        />
+        <Route path="/app" element={<EditorRoute />} />
         <Route path="/docs/*" element={<React.Suspense fallback={<RouteFallback />}><DocsSection /></React.Suspense>} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/gallery" element={<GalleryPage />} />
@@ -124,6 +110,32 @@ function AppRoutes() {
         </Routes>
       )}
     </ErrorBoundary>
+  );
+}
+
+/** Gallery Direct Open: the request is read once from history state. Settling it replaces the entry so back,
+ * forward and reload do not repeat the open, while this route and the gate stay mounted. Back to gallery after a
+ * failed open also replaces, so the entry still holding the request is not left behind for browser back to re-run. */
+function EditorRoute() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [galleryOpen] = useState(() => readGalleryOpenRequest(location.state));
+  return (
+    <WorkspaceBootstrapGate
+      store={localWorkspaceStore}
+      galleryOpen={galleryOpen}
+      onGalleryOpenSettled={() => navigate('/app', { replace: true, state: null })}
+      onBackToGallery={id => navigate(`/gallery/${id}`, { replace: true })}
+      renderEditor={({ store, initialWorkspace, initialWarnings, onWorkspaceChange, onReady }) => (
+        <EditorPage
+          store={store}
+          initialWorkspace={initialWorkspace}
+          initialWarnings={initialWarnings}
+          onWorkspaceChange={onWorkspaceChange}
+          onReady={onReady}
+        />
+      )}
+    />
   );
 }
 

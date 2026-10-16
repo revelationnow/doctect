@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Download, X, Trash2 } from 'lucide-react';
+import { AlertTriangle, Download, LoaderCircle, X, Trash2 } from 'lucide-react';
 import { useBackDismiss } from './editor-layout/useBackDismiss';
 
 interface CloseProjectConfirmModalProps {
@@ -11,10 +11,18 @@ interface CloseProjectConfirmModalProps {
   projectName: string;
 }
 
+type PendingAction = 'close' | 'save';
+
+const Spinner: React.FC = () => (
+  <LoaderCircle size={16} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
+);
+
 export const CloseProjectConfirmModal: React.FC<CloseProjectConfirmModalProps> = ({ 
     isOpen, onClose, onConfirmClose, onSaveAndClose, projectName 
 }) => {
-  const [pending, setPending] = useState(false);
+  // The action in flight; drives the pressed button's spinner and label, and the live region.
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const pending = pendingAction !== null;
   const pendingRef = useRef(false);
   const mountedRef = useRef(false);
 
@@ -33,17 +41,17 @@ export const CloseProjectConfirmModal: React.FC<CloseProjectConfirmModalProps> =
     return true;
   });
 
-  const runAction = async (action: () => Promise<void>): Promise<void> => {
+  const runAction = async (kind: PendingAction, action: () => Promise<void>): Promise<void> => {
     if (pendingRef.current) return;
     pendingRef.current = true;
-    setPending(true);
+    setPendingAction(kind);
     try {
       await Promise.resolve().then(action);
     } catch {
       // Parent state remains intact so the user can retry either close path.
     } finally {
       pendingRef.current = false;
-      if (mountedRef.current) setPending(false);
+      if (mountedRef.current) setPendingAction(null);
     }
   };
 
@@ -56,6 +64,9 @@ export const CloseProjectConfirmModal: React.FC<CloseProjectConfirmModalProps> =
              <h2 className="text-lg font-bold text-slate-800">Close Project?</h2>
              <button type="button" onClick={close} disabled={pending} className="p-1 hover:bg-slate-100 rounded-full text-slate-500 disabled:cursor-wait disabled:opacity-50"><X size={20}/></button>
         </div>
+        <p role="status" aria-live="polite" className="sr-only">
+          {pendingAction === 'close' ? 'Closing project…' : pendingAction === 'save' ? 'Saving and closing…' : ''}
+        </p>
         
         <div className="p-6">
             <div className="flex items-start gap-4">
@@ -84,19 +95,19 @@ export const CloseProjectConfirmModal: React.FC<CloseProjectConfirmModalProps> =
           </button>
           <button 
             type="button"
-            onClick={() => { void runAction(onConfirmClose); }}
+            onClick={() => { void runAction('close', onConfirmClose); }}
             disabled={pending}
             className="px-4 py-2 text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2 disabled:cursor-wait disabled:opacity-50"
           >
-            <Trash2 size={16} /> Close without Saving
+            {pendingAction === 'close' ? <><Spinner /> Closing…</> : <><Trash2 size={16} /> Close without Saving</>}
           </button>
           <button 
             type="button"
-            onClick={() => { void runAction(onSaveAndClose); }}
+            onClick={() => { void runAction('save', onSaveAndClose); }}
             disabled={pending}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm shadow-sm transition-colors flex items-center justify-center gap-2 disabled:cursor-wait disabled:opacity-50"
           >
-            <Download size={16} /> Save JSON & Close
+            {pendingAction === 'save' ? <><Spinner /> Saving…</> : <><Download size={16} /> Save JSON & Close</>}
           </button>
         </div>
       </div>

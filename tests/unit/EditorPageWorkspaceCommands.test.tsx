@@ -357,7 +357,7 @@ const commandStore = (
 const renderEditor = (
   store: LocalWorkspaceStore,
   initialWorkspace: WorkspaceSnapshot,
-  options: { strict?: boolean; initialWarnings?: string[] } = {},
+  options: { strict?: boolean; initialWarnings?: string[]; onReady?: () => void } = {},
 ) => {
   const router = createMemoryRouter([
     {
@@ -367,6 +367,7 @@ const renderEditor = (
           store={store}
           initialWorkspace={initialWorkspace}
           initialWarnings={options.initialWarnings ?? []}
+          onReady={options.onReady}
         />
       ),
     },
@@ -419,6 +420,20 @@ describe('EditorPage workspace commands', () => {
     expect(commit).not.toHaveBeenCalled();
     expect(localStorage.getItem(LEGACY_KEYS.projects)).toBeNull();
     expect(localStorage.getItem(LEGACY_KEYS.activeProject)).toBeNull();
+  });
+
+  it('reports readiness once after its first frame, not again on later renders', async () => {
+    const initial = workspace();
+    const { store } = commandStore(initial);
+    const onReady = vi.fn();
+
+    renderEditor(store, initial, { strict: true, onReady });
+
+    await waitFor(() => expect(onReady).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole('button', { name: 'New project' }));
+    expect(screen.getByRole('dialog', { name: 'New project' })).toBeVisible();
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    expect(onReady).toHaveBeenCalledTimes(1);
   });
 
   it('creates, activates, and closes projects only from returned durable snapshots', async () => {

@@ -1,33 +1,21 @@
-import React, { useState } from 'react';
+import React, { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
-import { cloudApi, GalleryItem } from '../../services/cloudApi';
-import { IMPORT_STAGE_ERROR_MESSAGE, stageImport } from '../../services/importProject';
+import type { GalleryItem } from '../../services/cloudApi';
+import { openGalleryProjectInEditor } from '../../services/galleryOpen';
 import { GalleryLink } from './GalleryLink';
 import { RollingPreview } from './RollingPreview';
 import { StarRating } from './StarRating';
 
 export function Spotlight({ item }: { item: GalleryItem }) {
     const navigate = useNavigate();
-    const [busy, setBusy] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    // Same sequence as useGalleryDetail.openInEditor — anonymous clone into the local editor.
-    const openInEditor = async () => {
-        setBusy(true);
-        setError(null);
-        try {
-            const res = await cloudApi.galleryState(item.id);
-            await stageImport(
-                { name: res.name, state: res.state },
-                { sourceKey: `gallery-open:${item.id}` },
-            );
-            navigate('/app');
-        } catch (error) {
-            console.error('Could not stage the gallery project for the editor:', error);
-            setError(IMPORT_STAGE_ERROR_MESSAGE);
-            setBusy(false);
-        }
+    // One open per mount: a second activation before the route change commits would push a second /app entry
+    // with its own target id. Navigating away unmounts this, so the flag never needs resetting.
+    const opening = useRef(false);
+    const openInEditor = () => {
+        if (opening.current) return;
+        opening.current = true;
+        openGalleryProjectInEditor(navigate, item);
     };
 
     return (
@@ -46,19 +34,14 @@ export function Spotlight({ item }: { item: GalleryItem }) {
                 </div>
                 {item.description && <p className="text-sm text-slate-600 mt-3 line-clamp-4">{item.description}</p>}
                 <div className="flex items-center gap-3 mt-auto pt-4">
-                    <button onClick={openInEditor} disabled={busy}
-                        className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg px-4 py-2">
+                    <button onClick={openInEditor}
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-4 py-2">
                         Open in editor
                     </button>
                     <GalleryLink projectId={item.id} className="text-sm text-blue-600 hover:underline">
                         See details
                     </GalleryLink>
                 </div>
-                {error && (
-                    <p role="alert" className="mt-3 max-w-[65ch] text-xs leading-5 text-red-700">
-                        {error}
-                    </p>
-                )}
             </div>
         </section>
     );
