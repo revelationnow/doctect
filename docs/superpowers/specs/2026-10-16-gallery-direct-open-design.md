@@ -40,7 +40,9 @@ On click it mints a target project id (`proj_<uuid>`) and navigates at once to `
 `name` is the listing name the gallery already shows, used only for the loading screen.
 
 Fork and "fork this version" are unchanged and still stage a pending import. They need the server-side fork,
-attempt provenance and retained-attempt replacement that pending imports carry.
+attempt provenance and retained-attempt replacement that pending imports carry. "Open in editor" on a row of
+the version history is also unchanged: it already holds the version's state in memory, and opening a past
+version is rare.
 
 ### 2. The editor's bootstrap gate opens it
 
@@ -51,8 +53,14 @@ any pending imports are consumed (as today), it runs these steps:
    already active) and skips the next two steps. This makes a reload during or after the open idempotent.
 2. It fetches the listing state (`cloudApi.galleryState(galleryId)`). The fetch starts when the request is read,
    in parallel with the workspace bootstrap, so the network time overlaps with the local work.
-3. It commits `create-and-activate-project` with `{ id: targetProjectId, name, initialState }`. That command
-   validates the state exactly as a consumed import does today.
+3. It commits `create-and-activate-project` with `{ id: targetProjectId, name, initialState }`, using the name
+   and raw state from the response. The command runs the same loader and migration a consumed import does, but
+   it refuses a state whose loader reports warnings, where staging kept the warnings and showed them in the
+   editor. If the create is refused, the gate runs `prepareProjectState(state, { warningPolicy: 'retain' })` on
+   the response. When that returns warnings, the gate commits the create again with the prepared (migrated)
+   state and passes the warnings to the editor as `initialWarnings`, as staging did. Otherwise it reports the
+   original refusal. This costs about 0.4s of main-thread work on the Planner, so it is paid only by the rare
+   project that needs it, never on the common path.
 4. It replaces the `/app` history entry with one that has no `galleryOpen`, so back, forward and reload do not
    repeat the open. Then it mounts the editor with the resulting snapshot.
 
@@ -114,6 +122,8 @@ the close finishes or fails. The other buttons stay disabled, as today. A live r
   - A request whose target already exists activates it without fetching or creating.
   - Pending imports are consumed before the request.
   - A fetch failure and a refused create each show the error screen and create nothing.
+  - A create refused because of loader warnings is retried once with the prepared state, and the warnings
+    reach the editor. A refusal whose prepared state has no warnings is reported without a retry.
   - Try again, Continue to editor and Back to gallery each do what they say.
   - A blocking result wins over a gallery request.
 - **Loading screen:** step order and states. The name heading is used for gallery and pending-import opens; the
