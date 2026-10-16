@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { act, render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Spotlight } from '../../components/gallery/Spotlight';
 import { cloudApi, GalleryItem } from '../../services/cloudApi';
+import * as galleryOpen from '../../services/galleryOpen';
 import * as importProject from '../../services/importProject';
 
 vi.mock('../../services/importProject', () => ({
@@ -51,6 +52,15 @@ describe('Spotlight', () => {
         expect(editor).toHaveTextContent('"name":"Novel Story Studio"');
         expect(galleryState).not.toHaveBeenCalled();
         expect(importProject.stageImport).not.toHaveBeenCalled();
+    });
+
+    it('ignores a second "Open in editor" activation before the route change commits', async () => {
+        const open = vi.spyOn(galleryOpen, 'openGalleryProjectInEditor');
+        renderIt();
+        const button = screen.getByRole('button', { name: /open in editor/i });
+        act(() => { fireEvent.click(button); fireEvent.click(button); });
+        expect(await screen.findByText(/EDITOR_MARKER/)).toBeInTheDocument();
+        expect(open).toHaveBeenCalledTimes(1);
     });
 
     it('"See details" links to the project', () => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { cloudApi, GalleryDetail, ApiError, MergeRequestDto, ReviewDto } from '../services/cloudApi';
 import { IMPORT_STAGE_ERROR_MESSAGE, stageImport } from '../services/importProject';
@@ -52,8 +52,12 @@ export function useGalleryDetail(id: string | undefined): UseGalleryDetailResult
         if (isOwner && id) cloudApi.listIncomingMrs(id).then(setMrs).catch(() => {});
     }, [isOwner, id]);
 
+    // One open per mount: a second activation before the route change commits would push a second /app entry
+    // with its own target id. Navigating away unmounts the page, so the flag never needs resetting.
+    const opening = useRef(false);
     const openInEditor = async () => {
-        if (!id) return;
+        if (!id || opening.current) return;
+        opening.current = true;
         openGalleryProjectInEditor(navigate, { id, name: project?.name ?? '' });
     };
 

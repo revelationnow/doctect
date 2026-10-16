@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { GalleryDetailPage } from '../../pages/GalleryDetailPage';
 import { cloudApi, ApiError, GalleryDetail } from '../../services/cloudApi';
+import * as galleryOpen from '../../services/galleryOpen';
 import * as importProject from '../../services/importProject';
 
 vi.mock('../../services/importProject', () => ({
@@ -186,6 +187,16 @@ describe('GalleryDetailPage generator source staging', () => {
         expect(await screen.findByText('APP_MARKER')).toBeInTheDocument();
         expect(importProject.stageImport).not.toHaveBeenCalled();
         expect(galleryState).not.toHaveBeenCalled();
+    });
+
+    it('ignores a second Open in editor activation before the route change commits', async () => {
+        mockUseSession.mockReturnValue({ data: null });
+        const open = vi.spyOn(galleryOpen, 'openGalleryProjectInEditor');
+        renderAt();
+        const button = await screen.findByRole('button', { name: /open in editor/i });
+        act(() => { fireEvent.click(button); fireEvent.click(button); });
+        expect(await screen.findByText('APP_MARKER')).toBeInTheDocument();
+        expect(open).toHaveBeenCalledTimes(1);
     });
 
     it('stages fork first-commit source byte-for-byte with cloud linkage', async () => {

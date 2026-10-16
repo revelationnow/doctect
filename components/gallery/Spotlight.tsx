@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 import type { GalleryItem } from '../../services/cloudApi';
@@ -9,6 +9,14 @@ import { StarRating } from './StarRating';
 
 export function Spotlight({ item }: { item: GalleryItem }) {
     const navigate = useNavigate();
+    // One open per mount: a second activation before the route change commits would push a second /app entry
+    // with its own target id. Navigating away unmounts this, so the flag never needs resetting.
+    const opening = useRef(false);
+    const openInEditor = () => {
+        if (opening.current) return;
+        opening.current = true;
+        openGalleryProjectInEditor(navigate, item);
+    };
 
     return (
         <section className="flex flex-col md:flex-row gap-6 bg-white border rounded-xl p-5 mb-8">
@@ -26,7 +34,7 @@ export function Spotlight({ item }: { item: GalleryItem }) {
                 </div>
                 {item.description && <p className="text-sm text-slate-600 mt-3 line-clamp-4">{item.description}</p>}
                 <div className="flex items-center gap-3 mt-auto pt-4">
-                    <button onClick={() => openGalleryProjectInEditor(navigate, item)}
+                    <button onClick={openInEditor}
                         className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-4 py-2">
                         Open in editor
                     </button>

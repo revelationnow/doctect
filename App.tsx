@@ -114,7 +114,8 @@ function AppRoutes() {
 }
 
 /** Gallery Direct Open: the request is read once from history state. Settling it replaces the entry so back,
- * forward and reload do not repeat the open, while this route and the gate stay mounted. */
+ * forward and reload do not repeat the open, while this route and the gate stay mounted. Back to gallery after a
+ * failed open also replaces, so the entry still holding the request is not left behind for browser back to re-run. */
 function EditorRoute() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -124,7 +125,7 @@ function EditorRoute() {
       store={localWorkspaceStore}
       galleryOpen={galleryOpen}
       onGalleryOpenSettled={() => navigate('/app', { replace: true, state: null })}
-      onBackToGallery={id => navigate(`/gallery/${id}`)}
+      onBackToGallery={id => navigate(`/gallery/${id}`, { replace: true })}
       renderEditor={({ store, initialWorkspace, initialWarnings, onWorkspaceChange, onReady }) => (
         <EditorPage
           store={store}
