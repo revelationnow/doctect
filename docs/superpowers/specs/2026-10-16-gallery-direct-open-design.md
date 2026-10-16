@@ -144,3 +144,28 @@ the close finishes or fails. The other buttons stay disabled, as today. A live r
 - Gallery-open import attempts still in `sessionStorage` from older builds are left alone and expire with the
   session.
 - The legacy (non-normalized) bootstrap gate, which production no longer uses.
+
+## Result
+
+Measured on 2026-10-16 with the 2026 Planner (targeted by gallery id) on a desktop dev build. The servers ran from
+the worktree on SQLite, ports 4520/4521. Each figure is the range over three runs.
+
+| 2026 Planner, desktop, dev build | before | target | after |
+|---|---|---|---|
+| click to first loading feedback | button text only | ≤ 100ms | 96–123ms, full-screen `Opening "2026 Planner"` |
+| click to editor showing the project (overlay gone) | 5.7s | ≤ 4s | 4.14–4.27s |
+| close without saving | 1.5s, dimmed buttons | 1.5s, spinner | 1.58–1.63s; `Closing…` visible at ~150ms |
+
+- **Open** is 1.5s faster, short of the estimated 1.8s. It misses the 4s target by about 0.2s.
+  - The project tab renders under the overlay at 4.07–4.20s. The overlay lifts one frame later, after `EditorPage`
+    reports ready.
+  - What remains is mostly the create itself (about 2.0s, the same loader and migration a consumed import ran),
+    then the workspace bootstrap and the editor mount.
+- **Feedback** times include Playwright's polling. On a cold load the screen appears on the first `/app` render.
+- The dev build runs React StrictMode, so the gate's first attempt and its download are discarded and repeated.
+  Production does one of each.
+- **Verification:**
+  - Vitest: 8201/8202 passed. The one failure was the onboarding bundle, which was stale until its regeneration
+    commit.
+  - `tsc` is clean.
+  - Chromium e2e: 55 passed, 2 skipped, including the two new gallery direct-open tests.
