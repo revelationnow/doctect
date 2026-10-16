@@ -55,6 +55,18 @@ retry and restart keep the full metered path, as in Trusted Import.
    canonical text once and reuses it inside the record envelope text; the consume digest reuses the verified
    descriptor's `pendingImportDigest` instead of hashing the pending import again.
 
+4. **One read transaction for the prepare capture.** `commitWorkspace` captures the rows it prepares from with
+   `captureWorkspaceRowsAtomic` (one readonly transaction, `getAll` per selection), as Trusted Document Replace
+   does, instead of one connection and transaction per row. The seal still re-reads and compares every captured
+   row in its readwrite transaction.
+5. **Reuse an unchanged project's reconstruction.** The repository keeps, per project, the last trusted read's
+   reconstruction and a copy of the records it was built from. A later trusted read whose records are
+   value-identical (`sameRecords`: plain objects and arrays, same own keys, primitives by `Object.is`; any other
+   value never matches) returns a copy of it instead of reconstructing again. Any difference, including a row
+   changed outside a commit with the header and preferences rows intact, reconstructs and validates in full. The
+   fold-record check runs on every read. On the Planner the comparison costs about 10ms against about 270ms for
+   a reconstruction.
+
 ## Targets
 
 | 2026 Planner, desktop | before | target |
@@ -75,6 +87,9 @@ retry and restart keep the full metered path, as in Trusted Import.
   with the descriptor-mismatch message; a trusted command with stored presets does not call the metered preset
   content checks.
 - The native preset descriptor and the spliced import envelope text equal their metered frames byte for byte.
+- An unchanged project is reconstructed once across trusted reads; a saved edit reconstructs only the edited project
+  and the read equals the metered read; a row changed outside a commit is reconstructed again (and a coupled
+  revalidation over it still fails); returned projects are copies.
 - Existing workspace transaction, evidence and e2e tests pass unchanged.
 
 ## Unchanged
@@ -82,3 +97,23 @@ retry and restart keep the full metered path, as in Trusted Import.
 - Stored formats, digests, manifests, receipts and proofs.
 - The metered path (`trusted` undefined): recovery, inspection, retry, restart.
 - Stage validation of new input; consume's validation of the project it creates.
+
+## Result
+
+2026 Planner, local dev build, desktop Chromium (median of runs):
+
+| step | before | after |
+|---|---|---|
+| close without saving | 9.3s | 1.5s |
+| click → editor | 7.0s | 5.6s |
+| `consume-import` | 2.7s | 2.1s |
+| trusted read after consume | 285ms | 75ms |
+
+Close meets its target in the Node bench only in CPU terms: its JavaScript work is about 1.5s, while
+fake-indexeddb's per-row cost keeps the bench near 13s; the browser close is 1.5s. Open misses its 5s target by
+about 0.6s. What remains is the gallery's own workspace bootstrap and `stage-import` (about 1.9s together),
+`consume-import`'s validation of the new project, birth digests and read-back compare (about 0.75s of CPU), and
+IndexedDB time. Removing the stage/consume round trip (the gallery creating the project directly) is the next
+step and is out of scope here.
+
+Unit suite green except the onboarding bundle (regenerated last); Chromium e2e 53 passed, 2 skipped.
