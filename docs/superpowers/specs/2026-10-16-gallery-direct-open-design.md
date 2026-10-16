@@ -119,7 +119,8 @@ the close finishes or fails. The other buttons stay disabled, as today. A live r
 - **Gate:**
   - A gallery request fetches, creates, activates and mounts the editor with the new project active, and clears
     the history state.
-  - A request whose target already exists activates it without fetching or creating.
+  - A request whose target already exists activates it without creating anything. The fetch may already be in
+    flight, since it starts with the bootstrap; its result is ignored.
   - Pending imports are consumed before the request.
   - A fetch failure and a refused create each show the error screen and create nothing.
   - A create refused because of loader warnings is retried once with the prepared state, and the warnings
