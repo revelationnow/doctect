@@ -12,7 +12,7 @@ import { deriveWorkspaceIncarnation, validateWorkspaceManifestWork, workspaceMan
 import { appendWorkspaceReceipt, verifyWorkspaceReceipts, workspaceReceiptFrame } from './workspaceCommitProof';
 import { diffWorkspaceCatalogWork, projectWorkspaceCatalogWork } from '../workspaceCatalog';
 import { checkCustomPresetWork, checkMigratedStateWork, checkPendingImportWork, preparePendingImport,
-  preparePendingImportWork, validateCustomPresetWork, validateMigratedState, validateWorkspaceProject, validateWorkspaceProjectWork } from '../validation';
+  preparePendingImportWork, validateCustomPresetWork, validateWorkspaceProject, validateWorkspaceProjectWork } from '../validation';
 import type { WorkspaceImportAttemptProvenance, WorkspaceProject } from '../contracts';
 import type { StoredPendingImport, StoredPreset, StoredImportAttemptProvenance } from '../schema';
 import { NORMALIZED_STORE_NAMES, type ProjectHeader, type ProjectStoreName } from './schema';
@@ -278,11 +278,17 @@ async function importDescriptor(row: StoredPendingImport, work: WorkRuntime): Pr
     pendingImportDigest: await hashFrame(work, 'proof', canonicalFrame(row.pendingImport)),
     ...(Object.hasOwn(row, 'attemptProvenance') ? { attemptProvenance: { ...row.attemptProvenance! } } : {}) };
 }
-/** Native twin of importDescriptor for the worker's own commit; tests pin equality. */
-export async function trustedImportDescriptor(row: StoredPendingImport, hash: (text: string) => Promise<string>): Promise<ImportDescriptor> {
+/** Native twin of presetDescriptor for the worker's own commit; tests pin equality. */
+export async function trustedPresetDescriptor(row: StoredPreset, hash: (text: string) => Promise<string>): Promise<PresetDescriptor> {
+  return { id: row.id, position: row.position, recordDigest: await hash(envelopeFrameText('workspace-preset-v1', row)) };
+}
+/** Native twin of importDescriptor for the worker's own commit; tests pin equality.
+ * The pending import is framed once and reused inside the record envelope. */
+export async function trustedImportDescriptor(row: StoredPendingImport, hash: (text: string) => Promise<string>,
+  pendingText = canonicalText(row.pendingImport)): Promise<ImportDescriptor> {
   return { id: row.id, position: row.position, targetProjectId: row.pendingImport.targetProjectId, createdAt: row.pendingImport.createdAt,
-    recordDigest: await hash(envelopeFrameText('workspace-import-v1', row)),
-    pendingImportDigest: await hash(canonicalText(row.pendingImport)),
+    recordDigest: await hash(envelopeFrameText('workspace-import-v1', row, { pendingImport: pendingText })),
+    pendingImportDigest: await hash(pendingText),
     ...(Object.hasOwn(row, 'attemptProvenance') ? { attemptProvenance: { ...row.attemptProvenance! } } : {}) };
 }
 /** Trusted Import: pending-import rows are checked with the sync traversals and native digests;
@@ -296,11 +302,17 @@ async function validateCapture(captured: CapturedWorkspaceCommand, batch: Worksp
     && captured.manifest.coreDigest === batch.expected.coreDigest, 'Workspace authority changed');
   for (const row of captured.presets) {
     await work.run(exactFieldsWork(row, ['id', 'preset', 'position'], [''])); externalId(row.id); safeCounter(row.position);
-    await work.run(checkMigratedStateWork(row.preset.initialState));
-    await work.run(checkCustomPresetWork(row.preset, { warningPolicy: 'reject', existingIds: new Set() }));
-    requireContract((await work.run(compareStringsWork(row.id, row.preset.id))) === 0, 'Preset identity mismatch');
+    // Fast Open and Close: on the worker's own commit a stored preset is proved by its descriptor digest below;
+    // its content was validated when it was saved.
+    if (!trusted) {
+      await work.run(checkMigratedStateWork(row.preset.initialState));
+      await work.run(checkCustomPresetWork(row.preset, { warningPolicy: 'reject', existingIds: new Set() }));
+    }
+    requireContract(typeof row.preset === 'object' && row.preset !== null && !Array.isArray(row.preset) && typeof row.preset.id === 'string'
+      && (await work.run(compareStringsWork(row.id, row.preset.id))) === 0, 'Preset identity mismatch');
     const descriptor = await work.run(findWork(captured.manifest.presets, row.id, value => value.id));
-    requireContract(descriptor && await same(work, descriptor, await presetDescriptor(row, work)), 'Preset descriptor mismatch');
+    requireContract(descriptor && (trusted ? canonicalText(descriptor) === canonicalText(await trustedPresetDescriptor(row, trusted.hash))
+      : await same(work, descriptor, await presetDescriptor(row, work))), 'Preset descriptor mismatch');
   }
   for (const row of captured.pendingImports) {
     if (trusted) await work.run(effect(1, () => {}));
@@ -315,10 +327,13 @@ async function validateCapture(captured: CapturedWorkspaceCommand, batch: Worksp
       for (let i = 0; i < pending.warnings.length; i++) await work.run(effect(1, () => {
         if (i in pending.warnings) requireContract(typeof pending.warnings[i] === 'string', 'Invalid retained import warning');
       }));
-      const input = await work.run(copyEnumerableWork(pending)) as unknown as Record<string, unknown>; delete input.warnings;
-      trusted ? validateMigratedState(pending.state) : await work.run(checkMigratedStateWork(pending.state));
-      trusted ? preparePendingImport(input, { warningPolicy: 'reject' }) : await work.run(checkPendingImportWork(input, { warningPolicy: 'reject' }));
-      requireContract((await work.run(compareStringsWork(row.id, pending.id))) === 0, 'Pending import identity mismatch');
+      // Fast Open and Close: on the worker's own commit a stored pending import is proved by its descriptor
+      // digests below; its content was validated when it was staged and is validated again if consumed.
+      if (!trusted) {
+        const input = await work.run(copyEnumerableWork(pending)) as unknown as Record<string, unknown>; delete input.warnings;
+        await work.run(checkMigratedStateWork(pending.state)); await work.run(checkPendingImportWork(input, { warningPolicy: 'reject' }));
+      }
+      requireContract(typeof pending.id === 'string' && (await work.run(compareStringsWork(row.id, pending.id))) === 0, 'Pending import identity mismatch');
       if (row.attemptProvenance !== undefined) provenance(row.attemptProvenance, true);
     }
     const descriptor = await work.run(findWork(captured.manifest.pendingImports, row.id, value => value.id));
@@ -379,7 +394,10 @@ export async function prepareWorkspaceMutation(captured: CapturedWorkspaceComman
     const putPresets: StoredPreset[] = [], deletePresetIds: string[] = [], putImports: StoredPendingImport[] = [], deleteImportIds: string[] = [];
     const requestDigest = trusted?.requestDigest ?? await hashWorkspaceRequest(batch, work);
     // Trusted Import: native twin of hashFrame(work, 'proof', canonicalFrame(value)).
-    const proofDigest = (value: unknown) => trusted ? trusted.hash(canonicalText(value)) : hashFrame(work, 'proof', canonicalFrame(value));
+    // Fast Open and Close: a pending import is framed once per commit and its text reused by every digest of it.
+    const texts = new WeakMap<object, string>();
+    const textOf = (value: object) => { let text = texts.get(value); if (text === undefined) texts.set(value, text = canonicalText(value)); return text; };
+    const proofDigest = (value: object) => trusted ? trusted.hash(textOf(value)) : hashFrame(work, 'proof', canonicalFrame(value));
     const member = (id: string) => work.run(findWork(next.members, id, value => value.projectId));
     const addProject = async (raw: WorkspaceProject, consumedImport: WorkspaceMember['consumedImport'] = {}) => {
       const project = trusted ? validateWorkspaceProject(raw, { warningPolicy: 'reject' })
@@ -419,7 +437,7 @@ export async function prepareWorkspaceMutation(captured: CapturedWorkspaceComman
       return result;
     };
     const setPreset = async (row: StoredPreset) => {
-      const descriptor = await presetDescriptor(row, work); const values: PresetDescriptor[] = []; let found = false;
+      const descriptor = trusted ? await trustedPresetDescriptor(row, trusted.hash) : await presetDescriptor(row, work); const values: PresetDescriptor[] = []; let found = false;
       for (const previous of next.presets) {
         const match = (await work.run(compareStringsWork(previous.id, row.id))) === 0;
         await work.run(effect(1, () => { owner.grow(8); values.push(match ? descriptor : previous); })); found ||= match;
@@ -427,7 +445,7 @@ export async function prepareWorkspaceMutation(captured: CapturedWorkspaceComman
       if (!found) values.push(descriptor); next.presets = values; putPresets.push(row);
     };
     const setImport = async (row: StoredPendingImport) => {
-      const descriptor = trusted ? await trustedImportDescriptor(row, trusted.hash) : await importDescriptor(row, work); const values: ImportDescriptor[] = []; let found = false;
+      const descriptor = trusted ? await trustedImportDescriptor(row, trusted.hash, textOf(row.pendingImport)) : await importDescriptor(row, work); const values: ImportDescriptor[] = []; let found = false;
       for (const previous of next.pendingImports) {
         const match = (await work.run(compareStringsWork(previous.id, row.id))) === 0;
         await work.run(effect(1, () => { owner.grow(8); values.push(match ? descriptor : previous); })); found ||= match;
@@ -484,8 +502,12 @@ export async function prepareWorkspaceMutation(captured: CapturedWorkspaceComman
         const header = image.projectHeaders.values().next().value!, preferences = image.projectPreferences.values().next().value!;
         requireContract(header && preferences && (await work.run(compareStringsWork(header.incarnation, target.scope.incarnation))) === 0
           && await same(work, authority(header, preferences), target.authority), 'Project authority changed');
-        await work.run(reconstructProjectWork(image));
-        if (found.birth.kind === 'workspace-command') await verifyProjectBirth(image, found, work);
+        // Fast Open and Close: this commit deletes the closing project's records. The worker's own close proves only
+        // its identity and authority above; recovery and inspection keep the full reconstruction and birth proof.
+        if (!trusted) {
+          await work.run(reconstructProjectWork(image));
+          if (found.birth.kind === 'workspace-command') await verifyProjectBirth(image, found, work);
+        }
         const successor = intent.successor === undefined ? undefined : await work.run(validateWorkspaceProjectWork(intent.successor, { warningPolicy: 'reject' }));
         let ordinal = 0; for (const row of next.members) { if ((await work.run(compareStringsWork(row.projectId, intent.projectId))) === 0) break; ordinal++; }
         next.members = await work.run(withoutWork(next.members, intent.projectId, value => value.projectId, owner));
@@ -561,7 +583,8 @@ export async function prepareWorkspaceMutation(captured: CapturedWorkspaceComman
         // Historical admission permits two pending imports to name one unused target.
         // Consumption claims the project ID; it must not erase or reject the other pending record.
         const pending = row.pendingImport; requireContract(!(await member(pending.targetProjectId)), 'Import target is occupied');
-        const digest = await proofDigest(pending);
+        // Fast Open and Close: validateCapture proved the descriptor's pendingImportDigest is this row's own digest.
+        const digest = trusted ? descriptor!.pendingImportDigest : await proofDigest(pending);
         await addProject({ id: pending.targetProjectId, name: pending.name, initialState: pending.state,
           ...(pending.cloud === undefined ? {} : { cloud: pending.cloud }) }, { consumedImportId: pending.id,
           consumedImportCreatedAt: pending.createdAt, consumedImportDigest: digest,
