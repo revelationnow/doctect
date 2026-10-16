@@ -1276,6 +1276,12 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
       let workspace: NormalizedWorkspaceManifest;
       try { workspace = runSync(validateWorkspaceManifestWork(workspaceRows[0])); } catch { return trustedFailure('Invalid active workspace'); }
       if (workspace.storageGeneration !== marker.storageGeneration) trustedFailure('Workspace activation mismatch');
+      // A closed or replaced project's reconstruction is never reused; drop it so the worker does not retain it.
+      for (const [projectId, entry] of trustedReconstructions) {
+        const member = workspace.members.find(candidate => candidate.projectId === projectId);
+        if (!member || member.incarnation !== entry.records.scope.incarnation
+          || entry.records.scope.storageGeneration !== workspace.storageGeneration) trustedReconstructions.delete(projectId);
+      }
 
       const images = new Map<string, NormalizedProject>();
       for (const member of workspace.members) if (!only || member.projectId === only.projectId) images.set(member.projectId,

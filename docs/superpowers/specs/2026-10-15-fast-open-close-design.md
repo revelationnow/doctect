@@ -65,7 +65,8 @@ retry and restart keep the full metered path, as in Trusted Import.
    value never matches) returns a copy of it instead of reconstructing again. Any difference, including a row
    changed outside a commit with the header and preferences rows intact, reconstructs and validates in full. The
    fold-record check runs on every read. On the Planner the comparison costs about 10ms against about 270ms for
-   a reconstruction.
+   a reconstruction. Every trusted read drops entries for projects that are no longer members (or whose
+   incarnation or storage generation changed), so a closed project's copies are not retained.
 
 ## Targets
 
@@ -93,6 +94,13 @@ retry and restart keep the full metered path, as in Trusted Import.
 - Existing workspace transaction, evidence and e2e tests pass unchanged.
 
 ## Unchanged
+
+The integrity posture of stored presets and pending imports on the worker's own commit is tamper-evident, not
+tamper-proof: the manifest, its descriptors and the receipt chain are unkeyed digests, as before. A row rewritten
+together with a recomputed descriptor, coreDigest and receipts is no longer refused by a content check on every
+command; a pending import is still fully validated when consumed, and recovery and inspection still validate
+content.
+
 
 - Stored formats, digests, manifests, receipts and proofs.
 - The metered path (`trusted` undefined): recovery, inspection, retry, restart.

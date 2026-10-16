@@ -103,23 +103,37 @@ describe('fast open and close preparation', () => {
   it('closes a project exactly like the metered preparation, without reconstructing it or re-proving its birth', async () => {
     const created = await h.commit({ type: 'create-and-activate-project', project: { ...makeIncrementalProject(3), id: 'closing' } });
     expect(created.outcome).toBe('created');
-    const { metered } = await preparePair({ type: 'close-project', projectId: 'closing' });
     const reconstruct = vi.spyOn(codec, 'reconstructProjectWork'), birth = vi.spyOn(baseline, 'verifyProjectBirth');
     try {
-      sequence -= 1; const trusted = await prepare({ type: 'close-project', projectId: 'closing' }, true);
+      const { metered, trusted } = await preparePair({ type: 'close-project', projectId: 'closing' });
       expect(trusted).toEqual(metered); expect(trusted.outcome).toBe('closed');
-      expect(reconstruct).not.toHaveBeenCalled(); expect(birth).not.toHaveBeenCalled();
+      // Each spy fired exactly once: in the metered preparation, never in the trusted one.
+      expect(reconstruct).toHaveBeenCalledTimes(1); expect(birth).toHaveBeenCalledTimes(1);
     } finally { reconstruct.mockRestore(); birth.mockRestore(); }
   });
 
+  it('refuses a trusted close whose project authority changed', async () => {
+    await h.commit({ type: 'create-and-activate-project', project: { ...makeIncrementalProject(2), id: 'moved' } });
+    const captured = await capture();
+    captured.projects = captured.projects.map((project: NormalizedProject) => {
+      if (project.scope.projectId !== 'moved') return project;
+      const [key, preferences] = [...project.projectPreferences][0];
+      return { ...project, projectPreferences: new Map([[key, { ...preferences, value: { ...preferences.value }, revision: preferences.revision + 1 }]]) };
+    });
+    await expect(prepare({ type: 'close-project', projectId: 'moved' }, true, captured)).rejects.toThrow('Project authority changed');
+  });
+
   it('proves stored presets and pending imports by digest on the trusted path only', async () => {
+    const captured = await capture();
+    expect(captured.presets.length).toBeGreaterThan(0); expect(captured.pendingImports.length).toBeGreaterThan(0);
+    const native = vi.spyOn(validation, 'validateMigratedState');
     const spies = [vi.spyOn(validation, 'checkCustomPresetWork'), vi.spyOn(validation, 'checkMigratedStateWork'), vi.spyOn(validation, 'checkPendingImportWork')];
     try {
-      await prepare({ type: 'activate-project', projectId: h.a.id }, true);
-      for (const spy of spies) expect(spy).not.toHaveBeenCalled();
+      await prepare({ type: 'activate-project', projectId: h.a.id }, true, captured);
+      for (const spy of [...spies, native]) expect(spy).not.toHaveBeenCalled();
       await prepare({ type: 'activate-project', projectId: h.a.id }, false);
       for (const spy of spies) expect(spy).toHaveBeenCalled();
-    } finally { for (const spy of spies) spy.mockRestore(); }
+    } finally { for (const spy of [...spies, native]) spy.mockRestore(); }
   });
 
   it('refuses a stored preset whose content changed under an intact descriptor', async () => {
@@ -156,6 +170,9 @@ describe('fast close commits', () => {
     });
     const metered = vi.spyOn(proofs, 'recordFrame');
     try {
+      // Positive control: the spy sees the repository's metered record frames.
+      await createNormalizedRepository(h.environment).readActiveSnapshot();
+      expect(metered).toHaveBeenCalled(); metered.mockClear();
       h.environment.workspaceFault = point => {
         if (point.phase === 'before-cas') db.transaction('projectNodes', 'readwrite').objectStore('projectNodes').put({ ...record, value: { ...record.value, title: 'Raced' } });
       };
@@ -203,7 +220,7 @@ describe('trusted reconstruction reuse', () => {
     await mutateRow(h, 'projectNodes', store => store.put(row));
     const reconstruct = vi.spyOn(codec, 'reconstructProject');
     try {
-      await repository.readTrustedActiveSnapshot().catch(() => undefined);
+      await expect(repository.readTrustedActiveSnapshot()).rejects.toThrow('Invalid active project');
       expect(reconstruct.mock.calls.some(([records]) => (records as NormalizedProject).scope.projectId === 'tampered')).toBe(true);
     } finally { reconstruct.mockRestore(); }
   });

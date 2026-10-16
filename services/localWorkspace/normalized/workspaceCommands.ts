@@ -308,7 +308,8 @@ async function validateCapture(captured: CapturedWorkspaceCommand, batch: Worksp
       await work.run(checkMigratedStateWork(row.preset.initialState));
       await work.run(checkCustomPresetWork(row.preset, { warningPolicy: 'reject', existingIds: new Set() }));
     }
-    requireContract(typeof row.preset === 'object' && row.preset !== null && (await work.run(compareStringsWork(row.id, row.preset.id))) === 0, 'Preset identity mismatch');
+    requireContract(typeof row.preset === 'object' && row.preset !== null && !Array.isArray(row.preset) && typeof row.preset.id === 'string'
+      && (await work.run(compareStringsWork(row.id, row.preset.id))) === 0, 'Preset identity mismatch');
     const descriptor = await work.run(findWork(captured.manifest.presets, row.id, value => value.id));
     requireContract(descriptor && (trusted ? canonicalText(descriptor) === canonicalText(await trustedPresetDescriptor(row, trusted.hash))
       : await same(work, descriptor, await presetDescriptor(row, work))), 'Preset descriptor mismatch');
@@ -332,7 +333,7 @@ async function validateCapture(captured: CapturedWorkspaceCommand, batch: Worksp
         const input = await work.run(copyEnumerableWork(pending)) as unknown as Record<string, unknown>; delete input.warnings;
         await work.run(checkMigratedStateWork(pending.state)); await work.run(checkPendingImportWork(input, { warningPolicy: 'reject' }));
       }
-      requireContract((await work.run(compareStringsWork(row.id, pending.id))) === 0, 'Pending import identity mismatch');
+      requireContract(typeof pending.id === 'string' && (await work.run(compareStringsWork(row.id, pending.id))) === 0, 'Pending import identity mismatch');
       if (row.attemptProvenance !== undefined) provenance(row.attemptProvenance, true);
     }
     const descriptor = await work.run(findWork(captured.manifest.pendingImports, row.id, value => value.id));
