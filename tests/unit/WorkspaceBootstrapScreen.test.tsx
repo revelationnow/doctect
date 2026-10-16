@@ -17,6 +17,9 @@ it('names the project and marks done, current and upcoming steps', () => {
   expect(items.map(item => item.textContent)).toEqual(['Opening your projects', 'Downloading the project', 'Preparing the project', 'Opening the editor']);
   expect(items.map(item => item.getAttribute('data-state'))).toEqual(['done', 'done', 'current', 'upcoming']);
   expect(items[2]).toHaveAttribute('aria-current', 'step');
+  // An upcoming step is muted, but no lighter than slate-500 on white, so it still meets contrast.
+  expect(items[3]).toHaveClass('text-slate-500');
+  expect(items[3]).not.toHaveClass('text-slate-400');
   expect(screen.getByRole('status')).toHaveTextContent('Preparing the project');
 });
 

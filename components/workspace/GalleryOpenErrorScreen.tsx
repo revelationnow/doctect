@@ -18,15 +18,17 @@ export function GalleryOpenErrorScreen({ name, onRetry, onContinue, onBack }: Ga
       aria-labelledby="gallery-open-error-heading"
     >
       <section className="w-full max-w-xl rounded-xl border border-slate-200 bg-white p-6 shadow-[0_18px_45px_-28px_rgba(15,23,42,0.45)] sm:p-8">
-        <div className="mb-5 flex size-12 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
-          <AlertTriangle className="size-6" aria-hidden="true" />
+        <div role="alert" aria-live="assertive">
+          <div className="mb-5 flex size-12 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
+            <AlertTriangle className="size-6" aria-hidden="true" />
+          </div>
+          <h1 id="gallery-open-error-heading" className="text-2xl font-bold tracking-tight text-slate-900">
+            Couldn’t open “{name || 'this project'}”
+          </h1>
+          <p className="mt-3 max-w-[68ch] text-sm leading-6 text-slate-600 sm:text-base">
+            Nothing was added to your projects. This may be a connection problem, or the project may not open in this version.
+          </p>
         </div>
-        <h1 id="gallery-open-error-heading" className="text-2xl font-bold tracking-tight text-slate-900">
-          Couldn’t open “{name || 'this project'}”
-        </h1>
-        <p className="mt-3 max-w-[68ch] text-sm leading-6 text-slate-600 sm:text-base">
-          Nothing was added to your projects. Check your connection and try again.
-        </p>
         <div className="mt-7 flex flex-col gap-3 sm:flex-row">
           <button type="button" onClick={onRetry}
             className={`${BUTTON} bg-blue-600 text-white shadow-[0_8px_18px_-12px_rgba(37,99,235,0.9)] hover:bg-blue-700`}>

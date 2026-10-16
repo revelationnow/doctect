@@ -33,7 +33,7 @@ type StepState = 'done' | 'current' | 'upcoming';
 const STEP_TEXT_CLASSES: Record<StepState, string> = {
   done: 'text-slate-500',
   current: 'font-medium text-blue-800',
-  upcoming: 'text-slate-400',
+  upcoming: 'text-slate-500',
 };
 
 function StepIcon({ state }: { state: StepState }) {

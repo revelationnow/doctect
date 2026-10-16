@@ -187,6 +187,45 @@ it('clears a gallery failure on the next attempt: a recovery retry after a faile
   expect(store.commit.mock.calls.filter(([command]) => command.type === 'create-and-activate-project')).toHaveLength(1);
 });
 
+it('shows the gallery error, not the stale recovery screen, when a recovery retry bootstraps ready and the download fails', async () => {
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  loadGalleryProject.mockRejectedValue(Error('offline'));
+  const store = fakeStore({ bootstrap: [recoveryResult(workspaceRecovery({ message: 'Needs review.' })), readyResult()] });
+  renderGate(store, { galleryOpen: request });
+  fireEvent.click(await screen.findByText('Technical details'));
+  expect(screen.getByText('Needs review.')).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+  expect(await screen.findByRole('heading', { name: 'Couldn’t open “Listed”' })).toBeVisible();
+  expect(screen.queryByText('Technical details')).not.toBeInTheDocument();
+  expect(store.bootstrap).toHaveBeenCalledTimes(2);
+  expect(store.commit).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Continue to editor' }));
+  expect(await screen.findByTestId('editor')).toHaveTextContent('project-a');
+  expect(screen.queryByRole('main')).not.toBeInTheDocument();
+});
+
+/** A rejection the spy cannot see: vi.fn attaches its own rejection handler to every Promise a mock returns, so only
+ * a plain thenable over one can still be left unhandled by the gate, which is what vitest then reports. */
+const unobservedRejection = <T,>(error: Error): Promise<T> => {
+  const rejected = Promise.reject<T>(error);
+  return { then: rejected.then.bind(rejected), catch: rejected.catch.bind(rejected) } as unknown as Promise<T>;
+};
+
+it('activates an existing target without the download, so a failed download is neither an error nor left unhandled', async () => {
+  const error = vi.spyOn(console, 'error');
+  loadGalleryProject.mockImplementation(() => unobservedRejection(Error('offline')));
+  const existing = workspaceSnapshot({ projects: [...workspaceSnapshot().projects, { id: request.targetProjectId, name: 'Listed', initialState: {} as never }] });
+  const store = fakeStore({ bootstrap: readyResult({ snapshot: existing }) }), settled = vi.fn();
+  commitBy(store, { 'activate-project': async () => opened() });
+  renderGate(store, { galleryOpen: request, onGalleryOpenSettled: settled });
+  expect(await screen.findByTestId('editor')).toHaveTextContent(request.targetProjectId);
+  await waitFor(() => expect(screen.queryByRole('main')).not.toBeInTheDocument());
+  expect(store.commit.mock.calls.map(([command]) => command.type)).toEqual(['activate-project']);
+  expect(screen.queryByRole('heading', { name: 'Couldn’t open “Listed”' })).not.toBeInTheDocument();
+  expect(settled).toHaveBeenCalledTimes(1);
+  expect(error).not.toHaveBeenCalled();
+});
+
 it('shows the failure screen when the create is refused and preparation has no warnings', async () => {
   vi.spyOn(console, 'error').mockImplementation(() => {});
   const prepare = vi.spyOn(validation, 'prepareProjectState').mockReturnValue({ state: {} as never, warnings: [] });

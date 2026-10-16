@@ -70,7 +70,8 @@ export function NormalizedWorkspaceBootstrapGate({ store, renderEditor, galleryO
           const progress = (step: GalleryOpenProgress) => { if (current()) setOpening(previous => previous && { ...previous, step }); };
           let opened: Awaited<ReturnType<typeof openGalleryRequest>>;
           try { opened = await openGalleryRequest(store, result.snapshot, requested, download, progress); }
-          catch (value) { if (current()) { console.error('Could not open the gallery project:', value); setGalleryFailure(true); } return; }
+          // The bootstrap is verified here, so a recovery screen left by an earlier attempt must not mask the failure.
+          catch (value) { if (current()) { console.error('Could not open the gallery project:', value); setGalleryFailure(true); setBlocking(undefined); } return; }
           if (!current()) return;
           settled.current = true; onGalleryOpenSettled?.();
           result = { status: 'ready', snapshot: opened.snapshot }; warnings.push(...opened.warnings);
