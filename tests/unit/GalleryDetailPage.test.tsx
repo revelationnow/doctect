@@ -1,10 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { GalleryDetailPage } from '../../pages/GalleryDetailPage';
 import { cloudApi, ApiError, GalleryDetail } from '../../services/cloudApi';
 import * as importProject from '../../services/importProject';
-import { deferred } from '../helpers/fakeLocalWorkspaceStore';
 
 vi.mock('../../services/importProject', () => ({
     IMPORT_STAGE_ERROR_MESSAGE: 'Could not prepare this project for the editor. Nothing was removed; try again.',
@@ -178,23 +177,15 @@ describe('GalleryDetailPage generator source staging', () => {
         vi.spyOn(cloudApi, 'listIncomingMrs').mockResolvedValue([]);
     });
 
-    it('stages gallery open source byte-for-byte before navigating', async () => {
+    it('Open in editor navigates to the editor with a gallery request and does not stage', async () => {
         mockUseSession.mockReturnValue({ data: null });
-        vi.spyOn(cloudApi, 'galleryState').mockResolvedValue({ name: 'Test Project', state: rawGalleryState });
-        const staged = deferred<string>();
-        vi.mocked(importProject.stageImport).mockReturnValue(staged.promise);
+        const galleryState = vi.spyOn(cloudApi, 'galleryState').mockResolvedValue({ name: 'Test Project', state: rawGalleryState });
         renderAt();
 
         fireEvent.click(await screen.findByRole('button', { name: /open in editor/i }));
-        await waitFor(() => expect(importProject.stageImport).toHaveBeenCalledWith(
-            { name: 'Test Project', state: rawGalleryState },
-            { sourceKey: 'gallery-open:proj-1' },
-        ));
-        expect(screen.queryByText('APP_MARKER')).not.toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Loading…' })).toBeDisabled();
-
-        await act(async () => staged.resolve('gallery-import'));
         expect(await screen.findByText('APP_MARKER')).toBeInTheDocument();
+        expect(importProject.stageImport).not.toHaveBeenCalled();
+        expect(galleryState).not.toHaveBeenCalled();
     });
 
     it('stages fork first-commit source byte-for-byte with cloud linkage', async () => {
@@ -273,27 +264,6 @@ describe('GalleryDetailPage generator source staging', () => {
                 replaceRetainedForkAttempt: true,
             },
         ]);
-    });
-
-    it('keeps the gallery project visible and announces an exact staging failure', async () => {
-        mockUseSession.mockReturnValue({ data: null });
-        vi.spyOn(cloudApi, 'galleryState').mockResolvedValue({ name: 'Test Project', state: rawGalleryState });
-        vi.mocked(importProject.stageImport).mockRejectedValue(new Error('quota'));
-        const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-        renderAt();
-
-        fireEvent.click(await screen.findByRole('button', { name: /open in editor/i }));
-
-        const importError = await screen.findByText(
-            'Could not prepare this project for the editor. Nothing was removed; try again.',
-        );
-        expect(importError.closest('[role="alert"]')).toBeInTheDocument();
-        expect(screen.getByRole('heading', { name: 'Test Project' })).toBeVisible();
-        expect(screen.queryByText('APP_MARKER')).not.toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /open in editor/i })).toBeEnabled();
-        expect(logged).toHaveBeenCalledWith('Could not stage the gallery project for the editor:', new Error('quota'));
-        logged.mockRestore();
     });
 });
 

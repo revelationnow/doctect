@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { cloudApi, GalleryDetail, ApiError, MergeRequestDto, ReviewDto } from '../services/cloudApi';
 import { IMPORT_STAGE_ERROR_MESSAGE, stageImport } from '../services/importProject';
 import { stageForkImport } from '../services/forkProject';
+import { openGalleryProjectInEditor } from '../services/galleryOpen';
 import { downloadVariantsZip } from '../services/pdfService';
 import { useSession } from '../lib/auth-client';
 
@@ -53,20 +54,7 @@ export function useGalleryDetail(id: string | undefined): UseGalleryDetailResult
 
     const openInEditor = async () => {
         if (!id) return;
-        setBusy('open');
-        setImportError(null);
-        try {
-            const res = await cloudApi.galleryState(id);
-            await stageImport(
-                { name: res.name, state: res.state },
-                { sourceKey: `gallery-open:${id}` },
-            );
-            navigate('/app');
-        } catch (error) {
-            console.error('Could not stage the gallery project for the editor:', error);
-            setImportError(IMPORT_STAGE_ERROR_MESSAGE);
-            setBusy(null);
-        }
+        openGalleryProjectInEditor(navigate, { id, name: project?.name ?? '' });
     };
 
     const fork = async () => {
