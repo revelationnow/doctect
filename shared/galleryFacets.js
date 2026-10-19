@@ -5,7 +5,7 @@
 // Everything here is DERIVED: it never writes back to the project, its commits or its
 // published_* columns. Changing a rule below only needs INDEX_VERSION bumped; the startup
 // sweep then rebuilds the side tables from the untouched published data.
-export const INDEX_VERSION = 1;
+export const INDEX_VERSION = 2;
 
 // Folds case, spacing and simple plurals so "Planners", "planner" and " planner " land on
 // one filter. Applied to the index only — the author's original spelling is kept for display.
@@ -19,6 +19,7 @@ export function normalizeTag(raw) {
 // Ordered: on a score tie the earlier category wins. Keywords are matched after
 // normalizeTag, so list the singular form only.
 export const CATEGORIES = [
+    { key: 'templates', label: 'Note templates', emoji: '📄', keywords: ['template', 'background', 'paper', 'ruled', 'lined', 'dot-grid', 'graph-paper', 'stationery', 'insert'] },
     { key: 'planners', label: 'Planners', emoji: '📋', keywords: ['planner', 'planning', 'calendar', 'agenda', 'schedule', 'daily', 'weekly', 'monthly', 'yearly', 'organization', 'organizer', 'productivity', 'dated', 'undated', 'goal'] },
     { key: 'trackers', label: 'Trackers & habits', emoji: '📈', keywords: ['tracker', 'tracking', 'habit', 'log', 'logbook', 'fitness', 'workout', 'wellness', 'health', 'motivation', 'gamified', 'mood', 'sleep'] },
     { key: 'journals', label: 'Journals & writing', emoji: '✍️', keywords: ['journal', 'journaling', 'diary', 'writing', 'reflection', 'gratitude', 'story', 'fiction', 'novel', 'book', 'reading', 'quote', 'memoir', 'poetry'] },

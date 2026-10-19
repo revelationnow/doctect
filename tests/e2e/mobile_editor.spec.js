@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import JSZip from 'jszip';
+import { readFile } from 'node:fs/promises';
 import { apiSignUpAndVerify } from './helpers.js';
 import { readActiveProject, seedNativeProject } from './localWorkspaceHelpers.js';
 import { layoutFixture as fixture } from './fixtures/layoutFixture.js';
@@ -979,6 +981,30 @@ test('back gesture closes the open overlay and keeps the editor; any other close
     await page.goBack();
     await expect(page).toHaveURL(/\/$/);
     await expect(pane).toHaveCount(0);
+});
+
+// Device template export from the ⋯ menu: the sheet hands its history entry to the dialog (back
+// closes the dialog alone), and an export through the real pdf.js/canvas/JSZip path downloads a zip.
+test('Export as template opens from the ⋯ menu, closes on back, and downloads a zip', async ({ page }) => {
+    const open = () => openFromOverflow(page, 'Export as template…');
+    const dialog = page.getByRole('dialog', { name: 'Export as template' });
+    await open();
+    await expect(dialog).toBeVisible();
+    await expect(overflowMenu(page)).toBeHidden();
+    await expect.poll(() => overlayDepth(page)).toBe(1);
+    await page.goBack();
+    await expect(dialog).toBeHidden();
+    await expect(activePane(page).getByTestId('editor-canvas')).toBeVisible();
+    await expect.poll(() => overlayDepth(page)).toBe(0);
+
+    await open();
+    await dialog.getByRole('checkbox', { name: 'Paper Pro', exact: true }).check();
+    const downloadPromise = page.waitForEvent('download');
+    await dialog.getByRole('button', { name: 'Export', exact: true }).click();
+    const zip = await JSZip.loadAsync(await readFile(await (await downloadPromise).path()));
+    const bytes = Buffer.from(await zip.file('reMarkable/Paper_Pro/png/Guard_Page.png').async('uint8array'));
+    expect([bytes.readUInt32BE(16), bytes.readUInt32BE(20)]).toEqual([1620, 2160]);
+    expect(zip.file(/^reMarkable\/Paper_Pro\/methods\/.*\.template$/)).toHaveLength(1);
 });
 
 // Task 21: a coarse-pointer viewport whose shorter side is under 640px is a phone whichever way it

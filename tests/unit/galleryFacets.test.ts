@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { PAGE_PRESETS } from '../../constants/editor';
 import {
-    CATEGORIES, categorize, deriveFacets, formatForSize, normalizeTag,
+    CATEGORIES, INDEX_VERSION, categorize, deriveFacets, formatForSize, normalizeTag,
 } from '../../shared/galleryFacets.js';
 
 describe('normalizeTag', () => {
@@ -35,6 +35,28 @@ describe('categorize', () => {
         const all = CATEGORIES.flatMap(c => c.keywords);
         expect(new Set(all).size).toBe(all.length);
         for (const k of all) expect(normalizeTag(k)).toBe(k);
+    });
+});
+
+describe('Note templates category', () => {
+    it('is listed first, so it wins a score tie', () => {
+        expect(CATEGORIES[0]).toMatchObject({ key: 'templates', label: 'Note templates', emoji: '📄' });
+        expect(categorize([], 'Planner Template')).toBe('templates');
+    });
+
+    it('loses to a stronger score', () => {
+        expect(categorize([], 'Weekly Planner Template')).toBe('planners');
+        expect(categorize(['planner', 'weekly'], 'Planner Template')).toBe('planners');
+    });
+
+    it('matches template tags in their common spellings', () => {
+        expect(categorize(['Templates'], 'Lined pages')).toBe('templates');
+        expect(categorize(['dot-grid', 'paper'], 'Untitled')).toBe('templates');
+        expect(categorize(['stationery'], '')).toBe('templates');
+    });
+
+    it('rebuilds the derived gallery index', () => {
+        expect(INDEX_VERSION).toBe(2);
     });
 });
 

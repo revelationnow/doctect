@@ -12,12 +12,13 @@ import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { HierarchyGeneratorModal } from './HierarchyGeneratorModal';
 import { generatePDF } from '../services/pdfService';
 import { CURRENT_SCHEMA_VERSION } from '../services/migration';
-import { Download, Code, Undo2, Redo2, Loader2, Contrast, Layers } from 'lucide-react';
+import { Download, Code, Undo2, Redo2, Loader2, Contrast, Layers, Tablet } from 'lucide-react';
 import { EditorToolbar, type ToolbarActions } from './EditorToolbar';
 import { EditorLayout } from './editor-layout/EditorLayout';
 import { useFormFactor } from './editor-layout/FormFactorContext';
 import { useTouchViewport } from './editor-layout/useTouchViewport';
 import { SavePresetModal } from './SavePresetModal';
+import { DeviceExportDialog } from './export/DeviceExportDialog';
 import { NewVariantModal, NewVariantConfig } from './NewVariantModal';
 import { reflowTemplates } from '../services/reflow';
 import clsx from 'clsx';
@@ -67,6 +68,8 @@ function useLegacyEditor({ projectId, projectName, initialState, isActive, onNam
     const [layersExpanded, setLayersExpanded] = useState(false);
     const [showSavePresetModal, setShowSavePresetModal] = useState(false);
     const [showNewVariantModal, setShowNewVariantModal] = useState(false);
+    // Owned here (not in the view) so the shortcut handler below can bail out while the dialog is open.
+    const [showDeviceExport, setShowDeviceExport] = useState(false);
     const [resizingPanel, setResizingPanel] = useState<'sidebar' | 'properties' | null>(null);
 
     const [isExporting, setIsExporting] = useState(false);
@@ -160,7 +163,7 @@ function useLegacyEditor({ projectId, projectName, initialState, isActive, onNam
         if (!isActive) return;
 
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (state.showJsonModal || state.showNodeSelector || deleteConfirmState.isOpen || showScriptGenModal || showSavePresetModal) return;
+            if (state.showJsonModal || state.showNodeSelector || deleteConfirmState.isOpen || showScriptGenModal || showSavePresetModal || showNewVariantModal || showDeviceExport) return;
             const activeTag = document.activeElement?.tagName.toLowerCase();
             if (activeTag === 'input' || activeTag === 'textarea') return;
 
@@ -280,7 +283,7 @@ function useLegacyEditor({ projectId, projectName, initialState, isActive, onNam
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [state, undo, redo, saveToHistory, isActive, showScriptGenModal, showSavePresetModal]);
+    }, [state, undo, redo, saveToHistory, isActive, showScriptGenModal, showSavePresetModal, showNewVariantModal, showDeviceExport]);
 
 
     // Helper: Get templates from active variant
@@ -1071,6 +1074,7 @@ function useLegacyEditor({ projectId, projectName, initialState, isActive, onNam
         changeViewMode: (viewMode: AppState['viewMode']) => setState(s => ({ ...s, viewMode, selectedElementIds: [] })),
         replace: (next: AppState) => { saveToHistory(); setState(next); },
         jsonState: state, toolbarStateSetter: setState,
+        exportSnapshot: () => state, showDeviceExport, setShowDeviceExport,
         exportGreyscale, setExportGreyscale, handleExportPDF, isExporting,
         handleSelectNode, handleAddNode, handleAddReference, requestDeleteNodes, handleDuplicateNodes, handleUpdateNode,
         handleSelectTemplate, handleAddTemplate, handleDeleteTemplates, handleDuplicateTemplates, handleUpdateTemplateName,
@@ -1200,6 +1204,8 @@ function IncrementalProjectEditor(props: CommonProjectEditorProps & { incrementa
     const [showScriptGenModal, setShowScriptGenModal] = useState(false);
     const [showSavePresetModal, setShowSavePresetModal] = useState(false);
     const [showNewVariantModal, setShowNewVariantModal] = useState(false);
+    // Owned here (not in the view) so the shortcut handler below can bail out while the dialog is open.
+    const [showDeviceExport, setShowDeviceExport] = useState(false);
     const [resizingPanel, setResizingPanel] = useState<'sidebar' | 'properties' | null>(null);
     const [exportGreyscale, setExportGreyscale] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
@@ -1547,7 +1553,7 @@ function IncrementalProjectEditor(props: CommonProjectEditorProps & { incrementa
         if (!props.isActive) return;
         const key = (event: KeyboardEvent) => {
             const current = read();
-            if (current.showJsonModal || current.showNodeSelector || deleteConfirmState.isOpen || showScriptGenModal || showSavePresetModal || showNewVariantModal) return;
+            if (current.showJsonModal || current.showNodeSelector || deleteConfirmState.isOpen || showScriptGenModal || showSavePresetModal || showNewVariantModal || showDeviceExport) return;
             if (['input', 'textarea'].includes(document.activeElement?.tagName.toLowerCase() ?? '')) return;
             const modifier = event.ctrlKey || event.metaKey;
             if (modifier && event.key.toLowerCase() === 'z') { event.preventDefault(); event.shiftKey ? redo() : undo(); return; }
@@ -1589,6 +1595,7 @@ function IncrementalProjectEditor(props: CommonProjectEditorProps & { incrementa
         toolbarActions: { onToolChange: tool => setSession({ tool }), onPreferencesChange: setPreferences,
             onPreviewNodeChange: templatePreviewNodeId => setSession({ templatePreviewNodeId }), onAlign: align },
         propertyActions: { contextEpoch: `${renderedEpoch}:${renderedSelectionEpoch}`, patchElements, patchNodes, setPanelExpanded, panelsExpanded: editor.preferences.panelsExpanded }, layerActions,
+        exportSnapshot: editor.exportState, showDeviceExport, setShowDeviceExport,
         exportGreyscale, setExportGreyscale, handleExportPDF, isExporting,
         handleSelectNode: (id, ctrl, shift) => select('node', id, ctrl, shift),
         handleSelectTemplate: (id, ctrl, shift) => select('template', id, ctrl, shift),
@@ -1630,6 +1637,7 @@ function EditorCanvas({ contextKey, ...props }: React.ComponentProps<typeof Canv
 function ProjectEditorView({
     state, projectId, projectName, undo, redo, canUndo, canRedo, setSession, setPreferences, changeViewMode, replace,
     jsonState, toolbarStateSetter, toolbarActions, propertyActions, layerActions, contextKey, exportGreyscale, setExportGreyscale, handleExportPDF, isExporting,
+    exportSnapshot, showDeviceExport, setShowDeviceExport,
     handleSelectNode, handleAddNode, handleAddReference, requestDeleteNodes, handleDuplicateNodes, handleUpdateNode,
     handleSelectTemplate, handleAddTemplate, handleDeleteTemplates, handleDuplicateTemplates, handleUpdateTemplateName,
     handleSelectVariant, handleAddVariant, handleRenameVariant, handleDeleteVariant, handleDuplicateVariant,
@@ -1695,12 +1703,23 @@ function ProjectEditorView({
                             onClick={() => handleExportPDF({ exportAllVariants: true })}
                             disabled={isExporting || Object.keys(state.variants).length <= 1}
                             className={clsx(
-                                "text-white bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded-r border-l border-blue-500/50 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed",
+                                "text-white bg-blue-600 hover:bg-blue-700 px-2 py-1 border-l border-blue-500/50 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed",
                                 isExporting && "opacity-75 bg-blue-700"
                             )}
                             title="Export All Variants (one PDF per variant)"
                         >
                             <Layers size={14} /> All
+                        </button>
+                        <button
+                            onClick={() => setShowDeviceExport(true)}
+                            disabled={isExporting}
+                            className={clsx(
+                                "text-white bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded-r border-l border-blue-500/50 flex items-center justify-center gap-1 text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed",
+                                isExporting && "opacity-75 bg-blue-700"
+                            )}
+                            title="Export templates for e-ink devices"
+                        >
+                            <Tablet size={14} /> Export as template
                         </button>
                     </div>
                 </div>
@@ -1808,6 +1827,7 @@ function ProjectEditorView({
         undo, redo, canUndo, canRedo,
         exportPdf: () => { void handleExportPDF(); },
         exportAllVariants: () => { void handleExportPDF({ exportAllVariants: true }); },
+        exportForDevice: () => setShowDeviceExport(true),
         canExportAllVariants: Object.keys(state.variants).length > 1,
         isExporting,
         greyscale: exportGreyscale,
@@ -1879,6 +1899,14 @@ function ProjectEditorView({
                 onClose={() => setShowSavePresetModal(false)}
                 onSave={handleSavePreset}
                 defaultTitle={state.nodes[state.rootId]?.title}
+            />
+
+            <DeviceExportDialog
+                isOpen={showDeviceExport}
+                onClose={() => setShowDeviceExport(false)}
+                getState={exportSnapshot}
+                projectName={projectName}
+                initialForceGreyscale={exportGreyscale}
             />
 
             <NewVariantModal

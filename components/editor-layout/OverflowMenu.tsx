@@ -115,6 +115,7 @@ export function OverflowMenu({ open, onClose, actions, chrome }: {
                     <Item label="Export PDF" onClick={run(actions.exportPdf)} disabled={actions.isExporting} />
                     <Item label="Export all variants" onClick={run(actions.exportAllVariants)}
                         disabled={actions.isExporting || !actions.canExportAllVariants} />
+                    <Item label="Export as template…" onClick={run(actions.exportForDevice)} disabled={actions.isExporting} />
                     <Item label="Greyscale export" onClick={actions.toggleGreyscale} checked={actions.greyscale} />
                 </Group>
                 <Group title="Canvas">

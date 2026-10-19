@@ -2,6 +2,7 @@ import { expect } from '@playwright/test';
 
 const WORKSPACE_DB_NAME = 'doctect-local-workspace';
 const NON_DOCUMENT_PREFERENCES = [
+    'doctect-device-export',
     'doctect_last_align',
     'doctect_last_fontFamily',
     'doctect_last_fontSize',

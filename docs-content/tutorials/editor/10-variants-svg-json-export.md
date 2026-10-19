@@ -90,7 +90,7 @@ Hovering a tab reveals its close button. Closing asks first, and the dialog's **
 
 ## Exporting
 
-The export controls sit at the top bar's right end: a contrast-circle [**greyscale toggle**](/docs/reference/greyscale-export), then a split button — [**Export PDF**](/docs/reference/export-pdf), and a narrower **All** half beside it.
+The export controls sit at the top bar's right end: a contrast-circle [**greyscale toggle**](/docs/reference/greyscale-export), then a split button — [**Export PDF**](/docs/reference/export-pdf), a narrower **All** half beside it, and an [**Export as template**](/docs/reference/export-as-template) segment, which renders pages as note templates for e-ink tablets.
 
 **Export PDF** prints the *active variant*: one PDF page per node in hierarchy order, rendered through that variant's templates, with the internal links from [Linking](/docs/editor/linking) baked in as real PDF navigation. [Reference nodes](/docs/editor/references-and-referrer-formulas) are skipped, as that tutorial explains — one page per real node. The button reads "Generating…" while it works, and the downloaded file is tagged with the variant's name.
 

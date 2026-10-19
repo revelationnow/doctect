@@ -800,6 +800,8 @@ interface GeneratePDFOptions {
     variantId?: string;
     projectName?: string;
     output?: 'save' | 'arraybuffer';
+    /** Draw only these pages, in this order (device export). Links resolve within the subset. */
+    pageNodeIds?: string[];
 }
 
 export const computePageOrder = (state: Pick<AppState, 'nodes' | 'rootId'>): string[] => {
@@ -822,14 +824,23 @@ export const computePageOrder = (state: Pick<AppState, 'nodes' | 'rootId'>): str
 };
 
 export const generatePDF = async (state: AppState, options: GeneratePDFOptions = {}) => {
-    const pageNodes = computePageOrder(state);
+    const documentPages = computePageOrder(state);
+    const pageNodes = options.pageNodeIds
+        ? [...new Set(options.pageNodeIds)].filter(id => Object.hasOwn(state.nodes, id) && !state.nodes[id].referenceId)
+        : documentPages;
     const pageMap = new Map<string, number>(pageNodes.map((id, i) => [id, i + 1]));
+    // An internal link's element is drawn when its target is a page of the document (or of this
+    // export) and annotated only when that page is drawn here. So a subset export keeps a "next
+    // page" button that points at a page it leaves out, while a link to a page the document never
+    // has still hides its element.
+    const linkablePages = new Set<string>([...documentPages, ...pageNodes]);
 
-    const resolvePage = (id: string): number | undefined => {
+    // Follows reference nodes to the page they stand for; returns the first id `isPage` accepts.
+    const resolvePageId = (isPage: (id: string) => boolean, id: string): string | undefined => {
         const visited = new Set<string>();
         let currentId = id;
         for (let depth = 0; depth <= MAX_REFERENCE_DEPTH; depth += 1) {
-            if (pageMap.has(currentId)) return pageMap.get(currentId);
+            if (isPage(currentId)) return currentId;
             if (visited.has(currentId)) return undefined;
             visited.add(currentId);
             const node = state.nodes[currentId];
@@ -838,6 +849,12 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
         }
         return undefined;
     };
+    const resolvePage = (id: string): number | undefined => {
+        const pageId = resolvePageId(candidate => pageMap.has(candidate), id);
+        return pageId === undefined ? undefined : pageMap.get(pageId);
+    };
+    const isLinkablePage = (id: string): boolean =>
+        resolvePageId(candidate => linkablePages.has(candidate), id) !== undefined;
 
     // 1. Determine dimensions for the first page to initialize the document correctly
     let initialFormat = [RM_PP_WIDTH, RM_PP_HEIGHT];
@@ -1061,8 +1078,9 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
                     if (referrerNode) resolvedTargetId = referrerNode.id;
                 }
 
-                // If internal link configured but no target resolved, or target page doesn't exist -> SKIP
-                if (!resolvedTargetId || !resolvePage(resolvedTargetId)) {
+                // If internal link configured but no target resolved, or the target is no page at all -> SKIP.
+                // A page merely left out of a subset export keeps its link element (drawn, not annotated).
+                if (!resolvedTargetId || !isLinkablePage(resolvedTargetId)) {
                     continue;
                 }
             }
