@@ -100,6 +100,45 @@ describe('createDeviceZip', () => {
         expect(await read('README.txt')).toContain('Supernote/Manta');
     });
 
+    it('warns before the reMarkable steps and walks the PNG route through a backed-up templates.json merge', async () => {
+        const zip = createDeviceZip('P');
+        zip.addPng(rm2, 'A', png(), false);
+        zip.addPng(getProfile('rm_pp')!, 'A', png(), false);
+        const out = await open(await zip.finish());
+        const rm = await out.file('reMarkable/reMarkable_2/INSTALL.txt')!.async('string');
+        const pro = await out.file('reMarkable/Paper_Pro/INSTALL.txt')!.async('string');
+
+        // The warning comes before any command.
+        expect(rm.indexOf('AT YOUR OWN RISK')).toBeGreaterThan(-1);
+        expect(rm.indexOf('AT YOUR OWN RISK')).toBeLessThan(rm.indexOf('ssh '));
+        expect(rm).toContain('comfortable');
+        // Developer mode wipes only the Paper Pro family; the rM2 has SSH without it.
+        expect(pro).toMatch(/developer mode[\s\S]*factory reset/i);
+        expect(rm).not.toMatch(/developer mode/i);
+        expect(pro).toContain('mount -o remount,rw /');
+        expect(rm).not.toContain('mount -o remount,rw /');
+
+        // Option B: back up, merge with a re-runnable jq filter, put it back, restart, find it, undo.
+        const steps = [
+            'scp png/*.png root@10.11.99.1:/usr/share/remarkable/templates/',
+            'scp root@10.11.99.1:/usr/share/remarkable/templates/templates.json tablet-templates.json',
+            'cp tablet-templates.json tablet-templates.backup.json',
+            "jq -a --slurpfile add png/templates.json",
+            "jq '.templates | length' tablet-templates.json merged.json",
+            'scp merged.json root@10.11.99.1:/usr/share/remarkable/templates/templates.json',
+            'ssh root@10.11.99.1 systemctl restart xochitl',
+            'Custom',
+            'scp tablet-templates.backup.json root@10.11.99.1:/usr/share/remarkable/templates/templates.json',
+        ];
+        const optionB = rm.slice(rm.indexOf('Option B'));
+        let at = 0;
+        for (const step of steps) {
+            const found = optionB.indexOf(step, at);
+            expect(found, step).toBeGreaterThan(-1);
+            at = found + step.length;
+        }
+    });
+
     it('sends a reMarkable folder without Methods files to the report instead of an scp that would fail', async () => {
         // Every page of this model hit the .template cap: methods/ is absent, so "scp methods/*" would say "No such file".
         const zip = createDeviceZip('P');

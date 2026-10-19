@@ -492,6 +492,21 @@ merge)
 
 Supernote, Boox and Bigme stay `verified: 'docs'`.
 
+**Results (2026-10-19)**
+
+The owner validated the PNG route (item 1) on a reMarkable Paper Pro, following INSTALL.txt
+(remount, copy the PNGs, merge `templates.json`, restart). The template appears in a notebook's
+Templates picker under *Custom*. The owner ruled this sufficient to release the feature, and
+`rm_pp` is now `verified: 'device'`.
+
+Still unconfirmed, and left for follow-up rather than blocking:
+
+- item 2, the Methods route, including the rM2 near-square fit, rotated text and turn direction;
+- item 3, the Paper Pro Move `supportedScreens` code;
+- items 4 to 6.
+
+`rm2` and `rm_pp_move` stay `verified: 'docs'`.
+
 ## 10. Out of scope
 
 - Device export from the gallery detail page (planned later, separately).

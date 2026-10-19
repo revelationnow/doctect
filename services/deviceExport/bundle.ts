@@ -37,21 +37,41 @@ function installGuide(folder: ModelFolder, projectSlug: string): string {
     const { profile } = folder;
     if (profile.platform === 'remarkable') {
         const isRm2 = profile.id === 'rm2';
+        const tablet = 'root@10.11.99.1';
+        const templates = '/usr/share/remarkable/templates';
         return [
             `reMarkable: ${profile.name}`,
             '',
-            'reMarkable has no official way to add templates. Both routes below need SSH access',
-            'or a tool such as RCU (https://www.davisr.me/projects/rcu/). Over USB the tablet is',
-            'root@10.11.99.1; the password is in Settings > Help > Copyrights and licenses, under',
+            '!! READ THIS FIRST: INSTALLING IS AT YOUR OWN RISK !!',
+            '',
+            'reMarkable does not support adding your own templates. Both options below log in to the',
+            'tablet as root over SSH and change its system files. Doctect cannot do this for you and',
+            'cannot undo it for you.',
+            '',
+            '- A mistake can stop the tablet\'s interface from starting, or hide your other templates,',
+            '  until it is put right over SSH or the tablet is factory reset.',
+            ...(isRm2 ? [] : [
+                '- On the Paper Pro and Paper Pro Move, SSH needs developer mode, and turning developer',
+                '  mode on is a factory reset that erases the tablet. Sync your notebooks before you start.',
+            ]),
+            '- reMarkable support may not help with a tablet whose system files were changed.',
+            '',
+            'Only continue if you are comfortable using a terminal, SSH and scp, and know how to undo',
+            'each step. If not, leave the tablet as it is.',
+            '',
+            'Connecting: use SSH, or a tool such as RCU (https://www.davisr.me/projects/rcu/). Over USB',
+            `the tablet is ${tablet}; the password is in Settings > Help > Copyrights and licenses, under`,
             'GPLv3 Compliance (software 3.9 to 3.18: Settings > Help > About > Copyrights and licenses).',
+            'The commands below are for a macOS or Linux terminal, run from the folder that holds this',
+            'INSTALL.txt.',
             '',
             `Option A: Methods templates (survive software updates${isRm2 ? '; needs software 3.17 or later' : ''})`,
             // Every page of this model may have been skipped for Methods (shape or size cap, or a failed
             // conversion): then there is no methods/ folder, and the scp below would fail with "No such file".
             ...(folder.hasMethods ? [
                 '1. Copy every file in methods/ to /home/root/.local/share/remarkable/xochitl/',
-                '     scp methods/* root@10.11.99.1:/home/root/.local/share/remarkable/xochitl/',
-                '2. Restart the interface:  ssh root@10.11.99.1 systemctl restart xochitl',
+                `     scp methods/* ${tablet}:/home/root/.local/share/remarkable/xochitl/`,
+                `2. Restart the interface:  ssh ${tablet} systemctl restart xochitl`,
                 '   Methods templates are line drawings. If anything had to be simplified,',
                 '   CONVERSION-REPORT.txt at the top of this zip says what.',
             ] : [
@@ -63,11 +83,31 @@ function installGuide(folder: ModelFolder, projectSlug: string): string {
             'Option B: PNG templates (exact look; every software update removes them)',
             ...numbered([
                 // The rM2's root filesystem is writable; the Paper Pro and Paper Pro Move mount it read-only.
-                ...(isRm2 ? [] : ['Make the system folder writable:  ssh root@10.11.99.1 mount -o remount,rw /']),
-                'scp png/*.png root@10.11.99.1:/usr/share/remarkable/templates/',
-                'Add the entries in png/templates.json to the "templates" list of\n   /usr/share/remarkable/templates/templates.json on the tablet.',
-                'ssh root@10.11.99.1 systemctl restart xochitl',
+                ...(isRm2 ? [] : [`Make the system folder writable:\n     ssh ${tablet} mount -o remount,rw /`]),
+                `Copy the pictures:\n     scp png/*.png ${tablet}:${templates}/`,
+                'Download the tablet\'s template list, and keep an untouched backup:\n'
+                    + `     scp ${tablet}:${templates}/templates.json tablet-templates.json\n`
+                    + '     cp tablet-templates.json tablet-templates.backup.json',
+                'Add the entries in png/templates.json to that list. With jq (https://jqlang.org):\n'
+                    + '     jq -a --slurpfile add png/templates.json \\\n'
+                    + "       '($add[0].templates | map(.filename)) as $new\n"
+                    + "        | .templates |= (map(select(.filename as $f | $new | index($f) | not)) + $add[0].templates)' \\\n"
+                    + '       tablet-templates.json > merged.json\n'
+                    + '   An entry with the same file name is replaced, so running this again is safe. The second\n'
+                    + '   number this prints should be the first plus the number of new templates:\n'
+                    + "     jq '.templates | length' tablet-templates.json merged.json\n"
+                    + '   Without jq: copy tablet-templates.json to merged.json, open it in a text editor, and paste\n'
+                    + '   the entries from png/templates.json into its "templates" list, with a comma between entries.',
+                `Put the list back:\n     scp merged.json ${tablet}:${templates}/templates.json`,
+                `Restart the interface:\n     ssh ${tablet} systemctl restart xochitl`,
+                'In a notebook, open the Templates picker. The new pages are in the "Custom" category,\n'
+                    + '   named after their page titles.',
             ]),
+            '',
+            'If the interface does not come back, or templates are missing, put the backup back and restart:',
+            `     scp tablet-templates.backup.json ${tablet}:${templates}/templates.json`,
+            `     ssh ${tablet} systemctl restart xochitl`,
+            'A software update resets templates.json and removes the pictures: repeat Option B afterwards.',
             '',
         ].join('\n');
     }

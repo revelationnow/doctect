@@ -34,7 +34,7 @@ export const DEVICE_PROFILES: readonly DeviceProfile[] = [
     { id: 'rm2', platform: 'remarkable', name: 'reMarkable 2', folder: 'reMarkable_2', width: 1404, height: 1872, colour: false,
         remarkableScreen: 'rm2', rotateMethods: true, source: 'https://remarkable.jms1.info/templates/', verified: 'docs' },
     { id: 'rm_pp', platform: 'remarkable', name: 'Paper Pro', folder: 'Paper_Pro', width: 1620, height: 2160, colour: true,
-        remarkableScreen: 'rmPP', source: 'https://github.com/chrissyhroberts/remarkable_2_and_paper_pro_custom_templates', verified: 'docs' },
+        remarkableScreen: 'rmPP', source: 'https://github.com/chrissyhroberts/remarkable_2_and_paper_pro_custom_templates', verified: 'device' },
     // remarkable.com's product page gives only the 7.3" diagonal; the pixel count is from e-ink-info.
     { id: 'rm_pp_move', platform: 'remarkable', name: 'Paper Pro Move', folder: 'Paper_Pro_Move', width: 954, height: 1696, colour: true,
         remarkableScreen: 'rmPPM', source: 'https://www.e-ink-info.com/remarkable-paper-pro-move', verified: 'docs' },
