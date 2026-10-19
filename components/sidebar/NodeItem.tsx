@@ -1,8 +1,10 @@
 
 import React, { useState } from 'react';
 import { AppState, AppNode } from '../../types';
-import { ChevronRight, ChevronDown, Plus, Trash2, Edit2, Link, Copy } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Trash2, Edit2, Link, Copy, MoreHorizontal } from 'lucide-react';
 import clsx from 'clsx';
+import { useFormFactor } from '../editor-layout/FormFactorContext';
+import { RowActionSheet, type RowAction } from './RowActionSheet';
 
 interface NodeItemProps {
   nodeId: string;
@@ -21,6 +23,9 @@ export const NodeItem: React.FC<NodeItemProps> = ({ nodeId, state, depth, onSele
   const [expanded, setExpanded] = useState(depth < 1);
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(node?.title || "");
+  // Touch: the row's actions sit behind one ⋯ button, so the page name keeps the row's width.
+  const touch = useFormFactor() !== 'desktop';
+  const [actionsOpen, setActionsOpen] = useState(false);
 
   if (!node) return null;
 
@@ -34,18 +39,40 @@ export const NodeItem: React.FC<NodeItemProps> = ({ nodeId, state, depth, onSele
     setIsEditing(false);
   };
 
+  const touchActions: RowAction[] = [
+    ...(!isReference ? [
+      { label: 'Rename', onSelect: () => { setEditTitle(node.title); setIsEditing(true); } },
+      { label: 'Add child page', onSelect: () => { onAdd(nodeId); setExpanded(true); } },
+      { label: 'Link existing page', onSelect: () => { onAddRef(nodeId); setExpanded(true); } },
+    ] : []),
+    ...(node.parentId ? [
+      { label: 'Duplicate', onSelect: () => onDuplicate(nodeId) },
+      { label: 'Delete', onSelect: () => onDelete(nodeId), destructive: true },
+    ] : []),
+  ];
+
   return (
     <div>
       <div 
         data-node-id={nodeId}
         className={clsx(
-          "flex items-center group py-1 px-2 cursor-pointer select-none text-sm hover:bg-slate-100",
+          `flex items-center group ${touch ? 'min-h-11 py-0' : 'py-1'} px-2 cursor-pointer select-none text-sm hover:bg-slate-100`,
           isSelected && "bg-blue-50 text-blue-700 font-medium",
           isReference && "italic text-slate-600"
         )}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
         onClick={(e) => onSelect(nodeId, e.ctrlKey || e.metaKey, e.shiftKey)}
       >
+        {touch ? (
+          hasChildren ? (
+            <button type="button" aria-expanded={expanded}
+              aria-label={`${expanded ? 'Collapse' : 'Expand'} ${node.title}`}
+              className="-ml-2 flex flex-none items-center justify-center rounded text-slate-400"
+              onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}>
+              {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            </button>
+          ) : <div className="-ml-2 w-11 flex-none" />
+        ) : (
         <div 
           className="mr-1 p-0.5 rounded hover:bg-slate-200 text-slate-400"
           onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
@@ -54,6 +81,7 @@ export const NodeItem: React.FC<NodeItemProps> = ({ nodeId, state, depth, onSele
             expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />
           ) : <div className="w-[14px]" />}
         </div>
+        )}
         
         {isReference && <Link size={12} className="mr-1 text-indigo-500" />}
 
@@ -71,6 +99,15 @@ export const NodeItem: React.FC<NodeItemProps> = ({ nodeId, state, depth, onSele
             <span className="truncate flex-1">{node.title}</span>
         )}
 
+        {touch ? (
+          !isEditing && touchActions.length > 0 && (
+            <button type="button" aria-haspopup="dialog" aria-label={`Actions for ${node.title}`}
+              className="-mr-2 flex flex-none items-center justify-center rounded text-slate-500"
+              onClick={(e) => { e.stopPropagation(); setActionsOpen(true); }}>
+              <MoreHorizontal size={18} className="pointer-events-none" />
+            </button>
+          )
+        ) : (
         <div className="hidden group-hover:flex items-center gap-1 ml-2">
             {!isReference && (
               <>
@@ -109,7 +146,11 @@ export const NodeItem: React.FC<NodeItemProps> = ({ nodeId, state, depth, onSele
               </>
             )}
         </div>
+        )}
       </div>
+      {touch && (
+        <RowActionSheet open={actionsOpen} title={node.title} actions={touchActions} onClose={() => setActionsOpen(false)} />
+      )}
       
       {expanded && node.children.map(childId => (
         <NodeItem 

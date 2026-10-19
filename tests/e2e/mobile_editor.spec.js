@@ -629,6 +629,38 @@ test('quick format bar is never the hit target under the overflow sheet, the dra
     expect(await hit(), 'the bar is reachable again once the dialog closes').toBe('Text formatting');
 });
 
+test('drawer rows keep their names visible; row actions sit behind one ⋯ sheet', async ({ page }) => {
+    const opener = page.getByRole('button', { name: 'Open pages and templates' });
+    const drawer = page.getByRole('dialog', { name: 'Pages and templates' });
+    const openDrawer = async () => { if (!(await drawer.isVisible())) await opener.click(); await expect(drawer).toBeVisible(); };
+    const rowActions = name => drawer.getByRole('button', { name: `Actions for ${name}`, exact: true });
+    await openDrawer();
+
+    // The name gets the row; only the ⋯ button shares it.
+    const row = drawer.locator('[data-node-id="root"]');
+    const name = row.getByText('Guard Page', { exact: true });
+    expect((await name.boundingBox()).width).toBeGreaterThan((await row.boundingBox()).width / 2);
+    await expect(row.getByRole('button')).toHaveCount(1);
+
+    await rowActions('Guard Page').click();
+    const sheet = page.getByRole('dialog', { name: 'Actions for Guard Page' });
+    await expect(sheet).toBeVisible();
+    await expect.poll(() => overlayDepth(page)).toBe(2);
+    await sheet.getByRole('button', { name: 'Add child page' }).click();
+    await expect(sheet).toBeHidden();
+    await openDrawer();
+    await expect(rowActions('New Page')).toBeVisible();
+
+    // Back closes the sheet and leaves the drawer open.
+    await rowActions('New Page').click();
+    const child = page.getByRole('dialog', { name: 'Actions for New Page' });
+    await expect(child).toBeVisible();
+    await page.goBack();
+    await expect(child).toBeHidden();
+    await expect(drawer).toBeVisible();
+    await expect.poll(() => overlayDepth(page)).toBe(1);
+});
+
 test('phone overflow menu offers Home, Gallery and Docs; a followed row replaces the sheet\'s history entry', async ({ page }, testInfo) => {
     test.skip(!isPhone(testInfo), 'phone only');
     await page.getByRole('button', { name: 'More actions' }).click();
