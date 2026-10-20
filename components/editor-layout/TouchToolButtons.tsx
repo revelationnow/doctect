@@ -18,13 +18,13 @@ const buttonClass = (pressed: boolean) => clsx('flex h-11 w-11 shrink-0 items-ce
     pressed ? 'bg-blue-600 text-white' : 'text-slate-600');
 
 /**
- * The touch tool row shared by the tablet toolbar and the phone tool pill. `fitToWidth` is the
- * only zoom control on touch: zoom is local to the touch viewport and never written to state.
- * The phone pill renders the row without Fit inside a swipeable scroller and pins `TouchFitButton`
- * beside it, so Fit is always on screen however far the row is scrolled.
+ * The tool row shared by the tablet toolbar and the phone tool pill. `fitToWidth` is the only zoom
+ * control on touch: zoom is local to the touch viewport and never written to state. Both layouts
+ * render the row inside a sideways scroller (ToolPillScroller) and pin `TouchFitButton` beside it,
+ * so Fit is always on screen however far the row is scrolled.
  * "Select multiple" sits beside Select: it is a mode of that tool (see useTouchMultiSelect).
  */
-export function TouchToolButtons({ actions, showFit = false }: { actions: TouchEditorActions; showFit?: boolean }) {
+export function TouchToolButtons({ actions }: { actions: TouchEditorActions }) {
     return (
         <div className="flex items-center gap-0.5">
             {TOOLS.map(({ tool, label, icon: Icon }) => (
@@ -41,7 +41,6 @@ export function TouchToolButtons({ actions, showFit = false }: { actions: TouchE
                     )}
                 </React.Fragment>
             ))}
-            {showFit && <TouchFitButton actions={actions} />}
         </div>
     );
 }

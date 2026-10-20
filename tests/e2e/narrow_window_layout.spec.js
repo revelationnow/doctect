@@ -12,6 +12,16 @@ const drawer = page => page.getByRole('dialog', { name: 'Pages and templates' })
 const html = page => page.locator('html');
 const MOUSE_CANVAS_GUTTER = 48; // hooks/useTouchFit.ts: a mouse fit leaves this much each side
 
+const within = (inner, outer) => inner.x >= outer.x && inner.y >= outer.y
+    && inner.x + inner.width <= outer.x + outer.width && inner.y + inner.height <= outer.y + outer.height;
+/** The control is visible and its whole box lies inside `screen`; returns the box. */
+const onScreen = async (locator, screen, label) => {
+    await expect(locator, label).toBeVisible();
+    const b = await locator.boundingBox();
+    expect(within(b, screen), `${label} inside the ${screen.width}px viewport`).toBe(true);
+    return b;
+};
+
 test.describe('narrow mouse window', () => {
     test.beforeEach(async ({ page }) => {
         await seedNativeProject(page, { id: 'narrow', name: 'Narrow', initialState: fixture });
@@ -59,6 +69,62 @@ test.describe('narrow mouse window', () => {
         await row.hover();
         await expect(drawer(page).getByTitle('Add New Page')).toBeVisible();
         await expect(page.getByRole('button', { name: /^Actions for/ })).toHaveCount(0);
+    });
+
+    // The tablet toolbar's natural row (☰, eight tools, Fit, Undo, Redo, Export PDF, ⋯: 768px with the
+    // label, 684px without) is wider than the narrowest tablet-layout windows. The tools scroll
+    // sideways in the same scroller as the phone pill, so the trailing controls (⋯ is the only way
+    // to the export, project and canvas actions) and the pinned Fit never leave the screen; Export
+    // PDF keeps only its icon below 840px. At 700px everything then fits; at 640px the tools scroll.
+    test('640 and 700px: the tablet toolbar keeps ☰, Fit, Undo, Redo, Export PDF and ⋯ on screen and scrolls the tools', async ({ page, browserName }) => {
+        test.skip(!['chromium', 'firefox'].includes(browserName), 'WebKit cannot launch on the dev host');
+        const bar = topBar(page);
+        const scroller = bar.locator('[data-touch-pill-scroller]');
+        const menu = page.getByRole('dialog', { name: 'More actions' });
+        for (const width of [700, 640]) {
+            const height = 800;
+            await page.setViewportSize({ width, height });
+            const screen = { x: 0, y: 0, width, height };
+            await expect(html(page)).toHaveAttribute('data-form-factor', 'tablet');
+            const boxes = [];
+            for (const name of ['Open pages and templates', 'Fit page to width', 'Undo', 'Redo', 'Export PDF', 'More actions']) {
+                boxes.push(await onScreen(bar.getByRole('button', { name }), screen, `${name} at ${width}px`));
+            }
+            // Pinned and trailing controls keep their full width: nothing is squeezed or stacked.
+            for (const [i, b] of boxes.entries()) {
+                expect(b.width, `control ${i} width at ${width}px`).toBeGreaterThanOrEqual(40);
+                for (const other of boxes.slice(i + 1)) expect(b.x + b.width <= other.x, `controls in order at ${width}px`).toBe(true);
+            }
+            await expect(bar.getByRole('button', { name: 'Export PDF' }).getByText('Export PDF'), `icon-only Export PDF at ${width}px`).toBeHidden();
+            expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), `no horizontal scroll at ${width}px`).toBeLessThanOrEqual(0);
+
+            // At 640px the tool row is narrower than its tools: it scrolls, says so with the end fade,
+            // and every tool can be brought on screen (the last one is Grid), Fit staying put meanwhile.
+            // At 700px the icon-only row still fits whole, so nothing scrolls and no fade shows.
+            const scrolls = await scroller.evaluate(el => el.scrollWidth > el.clientWidth);
+            expect(scrolls, `tools scroll only at 640px (at ${width}px)`).toBe(width === 640);
+            if (scrolls) {
+                await expect(bar.getByTestId('tool-pill-fade-end')).toBeVisible();
+                const fitBefore = await bar.getByRole('button', { name: 'Fit page to width' }).boundingBox();
+                await scroller.evaluate(el => { el.scrollLeft = el.scrollWidth; });
+                await expect.poll(async () => within(await bar.getByRole('button', { name: 'Grid', exact: true }).boundingBox(), screen), `Grid scrolls into view at ${width}px`).toBe(true);
+                expect(await bar.getByRole('button', { name: 'Fit page to width' }).boundingBox(), `Fit pinned at ${width}px`).toEqual(fitBefore);
+                await scroller.evaluate(el => { el.scrollLeft = 0; });
+            } else {
+                await expect(bar.getByTestId('tool-pill-fade-end')).toBeHidden();
+                await onScreen(bar.getByRole('button', { name: 'Grid', exact: true }), screen, `Grid at ${width}px`);
+            }
+
+            // ⋯ opens the menu from here.
+            await bar.getByRole('button', { name: 'More actions' }).click();
+            await expect(menu).toBeVisible();
+            await page.getByTestId('overflow-menu-backdrop').click();
+            await expect(menu).toBeHidden();
+        }
+        // Back at 900px the label is shown again (the row has room for it from 840px up).
+        await page.setViewportSize({ width: 900, height: 800 });
+        await expect(bar.getByRole('button', { name: 'Export PDF' }).getByText('Export PDF')).toBeVisible();
+        await expect(bar.getByTestId('tool-pill-fade-end')).toBeHidden();
     });
 
     test('600px: phone layout; back to 1440px restores the desktop with its saved zoom', async ({ page, browserName }) => {

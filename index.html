@@ -161,16 +161,18 @@
         flex-basis: 100%;
         margin-top: 8px;
       }
-      /* Phone tool pill: its one row of tools swipes sideways on narrow screens (R43), so the row
-         scrolls without a visible scrollbar and each 44px tool snaps to the row's start edge. */
-      [data-form-factor="phone"] [data-touch-pill-scroller] {
+      /* Tool rows (the phone pill, R43, and the tablet toolbar on narrow tablets and mouse windows):
+         the one row of tools scrolls sideways when the layout is narrower than it, without a visible
+         scrollbar (which would not fit the 56px toolbar row), each 44px tool snapping to the row's
+         start edge. */
+      [data-form-factor] [data-touch-pill-scroller] {
         scrollbar-width: none;
         scroll-snap-type: x proximity;
       }
-      [data-form-factor="phone"] [data-touch-pill-scroller]::-webkit-scrollbar {
+      [data-form-factor] [data-touch-pill-scroller]::-webkit-scrollbar {
         display: none;
       }
-      [data-form-factor="phone"] [data-touch-pill-scroller] button {
+      [data-form-factor] [data-touch-pill-scroller] button {
         scroll-snap-align: start;
       }
       /* Touch editor shell: the visible viewport, not 100vh. Mobile browsers size 100vh as if their

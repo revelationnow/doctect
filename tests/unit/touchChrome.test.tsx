@@ -4,7 +4,8 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeActions } from '../helpers/touchActions';
-import { TouchToolButtons } from '../../components/editor-layout/TouchToolButtons';
+import { TouchFitButton, TouchToolButtons } from '../../components/editor-layout/TouchToolButtons';
+import { PILL_SCROLLER_ATTR } from '../../components/editor-layout/ToolPillScroller';
 import { OverflowMenu } from '../../components/editor-layout/OverflowMenu';
 import { PhoneTopBar } from '../../components/editor-layout/PhoneTopBar';
 import { TabletToolbar } from '../../components/editor-layout/TabletToolbar';
@@ -29,23 +30,25 @@ const chrome: EditorChrome = {
 beforeEach(() => vi.clearAllMocks());
 
 describe('TouchToolButtons', () => {
-    it('offers select, select multiple, hand, text, shapes and fit, and marks the active tool', () => {
+    it('offers select, select multiple, hand, text and shapes, and marks the active tool', () => {
         const actions = makeActions({ tool: 'text' });
-        render(<TouchToolButtons actions={actions} showFit />);
-        for (const name of ['Select', 'Select multiple', 'Pan', 'Text', 'Rectangle', 'Ellipse', 'Triangle', 'Line', 'Grid', 'Fit page to width']) {
+        render(<TouchToolButtons actions={actions} />);
+        for (const name of ['Select', 'Select multiple', 'Pan', 'Text', 'Rectangle', 'Ellipse', 'Triangle', 'Line', 'Grid']) {
             expect(screen.getByRole('button', { name })).toBeTruthy();
         }
         expect(screen.getByRole('button', { name: 'Text' }).getAttribute('aria-pressed')).toBe('true');
         fireEvent.click(screen.getByRole('button', { name: 'Rectangle' }));
         expect(actions.setTool).toHaveBeenCalledWith('rect');
-        fireEvent.click(screen.getByRole('button', { name: 'Fit page to width' }));
-        expect(actions.fitToWidth).toHaveBeenCalled();
     });
 
-    it('omits the fit button unless asked for it', () => {
-        render(<TouchToolButtons actions={makeActions()} />);
-        expect(screen.queryByRole('button', { name: 'Fit page to width' })).toBeNull();
+    it('leaves Fit to the layouts, which pin TouchFitButton outside the scrolling row', () => {
+        const actions = makeActions();
+        render(<><TouchToolButtons actions={actions} /><TouchFitButton actions={actions} /></>);
         expect(screen.getByRole('button', { name: 'Select' }).getAttribute('aria-pressed')).toBe('true');
+        const fit = screen.getByRole('button', { name: 'Fit page to width' });
+        expect(fit.parentElement).toBe(screen.getByRole('button', { name: 'Select' }).parentElement!.parentElement);
+        fireEvent.click(fit);
+        expect(actions.fitToWidth).toHaveBeenCalled();
     });
 
     it('shows Select multiple as a 44px pressed toggle beside Select', () => {
@@ -635,5 +638,33 @@ describe('TabletToolbar', () => {
     it('tags its row as the top bar so the quick format bar keeps clear of it', () => {
         const { container } = render(<TabletToolbar actions={makeActions()} onOpenSidebar={vi.fn()} />);
         expect(container.firstElementChild!.getAttribute('data-touch-chrome')).toBe('top-bar');
+    });
+
+    // Narrow tablets and mouse windows (under ~740px) are narrower than the row's controls. The tools
+    // sit in the phone pill's scroller, in a slot that takes the spare width and gives it up first,
+    // with Fit pinned beside the scroller and the trailing controls outside it, so ☰, Fit, Undo,
+    // Redo, Export PDF and ⋯ never leave the screen; Export PDF keeps only its icon below 840px.
+    it('scrolls the tools in one row with Fit pinned beside them, and keeps the other controls out of the scroller', () => {
+        const { container } = render(<TabletToolbar actions={makeActions({ tool: 'rect' })} onOpenSidebar={vi.fn()} />);
+        const scroller = container.querySelector(`[${PILL_SCROLLER_ATTR}]`) as HTMLElement;
+        expect(scroller).toBeTruthy();
+        expect(scroller.className).toMatch(/\boverflow-x-auto\b/);
+        expect(within(scroller).getAllByRole('button')).toHaveLength(9); // the tools and Select multiple
+        expect(within(scroller).getByRole('button', { name: 'Rectangle' }).getAttribute('aria-pressed')).toBe('true');
+        const slot = scroller.parentElement!.parentElement!;
+        expect(slot.className).toMatch(/\bmin-w-0\b/);
+        expect(slot.className).toMatch(/\bflex-1\b/);
+        for (const name of ['Open pages and templates', 'Fit page to width', 'Undo', 'Redo', 'Export PDF', 'More actions']) {
+            const button = screen.getByRole('button', { name });
+            expect(scroller.contains(button), name).toBe(false);
+            expect(button.className, name).toMatch(/\bshrink-0\b/);
+        }
+        // Fit sits right after the scroller, inside the same slot, as the phone pill pins it.
+        expect(slot.contains(screen.getByRole('button', { name: 'Fit page to width' }))).toBe(true);
+        expect(container.querySelector('[data-touch-chrome="top-bar"] > .flex-1:empty')).toBeNull(); // the slot replaced the spacer
+        const label = screen.getByRole('button', { name: 'Export PDF' }).querySelector('span')!;
+        expect(label.textContent).toBe('Export PDF');
+        expect(label.className).toMatch(/\bhidden\b/);
+        expect(label.className).toMatch(/\bmin-\[840px\]:inline\b/);
     });
 });

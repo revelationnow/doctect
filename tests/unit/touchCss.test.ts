@@ -88,6 +88,20 @@ describe('touch CSS', () => {
         }
     });
 
+    // The tablet toolbar's tool row is the phone pill's scroller (narrow tablets and mouse windows
+    // under ~740px scroll it), so its scrollbar hiding and snapping cover every narrow layout: a
+    // visible scrollbar would not fit the 56px toolbar row.
+    it('hides the scrollbar and snaps the tools of the tool row scroller in every narrow layout', () => {
+        const scrollerRules = Array.from(rules.matchAll(/([^{}]+)\{([^{}]*)\}/g)).filter(([, selector]) => selector.includes('[data-touch-pill-scroller]'));
+        expect(scrollerRules.length).toBeGreaterThanOrEqual(3);
+        for (const [, selector] of scrollerRules) {
+            for (const part of selector.split(',')) expect(part.trim()).toMatch(/^\[data-form-factor\] \[data-touch-pill-scroller\]/);
+        }
+        expect(rules).toMatch(/\[data-form-factor\] \[data-touch-pill-scroller\]\s*\{[^}]*scrollbar-width:\s*none/);
+        expect(rules).toMatch(/\[data-form-factor\] \[data-touch-pill-scroller\]::-webkit-scrollbar\s*\{\s*display:\s*none/);
+        expect(rules).toMatch(/\[data-form-factor\] \[data-touch-pill-scroller\] button\s*\{\s*scroll-snap-align:\s*start/);
+    });
+
     it('declares 44px targets, 16px form controls, hover reveal and dialog rules', () => {
         expect(block).toMatch(/min-height:\s*44px/);
         expect(block).toMatch(/font-size:\s*16px/);

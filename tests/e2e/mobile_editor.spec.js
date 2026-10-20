@@ -1067,6 +1067,44 @@ test('landscape phone keeps the phone layout, with the top bar, a one-row pill, 
     await expect(html).toHaveAttribute('data-form-factor', isPhone(testInfo) ? 'phone' : 'tablet');
 });
 
+// The tablet toolbar's natural row (☰, nine tools, Fit, Undo, Redo, Export PDF, ⋯: 814px with the
+// label, 734px without) is wider than this 810px iPad, a classic 768px one or a 700px tablet window.
+// Its tools scroll sideways like the phone pill, so the trailing controls (⋯ is the only way to the
+// export, project and canvas actions) and the pinned Fit stay on screen; Export PDF keeps only its
+// icon below 840px, which lets the whole row fit from 734px up: only the 700px window scrolls.
+test('narrow tablet keeps ☰, Fit, Undo, Redo, Export PDF and ⋯ of the toolbar on screen, scrolling the tools', async ({ page }, testInfo) => {
+    test.skip(isPhone(testInfo), 'tablet only');
+    const html = page.locator('html');
+    const device = await viewport(page);
+    const bar = topBar(page);
+    const scroller = bar.locator('[data-touch-pill-scroller]');
+    for (const width of [device.width, 768, 700]) {
+        const height = device.height;
+        await page.setViewportSize({ width, height });
+        const screen = { x: 0, y: 0, width, height };
+        await expect(html).toHaveAttribute('data-form-factor', 'tablet');
+        for (const name of ['Open pages and templates', 'Fit page to width', 'Undo', 'Redo', 'Export PDF', 'More actions']) {
+            const b = await onScreen(bar.getByRole('button', { name }), screen, `${name} at ${width}px`);
+            expect(b.width, `${name} is a full target at ${width}px`).toBeGreaterThanOrEqual(44);
+        }
+        await expect(bar.getByRole('button', { name: 'Export PDF' }).getByText('Export PDF'), `icon-only Export PDF at ${width}px`).toBeHidden();
+        expect(await horizontalOverflow(page), `no horizontal scroll at ${width}px`).toBeLessThanOrEqual(0);
+        const scrolls = await scroller.evaluate(el => el.scrollWidth > el.clientWidth);
+        expect(scrolls, `tools scroll only at 700px (at ${width}px)`).toBe(width === 700);
+        if (scrolls) {
+            // The row says so, and the last tool can still be reached.
+            await expect(bar.getByTestId('tool-pill-fade-end')).toBeVisible();
+            await scroller.evaluate(el => { el.scrollLeft = el.scrollWidth; });
+            const row = await scroller.boundingBox();
+            await expect.poll(async () => within(await bar.getByRole('button', { name: 'Grid', exact: true }).boundingBox(), row), `Grid scrolls into view at ${width}px`).toBe(true);
+        } else {
+            await expect(bar.getByTestId('tool-pill-fade-end')).toBeHidden();
+            await onScreen(bar.getByRole('button', { name: 'Grid', exact: true }), screen, `Grid at ${width}px`);
+        }
+    }
+    await page.setViewportSize(device);
+});
+
 // Task 21: the phone sheet shows Cloud and Account as rows of its own (no trigger, no popover
 // opening over the groups below), driven by the same handlers as the header's menus.
 test('phone overflow menu lists Cloud and Account as rows, and Save to cloud runs from its row', async ({ page }, testInfo) => {
