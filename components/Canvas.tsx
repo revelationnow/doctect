@@ -72,7 +72,7 @@ export const TOUCH_DEFAULT_SIZE: Record<string, { w: number; h: number }> = {
     grid: { w: 240, h: 120 }, line: { w: 120, h: 0 },
 };
 
-type InlineEditingSession = { elementId: string; owner?: CanvasInteraction; hasSavedHistory: boolean };
+type InlineEditingSession = { elementId: string; owner?: CanvasInteraction; hasSavedHistory: boolean; finished?: boolean };
 
 // Helper: Convert degrees to radians
 const toRad = (deg: number) => deg * Math.PI / 180;
@@ -302,10 +302,24 @@ export const Canvas: React.FC<CanvasProps> = ({
         if (!layer?.locked) beginInlineEditing(element.id, owner ?? captureInteraction?.());
     };
     const finishInlineEditing = (session: InlineEditingSession) => {
+        // A session ends once: the overlay's blur and the unmount cleanup below can both reach here
+        // (Chromium blurs a focused element it removes; Firefox does not).
+        if (session.finished) return;
+        session.finished = true;
         if (captureInteraction) session.owner?.end();
         else if (onEditElements) onInteractionEnd?.();
         setInlineEditing(current => current === session ? null : current);
     };
+    // A layout swap (a window crossing a breakpoint) remounts the canvas under a new parent while
+    // an inline edit may be open; end its session so the typed text is one committed history step.
+    const inlineEditingRef = useRef(inlineEditing);
+    inlineEditingRef.current = inlineEditing;
+    const finishInlineEditingRef = useRef(finishInlineEditing);
+    finishInlineEditingRef.current = finishInlineEditing;
+    useEffect(() => () => {
+        const session = inlineEditingRef.current;
+        if (session) finishInlineEditingRef.current(session);
+    }, []);
     // Edits made during an inline session (the overlay's text changes; quick-format taps while the
     // keyboard is up) commit through the session's own owner, so the session stays one history step.
     const patchInlineSession = (session: InlineEditingSession, id: string, updates: Partial<TemplateElement>) => {
