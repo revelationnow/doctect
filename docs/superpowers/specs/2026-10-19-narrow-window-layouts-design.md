@@ -71,7 +71,9 @@ once.
 
 ### Context — `components/editor-layout/FormFactorContext.tsx`
 
-- `FormFactorProvider` takes `value: EditorMode`.
+- `FormFactorProvider` takes `value: FormFactor` (the layout) and an optional `input?: InputMode`,
+  defaulting to touch for a narrow layout and mouse for desktop (what every existing caller meant);
+  `EditorPage` passes the detected input.
 - `useFormFactor()` keeps its name and returns the **layout**. Every existing caller that means
   layout keeps working unchanged.
 - New `useInputMode(): InputMode` returns the input. Default outside a provider: `'mouse'`
@@ -113,8 +115,9 @@ The block's comment is updated to describe both attributes.
 - `components/ProjectEditor.tsx`:
   - `touchActions` (feeds the tablet toolbar, phone top bar, **⋯** menu and tool pill) is built
     whenever `layout !== 'desktop'`, so the narrow chrome works with a mouse.
-  - `useTouchMultiSelect` is enabled whenever `layout !== 'desktop'` (the toolbar's Select
-    multiple button needs it; Ctrl/Shift+click keeps working).
+  - `useTouchMultiSelect` is enabled for touch input only, and `touchActions.toggleMultiSelect` is
+    set only then, so the **Select multiple** button is hidden for a mouse: the canvas reads the
+    mode in its touch tap handlers only, and Ctrl/Cmd/Shift-click already selects several.
   - `countPick` on sidebar picks (closes the drawer) whenever `layout !== 'desktop'`.
   - Zoom: whenever `layout !== 'desktop'` the canvas uses the session viewport
     (`useTouchViewport`: `scale`, `setScale`, `fitSignal`), as touch does today. The saved desktop
@@ -141,7 +144,8 @@ The block's comment is updated to describe both attributes.
 It runs whenever `fitSignal` is passed (which `ProjectEditor` does exactly when the layout is not
 desktop), so a narrow mouse window fits the page to its width on open, on Fit, and on layout
 change. Wheel / Ctrl+wheel zoom keeps working through `onZoom`, which writes the session viewport
-while narrow.
+while narrow. The fit's side gutter follows input: 16px (`TOUCH_CANVAS_GUTTER`, the touch canvas's
+`p-4`) for touch, 48px (`MOUSE_CANVAS_GUTTER`, the mouse canvas's `p-12`) for a mouse.
 
 Keyboard shortcuts are not gated by form factor today and stay available at every width.
 
@@ -156,7 +160,8 @@ Keyboard shortcuts are not gated by form factor today and stay available at ever
   state cannot stick.
 - Inline text editing open while crossing: the canvas remounts under a new parent. The edit must
   be committed, not lost. The plan verifies today's unmount behaviour and fixes it if it drops
-  the edit.
+  the edit. Implemented: Canvas ends an open inline session on unmount, so the edit is one
+  committed step on every engine; Chromium also ends it via blur-on-removal, Firefox does not.
 - Window crossing 1024px while a modal is open: the modal reflows (phone full-screen rules apply
   below 640px).
 - Touch devices: unchanged in every respect, including the R40 hold.
