@@ -13,7 +13,9 @@ const newProjectModal = vi.hoisted(() => ({ current: undefined as any }));
 /** Every chrome object the active pane was handed, one per render, oldest first. */
 const seenChrome = vi.hoisted(() => ({ list: [] as any[] }));
 
-vi.mock('../../hooks/useEditorFormFactor', () => ({ useEditorFormFactor: () => formFactor.current }));
+vi.mock('../../hooks/useEditorFormFactor', () => ({
+    useEditorFormFactor: () => ({ layout: formFactor.current, input: formFactor.current === 'desktop' ? 'mouse' : 'touch' }),
+}));
 // The active editor pane renders whatever page chrome the context hands it, so the test can see
 // the wiring (EditorPage mounts one pane per open project; the inactive one stays blank here).
 vi.mock('../../components/ProjectEditor', async () => {

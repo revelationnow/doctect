@@ -157,7 +157,8 @@ function EditorPageShell({
     hasUnsavedWork && !isSameRouteNavigation(currentLocation, nextLocation)
   ), [hasUnsavedWork]));
   const navigationBlocked = blocker.state === 'blocked';
-  const formFactor = useEditorFormFactor();
+  const editorMode = useEditorFormFactor();
+  const formFactor = editorMode.layout;
 
   const { projects, activeProjectId } = workspace;
   const activeProject = projects.find(project => project.id === activeProjectId);
@@ -429,7 +430,7 @@ function EditorPageShell({
   }), [projects, activeProjectId, activeProject, authorityEpochs, activeSaveState, editing, cloudProjectCache]);
 
   return (
-    <FormFactorProvider value={formFactor}>
+    <FormFactorProvider value={formFactor} input={editorMode.input}>
     <BackDismissProvider hold={navigationBlocked}>
     <TouchColorPickerHost />
     <EditorChromeContext.Provider value={chrome}>
