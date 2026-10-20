@@ -4,9 +4,10 @@ import { CANVAS_CONTENT_ATTR } from '../../components/Canvas';
 import { PILL_INSET_VAR } from '../../components/editor-layout/EditorLayout';
 
 // Guards the touch-only CSS in index.html: every rule lives inside the marked block and is scoped
-// under [data-form-factor] (set on <html> only for phone/tablet), and the hover-revealed controls in
-// HOVER_FILES only use patterns the block makes visible on touch, or are desktop-only micro-steppers
-// (STEPPER_FILES render a TouchStepper in their place on touch; touchStepper.test.tsx covers that).
+// under [data-input="touch"] (touch devices) or [data-form-factor] (narrow layouts, touch or mouse),
+// and the hover-revealed controls in HOVER_FILES only use patterns the block makes visible on touch,
+// or are desktop-only micro-steppers (STEPPER_FILES render a TouchStepper in their place on touch;
+// touchStepper.test.tsx covers that).
 
 const html = readFileSync('index.html', 'utf8');
 const START = '/* touch-editor:start */';
@@ -59,14 +60,46 @@ function uncoveredHoverReveals(source: string, pairs: Array<[string, string]>): 
 }
 
 describe('touch CSS', () => {
-    it('keeps every touch rule inside the marked block, scoped under data-form-factor', () => {
+    it('keeps every touch rule inside the marked block, scoped under data-input or data-form-factor', () => {
         expect(block.length).toBeGreaterThan(0);
         const selectors = rules.match(/[^{}]+(?=\{)/g) ?? [];
         expect(selectors.length).toBeGreaterThan(0);
         for (const selector of selectors) {
-            for (const part of selector.split(',')) expect(part.trim()).toMatch(/^\[data-form-factor(=|\])/);
+            for (const part of selector.split(',')) expect(part.trim()).toMatch(/^\[data-input="touch"\]|^\[data-form-factor(=|\])/);
         }
-        expect(html.replace(block, '')).not.toMatch(/data-form-factor/);
+        expect(html.replace(block, '')).not.toMatch(/data-form-factor|data-input/);
+    });
+
+    // A narrow mouse window gets the narrow layouts but keeps desktop input: target sizes, form
+    // control text, hover reveals, the layer swatch strip and colour inputs follow the pointer.
+    it('scopes input rules to touch input, and layout rules to the narrow layouts', () => {
+        const scopeOf = (pattern: RegExp) => {
+            const found = Array.from(rules.matchAll(/([^{}]+)\{([^{}]*)\}/g)).filter(([, selector, body]) => pattern.test(selector + '{' + body));
+            expect(found.length, String(pattern)).toBeGreaterThan(0);
+            return found.flatMap(([, selector]) => selector.split(',').map(part => part.trim().split(' ')[0]));
+        };
+        for (const pattern of [/min-height:\s*44px/, /font-size:\s*16px/, /group-hover:opacity-100/, /group-hover:flex/,
+            /\[data-color-popover\]/, /input\[type="color"\]/]) {
+            for (const scope of scopeOf(pattern)) expect(scope, String(pattern)).toBe('[data-input="touch"]');
+        }
+        for (const pattern of [/\.editor-dialog-panel/, /\[data-touch-chrome="top-bar"\]/, /\[data-canvas-content\]/,
+            /\[data-touch-pill-scroller\]/, /\[data-editor-shell\]/]) {
+            for (const scope of scopeOf(pattern)) expect(scope, String(pattern)).toMatch(/^\[data-form-factor(=|\])/);
+        }
+    });
+
+    // The tablet toolbar's tool row is the phone pill's scroller (narrow tablets and mouse windows
+    // under ~740px scroll it), so its scrollbar hiding and snapping cover every narrow layout: a
+    // visible scrollbar would not fit the 56px toolbar row.
+    it('hides the scrollbar and snaps the tools of the tool row scroller in every narrow layout', () => {
+        const scrollerRules = Array.from(rules.matchAll(/([^{}]+)\{([^{}]*)\}/g)).filter(([, selector]) => selector.includes('[data-touch-pill-scroller]'));
+        expect(scrollerRules.length).toBeGreaterThanOrEqual(3);
+        for (const [, selector] of scrollerRules) {
+            for (const part of selector.split(',')) expect(part.trim()).toMatch(/^\[data-form-factor\] \[data-touch-pill-scroller\]/);
+        }
+        expect(rules).toMatch(/\[data-form-factor\] \[data-touch-pill-scroller\]\s*\{[^}]*scrollbar-width:\s*none/);
+        expect(rules).toMatch(/\[data-form-factor\] \[data-touch-pill-scroller\]::-webkit-scrollbar\s*\{\s*display:\s*none/);
+        expect(rules).toMatch(/\[data-form-factor\] \[data-touch-pill-scroller\] button\s*\{\s*scroll-snap-align:\s*start/);
     });
 
     it('declares 44px targets, 16px form controls, hover reveal and dialog rules', () => {
@@ -100,7 +133,7 @@ describe('touch CSS', () => {
     // No engine may open its platform colour picker from a tap (Firefox for Android ignores a
     // cancelled click); TouchColorPickerHost hit-tests the tap instead.
     it('takes pointer events away from colour inputs on touch', () => {
-        expect(rules).toMatch(/\[data-form-factor\] input\[type="color"\]\s*\{\s*pointer-events:\s*none;\s*\}/);
+        expect(rules).toMatch(/\[data-input="touch"\] input\[type="color"\]\s*\{\s*pointer-events:\s*none;\s*\}/);
     });
 
     it('only uses hover-reveal patterns the touch CSS knows about', () => {
@@ -115,7 +148,7 @@ describe('touch CSS', () => {
         for (const file of STEPPER_FILES) {
             const source = readFileSync(file, 'utf8');
             expect(source, file).toContain(STEPPER_MARK);
-            expect(source, file).toMatch(/useFormFactor\(\) !== 'desktop'/);
+            expect(source, file).toMatch(/useInputMode\(\) === 'touch'/);
             expect(source, file).toContain('<TouchStepper');
         }
     });

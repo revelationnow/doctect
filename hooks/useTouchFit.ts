@@ -2,6 +2,8 @@ import { useEffect, useRef, type RefObject } from 'react';
 
 /** Space left either side of the page by a touch "fit": the page width fills the container minus this. */
 export const TOUCH_CANVAS_GUTTER = 16;
+/** The mouse canvas keeps its desktop padding (p-12), so a fit in a narrow mouse window leaves this much each side. */
+export const MOUSE_CANVAS_GUTTER = 48;
 const MIN_SCALE = 0.2;
 const MAX_SCALE = 10;
 
@@ -18,13 +20,15 @@ const MAX_SCALE = 10;
  * then on a width change leaves their zoom alone (rotation still requests a fresh fit).
  */
 export function useTouchFit(outerRef: RefObject<HTMLElement | null>, {
-    enabled, fitSignal, pageWidth, scale, onZoom,
+    enabled, fitSignal, pageWidth, scale, onZoom, gutter = TOUCH_CANVAS_GUTTER,
 }: {
     enabled: boolean;
     fitSignal: number | undefined;
     pageWidth: number;
     scale: number;
     onZoom: (scale: number) => void;
+    /** Space left each side of the page; defaults to the touch canvas's. */
+    gutter?: number;
 }): void {
     const onZoomRef = useRef(onZoom);
     onZoomRef.current = onZoom;
@@ -40,7 +44,7 @@ export function useTouchFit(outerRef: RefObject<HTMLElement | null>, {
         // Anything else came from the user (pinch, wheel) and spends the request.
         const issued = new Set([scaleRef.current]);
         const apply = () => {
-            const available = outer.clientWidth - 2 * TOUCH_CANVAS_GUTTER;
+            const available = outer.clientWidth - 2 * gutter;
             if (available <= 0) return;
             const fitted = Math.max(MIN_SCALE, Math.min(MAX_SCALE, available / pageWidth));
             issued.add(fitted);
@@ -54,5 +58,5 @@ export function useTouchFit(outerRef: RefObject<HTMLElement | null>, {
         });
         observer.observe(outer);
         return () => observer.disconnect();
-    }, [enabled, fitSignal, pageWidth, outerRef]);
+    }, [enabled, fitSignal, pageWidth, outerRef, gutter]);
 }

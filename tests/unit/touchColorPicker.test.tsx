@@ -118,10 +118,10 @@ function Field({ onInput, onChange }: { onInput: (v: string) => void; onChange: 
 }
 
 describe('TouchColorPickerHost', () => {
-    const mount = (formFactor: FormFactor) => {
+    const mount = (formFactor: FormFactor, inputMode?: 'mouse' | 'touch') => {
         const onInput = vi.fn();
         const onChange = vi.fn();
-        const view = render(<FormFactorProvider value={formFactor}><TouchColorPickerHost /><Field onInput={onInput} onChange={onChange} /></FormFactorProvider>);
+        const view = render(<FormFactorProvider value={formFactor} input={inputMode}><TouchColorPickerHost /><Field onInput={onInput} onChange={onChange} /></FormFactorProvider>);
         const input = view.container.querySelector('input[type="color"]') as HTMLInputElement;
         return { onInput, onChange, input };
     };
@@ -136,6 +136,14 @@ describe('TouchColorPickerHost', () => {
 
     it('desktop leaves the native picker alone', () => {
         const { input } = mount('desktop');
+        const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+        act(() => { input.dispatchEvent(click); });
+        expect(click.defaultPrevented).toBe(false);
+        expect(screen.queryByRole('dialog')).toBeNull();
+    });
+
+    it('a narrow mouse window leaves the native picker alone', () => {
+        const { input } = mount('tablet', 'mouse');
         const click = new MouseEvent('click', { bubbles: true, cancelable: true });
         act(() => { input.dispatchEvent(click); });
         expect(click.defaultPrevented).toBe(false);

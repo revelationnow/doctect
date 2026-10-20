@@ -20,11 +20,11 @@ const state = {
     },
 } as unknown as AppState;
 
-function renderTree(formFactor: FormFactor) {
+function renderTree(formFactor: FormFactor, input?: 'mouse' | 'touch') {
     const handlers = {
         onSelect: vi.fn(), onAdd: vi.fn(), onAddRef: vi.fn(), onDelete: vi.fn(), onDuplicate: vi.fn(), onUpdate: vi.fn(),
     };
-    render(<FormFactorProvider value={formFactor}><NodeItem nodeId="root" state={state} depth={0} {...handlers} /></FormFactorProvider>);
+    render(<FormFactorProvider value={formFactor} input={input}><NodeItem nodeId="root" state={state} depth={0} {...handlers} /></FormFactorProvider>);
     return handlers;
 }
 
@@ -36,6 +36,14 @@ describe('sidebar rows on desktop', () => {
         expect(screen.getAllByTitle('Add New Page').length).toBeGreaterThan(0);
         expect(screen.queryByRole('button', { name: /^Actions for/ })).toBeNull();
         expect(screen.queryByRole('button', { name: /^(Expand|Collapse) / })).toBeNull();
+    });
+});
+
+describe.each(['phone', 'tablet'] as const)('sidebar rows in a narrow mouse window (%s layout)', formFactor => {
+    it('keeps the hover actions and has no ⋯ button', () => {
+        renderTree(formFactor, 'mouse');
+        expect(screen.getAllByTitle('Add New Page').length).toBeGreaterThan(0);
+        expect(screen.queryByRole('button', { name: /^Actions for/ })).toBeNull();
     });
 });
 
@@ -139,14 +147,20 @@ describe.each(['phone', 'tablet'] as const)('sidebar rows on %s', formFactor => 
 
 describe('template rows', () => {
     const template = { id: 'tpl', name: 'A4 Blank', width: 100, height: 100, elements: [], layers: [] } as unknown as PageTemplate;
-    const renderTemplate = (formFactor: FormFactor) => {
+    const renderTemplate = (formFactor: FormFactor, input?: 'mouse' | 'touch') => {
         const handlers = { onSelect: vi.fn(), onDelete: vi.fn(), onDuplicate: vi.fn(), onUpdateName: vi.fn() };
-        render(<FormFactorProvider value={formFactor}><TemplateItem template={template} isSelected={false} {...handlers} /></FormFactorProvider>);
+        render(<FormFactorProvider value={formFactor} input={input}><TemplateItem template={template} isSelected={false} {...handlers} /></FormFactorProvider>);
         return handlers;
     };
 
     it('keep the hover actions on desktop', () => {
         renderTemplate('desktop');
+        expect(screen.getByTitle('Duplicate')).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'Actions for A4 Blank' })).toBeNull();
+    });
+
+    it('keep the hover actions in a narrow mouse window', () => {
+        renderTemplate('tablet', 'mouse');
         expect(screen.getByTitle('Duplicate')).toBeTruthy();
         expect(screen.queryByRole('button', { name: 'Actions for A4 Blank' })).toBeNull();
     });

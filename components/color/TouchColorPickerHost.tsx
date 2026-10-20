@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useFormFactor } from '../editor-layout/FormFactorContext';
+import { useInputMode } from '../editor-layout/FormFactorContext';
 import { useBackDismiss } from '../editor-layout/useBackDismiss';
 import { normalizeHex } from './colorMath';
 import { TouchColorPicker } from './TouchColorPicker';
@@ -79,10 +79,11 @@ export function colourInputForClick(event: Pick<MouseEvent, 'target' | 'clientX'
  * platform picker (Android's is a small swatch grid). The touch CSS makes the inputs ignore
  * pointer events, so no engine can open its own picker from a tap (Firefox and WebKit do not all
  * honour a cancelled click); a capture-phase click listener maps the tap to the input under it.
- * Picks are written back into the input. Desktop registers nothing and keeps the native picker.
+ * Picks are written back into the input. A mouse (desktop or a narrow window) registers nothing
+ * and keeps the native picker.
  */
 export function TouchColorPickerHost() {
-    const touch = useFormFactor() !== 'desktop';
+    const touch = useInputMode() === 'touch';
     const [target, setTarget] = useState<HTMLInputElement | null>(null);
     const [openCount, setOpenCount] = useState(0);
     const [recents, setRecents] = useState<string[]>(sessionRecents);

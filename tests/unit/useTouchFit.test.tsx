@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { act, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { TOUCH_CANVAS_GUTTER, useTouchFit } from '../../hooks/useTouchFit';
+import { MOUSE_CANVAS_GUTTER, TOUCH_CANVAS_GUTTER, useTouchFit } from '../../hooks/useTouchFit';
 
 // jsdom lays nothing out, so the container's clientWidth is stubbed per test; a fake
 // ResizeObserver records the observed element and lets the test fire a resize.
@@ -97,5 +97,17 @@ describe('useTouchFit', () => {
         act(() => observed[0].callback());
         expect(onZoom).toHaveBeenLastCalledWith((390 - 32) / 595);
         expect(observed[0].disconnect).not.toHaveBeenCalled();
+    });
+
+    it('subtracts the gutter it is given (the mouse canvas keeps its wider padding)', () => {
+        const onZoom = vi.fn();
+        function Mouse() {
+            const outer = useRef<HTMLDivElement>(null);
+            useTouchFit(outer, { enabled: true, fitSignal: 1, pageWidth: 595, scale: 1, onZoom, gutter: MOUSE_CANVAS_GUTTER });
+            return <div ref={el => { outer.current = el; if (el) widthOf(el, 700); }} />;
+        }
+        render(<Mouse />);
+        expect(MOUSE_CANVAS_GUTTER).toBe(48);
+        expect(onZoom).toHaveBeenLastCalledWith((700 - 96) / 595);
     });
 });

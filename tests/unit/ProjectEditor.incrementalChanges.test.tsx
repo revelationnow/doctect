@@ -107,13 +107,17 @@ function renderIncrementalEditor(project = makeIncrementalProject(2), strict = f
     });
   };
   const resizeSidebar = (width: number) => {
-    fireEvent.mouseDown(view.container.querySelectorAll('.cursor-col-resize')[0]);
-    fireEvent.mouseMove(document, { clientX: width }); fireEvent.mouseUp(document);
+    fireEvent.pointerDown(view.container.querySelector('[data-sidebar-resize-handle]')!);
+    dragTo(width); fireEvent(document, new MouseEvent('pointerup'));
   };
   return { ...view, props, incremental, onDocumentEdit, onPreferencesChange, onStateChange, onNameChange,
     selectTemplate, setZoom, resizeSidebar };
 }
 
+// jsdom has no PointerEvent: a MouseEvent of the pointer type carries clientX to the resize listener.
+function dragTo(clientX: number) {
+  fireEvent(document, new MouseEvent('pointermove', { clientX, cancelable: true }));
+}
 function labeledInput(label: string) {
   return screen.getByText(label, { selector: 'label' }).parentElement!.querySelector('input')!;
 }
@@ -513,10 +517,10 @@ describe('real ProjectEditor incremental boundary', () => {
     h.resizeSidebar(100); h.resizeSidebar(900);
     expect(h.onPreferencesChange).toHaveBeenCalledWith({ sidebarWidth: 200 }, expect.any(Object));
     expect(h.onPreferencesChange).toHaveBeenCalledWith({ sidebarWidth: 600 }, expect.any(Object));
-    const gutter = h.container.querySelectorAll('.cursor-col-resize')[1];
-    fireEvent.mouseDown(gutter);
-    fireEvent.mouseMove(document, { clientX: window.innerWidth - 100 });
-    fireEvent.mouseMove(document, { clientX: window.innerWidth - 900 }); fireEvent.mouseUp(document);
+    const gutter = h.container.querySelector('[data-properties-resize-handle]')!;
+    fireEvent.pointerDown(gutter);
+    dragTo(window.innerWidth - 100);
+    dragTo(window.innerWidth - 900); fireEvent(document, new MouseEvent('pointerup'));
     expect(h.onPreferencesChange).toHaveBeenCalledWith({ propertiesPanelWidth: 250 }, expect.any(Object));
     expect(h.onPreferencesChange).toHaveBeenCalledWith({ propertiesPanelWidth: 600 }, expect.any(Object));
     fireEvent.click(screen.getByTitle('Show Grid'));

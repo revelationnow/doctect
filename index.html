@@ -75,23 +75,26 @@
       .delay-700 { animation-delay: 700ms; }
 
       /* touch-editor:start */
-      /* Rules apply only when the editor runs on a touch-first device: FormFactorProvider sets
-         data-form-factor="phone" | "tablet" on <html> and removes it on desktop / unmount. */
-      [data-form-factor] button,
-      [data-form-factor] [role="button"],
-      [data-form-factor] select {
+      /* Narrow-layout and touch rules. FormFactorProvider sets data-form-factor="phone" | "tablet"
+         on <html> for the narrow layouts (touch devices and narrow mouse windows alike) and
+         data-input="touch" for a coarse pointer; both are absent on desktop / unmount. Rules about
+         fingers (target sizes, hover reveals, colour inputs) use data-input; rules about the
+         narrow layouts (full-screen dialogs, top bar, pill, shell height) use data-form-factor. */
+      [data-input="touch"] button,
+      [data-input="touch"] [role="button"],
+      [data-input="touch"] select {
         min-height: 44px;
         min-width: 44px;
       }
-      [data-form-factor] input,
-      [data-form-factor] select,
-      [data-form-factor] textarea {
+      [data-input="touch"] input,
+      [data-input="touch"] select,
+      [data-input="touch"] textarea {
         font-size: 16px;
       }
-      [data-form-factor] .opacity-0[class~="group-hover:opacity-100"]:not(.pointer-events-none) {
+      [data-input="touch"] .opacity-0[class~="group-hover:opacity-100"]:not(.pointer-events-none) {
         opacity: 1;
       }
-      [data-form-factor] .hidden[class~="group-hover:flex"] {
+      [data-input="touch"] .hidden[class~="group-hover:flex"] {
         display: flex;
       }
       [data-form-factor="phone"] :has(> .editor-dialog-panel),
@@ -143,31 +146,33 @@
         padding-bottom: calc(1rem + var(--touch-pill-inset, 0px));
       }
       /* Layer colour swatches: at 44px each the strip is wider than the space right of the chip,
-         so the sheet or panel edge would clip it as an absolute popover. On touch it becomes a
+         so the sheet or panel edge would clip it as an absolute popover. On touch input it becomes a
          third line of the row (chip and strip join the row's flex items; the strip takes the full
          width after the order-2 actions), so nothing can clip it and nothing is covered. */
-      [data-form-factor] [data-color-popover] {
+      [data-input="touch"] [data-color-popover] {
         display: contents;
       }
-      [data-form-factor] [data-color-popover] > button {
+      [data-input="touch"] [data-color-popover] > button {
         order: 2;
       }
-      [data-form-factor] [data-color-popover] > span {
+      [data-input="touch"] [data-color-popover] > span {
         position: static;
         order: 3;
         flex-basis: 100%;
         margin-top: 8px;
       }
-      /* Phone tool pill: its one row of tools swipes sideways on narrow screens (R43), so the row
-         scrolls without a visible scrollbar and each 44px tool snaps to the row's start edge. */
-      [data-form-factor="phone"] [data-touch-pill-scroller] {
+      /* Tool rows (the phone pill, R43, and the tablet toolbar on narrow tablets and mouse windows):
+         the one row of tools scrolls sideways when the layout is narrower than it, without a visible
+         scrollbar (which would not fit the 56px toolbar row), each 44px tool snapping to the row's
+         start edge. */
+      [data-form-factor] [data-touch-pill-scroller] {
         scrollbar-width: none;
         scroll-snap-type: x proximity;
       }
-      [data-form-factor="phone"] [data-touch-pill-scroller]::-webkit-scrollbar {
+      [data-form-factor] [data-touch-pill-scroller]::-webkit-scrollbar {
         display: none;
       }
-      [data-form-factor="phone"] [data-touch-pill-scroller] button {
+      [data-form-factor] [data-touch-pill-scroller] button {
         scroll-snap-align: start;
       }
       /* Touch editor shell: the visible viewport, not 100vh. Mobile browsers size 100vh as if their
@@ -180,7 +185,7 @@
       /* Colour inputs: TouchColorPickerHost opens the in-app picker for a tap on (or within 44px of)
          one. The inputs themselves take no pointer events, so no engine can open its own picker
          from a tap: Firefox for Android does not reliably honour a cancelled click. */
-      [data-form-factor] input[type="color"] {
+      [data-input="touch"] input[type="color"] {
         pointer-events: none;
       }
       /* touch-editor:end */

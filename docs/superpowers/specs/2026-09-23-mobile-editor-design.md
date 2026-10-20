@@ -18,7 +18,7 @@ page header hides the Cloud and Account menus below `sm`, so on phones they cann
 - Phones and tablets get a usable editor: navigate pages/templates, select, **move, resize**, edit
   text inline, change properties, create text boxes and shapes, format text quickly, export PDF,
   reach cloud/account actions, and use the Generator.
-- **The desktop UI does not change.** Mouse/trackpad users see today's editor at every window size.
+- **The desktop UI does not change.** Mouse/trackpad users see today's editor at every window size. *(Amended 2026-10-19: narrow mouse windows now use the tablet/phone layouts with mouse input — see `2026-10-19-narrow-window-layouts-design.md`.)*
 - Structure the work so fuller touch editing (multi-select, rotation, alignment) can be added later
   without reshaping it.
 
@@ -29,7 +29,7 @@ page header hides the Cloud and Account menus below `sm`, so on phones they cann
   follow-ups; see "Select multiple" under Tablet.)
 - Keyboard-shortcut hints on touch.
 - Phone-optimised code editing in the Generator beyond the pane toggle and full-screen layout.
-- Changing narrow *desktop* windows — they keep today's layout (see Form-factor detection).
+- Changing narrow *desktop* windows — they keep today's layout (see Form-factor detection). *(Superseded 2026-10-19 by `2026-10-19-narrow-window-layouts-design.md`.)*
 - Any schema or persisted-state change.
 
 ## Decisions

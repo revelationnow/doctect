@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EditorLayout, PILL_INSET_VAR } from '../../components/editor-layout/EditorLayout';
 import { TOUCH_OVERLAY_HOST_ATTR, useTouchOverlayHost } from '../../components/editor-layout/TouchOverlayHost';
 import { PILL_SCROLLER_ATTR } from '../../components/editor-layout/ToolPillScroller';
+import { FormFactorProvider } from '../../components/editor-layout/FormFactorContext';
 import { makeActions } from '../helpers/touchActions';
 
 const slots = {
@@ -70,7 +71,8 @@ describe('EditorLayout touch branches', () => {
         expect(screen.queryByRole('button', { name: 'Open pages and templates' })).toBeNull();
     });
 
-    it.each(['tablet', 'phone'] as const)('%s rotation closes the drawer, keeps the sheet detent and refits the canvas', (formFactor) => {
+    /** Stubs matchMedia so the layout's `(orientation: portrait)` listeners can be fired by hand. */
+    const stubOrientationQuery = () => {
         const listeners = new Set<() => void>();
         (window as any).matchMedia = (query: string) => ({
             matches: false, media: query, onchange: null,
@@ -78,8 +80,18 @@ describe('EditorLayout touch branches', () => {
             removeEventListener: (_: string, listener: () => void) => { listeners.delete(listener); },
             addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false,
         });
+        return listeners;
+    };
+
+    // A FormFactorProvider without `input` means a touch device (R1).
+    it.each(['tablet', 'phone'] as const)('%s rotation on touch closes the drawer, keeps the sheet detent and refits the canvas', (formFactor) => {
+        const listeners = stubOrientationQuery();
         const actions = makeActions();
-        const { unmount } = render(<EditorLayout formFactor={formFactor} {...slots} touchActions={actions} navigationKey="n1" selectionLabel="Page · Root" />);
+        const { unmount } = render(
+            <FormFactorProvider value={formFactor}>
+                <EditorLayout formFactor={formFactor} {...slots} touchActions={actions} navigationKey="n1" selectionLabel="Page · Root" />
+            </FormFactorProvider>,
+        );
         fireEvent.click(screen.getByRole('button', { name: 'Open pages and templates' }));
         expect(screen.getByTestId('sidebar')).toBeTruthy();
         if (formFactor === 'phone') {
@@ -93,6 +105,25 @@ describe('EditorLayout touch branches', () => {
         if (formFactor === 'phone') expect(screen.getByTestId('properties-sheet').style.height).toBe('50dvh');
         unmount();
         expect(listeners.size).toBe(0);
+    });
+
+    // Rotation is a touch notion. A mouse window's `(orientation: portrait)` flips whenever a resize
+    // crosses width == height; that must neither close the drawer nor refit (which would discard a
+    // Ctrl+wheel zoom): width changes in a mouse window are useTouchFit's ResizeObserver's business.
+    it.each(['tablet', 'phone'] as const)('%s orientation change with mouse input leaves the drawer open and does not refit', (formFactor) => {
+        const listeners = stubOrientationQuery();
+        const actions = makeActions();
+        render(
+            <FormFactorProvider value={formFactor} input="mouse">
+                <EditorLayout formFactor={formFactor} {...slots} touchActions={actions} navigationKey="n1" selectionLabel="Page · Root" />
+            </FormFactorProvider>,
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Open pages and templates' }));
+        expect(screen.getByTestId('sidebar')).toBeTruthy();
+        act(() => { listeners.forEach(listener => listener()); });
+        expect(screen.getByTestId('sidebar')).toBeTruthy();
+        expect(actions.fitToWidth).not.toHaveBeenCalled();
+        expect(listeners.size).toBe(0); // nothing listens for rotation at all
     });
 
     it('phone pill keeps all ten controls in one swipeable row with Fit pinned outside it (R43)', () => {
