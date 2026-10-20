@@ -162,6 +162,22 @@ describe('PDF pattern fills', () => {
     }
   });
 
+  it('starts dot rows and columns one radius inside the top-left corner', async () => {
+    const pdf = await pdfText('dots');
+    const rows = parsePaintedLines(patternContentStream(pdf));
+    const bounds = { x: 40, y: 50, w: 180, h: 120 };
+    const inset = PATTERN_WEIGHT / 2;
+
+    expect(rows).toHaveLength(Math.floor((bounds.h - inset) / PATTERN_SPACING) + 1);
+    rows.forEach((row, index) => {
+      expect(row.y1).toBeCloseTo(row.y2, 6);
+      expect(row.y1 - bounds.y).toBeCloseTo(inset + index * PATTERN_SPACING, 6);
+      // A zero-length dash pattern puts the first dot at the start of each row.
+      expect(row.x1 - bounds.x).toBeCloseTo(inset, 6);
+      expect(row.x2).toBeCloseTo(bounds.x + bounds.w, 6);
+    });
+  });
+
   it.each(['lines-h', 'lines-v'] as const)('keeps %s line patterns rendering', async patternType => {
     const pdf = await pdfText(patternType);
     expect(pdf).toContain('1. 0. 0. RG');

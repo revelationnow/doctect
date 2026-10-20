@@ -578,10 +578,14 @@ const drawDotsOptimized = (doc: jsPDF, x: number, y: number, w: number, h: numbe
 
         const step = Math.max(1, spacing);
 
+        // Dots sit one radius in from the top-left corner, like the first line of a line
+        // pattern, so the first row and column are whole rather than halved by the clip.
+        const inset = weight / 2;
+
         // Iterate rows only (drawing horizontal dotted lines)
-        for (let j = 0; j <= h; j += step) {
+        for (let j = inset; j <= h; j += step) {
             // Explicitly start a new path for each line to avoid accumulation issues
-            doc.moveTo(x, y + j);
+            doc.moveTo(x + inset, y + j);
             doc.lineTo(x + w, y + j);
             doc.stroke();
         }

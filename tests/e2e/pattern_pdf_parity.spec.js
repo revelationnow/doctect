@@ -113,6 +113,28 @@ test('pattern fills and borders line up between the canvas and the PDF', async (
             });
         };
 
+        // Ink of the dot nearest (cx, cy) points from the element's corner: a square window one
+        // dot diameter wide, cut at the element's edges, as a share of a whole dot's ink.
+        const dotInk = (source, el, cx, cy) => {
+            const img = images[source];
+            const [ox, oy] = origin(source, el);
+            const half = el.patternWeight / 2 + 0.5;
+            let ink = 0;
+            for (let py = Math.max(0, Math.floor((cy - half) * scale)); py < Math.ceil((cy + half) * scale); py++) {
+                for (let px = Math.max(0, Math.floor((cx - half) * scale)); px < Math.ceil((cx + half) * scale); px++) {
+                    ink += dark(img, ox + px, oy + py);
+                }
+            }
+            return ink;
+        };
+        const dots = patterns.find(el => el.id === 'dots');
+        const r = dots.patternWeight / 2, s = dots.patternSpacing;
+        const wholeDots = Object.fromEntries(['canvas', 'pdf'].map(source => [source, {
+            corner: dotInk(source, dots, r, r) / dotInk(source, dots, r + 2 * s, r + 2 * s),
+            top: dotInk(source, dots, r + 2 * s, r) / dotInk(source, dots, r + 2 * s, r + 2 * s),
+            left: dotInk(source, dots, r, r + 2 * s) / dotInk(source, dots, r + 2 * s, r + 2 * s),
+        }]));
+
         const out = {};
         for (const el of patterns) {
             const axes = el.patternType === 'lines-h' ? ['row'] : el.patternType === 'lines-v' ? ['col']
@@ -120,10 +142,17 @@ test('pattern fills and borders line up between the canvas and the PDF', async (
             for (const axis of axes) out[`${el.id} ${axis}`] = { canvas: peaks('canvas', el, axis), pdf: peaks('pdf', el, axis) };
         }
         for (const el of bordered) out[`${el.id} band`] = { canvas: bands('canvas', el).flat(), pdf: bands('pdf', el).flat() };
-        return out;
+        return { features: out, wholeDots };
     }, { state, scale: SCALE, shotB64: shot.toString('base64'), boxes, patterns: PATTERNS, bordered: BORDERED });
 
-    for (const [feature, { canvas, pdf }] of Object.entries(measured)) {
+    // The first row and column of dots sit one radius inside the edge: whole, not halved by the clip.
+    for (const [source, edges] of Object.entries(measured.wholeDots)) {
+        for (const [edge, share] of Object.entries(edges)) {
+            expect(share, `${source} ${edge} dot ink vs an inner dot`).toBeGreaterThan(0.9);
+        }
+    }
+
+    for (const [feature, { canvas, pdf }] of Object.entries(measured.features)) {
         const shown = values => values.map(v => v.toFixed(2)).join(', ');
         expect(canvas.length, `${feature}: canvas [${shown(canvas)}] vs PDF [${shown(pdf)}]`).toBe(pdf.length);
         expect(canvas.length, `${feature} has features to compare`).toBeGreaterThan(1);
