@@ -4,14 +4,14 @@ import { Circle, CopyCheck, Grid3X3, Hand, Maximize2, Minus, MousePointer2, Squa
 import type { TouchEditorActions } from './touchActions';
 
 const TOOLS = [
-    { tool: 'select', label: 'Select', icon: MousePointer2 },
-    { tool: 'hand', label: 'Pan', icon: Hand },
-    { tool: 'text', label: 'Text', icon: Type },
-    { tool: 'rect', label: 'Rectangle', icon: Square },
-    { tool: 'ellipse', label: 'Ellipse', icon: Circle },
-    { tool: 'triangle', label: 'Triangle', icon: Triangle },
-    { tool: 'line', label: 'Line', icon: Minus },
-    { tool: 'grid', label: 'Grid', icon: Grid3X3 },
+    { tool: 'select', label: 'Select', shortcut: 'V', icon: MousePointer2 },
+    { tool: 'hand', label: 'Pan', shortcut: 'H', icon: Hand },
+    { tool: 'text', label: 'Text', shortcut: 'T', icon: Type },
+    { tool: 'rect', label: 'Rectangle', shortcut: 'R', icon: Square },
+    { tool: 'ellipse', label: 'Ellipse', shortcut: 'E', icon: Circle },
+    { tool: 'triangle', label: 'Triangle', shortcut: 'Y', icon: Triangle },
+    { tool: 'line', label: 'Line', shortcut: 'L', icon: Minus },
+    { tool: 'grid', label: 'Grid', shortcut: 'G', icon: Grid3X3 },
 ];
 
 const buttonClass = (pressed: boolean) => clsx('flex h-11 w-11 shrink-0 items-center justify-center rounded-lg',
@@ -23,18 +23,19 @@ const buttonClass = (pressed: boolean) => clsx('flex h-11 w-11 shrink-0 items-ce
  * render the row inside a sideways scroller (ToolPillScroller) and pin `TouchFitButton` beside it,
  * so Fit is always on screen however far the row is scrolled.
  * "Select multiple" sits beside Select: it is a mode of that tool (see useTouchMultiSelect).
+ * Every button carries a tooltip for narrow mouse windows, with the shortcut the desktop toolbar shows.
  */
 export function TouchToolButtons({ actions }: { actions: TouchEditorActions }) {
     return (
         <div className="flex items-center gap-0.5">
-            {TOOLS.map(({ tool, label, icon: Icon }) => (
+            {TOOLS.map(({ tool, label, shortcut, icon: Icon }) => (
                 <React.Fragment key={tool}>
-                    <button type="button" aria-label={label} aria-pressed={actions.tool === tool}
+                    <button type="button" aria-label={label} title={`${label} (${shortcut})`} aria-pressed={actions.tool === tool}
                         onClick={() => actions.setTool(tool)} className={buttonClass(actions.tool === tool)}>
                         <Icon size={18} />
                     </button>
                     {tool === 'select' && actions.toggleMultiSelect && (
-                        <button type="button" aria-label="Select multiple" aria-pressed={actions.multiSelect}
+                        <button type="button" aria-label="Select multiple" title="Select multiple" aria-pressed={actions.multiSelect}
                             onClick={actions.toggleMultiSelect} className={buttonClass(actions.multiSelect)}>
                             <CopyCheck size={18} />
                         </button>
@@ -47,7 +48,7 @@ export function TouchToolButtons({ actions }: { actions: TouchEditorActions }) {
 
 export function TouchFitButton({ actions }: { actions: TouchEditorActions }) {
     return (
-        <button type="button" aria-label="Fit page to width" onClick={actions.fitToWidth}
+        <button type="button" aria-label="Fit page to width" title="Fit page to width" onClick={actions.fitToWidth}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-600">
             <Maximize2 size={18} />
         </button>

@@ -24,7 +24,7 @@ export function TabletToolbar({ actions, onOpenSidebar }: { actions: TouchEditor
     const [menuOpen, setMenuOpen] = useState(false);
     return (
         <div data-touch-chrome="top-bar" className="flex h-14 shrink-0 items-center gap-2 border-b bg-white px-2">
-            <button type="button" aria-label="Open pages and templates" onClick={onOpenSidebar}
+            <button type="button" aria-label="Open pages and templates" title="Open pages and templates" onClick={onOpenSidebar}
                 className="flex h-11 w-11 shrink-0 items-center justify-center text-slate-600"><Menu size={20} /></button>
             <div className="flex min-w-0 flex-1 items-center gap-0.5">
                 <ToolPillScroller activeKey={`${actions.tool}:${actions.multiSelect}`}>
@@ -32,15 +32,15 @@ export function TabletToolbar({ actions, onOpenSidebar }: { actions: TouchEditor
                 </ToolPillScroller>
                 <TouchFitButton actions={actions} />
             </div>
-            <button type="button" aria-label="Undo" onClick={actions.undo} disabled={!actions.canUndo}
+            <button type="button" aria-label="Undo" title="Undo (Ctrl+Z)" onClick={actions.undo} disabled={!actions.canUndo}
                 className="flex h-11 w-11 shrink-0 items-center justify-center text-slate-600 disabled:opacity-30"><Undo2 size={18} /></button>
-            <button type="button" aria-label="Redo" onClick={actions.redo} disabled={!actions.canRedo}
+            <button type="button" aria-label="Redo" title="Redo (Ctrl+Y)" onClick={actions.redo} disabled={!actions.canRedo}
                 className="flex h-11 w-11 shrink-0 items-center justify-center text-slate-600 disabled:opacity-30"><Redo2 size={18} /></button>
-            <button type="button" aria-label="Export PDF" onClick={actions.exportPdf} disabled={actions.isExporting}
+            <button type="button" aria-label="Export PDF" title="Export PDF" onClick={actions.exportPdf} disabled={actions.isExporting}
                 className="flex h-11 shrink-0 items-center gap-2 rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white disabled:opacity-50">
                 <Download size={16} /><span className="hidden min-[840px]:inline">Export PDF</span>
             </button>
-            <button type="button" aria-label="More actions" onClick={() => setMenuOpen(true)}
+            <button type="button" aria-label="More actions" title="More actions" onClick={() => setMenuOpen(true)}
                 className="flex h-11 w-11 shrink-0 items-center justify-center text-slate-600"><MoreHorizontal size={20} /></button>
             <OverflowMenu open={menuOpen} onClose={() => setMenuOpen(false)} actions={actions} chrome={null} />
         </div>

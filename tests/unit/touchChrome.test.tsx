@@ -668,3 +668,34 @@ describe('TabletToolbar', () => {
         expect(label.className).toMatch(/\bmin-\[840px\]:inline\b/);
     });
 });
+
+// A narrow mouse window uses these toolbars too, and a mouse user hovers to learn what an icon
+// does: every button names itself in a tooltip, with the keyboard shortcut the desktop toolbar shows.
+describe('narrow toolbar tooltips', () => {
+    const tooltips = () => Object.fromEntries(
+        screen.getAllByRole('button').map(button => [button.getAttribute('aria-label'), button.getAttribute('title')]));
+
+    it('titles every tablet toolbar button after its name, with its shortcut', () => {
+        render(<TabletToolbar actions={makeActions()} onOpenSidebar={vi.fn()} />);
+        expect(tooltips()).toEqual({
+            'Open pages and templates': 'Open pages and templates',
+            'Select': 'Select (V)', 'Select multiple': 'Select multiple', 'Pan': 'Pan (H)', 'Text': 'Text (T)',
+            'Rectangle': 'Rectangle (R)', 'Ellipse': 'Ellipse (E)', 'Triangle': 'Triangle (Y)', 'Line': 'Line (L)',
+            'Grid': 'Grid (G)', 'Fit page to width': 'Fit page to width',
+            'Undo': 'Undo (Ctrl+Z)', 'Redo': 'Redo (Ctrl+Y)', 'Export PDF': 'Export PDF', 'More actions': 'More actions',
+        });
+    });
+
+    it('titles every phone top bar button after its name, with its shortcut', () => {
+        render(<PhoneTopBar actions={makeActions()} onOpenSidebar={vi.fn()} />);
+        expect(tooltips()).toEqual({
+            'Open pages and templates': 'Open pages and templates',
+            'Undo': 'Undo (Ctrl+Z)', 'Redo': 'Redo (Ctrl+Y)', 'More actions': 'More actions',
+        });
+    });
+
+    it('titles the phone pill\'s Fit button', () => {
+        render(<TouchFitButton actions={makeActions()} />);
+        expect(screen.getByRole('button', { name: 'Fit page to width' }).getAttribute('title')).toBe('Fit page to width');
+    });
+});
