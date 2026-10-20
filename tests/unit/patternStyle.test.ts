@@ -89,6 +89,21 @@ describe('buildPatternBackgroundStyle', () => {
     },
   );
 
+  // The PDF draws every pattern from the element's outer edge, under any border: CSS would start
+  // it inside the border (padding-box) and shift every line by the border width.
+  it.each(['lines-h', 'lines-v', 'lines-d', 'grid', 'dots'] as const)('starts %s at the outer edge, under the border', type => {
+    const style = buildPatternBackgroundStyle({ type, color: '#000000', spacing: 10, weight: 1, renderScale: 1 });
+    expect(style.backgroundOrigin).toBe('border-box');
+  });
+
+  // The PDF puts a dot on every tile corner (0, spacing, 2 × spacing, …), where grid lines cross;
+  // the radial gradient centres its dot in the tile, so the tiles shift back by half a spacing.
+  it('puts dots on the tile corners, as the PDF does', () => {
+    const style = buildPatternBackgroundStyle({ type: 'dots', color: '#000000', spacing: 24, weight: 2, renderScale: 1 });
+    expect(style.backgroundPosition).toBe('-12px -12px');
+    expect(style.backgroundSize).toBe('24px 24px');
+  });
+
   it('returns no background for an absent pattern type', () => {
     expect(buildPatternBackgroundStyle({ color: '#000000' })).toEqual({});
   });

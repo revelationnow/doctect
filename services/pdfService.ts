@@ -1614,6 +1614,21 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
             else doc.setLineDashPattern([], 0);
             doc.setLineCap('butt');
 
+            // The canvas draws a uniform border inside the element box (CSS border-box); a PDF stroke is
+            // centred on its path, so rects, text boxes and ellipses are stroked half a stroke width
+            // inside their edge. Triangles are stroked on their outline on the canvas too (SVG stroke).
+            const strokeShape = () => {
+                const inset = el.type === 'triangle' ? 0 : Math.min(strokeWidth / 2, w / 2, h / 2);
+                if (el.type === 'rect' || el.type === 'text') {
+                    const strokeRadius = Math.max(0, radius - inset);
+                    doc.roundedRect(lx + inset, ly + yOffset + inset, w - 2 * inset, h - 2 * inset, strokeRadius, strokeRadius, 'D');
+                } else if (el.type === 'ellipse') {
+                    doc.ellipse(lx + w / 2, ly + h / 2 + yOffset, w / 2 - inset, h / 2 - inset, 'D');
+                } else {
+                    drawShape('D');
+                }
+            };
+
             const drawShape = (drawStyle: string) => {
                 if (el.type === 'rect' || el.type === 'text') {
                     doc.roundedRect(lx, ly + yOffset, w, h, radius, radius, drawStyle);
@@ -1719,7 +1734,7 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
                         else if (el.borderStyle === 'dotted') doc.setLineDashPattern([1, 1], 0);
                         else doc.setLineDashPattern([], 0);
                         doc.setLineCap('butt');
-                        drawShape('D');
+                        strokeShape();
                     }
                 }
             } else if (fillRgb) {
@@ -1795,7 +1810,7 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
                     else if (el.borderStyle === 'dotted') doc.setLineDashPattern([1, 1], 0);
                     else doc.setLineDashPattern([], 0);
                     doc.setLineCap('butt');
-                    drawShape('D');
+                    strokeShape();
                 }
             }
 

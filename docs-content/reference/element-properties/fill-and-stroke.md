@@ -11,4 +11,6 @@ keywords: fill, stroke, fillType, strokeWidth, borderStyle, color, swatch, solid
 
 A **Line** is the exception: it draws as a literal stroke between its two endpoints rather than a filled box, so Fill and Pattern have no visible effect on one — only Stroke does. Clearing Fill with the ✕ is not the same as choosing a white fill: it makes the interior genuinely transparent, so whatever sits behind the shape shows through.
 
+A Stroke is drawn inside the shape's outline: a 3pt border on a 100pt-wide rectangle covers its outermost 3pt on each side and leaves the shape 100pt wide, in the editor and in the exported PDF alike. Triangles are the exception, with the stroke centred on their outline.
+
 See [Fills and patterns](/docs/editor/elements-and-properties#fills-and-patterns) and [Strokes and borders](/docs/editor/elements-and-properties#strokes-and-borders).
