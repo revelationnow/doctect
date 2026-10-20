@@ -8,6 +8,7 @@ import { PhoneTopBar } from './PhoneTopBar';
 import { TouchFitButton, TouchToolButtons } from './TouchToolButtons';
 import { ToolPillScroller } from './ToolPillScroller';
 import { TouchOverlayHostProvider } from './TouchOverlayHost';
+import { useInputMode } from './FormFactorContext';
 
 export interface EditorLayoutProps {
     formFactor: FormFactor;
@@ -64,19 +65,24 @@ const isContentEditableTarget = (target: EventTarget | null) =>
     && (target.isContentEditable || target.contentEditable === 'true' || target.getAttribute('contenteditable') === 'true');
 
 /**
- * Drawer state shared by both touch layouts: picking a page/template (any navigation change)
- * closes the drawer, and rotation closes it and refits the canvas (the sheet keeps its detent).
+ * Drawer state shared by both narrow layouts: picking a page/template (any navigation change)
+ * closes the drawer, and on a touch device rotation closes it and refits the canvas (the sheet keeps
+ * its detent). Rotation is a touch notion: in a mouse window `(orientation: portrait)` flips whenever
+ * a resize crosses width == height, which must neither close the drawer nor refit — a refit would
+ * discard a Ctrl+wheel zoom, and useTouchFit's ResizeObserver already follows a mouse window's width
+ * until the user zooms.
  */
 function useTouchLayoutState(navigationKey: string | undefined, onRotate: (() => void) | undefined) {
+    const touchInput = useInputMode() === 'touch';
     const [drawerOpen, setDrawerOpen] = useState(false);
     useEffect(() => { setDrawerOpen(false); }, [navigationKey]);
     useEffect(() => {
-        if (typeof window.matchMedia !== 'function') return;
+        if (!touchInput || typeof window.matchMedia !== 'function') return;
         const query = window.matchMedia('(orientation: portrait)');
         const onChange = () => { setDrawerOpen(false); onRotate?.(); };
         query.addEventListener('change', onChange);
         return () => query.removeEventListener('change', onChange);
-    }, [onRotate]);
+    }, [onRotate, touchInput]);
     return { drawerOpen, setDrawerOpen };
 }
 
