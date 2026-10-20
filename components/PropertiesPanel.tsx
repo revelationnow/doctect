@@ -51,10 +51,11 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, activeP
     // Session-local: Template Settings starts expanded, collapsible from its header.
     const [localSettingsExpanded, setSettingsExpanded] = React.useState(true);
     const settingsExpanded = incrementalActions ? incrementalActions.panelsExpanded['template-settings'] ?? true : localSettingsExpanded;
-    // Touch with a selection: the element's settings come first and the page/node section sits below,
-    // collapsed (its own session-only state, so the desktop/persisted expansion is untouched).
-    const isTouch = useFormFactor() !== 'desktop';
-    const [touchSettingsExpanded, setTouchSettingsExpanded] = React.useState(false);
+    // A narrow layout (the tablet's docked strip or the phone sheet) with a selection: the element's
+    // settings come first and the page/node section sits below, collapsed (its own session-only
+    // state, so the desktop/persisted expansion is untouched).
+    const narrow = useFormFactor() !== 'desktop';
+    const [narrowSettingsExpanded, setNarrowSettingsExpanded] = React.useState(false);
     const [localElementPropertySections, setElementPropertySections] = React.useState<ElementPropertySectionState>(
         () => ({ ...INITIAL_ELEMENT_PROPERTY_SECTIONS }),
     );
@@ -80,7 +81,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, activeP
         if (!template) return [];
         return selectedElementIds.map(id => template.elements.find(el => el.id === id)).filter(Boolean) as TemplateElement[];
     }, [selectedElementIds, template]);
-    const touchElementFirst = isTouch && selectedElements.length > 0;
+    const narrowElementFirst = narrow && selectedElements.length > 0;
     const selectionIsTextOnly = selectedElements.length > 0
         && selectedElements.every(element => element.type === 'text');
     const enabledAutoWidthCount = selectionIsTextOnly
@@ -260,7 +261,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, activeP
     if (!template) return <div className="p-4 text-slate-400">Select a template</div>;
 
     const elementSection = (
-    <div className={touchElementFirst ? 'p-4' : 'p-4 flex-1'}>
+    <div className={narrowElementFirst ? 'p-4' : 'p-4 flex-1'}>
         <h3 className="font-bold text-slate-700 mb-4 flex justify-between items-center">
             Element Properties
             {selectedElements.length > 0 && (
@@ -302,13 +303,13 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, activeP
 
     return (
         <div className="flex flex-col h-full overflow-y-auto bg-white border-l" data-prevent-finish-edit="true">
-            {touchElementFirst && elementSection}
+            {narrowElementFirst && elementSection}
             <CollapsibleSection
                 title={isHierarchyMode ? 'Node Properties' : 'Template Settings'}
                 icon={Settings2}
                 testId="template-settings-section"
-                expanded={touchElementFirst ? touchSettingsExpanded : settingsExpanded}
-                onToggle={touchElementFirst ? () => setTouchSettingsExpanded(v => !v) : () => incrementalActions ? incrementalActions.setPanelExpanded('template-settings', !settingsExpanded) : setSettingsExpanded(v => !v)}
+                expanded={narrowElementFirst ? narrowSettingsExpanded : settingsExpanded}
+                onToggle={narrowElementFirst ? () => setNarrowSettingsExpanded(v => !v) : () => incrementalActions ? incrementalActions.setPanelExpanded('template-settings', !settingsExpanded) : setSettingsExpanded(v => !v)}
             >
                 <div className="px-4 pb-4">
 
@@ -456,7 +457,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, activeP
 
             {layersSlot}
 
-            {!touchElementFirst && elementSection}
+            {!narrowElementFirst && elementSection}
         </div >
     );
 };
