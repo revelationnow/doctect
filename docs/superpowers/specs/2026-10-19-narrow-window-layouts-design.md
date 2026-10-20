@@ -97,7 +97,7 @@ Each rule moves to the attribute matching what it is for:
 | Phone full-screen `.editor-dialog-panel`; generator dialog panel sizing (phone and tablet) | `[data-form-factor…]` (unchanged) |
 | Phone top-bar status/alert rules | `[data-form-factor="phone"]` (unchanged) |
 | Phone `[data-canvas-content]` padding | `[data-form-factor="phone"]` (unchanged) |
-| Phone `[data-touch-pill-scroller]` rules | `[data-form-factor="phone"]` (unchanged) |
+| `[data-touch-pill-scroller]` rules | `[data-form-factor]` (widened from phone-only: the tablet toolbar's tools scroll in the same scroller) |
 | `[data-editor-shell] { height: 100dvh }` | `[data-form-factor]` (unchanged; `dvh` equals `vh` on desktop browsers) |
 
 The block's comment is updated to describe both attributes.
@@ -154,8 +154,8 @@ Keyboard shortcuts are not gated by form factor today and stay available at ever
 - Crossing a breakpoint swaps the layout live (media queries fire once per crossing; no debounce).
   Document state, selection, active variant and open dialogs live in `AppState` or above the
   layout and survive. The drawer starts closed and the sheet starts at peek, as on rotation today.
-- Panel widths (`sidebarWidth`, `propertiesPanelWidth`) are not touched by the narrow layouts; the
-  desktop layout gets them back.
+- `sidebarWidth` is not touched by the narrow layouts; the desktop layout gets it back.
+  `propertiesPanelWidth` is shared by the desktop and tablet layouts (see the follow-up below).
 - A panel resize drag in progress when the desktop layout unmounts is cancelled, so the resize
   state cannot stick.
 - Inline text editing open while crossing: the canvas remounts under a new parent. The edit must
@@ -165,6 +165,27 @@ Keyboard shortcuts are not gated by form factor today and stay available at ever
 - Window crossing 1024px while a modal is open: the modal reflows (phone full-screen rules apply
   below 640px).
 - Touch devices: unchanged in every respect, including the R40 hold.
+
+## Follow-up: resizable, collapsible properties panel (owner request, same branch)
+
+The tablet layout's properties panel was fixed at 320px, so with the sidebar in its drawer the
+panel could not be resized. The owner asked for the desktop behaviour on both layouts, plus a
+way to hide the panel:
+
+- `components/editor-layout/PropertiesDock.tsx` docks the panel in the desktop and tablet
+  layouts. Its left edge drags with a mouse or a finger (pointer events, `touch-action: none`;
+  a 44px grab target straddling the edge for touch input), from 250 to 600px. Both layouts use
+  the saved `propertiesPanelWidth`. The tablet dock also has `max-width: calc(100% - 320px)`,
+  and the drag clamps to `innerWidth - 320`, so the canvas keeps at least 320px.
+- A header row (“Properties”, **»** Hide properties panel) hides the panel to a rail with **«**
+  Show properties panel. Hidden or shown is a per-browser preference,
+  `doctect-properties-panel-collapsed` in `services/browserPreferences.ts`, shared by both
+  layouts and never saved in the project (no schema change).
+- `components/editor-layout/usePanelResize.ts` replaces the two copies of the mouse-only resize
+  effect; any layout change cancels a drag in progress.
+- Phone: unchanged (bottom sheet).
+- The desktop header row changes the desktop DOM: the desktop markup snapshot and the
+  idle/selected layout guard screenshots were updated with the owner's approval.
 
 ## Testing
 

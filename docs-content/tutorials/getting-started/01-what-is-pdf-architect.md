@@ -46,7 +46,7 @@ The **left sidebar** does double duty as two different panels behind one tab bar
 
 The **canvas**, in the middle, always shows exactly one page — whichever node or template is currently selected, rendered at the size its active variant defines. This is where you place and arrange the elements — rectangles, text, grids, lines, SVG artwork — that make up a template.
 
-The **right column** is contextual. Its top section is either Node Properties (in Hierarchy mode: title, data fields, which template the node uses) or Template Settings (in Templates mode: page size, orientation, reflow behavior), depending on which sidebar mode is active. Below that sits the collapsible Layers panel, and below that, Element Properties for whatever is currently selected on the canvas.
+The **right column** is contextual. Its top section is either Node Properties (in Hierarchy mode: title, data fields, which template the node uses) or Template Settings (in Templates mode: page size, orientation, reflow behavior), depending on which sidebar mode is active. Below that sits the collapsible Layers panel, and below that, Element Properties for whatever is currently selected on the canvas. Drag the column's left edge to make it wider or narrower, or click **»** at its top to hide it while you work on the canvas; **«** on the slim strip left behind brings it back. Hidden or shown is remembered in this browser.
 
 ## Where to go next
 
