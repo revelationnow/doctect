@@ -172,7 +172,7 @@ The tablet layout's properties panel was fixed at 320px, so with the sidebar in 
 panel could not be resized. The owner asked for the desktop behaviour on both layouts, plus a
 way to hide the panel:
 
-- `components/editor-layout/PropertiesDock.tsx` docks the panel in the desktop and tablet
+- `components/editor-layout/PanelDock.tsx` (`panel="properties"`) docks the panel in the desktop and tablet
   layouts. Its left edge drags with a mouse or a finger (pointer events, `touch-action: none`;
   a 44px grab target straddling the edge for touch input), from 250 to 600px. Both layouts use
   the saved `propertiesPanelWidth`. The tablet dock also has `max-width: calc(100% - 320px)`,
@@ -183,6 +183,10 @@ way to hide the panel:
   layouts and never saved in the project (no schema change).
 - `components/editor-layout/usePanelResize.ts` replaces the two copies of the mouse-only resize
   effect; any layout change cancels a drag in progress.
+- The desktop sidebar uses the same dock (`PanelDock panel="sidebar"`, owner request for
+  symmetry): a “Pages and templates” header with **«** Hide pages and templates, a rail with
+  **»** Show pages and templates, and its own per-browser preference `doctect-sidebar-collapsed`.
+  The tablet and phone layouts keep the sidebar in the ☰ drawer.
 - Phone: unchanged (bottom sheet).
 - The desktop header row changes the desktop DOM: the desktop markup snapshot and the
   idle/selected layout guard screenshots were updated with the owner's approval.
