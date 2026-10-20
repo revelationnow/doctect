@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { PropertiesDock, PROPERTIES_COLLAPSED_KEY } from '../../components/editor-layout/PropertiesDock';
+import { PanelDock, PROPERTIES_COLLAPSED_KEY, SIDEBAR_COLLAPSED_KEY } from '../../components/editor-layout/PanelDock';
 import { panelWidthAt, usePanelResize, MIN_CANVAS_WIDTH } from '../../components/editor-layout/usePanelResize';
 import { EditorLayout } from '../../components/editor-layout/EditorLayout';
 import { FormFactorProvider } from '../../components/editor-layout/FormFactorContext';
@@ -12,13 +12,13 @@ afterEach(() => {
     document.body.style.cursor = '';
 });
 
-const dock = (props: Partial<React.ComponentProps<typeof PropertiesDock>> = {}) => (
-    <PropertiesDock width={340} onStartResize={vi.fn()} {...props}>
+const dock = (props: Partial<React.ComponentProps<typeof PanelDock>> = {}) => (
+    <PanelDock panel="properties" width={340} onStartResize={vi.fn()} {...props}>
         <div data-testid="properties" />
-    </PropertiesDock>
+    </PanelDock>
 );
 
-describe('PropertiesDock', () => {
+describe('PanelDock (properties)', () => {
     it('shows the panel at the given width with a hide button', () => {
         const { container } = render(dock());
         expect(screen.getByTestId('properties')).toBeTruthy();
@@ -77,6 +77,43 @@ describe('PropertiesDock', () => {
         unmount();
         const mouse = render(<FormFactorProvider value="tablet" input="mouse">{dock()}</FormFactorProvider>);
         expect((mouse.container.querySelector('[data-properties-resize-handle]') as HTMLElement).className).not.toContain('w-11');
+    });
+});
+
+describe('PanelDock (sidebar)', () => {
+    const sidebarDock = (onStartResize = vi.fn()) => (
+        <PanelDock panel="sidebar" width={288} onStartResize={onStartResize}>
+            <div data-testid="sidebar" />
+        </PanelDock>
+    );
+
+    it('docks on the left with its handle on the right edge and a hide button', () => {
+        const onStartResize = vi.fn();
+        const { container } = render(sidebarDock(onStartResize));
+        const root = container.querySelector('[data-sidebar-dock="open"]') as HTMLElement;
+        expect(root.style.width).toBe('288px');
+        expect(root.textContent).toContain('Pages and templates');
+        const handle = container.querySelector('[data-sidebar-resize-handle]') as HTMLElement;
+        expect(handle.className).toContain('right-0');
+        fireEvent.pointerDown(handle);
+        expect(onStartResize).toHaveBeenCalledTimes(1);
+        expect(screen.getByRole('button', { name: 'Hide pages and templates' }).getAttribute('title')).toBe('Hide pages and templates');
+    });
+
+    it('collapses independently of the properties panel and remembers it', () => {
+        const { container, unmount } = render(<>{sidebarDock()}{dock()}</>);
+        fireEvent.click(screen.getByRole('button', { name: 'Hide pages and templates' }));
+        expect(screen.queryByTestId('sidebar')).toBeNull();
+        expect(container.querySelector('[data-sidebar-dock="collapsed"]')).toBeTruthy();
+        expect(screen.getByTestId('properties')).toBeTruthy();
+        expect(localStorage.getItem(SIDEBAR_COLLAPSED_KEY)).toBe('1');
+        expect(localStorage.getItem(PROPERTIES_COLLAPSED_KEY)).toBeNull();
+        unmount();
+
+        render(sidebarDock());
+        fireEvent.click(screen.getByRole('button', { name: 'Show pages and templates' }));
+        expect(screen.getByTestId('sidebar')).toBeTruthy();
+        expect(localStorage.getItem(SIDEBAR_COLLAPSED_KEY)).toBe('0');
     });
 });
 
@@ -165,10 +202,19 @@ describe('EditorLayout properties dock', () => {
         expect(container.querySelector('[data-properties-dock]')).toBeNull();
     });
 
-    it('desktop sidebar handle starts a sidebar resize from a pointer press', () => {
+    it('desktop sidebar docks at the saved width, resizable and collapsible', () => {
         const onStartResize = vi.fn();
         const { container } = render(<EditorLayout formFactor="desktop" {...slots} onStartResize={onStartResize} />);
+        expect((container.querySelector('[data-sidebar-dock="open"]') as HTMLElement).style.width).toBe('288px');
         fireEvent.pointerDown(container.querySelector('[data-sidebar-resize-handle]')!);
         expect(onStartResize).toHaveBeenCalledWith('sidebar');
+        fireEvent.click(screen.getByRole('button', { name: 'Hide pages and templates' }));
+        expect(screen.queryByTestId('sidebar')).toBeNull();
+        expect(screen.getByTestId('canvas')).toBeTruthy();
+    });
+
+    it('tablet keeps the sidebar in its drawer with no sidebar dock', () => {
+        const { container } = render(<EditorLayout formFactor="tablet" {...slots} onStartResize={vi.fn()} touchActions={makeActions()} navigationKey="n1" />);
+        expect(container.querySelector('[data-sidebar-dock]')).toBeNull();
     });
 });

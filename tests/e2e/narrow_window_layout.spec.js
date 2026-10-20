@@ -189,6 +189,44 @@ test.describe('narrow mouse window', () => {
         await expect(activePane(page).locator('[data-prevent-finish-edit="true"]')).toBeVisible();
     });
 
+    test('desktop: the sidebar hides to a rail and comes back, remembered across reloads; narrow layouts keep their drawer', async ({ page, browserName }) => {
+        test.skip(browserName !== 'chromium', 'the dock is the same DOM on every engine; recorded on Chromium');
+        await page.setViewportSize({ width: 1440, height: 900 });
+        const dock = activePane(page).locator('[data-sidebar-dock="open"]');
+        await expect(dock).toBeVisible();
+        expect(Math.abs((await dock.boundingBox()).width - 288)).toBeLessThanOrEqual(1);
+        const canvasColumn = activePane(page).locator('.canvas-scroll-container');
+        const before = (await canvasColumn.boundingBox()).width;
+
+        // The edge still drags with the mouse.
+        const h = await dock.locator('[data-sidebar-resize-handle]').boundingBox();
+        await page.mouse.move(h.x + h.width / 2, h.y + 200);
+        await page.mouse.down();
+        await page.mouse.move(340, h.y + 220, { steps: 6 });
+        await page.mouse.up();
+        await expect.poll(async () => Math.abs((await dock.boundingBox()).width - 340)).toBeLessThanOrEqual(2);
+
+        await activePane(page).getByRole('button', { name: 'Hide pages and templates' }).click();
+        await expect(activePane(page).locator('[data-sidebar-dock="collapsed"]')).toBeVisible();
+        await expect(activePane(page).getByRole('button', { name: 'Hierarchy' })).toHaveCount(0);
+        await expect.poll(async () => (await canvasColumn.boundingBox()).width).toBeGreaterThan(before);
+
+        // The tablet layout still opens pages and templates from its drawer.
+        await page.setViewportSize({ width: 900, height: 800 });
+        await expect(html(page)).toHaveAttribute('data-form-factor', 'tablet');
+        await expect(activePane(page).locator('[data-sidebar-dock]')).toHaveCount(0);
+        await page.getByRole('button', { name: 'Open pages and templates' }).click();
+        await expect(drawer(page).getByRole('button', { name: 'Hierarchy' })).toBeVisible();
+        await page.keyboard.press('Escape');
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await page.reload();
+        await expect(activePane(page).getByTestId('editor-canvas')).toBeVisible();
+        await activePane(page).getByRole('button', { name: 'Show pages and templates' }).click();
+        await expect(dock).toBeVisible();
+        await expect(activePane(page).getByRole('button', { name: 'Hierarchy' })).toBeVisible();
+    });
+
     test('an inline text edit survives crossing a breakpoint', async ({ page, browserName }) => {
         // The swap removes the focused editor. Chromium blurs it (the overlay's onFinish runs);
         // Firefox does not, so the canvas must end the session itself. Both engines run this test.

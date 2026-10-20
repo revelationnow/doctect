@@ -9,7 +9,7 @@ import { TouchFitButton, TouchToolButtons } from './TouchToolButtons';
 import { ToolPillScroller } from './ToolPillScroller';
 import { TouchOverlayHostProvider } from './TouchOverlayHost';
 import { useInputMode } from './FormFactorContext';
-import { PropertiesDock } from './PropertiesDock';
+import { PanelDock } from './PanelDock';
 
 export interface EditorLayoutProps {
     formFactor: FormFactor;
@@ -32,21 +32,14 @@ export function DesktopEditorLayout(props: EditorLayoutProps) {
         <>
             {editorBar}
             <div className="flex flex-1 overflow-hidden">
-                <div style={{ width: sidebarWidth }} className="flex-shrink-0 relative flex flex-col">
-                    {sidebar}
-                    <div
-                        data-sidebar-resize-handle=""
-                        className="absolute right-0 top-0 bottom-0 w-1 hover:bg-blue-400 cursor-col-resize z-30 transition-colors"
-                        onPointerDown={event => { event.preventDefault(); onStartResize('sidebar'); }}
-                    />
-                </div>
+                <PanelDock panel="sidebar" width={sidebarWidth} onStartResize={() => onStartResize('sidebar')}>{sidebar}</PanelDock>
                 <div className="flex-1 flex flex-col relative min-w-0">
                     {toolbar}
                     <div className="flex-1 bg-slate-200 overflow-hidden relative flex flex-col">
                         {canvas}
                     </div>
                 </div>
-                <PropertiesDock width={propertiesPanelWidth} onStartResize={() => onStartResize('properties')}>{properties}</PropertiesDock>
+                <PanelDock panel="properties" width={propertiesPanelWidth} onStartResize={() => onStartResize('properties')}>{properties}</PanelDock>
             </div>
         </>
     );
@@ -91,7 +84,7 @@ function TabletEditorLayout({ sidebar, canvas, properties, propertiesPanelWidth,
                 <TabletToolbar actions={touchActions} onOpenSidebar={() => setDrawerOpen(true)} />
                 <div className="flex min-h-0 flex-1 overflow-hidden">
                     <div className="relative flex min-w-0 flex-1 flex-col bg-slate-200">{canvas}</div>
-                    <PropertiesDock width={propertiesPanelWidth} onStartResize={() => onStartResize('properties')} capToCanvas>{properties}</PropertiesDock>
+                    <PanelDock panel="properties" width={propertiesPanelWidth} onStartResize={() => onStartResize('properties')} capToCanvas>{properties}</PanelDock>
                 </div>
                 <SidebarDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>{sidebar}</SidebarDrawer>
             </TouchOverlayHostProvider>

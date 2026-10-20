@@ -4,6 +4,7 @@ const WORKSPACE_DB_NAME = 'doctect-local-workspace';
 const NON_DOCUMENT_PREFERENCES = [
     'doctect-device-export',
     'doctect-properties-panel-collapsed',
+    'doctect-sidebar-collapsed',
     'doctect_last_align',
     'doctect_last_fontFamily',
     'doctect_last_fontSize',
