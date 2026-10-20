@@ -17,7 +17,7 @@ import type { CanvasTextLayoutSession } from '../services/canvasTextLayout';
 import { readBrowserPreference } from '../services/browserPreferences';
 import type { EditorElementIntent } from '../services/document/contracts';
 import { useCanvasTouchGestures, TouchGestureHandlers } from '../hooks/useCanvasTouchGestures';
-import { useTouchFit, TOUCH_CANVAS_GUTTER } from '../hooks/useTouchFit';
+import { useTouchFit, TOUCH_CANVAS_GUTTER, MOUSE_CANVAS_GUTTER } from '../hooks/useTouchFit';
 import { QuickFormatBar } from './canvas/QuickFormatBar';
 import { useKeepEditedElementVisible, useQuickFormatAnchor, useTouchGestureActivity } from './canvas/useQuickFormatBar';
 
@@ -462,8 +462,12 @@ export const Canvas: React.FC<CanvasProps> = ({
     const pinchScaleRef = useRef<number | null>(null);
     useEffect(() => { pinchScaleRef.current = null; }, [scale]);
 
-    // Touch "fit": zoom so the page width fills the viewport minus a gutter on each side.
-    useTouchFit(outerContainerRef, { enabled: isTouch, fitSignal, pageWidth: template.width, scale, onZoom });
+    // Fit: zoom so the page width fills the viewport minus a gutter on each side. Requested by the
+    // narrow layouts (touch or a narrow mouse window) through fitSignal; desktop passes none.
+    useTouchFit(outerContainerRef, {
+        enabled: fitSignal !== undefined, fitSignal, pageWidth: template.width, scale, onZoom,
+        gutter: isTouch ? TOUCH_CANVAS_GUTTER : MOUSE_CANVAS_GUTTER,
+    });
 
     // Adjust scroll position after zoom to keep cursor over the same content point
     useLayoutEffect(() => {

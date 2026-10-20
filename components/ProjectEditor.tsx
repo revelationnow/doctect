@@ -15,7 +15,7 @@ import { CURRENT_SCHEMA_VERSION } from '../services/migration';
 import { Download, Code, Undo2, Redo2, Loader2, Contrast, Layers, Tablet } from 'lucide-react';
 import { EditorToolbar, type ToolbarActions } from './EditorToolbar';
 import { EditorLayout } from './editor-layout/EditorLayout';
-import { useFormFactor } from './editor-layout/FormFactorContext';
+import { useFormFactor, useInputMode } from './editor-layout/FormFactorContext';
 import { useTouchViewport } from './editor-layout/useTouchViewport';
 import { SavePresetModal } from './SavePresetModal';
 import { DeviceExportDialog } from './export/DeviceExportDialog';
@@ -1649,14 +1649,19 @@ function ProjectEditorView({
     onEditElements, onInteractionEnd, onInteractionCancel, captureInteraction,
 }: EditorViewModel) {
     const formFactor = useFormFactor();
-    const isTouch = formFactor !== 'desktop';
-    // Touch: every page/template pick in the drawer closes it, including a pick of the one already
+    // The narrow layouts (tablet/phone) follow the window; touch behaviour follows the pointer. A
+    // narrow mouse window gets the narrow chrome and fit-to-width zoom but mouse input.
+    const narrow = formFactor !== 'desktop';
+    const touchInput = useInputMode() === 'touch';
+    // Narrow layouts: every page/template pick in the drawer closes it, including a pick of the one already
     // selected, which changes no state; the pick count is folded into the layout's navigation key.
     const [pickCount, countPick] = useReducer((count: number) => count + 1, 0);
-    // Touch zoom is session-local: it never reaches the persisted scale preference.
+    // Narrow-layout zoom is session-local: it never reaches the persisted scale preference.
     const touchViewport = useTouchViewport();
     // "Select multiple" is session-only too, held here above the canvas (which remounts on context changes).
-    const { multiSelect, toggleMultiSelect } = useTouchMultiSelect({ tool: state.tool, enabled: isTouch, setTool: tool => setSession({ tool }) });
+    const { multiSelect, toggleMultiSelect } = useTouchMultiSelect({ tool: state.tool, enabled: touchInput, setTool: tool => setSession({ tool }) });
+    // A panel resize belongs to the desktop layout; leaving it mid-drag must not keep resizing.
+    useEffect(() => { if (narrow) setResizingPanel(null); }, [narrow]);
     const editorBar = (
         <div className="min-h-[40px] py-1 bg-white border-b flex flex-wrap items-center justify-between px-4 z-20 flex-shrink-0">
             <div className="text-xs text-slate-400 font-mono">
@@ -1729,14 +1734,14 @@ function ProjectEditorView({
     const sidebarElement = (
         <Sidebar
             state={state}
-            onSelectNode={(id, ctrl, shift) => { handleSelectNode(id, ctrl, shift); if (isTouch) countPick(); }}
+            onSelectNode={(id, ctrl, shift) => { handleSelectNode(id, ctrl, shift); if (narrow) countPick(); }}
             onAddNode={handleAddNode}
             onAddReference={handleAddReference}
             onDeleteNode={(id) => requestDeleteNodes(state.selectedNodeIds.includes(id) ? state.selectedNodeIds : [id])}
             onDuplicateNode={(id) => handleDuplicateNodes(state.selectedNodeIds.includes(id) ? state.selectedNodeIds : [id])}
             onUpdateNode={handleUpdateNode}
             onChangeViewMode={changeViewMode}
-            onSelectTemplate={(id, ctrl, shift) => { handleSelectTemplate(id, ctrl, shift); if (isTouch) countPick(); }}
+            onSelectTemplate={(id, ctrl, shift) => { handleSelectTemplate(id, ctrl, shift); if (narrow) countPick(); }}
             onAddTemplate={handleAddTemplate}
             onDeleteTemplate={(id) => handleDeleteTemplates(state.selectedTemplateIds.includes(id) ? state.selectedTemplateIds : [id])}
             onDuplicateTemplate={(id) => handleDuplicateTemplates(state.selectedTemplateIds.includes(id) ? state.selectedTemplateIds : [id])}
@@ -1764,7 +1769,7 @@ function ProjectEditorView({
             template={currentTemplate}
             elements={currentTemplate?.elements || []}
             selectedElementIds={state.selectedElementIds}
-            scale={isTouch ? touchViewport.scale : state.scale}
+            scale={narrow ? touchViewport.scale : state.scale}
             tool={state.tool}
             nodes={state.nodes}
             currentNodeId={effectivePreviewNodeId}
@@ -1779,10 +1784,10 @@ function ProjectEditorView({
             onEditElements={onEditElements}
             onUpdateElements={(els, save) => handleUpdateTemplateElements(els, save)}
             onSelectElements={(ids) => setSession({ selectedElementIds: ids })}
-            onZoom={isTouch ? touchViewport.setScale : (scale) => setPreferences({ scale })}
+            onZoom={narrow ? touchViewport.setScale : (scale) => setPreferences({ scale })}
             onSwitchToSelect={() => setSession({ tool: 'select' })}
-            inputMode={isTouch ? 'touch' : 'mouse'}
-            fitSignal={isTouch ? touchViewport.fitSignal : undefined}
+            inputMode={touchInput ? 'touch' : 'mouse'}
+            fitSignal={narrow ? touchViewport.fitSignal : undefined}
             multiSelect={multiSelect}
         />
     );
@@ -1819,11 +1824,11 @@ function ProjectEditorView({
             ) : null}
         />
     );
-    // Touch chrome (phone top bar / tablet toolbar / overflow sheet) drives the same handlers the
-    // desktop bars use. Built only on touch: desktop never reads them (its DOM is unchanged) and
+    // Narrow-layout chrome (phone top bar / tablet toolbar / overflow sheet) drives the same handlers the
+    // desktop bars use. Built only for the narrow layouts: desktop never reads them (its DOM is unchanged) and
     // listPreviewNodes walks every node.
-    const previewChoice = isTouch ? listPreviewNodes(state, effectivePreviewNodeId) : null;
-    const touchActions: TouchEditorActions | undefined = !isTouch ? undefined : {
+    const previewChoice = narrow ? listPreviewNodes(state, effectivePreviewNodeId) : null;
+    const touchActions: TouchEditorActions | undefined = !narrow ? undefined : {
         undo, redo, canUndo, canRedo,
         exportPdf: () => { void handleExportPDF(); },
         exportAllVariants: () => { void handleExportPDF({ exportAllVariants: true }); },
@@ -1849,7 +1854,9 @@ function ProjectEditorView({
         duplicateSelection: duplicateElements,
         deleteSelection: () => deleteElements(state.selectedElementIds),
         clearSelection: () => setSession({ selectedElementIds: [] }),
-        multiSelect, toggleMultiSelect,
+        multiSelect,
+        // Mouse input selects several with Ctrl/Cmd/Shift-click; the canvas reads the mode in its tap handlers only.
+        toggleMultiSelect: touchInput ? toggleMultiSelect : undefined,
         canAlign: state.selectedElementIds.length > 1,
         align: alignElements,
         preview: previewChoice && { ...previewChoice, onSelect: id => setSession({ templatePreviewNodeId: id }) },

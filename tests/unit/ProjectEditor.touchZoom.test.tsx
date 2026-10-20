@@ -24,9 +24,9 @@ import { editorState } from '../helpers/editorFixtures';
 
 const state = editorState({ scale: 1.5 });
 
-const renderEditor = (formFactor: 'desktop' | 'tablet' | 'phone', onStateChange = vi.fn()) => {
+const renderEditor = (formFactor: 'desktop' | 'tablet' | 'phone', onStateChange = vi.fn(), input?: 'mouse' | 'touch') => {
     render(
-        <FormFactorProvider value={formFactor}>
+        <FormFactorProvider value={formFactor} input={input}>
             <ProjectEditor projectId="p" projectName="Root" initialState={state} isActive
                 onNameChange={() => {}} onStateChange={onStateChange}
                 onCreateGeneratedProject={async () => false} onSaveCustomPreset={async () => false} />
@@ -65,5 +65,38 @@ describe('touch zoom isolation', () => {
         act(() => canvasProps.onZoom(2));
         expect(canvasProps.scale).toBe(2);
         expect(onStateChange).toHaveBeenLastCalledWith(expect.objectContaining({ scale: 2 }));
+    });
+});
+
+describe('narrow mouse windows', () => {
+    it.each(['phone', 'tablet'] as const)('%s layout: mouse input, fitted session zoom kept out of the project', (formFactor) => {
+        const onStateChange = renderEditor(formFactor, vi.fn(), 'mouse');
+        expect(canvasProps.inputMode).toBe('mouse');
+        expect(canvasProps.fitSignal).toBeTruthy();
+        act(() => canvasProps.onZoom(3));
+        expect(canvasProps.scale).toBe(3);
+        const persisted = onStateChange.mock.calls.map(([s]) => s as AppState);
+        expect(persisted.every(s => s.scale === 1.5)).toBe(true);
+    });
+
+    it('shows the narrow chrome without the Select multiple toggle, and keeps multi-select off', () => {
+        renderEditor('tablet', vi.fn(), 'mouse');
+        expect(screen.getByRole('button', { name: 'Open pages and templates' })).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Select' })).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'Select multiple' })).toBeNull();
+        expect(canvasProps.multiSelect).toBe(false);
+    });
+
+    it('touch keeps the Select multiple toggle', () => {
+        renderEditor('tablet');
+        expect(screen.getByRole('button', { name: 'Select multiple' })).toBeTruthy();
+    });
+
+    it('closes the drawer after a pick, as on touch', () => {
+        renderEditor('tablet', vi.fn(), 'mouse');
+        fireEvent.click(screen.getByRole('button', { name: 'Open pages and templates' }));
+        expect(screen.getByRole('dialog')).toBeTruthy();
+        act(() => sidebarProps.onSelectNode('root', false, false));
+        expect(screen.queryByRole('dialog')).toBeNull();
     });
 });
