@@ -1618,7 +1618,7 @@ const lineSensitiveSyntaxFingerprint = (source: string): string =>
   createHash('sha256').update(source.replace(/\r\n?/g, '\n')).digest('hex');
 
 // Any syntax change at a privileged seam requires an explicit policy update.
-const approvedBrowserPreferenceSyntax = 'c62774a407a71248758d25f11b5c33579cc142e3c41e3c5509d1a4c0fae09bd7';
+const approvedBrowserPreferenceSyntax = '37b33df987906d90a4c91d420c46ef7562a42381b3b91111e2892b2b184e48e5';
 const approvedGeneratorEvaluatorSyntax = 'ab19ef2e35c7a085d6e326d5cf7263cf1669dfe06150291dd7e7fce2d51f1971';
 const approvedRestoreIndexedDbSyntax = 'b374e90adbabba0e5f5feb7792d155a60ff238d93a68754b611aacbc245ac0ca';
 const approvedOpenWithFactorySyntax = 'caf87c7f6d3ff1817db584990469483e9ec871a6788fd3cfcce59d96880f6bad';
@@ -1629,8 +1629,8 @@ const approvedGeneratorCapabilitySyntax = new Map([
 ]);
 const browserPreferencesBundleStart = '/* doctect-browser-preferences:start */';
 const browserPreferencesBundleEnd = '/* doctect-browser-preferences:end */';
-const approvedBrowserPreferencesBundleBytes = 2308;
-const approvedBrowserPreferencesBundleHash = '6238717780c493a3383175baa81a2a80301d805cd97197855ccb2152d46713d6';
+const approvedBrowserPreferencesBundleBytes = 2350;
+const approvedBrowserPreferencesBundleHash = 'b8ca78897183b8996e0b7480bd62dcad629e2c9cb94de4ec241d4520515329c0';
 const approvedBrowserPreferencesBuilderSyntax = '76ab1bab13d122e17ec40ea821f77ff23f9349ceb19fefe6e68ee07c57b6734d';
 
 const exactOccurrenceCount = (source: string, value: string): number =>

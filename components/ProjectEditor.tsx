@@ -15,6 +15,7 @@ import { CURRENT_SCHEMA_VERSION } from '../services/migration';
 import { Download, Code, Undo2, Redo2, Loader2, Contrast, Layers, Tablet } from 'lucide-react';
 import { EditorToolbar, type ToolbarActions } from './EditorToolbar';
 import { EditorLayout } from './editor-layout/EditorLayout';
+import { usePanelResize } from './editor-layout/usePanelResize';
 import { useFormFactor, useInputMode } from './editor-layout/FormFactorContext';
 import { useTouchViewport } from './editor-layout/useTouchViewport';
 import { SavePresetModal } from './SavePresetModal';
@@ -128,35 +129,7 @@ function useLegacyEditor({ projectId, projectName, initialState, isActive, onNam
         }
     }, [state]);
 
-    // Panel Resizing Logic
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (!resizingPanel) return;
-            // Only prevent default if we are actively resizing
-            e.preventDefault();
-            if (resizingPanel === 'sidebar') {
-                const newWidth = Math.max(200, Math.min(600, e.clientX));
-                setState(s => ({ ...s, sidebarWidth: newWidth }));
-            } else if (resizingPanel === 'properties') {
-                const newWidth = Math.max(250, Math.min(600, window.innerWidth - e.clientX));
-                setState(s => ({ ...s, propertiesPanelWidth: newWidth }));
-            }
-        };
-        const handleMouseUp = () => setResizingPanel(null);
-
-        if (resizingPanel) {
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
-            document.body.style.cursor = 'col-resize';
-        } else {
-            document.body.style.cursor = 'default';
-        }
-
-        return () => {
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, [resizingPanel]);
+    usePanelResize(resizingPanel, () => setResizingPanel(null), patch => setState(s => ({ ...s, ...patch })));
 
     // Global Keyboard Shortcuts
     useEffect(() => {
@@ -1538,17 +1511,7 @@ function IncrementalProjectEditor(props: CommonProjectEditorProps & { incrementa
             current.nodeSelectorMode === 'grid_source' && element.gridConfig ? { gridConfig: { ...element.gridConfig, sourceType: 'specific', sourceId: nodeId } }
                 : current.nodeSelectorMode === 'link_element' ? { linkTarget: 'specific_node', linkValue: nodeId } : {}, true);
     };
-    useEffect(() => {
-        if (!resizingPanel) return;
-        const move = (event: MouseEvent) => {
-            event.preventDefault();
-            setPreferences(resizingPanel === 'sidebar' ? { sidebarWidth: Math.max(200, Math.min(600, event.clientX)) }
-                : { propertiesPanelWidth: Math.max(250, Math.min(600, window.innerWidth - event.clientX)) });
-        };
-        const end = () => setResizingPanel(null);
-        document.addEventListener('mousemove', move); document.addEventListener('mouseup', end); document.body.style.cursor = 'col-resize';
-        return () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', end); document.body.style.cursor = 'default'; };
-    }, [resizingPanel]);
+    usePanelResize(resizingPanel, () => setResizingPanel(null), setPreferences);
     useEffect(() => {
         if (!props.isActive) return;
         const key = (event: KeyboardEvent) => {
@@ -1660,8 +1623,8 @@ function ProjectEditorView({
     const touchViewport = useTouchViewport();
     // "Select multiple" is session-only too, held here above the canvas (which remounts on context changes).
     const { multiSelect, toggleMultiSelect } = useTouchMultiSelect({ tool: state.tool, enabled: touchInput, setTool: tool => setSession({ tool }) });
-    // A panel resize belongs to the desktop layout; leaving it mid-drag must not keep resizing.
-    useEffect(() => { if (narrow) setResizingPanel(null); }, [narrow]);
+    // A layout change unmounts the edge being dragged; the drag must not outlive it.
+    useEffect(() => { setResizingPanel(null); }, [formFactor]);
     const editorBar = (
         <div className="min-h-[40px] py-1 bg-white border-b flex flex-wrap items-center justify-between px-4 z-20 flex-shrink-0">
             <div className="text-xs text-slate-400 font-mono">

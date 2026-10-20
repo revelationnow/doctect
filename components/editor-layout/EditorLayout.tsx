@@ -9,6 +9,7 @@ import { TouchFitButton, TouchToolButtons } from './TouchToolButtons';
 import { ToolPillScroller } from './ToolPillScroller';
 import { TouchOverlayHostProvider } from './TouchOverlayHost';
 import { useInputMode } from './FormFactorContext';
+import { PropertiesDock } from './PropertiesDock';
 
 export interface EditorLayoutProps {
     formFactor: FormFactor;
@@ -34,8 +35,9 @@ export function DesktopEditorLayout(props: EditorLayoutProps) {
                 <div style={{ width: sidebarWidth }} className="flex-shrink-0 relative flex flex-col">
                     {sidebar}
                     <div
+                        data-sidebar-resize-handle=""
                         className="absolute right-0 top-0 bottom-0 w-1 hover:bg-blue-400 cursor-col-resize z-30 transition-colors"
-                        onMouseDown={() => onStartResize('sidebar')}
+                        onPointerDown={event => { event.preventDefault(); onStartResize('sidebar'); }}
                     />
                 </div>
                 <div className="flex-1 flex flex-col relative min-w-0">
@@ -44,13 +46,7 @@ export function DesktopEditorLayout(props: EditorLayoutProps) {
                         {canvas}
                     </div>
                 </div>
-                <div style={{ width: propertiesPanelWidth }} className="flex-shrink-0 relative flex flex-col">
-                    <div
-                        className="absolute left-0 top-0 bottom-0 w-1 hover:bg-blue-400 cursor-col-resize z-30 transition-colors"
-                        onMouseDown={() => onStartResize('properties')}
-                    />
-                    {properties}
-                </div>
+                <PropertiesDock width={propertiesPanelWidth} onStartResize={() => onStartResize('properties')}>{properties}</PropertiesDock>
             </div>
         </>
     );
@@ -86,8 +82,8 @@ function useTouchLayoutState(navigationKey: string | undefined, onRotate: (() =>
     return { drawerOpen, setDrawerOpen };
 }
 
-/** Tablet: one toolbar row, canvas + properties docked right at a fixed width, sidebar in a drawer. */
-function TabletEditorLayout({ sidebar, canvas, properties, touchActions, navigationKey }: EditorLayoutProps & { touchActions: TouchEditorActions }) {
+/** Tablet: one toolbar row, canvas + the resizable, collapsible properties dock, sidebar in a drawer. */
+function TabletEditorLayout({ sidebar, canvas, properties, propertiesPanelWidth, onStartResize, touchActions, navigationKey }: EditorLayoutProps & { touchActions: TouchEditorActions }) {
     const { drawerOpen, setDrawerOpen } = useTouchLayoutState(navigationKey, touchActions.fitToWidth);
     return (
         <div className="relative flex min-h-0 flex-1 flex-col">
@@ -95,7 +91,7 @@ function TabletEditorLayout({ sidebar, canvas, properties, touchActions, navigat
                 <TabletToolbar actions={touchActions} onOpenSidebar={() => setDrawerOpen(true)} />
                 <div className="flex min-h-0 flex-1 overflow-hidden">
                     <div className="relative flex min-w-0 flex-1 flex-col bg-slate-200">{canvas}</div>
-                    <div className="flex w-[320px] shrink-0 flex-col border-l bg-white">{properties}</div>
+                    <PropertiesDock width={propertiesPanelWidth} onStartResize={() => onStartResize('properties')} capToCanvas>{properties}</PropertiesDock>
                 </div>
                 <SidebarDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>{sidebar}</SidebarDrawer>
             </TouchOverlayHostProvider>

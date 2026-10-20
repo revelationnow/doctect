@@ -1105,6 +1105,30 @@ test('narrow tablet keeps ☰, Fit, Undo, Redo, Export PDF and ⋯ of the toolba
     await page.setViewportSize(device);
 });
 
+test('tablet properties panel drags wider with a finger and collapses to a rail', async ({ page, browserName }, testInfo) => {
+    test.skip(isPhone(testInfo), 'tablet only: the phone keeps its bottom sheet');
+    const dock = activePane(page).locator('[data-properties-dock="open"]');
+    const handle = dock.locator('[data-properties-resize-handle]');
+    const width = async () => (await dock.boundingBox()).width;
+    const start = await width();
+    const h = await box(handle);
+    expect(h.b.width, 'a full-size grab target').toBeGreaterThanOrEqual(44);
+    const fingers = new Fingers(page, browserName);
+    const from = { x: h.x, y: h.b.y + 200 };
+    await fingers.drag(from, { x: from.x - 80, y: from.y + 10 });
+    await expect.poll(async () => Math.abs(await width() - (start + 80))).toBeLessThanOrEqual(3);
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+
+    await activePane(page).getByRole('button', { name: 'Hide properties panel' }).tap();
+    await expect(activePane(page).locator('[data-properties-dock="collapsed"]')).toBeVisible();
+    await expect(activePane(page).locator('[data-prevent-finish-edit="true"]')).toHaveCount(0);
+    const show = activePane(page).getByRole('button', { name: 'Show properties panel' });
+    expect((await box(show)).b.width, 'the rail button is a full target').toBeGreaterThanOrEqual(44);
+    await show.tap();
+    await expect(dock).toBeVisible();
+    await expect.poll(async () => Math.abs(await width() - (start + 80))).toBeLessThanOrEqual(3);
+});
+
 // Task 21: the phone sheet shows Cloud and Account as rows of its own (no trigger, no popover
 // opening over the groups below), driven by the same handlers as the header's menus.
 test('phone overflow menu lists Cloud and Account as rows, and Save to cloud runs from its row', async ({ page }, testInfo) => {

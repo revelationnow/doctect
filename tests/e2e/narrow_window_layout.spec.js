@@ -146,6 +146,49 @@ test.describe('narrow mouse window', () => {
         expect(Math.abs((await properties.boundingBox()).width - 320)).toBeLessThanOrEqual(1);
     });
 
+    test('the properties panel drags wider with the mouse, keeps the canvas 320px, and collapses to a rail', async ({ page, browserName }) => {
+        test.skip(browserName !== 'chromium', 'the dock is the same DOM on every engine; recorded on Chromium');
+        const dock = activePane(page).locator('[data-properties-dock="open"]');
+        const handle = dock.locator('[data-properties-resize-handle]');
+        const width = async () => (await dock.boundingBox()).width;
+        expect(Math.abs(await width() - 320)).toBeLessThanOrEqual(1);
+
+        const drag = async toX => {
+            const h = await handle.boundingBox();
+            await page.mouse.move(h.x + h.width / 2, h.y + 200);
+            await page.mouse.down();
+            await page.mouse.move(toX, h.y + 220, { steps: 6 });
+            await page.mouse.up();
+        };
+        await drag(900 - 420);
+        await expect.poll(width).toBeGreaterThan(415);
+        expect(await width()).toBeLessThan(425);
+        // As far left as it goes: the panel stops where the canvas would drop below 320px.
+        await drag(40);
+        await expect.poll(width).toBeGreaterThan(575);
+        const canvasColumn = activePane(page).locator('.canvas-scroll-container');
+        expect((await canvasColumn.boundingBox()).width).toBeGreaterThanOrEqual(319);
+
+        // Desktop and tablet share the dragged width.
+        await drag(900 - 400);
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await expect(html(page)).not.toHaveAttribute('data-form-factor', /.+/);
+        await expect.poll(async () => Math.abs(await width() - 400)).toBeLessThanOrEqual(2);
+
+        // Hidden on the desktop stays hidden in the tablet layout and after a reload; the rail brings it back.
+        await activePane(page).getByRole('button', { name: 'Hide properties panel' }).click();
+        await expect(activePane(page).locator('[data-properties-dock="collapsed"]')).toBeVisible();
+        await expect(activePane(page).locator('[data-prevent-finish-edit="true"]')).toHaveCount(0);
+        await page.setViewportSize({ width: 900, height: 800 });
+        await expect(html(page)).toHaveAttribute('data-form-factor', 'tablet');
+        await expect(activePane(page).locator('[data-properties-dock="collapsed"]')).toBeVisible();
+        await page.reload();
+        await expect(activePane(page).getByTestId('editor-canvas')).toBeVisible();
+        await activePane(page).getByRole('button', { name: 'Show properties panel' }).click();
+        await expect(dock).toBeVisible();
+        await expect(activePane(page).locator('[data-prevent-finish-edit="true"]')).toBeVisible();
+    });
+
     test('an inline text edit survives crossing a breakpoint', async ({ page, browserName }) => {
         // The swap removes the focused editor. Chromium blurs it (the overlay's onFinish runs);
         // Firefox does not, so the canvas must end the session itself. Both engines run this test.

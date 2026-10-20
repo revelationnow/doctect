@@ -21,6 +21,7 @@ const fixedPreferenceKeys = [
   'gallery-explainer-dismissed',
   'doctect-onboarding',
   'doctect-device-export',
+  'doctect-properties-panel-collapsed',
 ] as const satisfies readonly BrowserPreferenceKey[];
 
 const rejectedRuntimeKeys = [
