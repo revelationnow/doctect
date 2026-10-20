@@ -134,7 +134,7 @@ describe('touch CSS', () => {
         for (const file of STEPPER_FILES) {
             const source = readFileSync(file, 'utf8');
             expect(source, file).toContain(STEPPER_MARK);
-            expect(source, file).toMatch(/useFormFactor\(\) !== 'desktop'/);
+            expect(source, file).toMatch(/useInputMode\(\) === 'touch'/);
             expect(source, file).toContain('<TouchStepper');
         }
     });

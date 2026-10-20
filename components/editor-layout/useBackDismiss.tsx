@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { Location } from 'react-router-dom';
-import { useFormFactor } from './FormFactorContext';
+import { useInputMode } from './FormFactorContext';
 
 /**
  * Back gesture support for touch overlays (the ⋯ sheet, the pages drawer, the project switcher
@@ -74,15 +74,15 @@ interface Entry {
 }
 
 /**
- * Owns the overlay stack for the editor page. Active on phone and tablet only; on desktop it
- * provides nothing, so every `useBackDismiss` below it is a no-op and history is untouched
- * (except that entries left behind by a touch session, e.g. after a form-factor flip, are
- * consumed so no back press is dead).
+ * Owns the overlay stack for the editor page. Active for touch input only; for a mouse (desktop
+ * or a narrow window) it provides nothing, because to a mouse user Back means leave, so every
+ * `useBackDismiss` below it is a no-op and history is untouched (except that entries left behind
+ * by a touch session, e.g. after a form-factor flip, are consumed so no back press is dead).
  * `hold` pauses history operations while the unsaved-work prompt is up: a same-route POP would
  * otherwise complete and reset the router's blocker, dismissing the prompt under the user.
  */
 export function BackDismissProvider({ hold = false, children }: { hold?: boolean; children: React.ReactNode }) {
-    const enabled = useFormFactor() !== 'desktop';
+    const enabled = useInputMode() === 'touch';
     const location = useLocation();
     const navigate = useNavigate();
     const stack = useRef<Entry[]>([]);
@@ -139,17 +139,17 @@ export function BackDismissProvider({ hold = false, children }: { hold?: boolean
 
 /**
  * Gives an open overlay a history entry on touch: the back gesture calls `onDismiss`, and a
- * close by any other path (`open` turning false, or unmounting) consumes the entry. A no-op on
- * desktop and outside the provider (components rendered on their own). `onDismiss` returns
+ * close by any other path (`open` turning false, or unmounting) consumes the entry. A no-op for
+ * mouse input and outside the provider (components rendered on their own). `onDismiss` returns
  * `false` to stay open, e.g. after a cancelled "discard changes?" prompt; its entry comes back.
  */
 export function useBackDismiss(open: boolean, onDismiss: BackDismissHandler): void {
     const registry = useContext(BackDismissContext);
-    const formFactor = useFormFactor();
+    const touch = useInputMode() === 'touch';
     const id = useId();
     const handler = useRef(onDismiss);
     useLayoutEffect(() => { handler.current = onDismiss; });
-    const active = open && registry !== null && formFactor !== 'desktop';
+    const active = open && registry !== null && touch;
     useEffect(() => {
         if (!active || !registry) return;
         return registry.register(id, handler);

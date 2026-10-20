@@ -2,7 +2,7 @@ import React from 'react';
 import { ChevronDown, ChevronUp, Link2 } from 'lucide-react';
 import { TEXT_PADDING_SIDES, type TextPaddingSide } from '../../services/textPadding';
 import { TouchStepper, useHoldRepeat } from './TouchStepper';
-import { useFormFactor } from '../editor-layout/FormFactorContext';
+import { useInputMode } from '../editor-layout/FormFactorContext';
 
 export type TextPaddingSelection = Record<TextPaddingSide, number | 'mixed'>;
 
@@ -40,7 +40,7 @@ export const TextPaddingControls: React.FC<TextPaddingControlsProps> = ({
     const onCommitRef = React.useRef(onCommit);
     const repeat = useHoldRepeat();
     const stopRepeat = repeat.stop;
-    const touch = useFormFactor() !== 'desktop';
+    const touch = useInputMode() === 'touch';
 
     React.useEffect(() => {
         onCommitRef.current = onCommit;

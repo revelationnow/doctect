@@ -14,7 +14,7 @@ import { CollapsibleSection } from '../CollapsibleSection';
 import { resolveTextPadding, type TextPaddingSide } from '../../services/textPadding';
 import { TextPaddingControls, type TextPaddingSelection } from './TextPaddingControls';
 import { TouchStepper, useHoldRepeat, type HoldRepeat } from './TouchStepper';
-import { useFormFactor } from '../editor-layout/FormFactorContext';
+import { useInputMode } from '../editor-layout/FormFactorContext';
 import { writeBrowserPreference } from '../../services/browserPreferences';
 
 // Font family mapping for CSS (used for font dropdown preview)
@@ -242,7 +242,7 @@ const SmartInput = ({
         repeat.start(() => onNudgeRef.current(delta));
     };
 
-    const touch = useFormFactor() !== 'desktop';
+    const touch = useInputMode() === 'touch';
     if (touch) {
         return (
             <TouchNumberField
@@ -319,7 +319,7 @@ export const SingleElementEditor: React.FC<SingleElementEditorProps> = ({
     const [fontSearch, setFontSearch] = useState('');
     const textOverflowControlId = React.useId();
     // Touch steppers take a full grid row, so the Z-Index row (stepper + arrange buttons) does too.
-    const touch = useFormFactor() !== 'desktop';
+    const touch = useInputMode() === 'touch';
     const setAutoWidthCheckboxRef = React.useCallback((checkbox: HTMLInputElement | null) => {
         if (checkbox) checkbox.indeterminate = autoWidthSelection === 'mixed';
     }, [autoWidthSelection]);

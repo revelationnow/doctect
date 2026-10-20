@@ -46,6 +46,12 @@ describe('LayersPanel touch reorder', () => {
         expect(screen.queryByRole('button', { name: /Move .* forward/ })).toBeNull();
         expect(screen.queryByRole('button', { name: /Move .* backward/ })).toBeNull();
     });
+
+    it('renders no reorder buttons in a narrow mouse window', () => {
+        render(<FormFactorProvider value="tablet" input="mouse"><LayersPanel {...props()} /></FormFactorProvider>);
+        expect(screen.queryByRole('button', { name: /Move .* forward/ })).toBeNull();
+        expect(screen.queryByRole('button', { name: /Move .* backward/ })).toBeNull();
+    });
 });
 
 describe('LayersPanel touch reorder with layerActions (incremental editor)', () => {

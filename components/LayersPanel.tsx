@@ -8,7 +8,7 @@ import { Layer, PageTemplate, TemplateElement } from '../types';
 import { addLayer, getElementLabel, moveElementsToLayer, moveLayerToIndex, removeLayerFromTemplate } from '../services/layers';
 import type { LayerEditAction } from '../services/document/editOperations';
 import { toggleSelection } from '../services/selection';
-import { useFormFactor } from './editor-layout/FormFactorContext';
+import { useInputMode } from './editor-layout/FormFactorContext';
 
 export interface LayerPanelActions {
     readonly sequence?: readonly Layer[];
@@ -50,9 +50,9 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
     const [dragLayerId, setDragLayerId] = useState<string | null>(null);
     const [filter, setFilter] = useState('');
     const [dragElementId, setDragElementId] = useState<string | null>(null);
-    // Touch form factors get ▲/▼ buttons and a two-line row: HTML5 drag-and-drop is unreliable on
+    // Touch input gets ▲/▼ buttons and a two-line row: HTML5 drag-and-drop is unreliable on
     // phones, and seven ≥44px controls plus the name do not fit one line of a phone drawer.
-    const isTouch = useFormFactor() !== 'desktop';
+    const isTouch = useInputMode() === 'touch';
 
     // Dismiss the color popover when a mousedown lands outside it (or its chip).
     useEffect(() => {

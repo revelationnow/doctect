@@ -33,7 +33,7 @@ export function TouchToolButtons({ actions, showFit = false }: { actions: TouchE
                         onClick={() => actions.setTool(tool)} className={buttonClass(actions.tool === tool)}>
                         <Icon size={18} />
                     </button>
-                    {tool === 'select' && (
+                    {tool === 'select' && actions.toggleMultiSelect && (
                         <button type="button" aria-label="Select multiple" aria-pressed={actions.multiSelect}
                             onClick={actions.toggleMultiSelect} className={buttonClass(actions.multiSelect)}>
                             <CopyCheck size={18} />

@@ -64,10 +64,10 @@ const incrementalActions = () => {
     return { actions, patchElements };
 };
 
-const renderPanel = (formFactor: FormFactor, state: AppState, extra: Partial<React.ComponentProps<typeof PropertiesPanel>> = {}) => {
+const renderPanel = (formFactor: FormFactor, state: AppState, extra: Partial<React.ComponentProps<typeof PropertiesPanel>> = {}, input?: 'mouse' | 'touch') => {
     const props = callbacks();
     const view = render(
-        <FormFactorProvider value={formFactor}>
+        <FormFactorProvider value={formFactor} input={input}>
             <PropertiesPanel state={state} {...props} {...extra} />
         </FormFactorProvider>,
     );
@@ -152,6 +152,14 @@ describe('touch steppers on numeric property fields', () => {
         expect(container.querySelector('[data-touch-stepper]')).toBeNull();
         expect(screen.queryByRole('button', { name: 'Increase X' })).toBeNull();
         expect(screen.getByTitle('Bring Forward').parentElement!.parentElement).toHaveClass('col-span-2');
+    });
+
+    it('a narrow mouse window keeps the hover micro-steppers and renders no touch buttons', () => {
+        const { container } = renderPanel('tablet', stateFor([rect('a')], ['a']), {}, 'mouse');
+
+        expect(container.querySelectorAll('[data-micro-stepper]')).toHaveLength(GEOMETRY_FIELDS.length);
+        expect(container.querySelector('[data-touch-stepper]')).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Increase X' })).toBeNull();
     });
 
     it('a tap nudges once, cancels pointerdown so the input is not focused, and does not repeat', () => {

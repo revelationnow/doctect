@@ -65,6 +65,12 @@ describe('TouchToolButtons', () => {
         render(<TouchToolButtons actions={makeActions({ multiSelect: false })} />);
         expect(screen.getByRole('button', { name: 'Select multiple' }).getAttribute('aria-pressed')).toBe('false');
     });
+
+    it('leaves out Select multiple when the actions offer no toggle (mouse input)', () => {
+        render(<TouchToolButtons actions={makeActions({ toggleMultiSelect: undefined })} />);
+        expect(screen.getByRole('button', { name: 'Select' })).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'Select multiple' })).toBeNull();
+    });
 });
 
 describe('OverflowMenu', () => {

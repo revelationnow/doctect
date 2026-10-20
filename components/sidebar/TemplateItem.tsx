@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { PageTemplate } from '../../types';
 import { LayoutTemplate, Edit2, Trash2, Copy, MoreHorizontal } from 'lucide-react';
 import clsx from 'clsx';
-import { useFormFactor } from '../editor-layout/FormFactorContext';
+import { useInputMode } from '../editor-layout/FormFactorContext';
 import { RowActionSheet, type RowAction } from './RowActionSheet';
 
 interface TemplateItemProps {
@@ -19,7 +19,7 @@ export const TemplateItem: React.FC<TemplateItemProps> = ({ template, isSelected
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState(template.name);
     // Touch: the row's actions sit behind one ⋯ button, so the template name keeps the row's width.
-    const touch = useFormFactor() !== 'desktop';
+    const touch = useInputMode() === 'touch';
     const [actionsOpen, setActionsOpen] = useState(false);
     const touchActions: RowAction[] = [
         { label: 'Rename', onSelect: () => { setEditName(template.name); setIsEditing(true); } },

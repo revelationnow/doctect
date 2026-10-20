@@ -32,7 +32,7 @@ let setOpen: React.Dispatch<React.SetStateAction<OpenState>> = () => {};
 let setHold: React.Dispatch<React.SetStateAction<boolean>> = () => {};
 let setFormFactor: React.Dispatch<React.SetStateAction<FormFactor>> = () => {};
 
-function Host({ handlers, formFactor: initialFormFactor }: { handlers: Handlers; formFactor: FormFactor }) {
+function Host({ handlers, formFactor: initialFormFactor, input }: { handlers: Handlers; formFactor: FormFactor; input?: 'mouse' | 'touch' }) {
     const [open, update] = useState<OpenState>({});
     const [hold, updateHold] = useState(false);
     const [formFactor, updateFormFactor] = useState(initialFormFactor);
@@ -40,7 +40,7 @@ function Host({ handlers, formFactor: initialFormFactor }: { handlers: Handlers;
     setHold = updateHold;
     setFormFactor = updateFormFactor;
     return (
-        <FormFactorProvider value={formFactor}>
+        <FormFactorProvider value={formFactor} input={input}>
             <BackDismissProvider hold={hold}>
                 {Object.keys(handlers).map(name => <Overlay key={name} name={name} open={open[name] === true} dismiss={handlers[name]} />)}
             </BackDismissProvider>
@@ -52,8 +52,8 @@ const depth = (router: Router) => overlayDepthOf(router.state.location);
 const closes = (name: string): BackDismissHandler => () => { setOpen(state => ({ ...state, [name]: false })); };
 
 /** Mounts the provider on `/app` with `/` beneath it; `log` records every router update. */
-const routesFor = (formFactor: FormFactor, handlers: Handlers): RouteObject[] => [
-    { path: '/app', element: <Host handlers={handlers} formFactor={formFactor} /> },
+const routesFor = (formFactor: FormFactor, handlers: Handlers, input?: 'mouse' | 'touch'): RouteObject[] => [
+    { path: '/app', element: <Host handlers={handlers} formFactor={formFactor} input={input} /> },
     { path: '/', element: <div>home route</div> },
 ];
 const logOf = (router: Router) => {
@@ -61,8 +61,8 @@ const logOf = (router: Router) => {
     router.subscribe(state => log.push({ action: state.historyAction, depth: overlayDepthOf(state.location), pathname: state.location.pathname }));
     return log;
 };
-const mount = (formFactor: FormFactor, handlers: Handlers, options: { initialEntries?: Parameters<typeof createMemoryRouter>[1] } = {}) => {
-    const router = createMemoryRouter(routesFor(formFactor, handlers), { initialEntries: ['/', '/app'], initialIndex: 1, ...options.initialEntries });
+const mount = (formFactor: FormFactor, handlers: Handlers, input?: 'mouse' | 'touch', options: { initialEntries?: Parameters<typeof createMemoryRouter>[1] } = {}) => {
+    const router = createMemoryRouter(routesFor(formFactor, handlers, input), { initialEntries: ['/', '/app'], initialIndex: 1, ...options.initialEntries });
     const log = logOf(router);
     render(<RouterProvider router={router} />);
     return { router, log };
@@ -124,6 +124,19 @@ describe('useBackDismiss on desktop', () => {
         const dismiss = vi.fn();
         expect(() => render(<FormFactorProvider value="phone"><Overlay name="lonely" open dismiss={dismiss} /></FormFactorProvider>)).not.toThrow();
         expect(screen.getByTestId('overlay-lonely')).toBeTruthy();
+        expect(dismiss).not.toHaveBeenCalled();
+    });
+});
+
+describe('useBackDismiss in a narrow mouse window', () => {
+    it('adds no history entries and leaves the back button to the router', () => {
+        const dismiss = vi.fn(closes('a'));
+        const { router, log } = mount('tablet', { a: dismiss }, 'mouse');
+        open('a');
+        expect(log).toHaveLength(0);
+        expect(depth(router)).toBe(0);
+        back(router);
+        expect(router.state.location.pathname).toBe('/');
         expect(dismiss).not.toHaveBeenCalled();
     });
 });
@@ -251,7 +264,7 @@ describe.each(['phone', 'tablet'] as const)('useBackDismiss on %s', formFactor =
     });
 
     it('consumes a stale overlay entry found on mount (reload, or return from another page)', () => {
-        const { router, log } = mount(formFactor, { a: closes('a') }, {
+        const { router, log } = mount(formFactor, { a: closes('a') }, undefined, {
             initialEntries: { initialEntries: ['/', '/app', { pathname: '/app', state: { [BACK_DISMISS_STATE_KEY]: 1 } }], initialIndex: 2 },
         });
         expect(log.map(entry => [entry.action, entry.depth, entry.pathname])).toEqual([['POP', 0, '/app']]);

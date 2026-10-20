@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { AppState, AppNode } from '../../types';
 import { ChevronRight, ChevronDown, Plus, Trash2, Edit2, Link, Copy, MoreHorizontal } from 'lucide-react';
 import clsx from 'clsx';
-import { useFormFactor } from '../editor-layout/FormFactorContext';
+import { useInputMode } from '../editor-layout/FormFactorContext';
 import { RowActionSheet, type RowAction } from './RowActionSheet';
 
 interface NodeItemProps {
@@ -24,7 +24,7 @@ export const NodeItem: React.FC<NodeItemProps> = ({ nodeId, state, depth, onSele
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(node?.title || "");
   // Touch: the row's actions sit behind one ⋯ button, so the page name keeps the row's width.
-  const touch = useFormFactor() !== 'desktop';
+  const touch = useInputMode() === 'touch';
   const [actionsOpen, setActionsOpen] = useState(false);
 
   if (!node) return null;
