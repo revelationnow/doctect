@@ -245,6 +245,8 @@ test.describe('narrow mouse window', () => {
 
         // A second, independent edit (the still-selected title's X in the properties panel) must be
         // its own history step: one undo takes back only the move, the next takes back the text.
+        // The swap remounts the canvas; under load the title can be briefly unlaid-out after its text matches.
+        await expect(title).toBeVisible();
         const restingX = (await title.boundingBox()).x;
         const xInput = activePane(page).locator('.group:has(> label:text-is("X")) input');
         await xInput.fill('160');
