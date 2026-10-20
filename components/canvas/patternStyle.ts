@@ -26,8 +26,9 @@ const safeScale = (value: number | undefined) => (
 
 /**
  * CSS for a pattern fill that lands where the PDF draws it (services/pdfService.ts drawPattern):
- * tiles start at the element's outer edge, under any border (`background-origin: border-box`),
- * and dots sit on the tile corners, where grid lines cross, rather than mid-tile.
+ * tiles start at the element's outer edge, under any border (`background-origin: border-box`).
+ * Lines start flush with the top/left edge; dots likewise sit one radius in from the tile corner,
+ * where grid lines of the same weight cross, so the first row and column are whole, not halved.
  */
 export function buildPatternBackgroundStyle({
   type,
@@ -60,7 +61,7 @@ export function buildPatternBackgroundStyle({
       backgroundOrigin: 'border-box',
       backgroundImage: `radial-gradient(circle, ${color} 0, ${color} ${solidRadius}px, transparent ${radius}px)`,
       backgroundSize: `${resolvedSpacing}px ${resolvedSpacing}px`,
-      backgroundPosition: `${-resolvedSpacing / 2}px ${-resolvedSpacing / 2}px`,
+      backgroundPosition: `${radius - resolvedSpacing / 2}px ${radius - resolvedSpacing / 2}px`,
     };
   }
 

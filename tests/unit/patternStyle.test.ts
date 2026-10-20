@@ -96,12 +96,20 @@ describe('buildPatternBackgroundStyle', () => {
     expect(style.backgroundOrigin).toBe('border-box');
   });
 
-  // The PDF puts a dot on every tile corner (0, spacing, 2 × spacing, …), where grid lines cross;
-  // the radial gradient centres its dot in the tile, so the tiles shift back by half a spacing.
-  it('puts dots on the tile corners, as the PDF does', () => {
+  // The PDF puts a dot one radius in from every tile corner (r, r + spacing, …), where grid lines
+  // of the same weight cross; the radial gradient centres its dot in the tile, so the tiles shift
+  // back by half a spacing less that radius.
+  it('puts dots one radius in from the tile corners, as the PDF does', () => {
     const style = buildPatternBackgroundStyle({ type: 'dots', color: '#000000', spacing: 24, weight: 2, renderScale: 1 });
-    expect(style.backgroundPosition).toBe('-12px -12px');
+    expect(style.backgroundPosition).toBe('-11px -11px');
     expect(style.backgroundSize).toBe('24px 24px');
+  });
+
+  // Below the zoom where dots are enlarged to stay visible, the inset follows the drawn dot,
+  // so the edge row stays whole on screen too.
+  it('insets dots by the radius drawn on screen', () => {
+    const style = buildPatternBackgroundStyle({ type: 'dots', color: '#000000', spacing: 24, weight: 1, renderScale: 0.125 });
+    expect(style.backgroundPosition).toBe('-6px -6px');
   });
 
   it('returns no background for an absent pattern type', () => {
