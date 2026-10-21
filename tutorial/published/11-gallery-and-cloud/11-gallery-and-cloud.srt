@@ -1,0 +1,214 @@
+1
+00:00:00,000 --> 00:00:03,940
+So far, everything we have made
+has lived in this one browser.
+
+2
+00:00:04,077 --> 00:00:08,538
+This episode steps outside it: the gallery,
+where people share what they make,
+
+3
+00:00:08,538 --> 00:00:12,277
+and an account, which gives your
+work a history in the cloud.
+
+4
+00:00:12,487 --> 00:00:15,387
+Gallery, at the top, is open to everyone.
+
+5
+00:00:15,477 --> 00:00:17,287
+No account, no sign in.
+
+6
+00:00:17,408 --> 00:00:20,596
+It opens on a spotlight,
+then rows: what's trending,
+
+7
+00:00:20,596 --> 00:00:23,728
+what's new, and a row for
+each kind of project.
+
+8
+00:00:23,939 --> 00:00:26,939
+Search reads names, tags and descriptions.
+
+9
+00:00:26,989 --> 00:00:29,739
+I'm after something for dinners, so: meal.
+
+10
+00:00:29,946 --> 00:00:33,906
+Every project has a page: the
+preview pages its author picked,
+
+11
+00:00:33,906 --> 00:00:35,816
+who made it, and its tags.
+
+12
+00:00:35,875 --> 00:00:39,177
+Download all variants gets
+every PDF in one zip,
+
+13
+00:00:39,177 --> 00:00:43,485
+and Version history opens any
+version the author published.
+
+14
+00:00:43,691 --> 00:00:48,261
+Open in editor copies the project
+into your own editor, as a new tab.
+
+15
+00:00:48,408 --> 00:00:53,097
+The copy is yours: change anything you
+like, and the original never knows.
+
+16
+00:00:53,305 --> 00:00:56,585
+Our recipe book, though, is
+still only in this browser.
+
+17
+00:00:56,709 --> 00:01:01,730
+On its tab, the Cloud menu has just one
+thing to offer while we are signed out:
+
+18
+00:01:01,730 --> 00:01:03,569
+Sign in to save to cloud.
+
+19
+00:01:03,883 --> 00:01:06,553
+Sign Up turns the form
+into Create Account.
+
+20
+00:01:06,690 --> 00:01:09,090
+Your name and your email stay private.
+
+21
+00:01:09,230 --> 00:01:14,570
+The username is public: it is the name the
+gallery shows on everything you share.
+
+22
+00:01:14,776 --> 00:01:17,356
+The password needs at
+least twelve characters.
+
+23
+00:01:17,490 --> 00:01:21,810
+Then Sign Up, and instead of signing
+you in, it sends a link to your email.
+
+24
+00:01:22,016 --> 00:01:23,106
+Here it is.
+
+25
+00:01:23,196 --> 00:01:27,596
+Clicking the link confirms the address
+and signs you in, all in one go.
+
+26
+00:01:27,803 --> 00:01:32,873
+We're back in the editor, signed in, and
+the Cloud menu now offers Save to cloud.
+
+27
+00:01:32,974 --> 00:01:35,754
+Nothing is ever uploaded behind your back.
+
+28
+00:01:35,789 --> 00:01:40,583
+Each save is a snapshot you choose to
+make, with a message that says what it is.
+
+29
+00:01:41,068 --> 00:01:42,958
+Let's change something we can see.
+
+30
+00:01:43,086 --> 00:01:46,836
+Tomato Soup becomes Roasted
+Tomato Soup, and we save again,
+
+31
+00:01:46,836 --> 00:01:48,866
+with a message that says so.
+
+32
+00:01:48,946 --> 00:01:51,681
+The message is for future
+you: in a few months,
+
+33
+00:01:51,681 --> 00:01:55,596
+Roast the tomatoes will still
+mean something, and Update won't.
+
+34
+00:01:55,806 --> 00:01:58,956
+Version history lists
+every save, newest first.
+
+35
+00:01:59,005 --> 00:02:02,515
+The top one is marked HEAD: the
+latest version in the cloud.
+
+36
+00:02:02,722 --> 00:02:05,712
+Restore puts an older
+version back in the editor.
+
+37
+00:02:05,764 --> 00:02:09,619
+It asks first, because anything
+you had not saved would be lost.
+
+38
+00:02:09,701 --> 00:02:11,921
+And there is plain Tomato Soup again.
+
+39
+00:02:12,145 --> 00:02:14,345
+Restoring only changed this tab.
+
+40
+00:02:14,467 --> 00:02:19,002
+The cloud still has both versions, and
+saving now would simply add a third,
+
+41
+00:02:19,002 --> 00:02:22,397
+so you can step back and
+forth as often as you like.
+
+42
+00:02:22,611 --> 00:02:27,941
+Everything the cloud holds for you is on
+one page: My projects, in the account menu.
+
+43
+00:02:27,999 --> 00:02:33,063
+Each project is private until you publish
+it, and the bar on top is your storage:
+
+44
+00:02:33,063 --> 00:02:35,439
+fifty megabytes for every account.
+
+45
+00:02:35,647 --> 00:02:38,753
+Next time: publishing the
+recipe book to the gallery,
+
+46
+00:02:38,753 --> 00:02:41,097
+and what happens when somebody forks it.
