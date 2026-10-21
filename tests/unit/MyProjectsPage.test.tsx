@@ -50,6 +50,16 @@ describe('MyProjectsPage', () => {
         expect(await screen.findByText(/2\.0 MB of 50\.0 MB used/)).toBeInTheDocument();
     });
 
+    it('shows usage without a quota bar when the account has no storage limit', async () => {
+        mockListProjects.mockResolvedValue({
+            projects: [project()],
+            usage: { usedBytes: 2 * 1024 * 1024, quotaBytes: null },
+        });
+        renderPage();
+        expect(await screen.findByText(/2\.0 MB used · no storage limit/)).toBeInTheDocument();
+        expect(screen.queryByText(/%$/)).not.toBeInTheDocument();
+    });
+
     it('deletes a project after confirmation and refreshes the list', async () => {
         vi.spyOn(window, 'confirm').mockReturnValue(true);
         renderPage();
