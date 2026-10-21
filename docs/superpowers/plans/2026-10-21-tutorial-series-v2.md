@@ -51,7 +51,7 @@
 ### Task 6: Delivery
 - [x] `tutorial/README.md` (setup, model downloads, commands), retire v1 episodes.
 - [x] Commit text deliverables to `tutorial/published/`; push the branch.
-- [ ] Hand the rendered videos to the requester; publish a private library page.
+- [x] Hand the rendered videos to the requester; publish a private library page.
 
 ## Notes from production
 
