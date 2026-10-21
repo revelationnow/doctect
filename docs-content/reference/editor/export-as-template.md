@@ -1,6 +1,6 @@
 ---
 title: Export as Template
-summary: The Export as template segment of the export button (⋯ › Export as template… on touch) renders chosen pages as note templates sized for reMarkable, Supernote, Boox and Bigme e-ink tablets, and downloads them as one zip with install notes.
+summary: The Export as template segment of the export button (⋯ › Export as template… on touch, or Download as template on a gallery template's page) renders chosen pages as note templates sized for reMarkable, Supernote, Boox and Bigme e-ink tablets, and downloads them as one zip with install notes.
 aliases: e-ink templates, note templates, device templates, remarkable template, supernote template, boox template, bigme template, methods template, png template, export for device
 keywords: export, device, devices, e-ink, eink, remarkable, paper pro, supernote, manta, nomad, boox, note air, palma, bigme, template, png, zip, methods, templates.json, mystyle, notetemplate, install, greyscale, conversion report
 ---
@@ -11,7 +11,13 @@ keywords: export, device, devices, e-ink, eink, remarkable, paper pro, supernote
 
 On a computer the export controls at the top bar's right end are a split button: [**Export PDF**](/docs/reference/export-pdf), the **All** half, and a third segment, **Export as template**, with a tablet icon — its tooltip reads "Export templates for e-ink devices". On a [phone or tablet](/docs/reference/editor-on-phones-and-tablets) the **⋯** menu's Export group has an **Export as template…** row between *Export all variants* and *Greyscale export*. Both open the **Export as template** dialog: a centred modal on desktop and tablet, full screen on a phone, where the back gesture closes it.
 
-The export uses the *active* [variant](/docs/reference/variants), as it is when the dialog opens.
+The gallery opens the same dialog: a published project filed under **Note templates** has a **Download as template** button on its [project page](/docs/gallery/browsing-without-an-account#a-project-page), which loads the published version and needs no account.
+
+## Choosing a variant
+
+The export draws one [variant](/docs/reference/variants) of the project, as it is when the dialog opens. When the project has more than one, a **Variant** list at the top of the dialog picks which, starting on the active one. Choosing a variant here changes only what this export draws, never the project's active variant. Pick the variant made for the device you're exporting to: a Paper Pro page fits a Paper Pro Move only with wide white bands above and below, while a variant drawn at the Move's size fills its screen.
+
+Pages are shared between variants, so switching keeps your ticks on every page the new variant can draw; if none survive, each template's first page is ticked again.
 
 ## Choosing pages
 

@@ -92,6 +92,8 @@ Maybe you don't want to edit anything — you want the PDFs on your tablet. **Do
 
 A project with just one variant still works — the zip simply holds one PDF. For something like a planner published in A4, A5, and e-ink editions, this is the fastest possible path from "found it in the gallery" to "on my device": one click, one zip, every edition.
 
+Projects filed under **Note templates** — single pages meant to sit behind your handwriting — have one more button above it, **Download as template**. It opens the editor's [Export as template](/docs/reference/export-as-template) dialog on the published version: pick the variant, the pages and your e-ink devices, and you get one zip of templates sized for each device, with install notes. No account needed here either.
+
 ## Time-travel: public version history
 
 The third button, **Version history**, opens a list of the project's published versions — newest first, the current one marked **HEAD** — each with the owner's own message describing what changed, and a timestamp.

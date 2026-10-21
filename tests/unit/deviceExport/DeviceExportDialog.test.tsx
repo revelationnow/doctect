@@ -255,3 +255,55 @@ describe('DeviceExportDialog', () => {
         expect(screen.queryByRole('dialog')).toBeNull();
     });
 });
+
+describe('DeviceExportDialog variant choice', () => {
+    // Two page sizes of one project: the Move variant has no index template, so its index page drops out.
+    const twoVariants = () => {
+        const state = makeState(2) as unknown as { variants: Record<string, unknown>; activeVariantId: string };
+        const paper = (state.variants.v as { templates: Record<string, unknown> });
+        state.variants = {
+            paper: { id: 'paper', name: 'Paper Pro', templates: paper.templates },
+            move: { id: 'move', name: 'Paper Pro Move', templates: { daily: { id: 'daily', name: 'Daily', width: 60, height: 100, layers: [], elements: [] } } },
+        };
+        state.activeVariantId = 'paper';
+        return state as unknown as AppState;
+    };
+    const variantSelect = (dialog: HTMLElement) => within(dialog).getByRole('combobox', { name: 'Variant' }) as HTMLSelectElement;
+
+    it('offers every variant, starting on the active one', () => {
+        const { dialog } = setup({ getState: twoVariants });
+        const select = variantSelect(dialog);
+        expect(select.value).toBe('paper');
+        expect([...select.options].map(o => o.textContent)).toEqual(['Paper Pro', 'Paper Pro Move']);
+    });
+
+    it('hides the choice for a project with one variant', () => {
+        const { dialog } = setup();
+        expect(within(dialog).queryByRole('combobox', { name: 'Variant' })).toBeNull();
+    });
+
+    it('lists the chosen variant\'s pages, keeps ticks that still apply, and exports that variant', async () => {
+        const state = twoVariants();
+        const { dialog, props } = setup({ getState: () => state });
+        expect(box(dialog, 'Index').checked).toBe(true);
+        fireEvent.change(variantSelect(dialog), { target: { value: 'move' } });
+        expect(within(dialog).queryByRole('checkbox', { name: 'Index' })).toBeNull();
+        expect(box(dialog, 'Jan 1').checked).toBe(true);
+        fireEvent.click(box(dialog, 'Paper Pro Move'));
+        expect(status(dialog)).toBe('1 page × 1 device = 1 template (.zip)');
+        await act(async () => { fireEvent.click(within(dialog).getByRole('button', { name: 'Export' })); });
+        const request = (props.runExport as ReturnType<typeof vi.fn>).mock.calls[0][0];
+        expect(request.state.activeVariantId).toBe('move');
+        expect(request.pageNodeIds).toEqual(['d1']);
+        // The project itself keeps its active variant: the choice is the export's alone.
+        expect(state.activeVariantId).toBe('paper');
+    });
+
+    it('falls back to each template\'s first page when no tick survives the switch', () => {
+        const state = twoVariants();
+        const { dialog } = setup({ getState: () => state });
+        fireEvent.click(box(dialog, 'Jan 1'));
+        fireEvent.change(variantSelect(dialog), { target: { value: 'move' } });
+        expect(box(dialog, 'Jan 1').checked).toBe(true);
+    });
+});

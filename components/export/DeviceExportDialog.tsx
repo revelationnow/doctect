@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import clsx from 'clsx';
 import { Tablet, X } from 'lucide-react';
@@ -18,7 +18,7 @@ const COLLAPSED_PAGES = 3;
 export interface DeviceExportDialogProps {
     isOpen: boolean;
     onClose: () => void;
-    /** Read when the dialog opens: the export uses the project as it was then. */
+    /** Read when the dialog opens: the export uses the project as it was then, starting on its active variant. */
     getState: () => AppState;
     projectName: string;
     /** "Force greyscale" starts here until the picker has remembered its own choice. */
@@ -48,8 +48,13 @@ export function DeviceExportDialog(props: DeviceExportDialogProps) {
 
 function OpenDeviceExportDialog({ onClose, getState, projectName, initialForceGreyscale, runExport = runDeviceExport, download = downloadBlob }: DeviceExportDialogProps) {
     const phone = useFormFactor() === 'phone';
-    const [state] = useState(getState);
+    const [project] = useState(getState);
+    const variants = Object.values(project.variants ?? {});
+    // The variant to export. Choosing one here never changes the project's own active variant.
+    const [variantId, setVariantId] = useState(project.activeVariantId);
+    const state = useMemo(() => withVariant(project, variantId), [project, variantId]);
     const groups = useMemo(() => buildPageGroups(state), [state]);
+    const variantSelectId = useId();
     const [settings] = useState(() => readDeviceExportSettings(initialForceGreyscale));
     const [pages, setPages] = useState(() => defaultSelection(groups));
     const [devices, setDevices] = useState<Set<string>>(() => new Set(settings.devices));
@@ -85,6 +90,15 @@ function OpenDeviceExportDialog({ onClose, getState, projectName, initialForceGr
         for (const page of group.pages) if (on) next.add(page.nodeId); else next.delete(page.nodeId);
         return next;
     });
+
+    // Pages are shared between variants, so ticks carry over wherever the new variant can draw them.
+    const chooseVariant = (id: string) => {
+        const nextGroups = buildPageGroups(withVariant(project, id));
+        const available = new Set(nextGroups.flatMap(group => group.pages.map(page => page.nodeId)));
+        const kept = [...pages].filter(nodeId => available.has(nodeId));
+        setPages(kept.length > 0 ? new Set(kept) : defaultSelection(nextGroups));
+        setVariantId(id);
+    };
 
     const startExport = async () => {
         if (blocked || running) return;
@@ -124,7 +138,7 @@ function OpenDeviceExportDialog({ onClose, getState, projectName, initialForceGr
     const row = clsx('flex items-center gap-2 text-sm text-slate-700', phone && 'min-h-11');
 
     return createPortal(
-        <div className={clsx('fixed inset-0 z-50 flex bg-black/50', !phone && 'items-center justify-center p-4')}
+        <div className={clsx('fixed inset-0 z-[100] flex bg-black/50', !phone && 'items-center justify-center p-4')}
             // A mousedown on the backdrop would move focus to <body>, past the dialog's keydown handling,
             // and the next Delete or Ctrl+Z would reach the editor's window listener. Cancelling it keeps
             // focus on whatever the user had, so the dialog never loses the keyboard.
@@ -155,6 +169,15 @@ function OpenDeviceExportDialog({ onClose, getState, projectName, initialForceGr
                     </button>
                 </div>
                 <div className="flex-1 space-y-5 overflow-y-auto px-4 py-3">
+                    {variants.length > 1 && (
+                        <div className="flex items-center gap-3">
+                            <label htmlFor={variantSelectId} className="text-sm font-semibold text-slate-800">Variant</label>
+                            <select id={variantSelectId} value={variantId} disabled={running} onChange={event => chooseVariant(event.target.value)}
+                                className={clsx('min-w-0 flex-1 rounded border border-slate-300 px-2 py-1 text-sm sm:flex-none', phone && 'min-h-11')}>
+                                {variants.map(variant => <option key={variant.id} value={variant.id}>{variant.name}</option>)}
+                            </select>
+                        </div>
+                    )}
                     <section aria-labelledby="device-export-pages">
                         <div className="mb-2 flex items-center justify-between gap-3">
                             <h3 id="device-export-pages" className="text-sm font-semibold text-slate-800">Pages</h3>
@@ -215,6 +238,9 @@ function OpenDeviceExportDialog({ onClose, getState, projectName, initialForceGr
         document.body,
     );
 }
+
+const withVariant = (project: AppState, variantId: string): AppState =>
+    variantId === project.activeVariantId ? project : { ...project, activeVariantId: variantId };
 
 function PageGroup({ group, selected, disabled, rowClass, showAll, onToggle, onSetAll, onExpand }: {
     group: TemplateGroup; selected: ReadonlySet<string>; disabled: boolean; rowClass: string; showAll: boolean;
