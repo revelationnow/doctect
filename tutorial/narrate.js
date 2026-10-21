@@ -18,7 +18,7 @@ import { voiceQa } from './qa-voice.js';
 
 const PROVIDER = process.env.TUTORIAL_TTS || 'kokoro';
 const VOICE = process.env.TUTORIAL_VOICE || (PROVIDER === 'chirp' ? 'en-US-Chirp3-HD-Aoede' : 'af_heart');
-const SPEED = Number(process.env.TUTORIAL_SPEED || 0.94);
+const SPEED = Number(process.env.TUTORIAL_SPEED || 0.9);
 
 function synthesizeKokoro(items, cacheDir) {
     const jobFile = path.join(cacheDir, `job-${process.pid}.json`);

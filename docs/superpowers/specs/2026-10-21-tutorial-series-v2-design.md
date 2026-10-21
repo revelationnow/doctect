@@ -144,7 +144,7 @@ espeak fallback, one clip per sentence, cached by content hash. Natural delivery
 - **Writing for the ear** (style guide below) — the largest factor by far.
 - **Sentence-level synthesis** with variable pauses (≈0.3–0.45 s between sentences, longer at
   topic shifts) instead of one long clip.
-- **Speed 0.94** — about 155 wpm once pauses are included.
+- **Speed 0.90** — about 155 wpm once pauses are included.
 - **Light post-processing**: high-pass, gentle compression, −16 LUFS loudness, a −60 dBFS room
   tone so silence is never digitally dead, and quiet mouse/keyboard foley under real actions.
 

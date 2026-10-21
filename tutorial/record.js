@@ -103,6 +103,30 @@ export async function recordEpisode(episode, { dry = false, until = Infinity } =
             await ctx.goto(`/__tutorial/viewer/?file=${encodeURIComponent(name)}&title=${encodeURIComponent(title ?? name)}`);
             await page.waitForFunction(() => window.__viewer?.state.ready, null, { timeout: 120000 });
         },
+        /**
+         * Clicks a link in the PDF reader — by the text it covers ({ text, nth }) or by position
+         * as page fractions ({ near: [fx, fy] }) — and waits for the jump to land.
+         */
+        async clickPdfLink({ text, nth = 0, near }) {
+            const rect = await page.evaluate(([t, n, nr]) => (nr ? window.__viewer.linkNear(nr[0], nr[1]) : window.__viewer.linkFor(t, n)), [text, nth, near]);
+            if (!rect) throw new Error(`no PDF link for ${text ?? near}`);
+            const before = await page.evaluate(() => window.__viewer.state.jumps);
+            await human.click(rect);
+            await page.waitForFunction(b => window.__viewer.state.jumps > b, before, { timeout: 10000 });
+            await page.waitForTimeout(500);
+            return page.evaluate(() => window.__viewer.state.page);
+        },
+        /**
+         * Inside a beat's `do`: waits until sentence k of the beat's narration starts
+         * (or ends, with { end: true }), plus `offset` seconds. A no-op in dry runs.
+         */
+        async atSentence(k, { end = false, offset = 0 } = {}) {
+            const b = ctx.beat;
+            const s = b?.sentences?.[k];
+            if (dry || !b || b.narrationStart === null || !s) return;
+            await sleep((b.narrationStart + s.start + (end ? s.duration : 0) + offset - now()) * 1000);
+        },
+        beat: null,
     };
 
     // Warm caches (bundle, fonts) off camera, then start from a clean origin.
@@ -135,6 +159,7 @@ export async function recordEpisode(episode, { dry = false, until = Infinity } =
             process.stdout.write(`beat ${i}${beat.chapter ? ` [${beat.chapter}]` : ''} @ ${(beatStart - t0).toFixed(1)}s\n`);
 
             let narrationStart = beatStart;
+            ctx.beat = { index: i, narrationStart: beat.at === 'before' ? null : beatStart, sentences: nb.sentences };
             const run = async () => {
                 try {
                     if (beat.do) await beat.do(page, ctx);

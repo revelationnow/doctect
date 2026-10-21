@@ -13,7 +13,7 @@ import { PYTHON, TUTORIAL_DIR } from './lib/episode.js';
 const NUMBER_WORDS = new Set(('zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen '
     + 'fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred thousand '
     + 'first second third fourth fifth sixth seventh eighth ninth tenth').split(' '));
-const SPELLINGS = { ctrl: 'control', cmd: 'command', ok: 'okay', alright: 'all right' };
+const SPELLINGS = { ctrl: 'control', cmd: 'command', ok: 'okay', alright: 'all right', grayscale: 'greyscale' };
 const normalize = (text) => text.toLowerCase()
     .replace(/[‘’']/g, '')
     .replace(/[-–—/+]/g, ' ')

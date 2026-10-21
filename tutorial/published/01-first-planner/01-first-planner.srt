@@ -1,0 +1,319 @@
+1
+00:00:00,000 --> 00:00:00,810
+Hi.
+
+2
+00:00:00,945 --> 00:00:02,405
+Let's make a planner.
+
+3
+00:00:02,485 --> 00:00:06,338
+Not a mock-up, a real one: more
+than thirteen hundred pages,
+
+4
+00:00:06,338 --> 00:00:09,093
+where every date links to its own page.
+
+5
+00:00:09,182 --> 00:00:13,132
+We'll start from a preset, look
+around the editor, and export it.
+
+6
+00:00:13,245 --> 00:00:15,479
+You won't need an account for any of this.
+
+7
+00:00:15,714 --> 00:00:17,744
+This is PDF Architect.
+
+8
+00:00:17,851 --> 00:00:19,381
+The idea is simple.
+
+9
+00:00:19,485 --> 00:00:24,391
+You design a handful of page layouts once,
+and the app turns them into hundreds of
+
+10
+00:00:24,391 --> 00:00:27,095
+pages, with the links worked out for you.
+
+11
+00:00:27,304 --> 00:00:28,974
+Let's open the editor.
+
+12
+00:00:31,988 --> 00:00:35,798
+The first time you open it, you
+get a blank project to play with.
+
+13
+00:00:35,846 --> 00:00:40,146
+I want something with content in it, so
+I'll click the plus, next to the tab.
+
+14
+00:00:40,352 --> 00:00:41,992
+There are three presets.
+
+15
+00:00:42,118 --> 00:00:45,108
+Blank is a single, empty A4 page.
+
+16
+00:00:45,204 --> 00:00:48,804
+Simple Notebook has a cover
+and a few section dividers.
+
+17
+00:00:48,903 --> 00:00:53,606
+And the 2026 Planner is the big
+one: a year, broken into quarters,
+
+18
+00:00:53,606 --> 00:00:56,493
+months and days, all linked together.
+
+19
+00:00:56,561 --> 00:00:58,131
+That's the one we want.
+
+20
+00:01:03,395 --> 00:01:05,315
+It takes a few seconds to build.
+
+21
+00:01:05,368 --> 00:01:09,576
+And there it is: a new tab, with
+every page already in place.
+
+22
+00:01:09,781 --> 00:01:11,731
+The editor has three columns.
+
+23
+00:01:11,769 --> 00:01:15,512
+On the left is the structure of
+the document: a tree of pages,
+
+24
+00:01:15,512 --> 00:01:17,331
+which the app calls nodes.
+
+25
+00:01:17,375 --> 00:01:20,575
+In the middle, the canvas
+shows one page at a time.
+
+26
+00:01:20,622 --> 00:01:24,052
+And on the right are the properties
+of whatever you've selected.
+
+27
+00:01:24,564 --> 00:01:28,867
+Right now the top node is selected,
+so the canvas shows the year page.
+
+28
+00:01:28,980 --> 00:01:33,151
+The properties panel says this node
+uses a template called Year View,
+
+29
+00:01:33,151 --> 00:01:36,000
+and it carries one piece
+of data: the year.
+
+30
+00:01:36,205 --> 00:01:41,105
+Under the year sit four quarters, then
+pages for weeks, notes, and to-do lists.
+
+31
+00:01:41,167 --> 00:01:43,307
+The little arrow unfolds a node.
+
+32
+00:01:43,391 --> 00:01:47,246
+Inside Quarter 1 are
+January, February and March.
+
+33
+00:01:47,458 --> 00:01:50,612
+Click January, and the
+canvas switches to a month:
+
+34
+00:01:50,612 --> 00:01:55,786
+a calendar where every day is a link, and
+the week numbers down the side are links
+
+35
+00:01:55,786 --> 00:01:56,288
+too.
+
+36
+00:01:56,495 --> 00:01:59,935
+Unfold January and there's
+a page for every day.
+
+37
+00:02:00,036 --> 00:02:01,956
+Here's January the first.
+
+38
+00:02:01,992 --> 00:02:07,163
+And each day has two pages of its own
+underneath it: a journal, and daily notes.
+
+39
+00:02:07,372 --> 00:02:09,552
+Now, here's the part that matters.
+
+40
+00:02:09,641 --> 00:02:13,721
+Nobody sat down and drew 365 day pages.
+
+41
+00:02:13,858 --> 00:02:18,685
+Switch the sidebar to Templates, and you
+can see the entire planner comes from just
+
+42
+00:02:18,685 --> 00:02:19,633
+ten layouts.
+
+43
+00:02:19,839 --> 00:02:21,299
+I'll pick Month View.
+
+44
+00:02:21,404 --> 00:02:24,174
+Up in the toolbar there's
+now a Preview menu.
+
+45
+00:02:24,323 --> 00:02:28,486
+It lists every node that uses this
+template, and if I choose June,
+
+46
+00:02:28,486 --> 00:02:30,943
+the same layout fills in with June.
+
+47
+00:02:31,150 --> 00:02:32,810
+That's really the whole model.
+
+48
+00:02:32,923 --> 00:02:35,243
+Nodes hold the structure and the data.
+
+49
+00:02:35,318 --> 00:02:37,068
+Templates hold the design.
+
+50
+00:02:37,179 --> 00:02:41,568
+Change a template once, and every
+page that uses it changes with it.
+
+51
+00:02:41,776 --> 00:02:43,156
+Let's export it.
+
+52
+00:02:43,235 --> 00:02:48,481
+The Export PDF button, up in the corner,
+runs every node through its template and
+
+53
+00:02:48,481 --> 00:02:50,285
+gives you a single file.
+
+54
+00:02:50,492 --> 00:02:55,546
+Even at this size it only takes a few
+seconds, and it all happens right here in the
+
+55
+00:02:55,546 --> 00:02:58,292
+browser, so nothing is uploaded anywhere.
+
+56
+00:02:58,382 --> 00:03:02,144
+The buttons next to it handle
+greyscale and other devices.
+
+57
+00:03:02,256 --> 00:03:04,356
+We'll get to those later in the series.
+
+58
+00:03:04,563 --> 00:03:07,503
+Here's the file, open in a PDF reader.
+
+59
+00:03:07,644 --> 00:03:09,234
+Page one is the year.
+
+60
+00:03:09,373 --> 00:03:11,583
+These boxes aren't just labels.
+
+61
+00:03:11,732 --> 00:03:14,582
+Click Quarter 2, and you land on its page.
+
+62
+00:03:14,789 --> 00:03:17,719
+Each of these little
+calendars is clickable too.
+
+63
+00:03:17,865 --> 00:03:19,615
+Here is the second of May.
+
+64
+00:03:19,653 --> 00:03:24,437
+From a day, the arrows step forward or back,
+and the chips along the top jump up to
+
+65
+00:03:24,437 --> 00:03:26,763
+the month, the quarter, or the year.
+
+66
+00:03:26,970 --> 00:03:29,220
+None of these links were drawn by hand.
+
+67
+00:03:29,369 --> 00:03:33,661
+They're worked out from the structure,
+which is why they're right on every single
+
+68
+00:03:33,661 --> 00:03:34,176
+page.
+
+69
+00:03:34,382 --> 00:03:36,952
+So that's a complete
+planner, start to finish.
+
+70
+00:03:37,025 --> 00:03:41,536
+In the next episode, we'll start from
+a blank page and learn the canvas:
+
+71
+00:03:41,536 --> 00:03:43,415
+shapes, text, and styling.
+
+72
+00:03:43,498 --> 00:03:44,348
+See you there.
