@@ -42,7 +42,7 @@ export function MyProjectsPage() {
         }
     };
 
-    const pct = usage ? Math.min(100, Math.round((usage.usedBytes / usage.quotaBytes) * 100)) : 0;
+    const pct = usage?.quotaBytes ? Math.min(100, Math.round((usage.usedBytes / usage.quotaBytes) * 100)) : 0;
 
     return (
         <div className="h-screen overflow-y-auto bg-slate-50">
@@ -53,7 +53,10 @@ export function MyProjectsPage() {
 
                 {error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded text-sm">{error}</div>}
 
-                {usage && (
+                {usage && usage.quotaBytes === null && (
+                    <div className="mb-6 text-xs text-slate-500">{formatMB(usage.usedBytes)} used · no storage limit</div>
+                )}
+                {usage && usage.quotaBytes !== null && (
                     <div className="mb-6">
                         <div className="flex justify-between text-xs text-slate-500 mb-1">
                             <span>{formatMB(usage.usedBytes)} of {formatMB(usage.quotaBytes)} used</span>

@@ -4,6 +4,7 @@
 // values are intentionally allowed — tests use tiny quotas to trip limits cheaply.
 import rateLimit from 'express-rate-limit';
 import { query } from '../db.js';
+import { isConfiguredOwner } from '../ownerAuthority.js';
 
 const envNum = (name, dflt) => {
     const v = Number(process.env[name]);
@@ -49,26 +50,34 @@ export const assertGlobalCeiling = async (incomingBytes, queryFn = query) => {
     }
 };
 
-export const assertStorageAllowance = async (userId, incomingBytes, queryFn = query) => {
+// The configured owner (role 'owner' AND email in OWNER_EMAILS) publishes the curated gallery,
+// so the per-user caps below — project count, public project count, storage quota — do not
+// apply to them. The global ceiling still does: it guards the bill, not fairness between users.
+export const isLimitExempt = user => isConfiguredOwner(user);
+
+export const assertStorageAllowance = async (user, incomingBytes, queryFn = query) => {
     // Global ceiling first: a hard cost kill-switch that holds even if per-user
-    // accounting is ever wrong. Checked on every content write.
+    // accounting is ever wrong. Checked on every content write, the owner's included.
     await assertGlobalCeiling(incomingBytes, queryFn);
-    if (await getUserStoredBytes(userId, queryFn) + incomingBytes > userStorageQuotaBytes()) {
+    if (isLimitExempt(user)) return;
+    if (await getUserStoredBytes(user.id, queryFn) + incomingBytes > userStorageQuotaBytes()) {
         throw new LimitError(413, 'STORAGE_QUOTA_EXCEEDED',
             'Storage quota exceeded. Delete old projects from the My Projects page to free up space.');
     }
 };
 
-export const assertProjectAllowance = async (userId, queryFn = query) => {
-    const rows = await queryFn('SELECT COUNT(*) AS n FROM projects WHERE owner_id = $1', [userId]);
+export const assertProjectAllowance = async (user, queryFn = query) => {
+    if (isLimitExempt(user)) return;
+    const rows = await queryFn('SELECT COUNT(*) AS n FROM projects WHERE owner_id = $1', [user.id]);
     if (Number(rows[0].n) >= maxProjectsPerUser()) {
         throw new LimitError(403, 'PROJECT_LIMIT_REACHED',
             `Project limit reached (max ${maxProjectsPerUser()}). Delete a project from the My Projects page to make room.`);
     }
 };
 
-export const assertPublishAllowance = async (userId, queryFn = query) => {
-    const rows = await queryFn(`SELECT COUNT(*) AS n FROM projects WHERE owner_id = $1 AND visibility = 'public'`, [userId]);
+export const assertPublishAllowance = async (user, queryFn = query) => {
+    if (isLimitExempt(user)) return;
+    const rows = await queryFn(`SELECT COUNT(*) AS n FROM projects WHERE owner_id = $1 AND visibility = 'public'`, [user.id]);
     if (Number(rows[0].n) >= maxPublicProjectsPerUser()) {
         throw new LimitError(403, 'PUBLIC_LIMIT_REACHED',
             `Published project limit reached (max ${maxPublicProjectsPerUser()}). Unpublish one to publish another.`);

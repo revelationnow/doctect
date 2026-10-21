@@ -36,7 +36,8 @@ export interface CloudProject {
 }
 export interface CommitMeta { id: string; parentCommitId: string | null; message: string; schemaVersion: number | null; createdBy: string | null; createdAt: string; }
 export interface MyProject extends CloudProject { storedBytes: number; commitCount: number; }
-export interface StorageUsage { usedBytes: number; quotaBytes: number; }
+// quotaBytes is null for an account with no per-user storage limit (the configured owner).
+export interface StorageUsage { usedBytes: number; quotaBytes: number | null; }
 
 export type SuspensionStatus = 'none' | 'active' | 'expired';
 

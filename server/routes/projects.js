@@ -4,7 +4,7 @@ import { dbType, query, withTransaction } from '../db.js';
 import { requireAuth, optionalAuth, requireUsername } from '../middleware/guards.js';
 import { validateAppState } from '../validateAppState.js';
 import { encodeState, decodeStateRow } from '../stateCodec.js';
-import { assertStorageAllowance, assertProjectAllowance, assertPublishAllowance, sendLimitError, userWriteLimiter, userStorageQuotaBytes } from '../middleware/limits.js';
+import { assertStorageAllowance, assertProjectAllowance, assertPublishAllowance, isLimitExempt, sendLimitError, userWriteLimiter, userStorageQuotaBytes } from '../middleware/limits.js';
 import { lockProjectRows } from '../projectLocks.js';
 import { publicationTag } from '../../shared/publicationTag.js';
 import { deleteGalleryIndex, reindexProject } from '../galleryIndex.js';
@@ -110,8 +110,8 @@ router.post('/api/projects', requireAuth, requireUsername, userWriteLimiter, asy
 
     const encoded = encodeState(state);
     try {
-        await assertProjectAllowance(req.user.id);
-        await assertStorageAllowance(req.user.id, encoded.bytes);
+        await assertProjectAllowance(req.user);
+        await assertStorageAllowance(req.user, encoded.bytes);
     } catch (e) {
         if (sendLimitError(res, e)) return;
         throw e;
@@ -141,7 +141,7 @@ router.get('/api/projects', requireAuth, async (req, res) => {
     const usedBytes = rows.reduce((sum, r) => sum + Number(r.stored_bytes), 0);
     res.json({
         projects: rows.map(r => ({ ...projectDto(r), storedBytes: Number(r.stored_bytes), commitCount: Number(r.commit_count) })),
-        usage: { usedBytes, quotaBytes: userStorageQuotaBytes() }
+        usage: { usedBytes, quotaBytes: isLimitExempt(req.user) ? null : userStorageQuotaBytes() }
     });
 });
 
@@ -236,7 +236,7 @@ router.post('/api/projects/:id/commits', requireAuth, requireUsername, userWrite
                 return { status: 'deduped', commit: { id: heads[0].id, message: heads[0].message, createdAt: heads[0].created_at } };
             }
 
-            await assertStorageAllowance(req.user.id, encoded.bytes, txQuery);
+            await assertStorageAllowance(req.user, encoded.bytes, txQuery);
             const clean = cleanMessage(message);
             const commit = await insertCommit({
                 projectId: current.id,
@@ -401,7 +401,7 @@ router.post('/api/projects/:id/publish', requireAuth, requireUsername, loadProje
             await txQuery(`SELECT id FROM "user" WHERE id = $1${lockSuffix}`, [req.user.id]);
             const current = await txQuery(`SELECT * FROM projects WHERE id = $1${lockSuffix}`, [req.project.id]);
             if (!current[0] || current[0].head_commit_id !== expectedHead) return null;
-            if (current[0].visibility !== 'public') await assertPublishAllowance(req.user.id, txQuery);
+            if (current[0].visibility !== 'public') await assertPublishAllowance(req.user, txQuery);
 
             const updated = await txQuery(
                 `UPDATE projects SET visibility = 'public', published_commit_id = $1,
@@ -613,8 +613,8 @@ router.post('/api/projects/:id/fork', requireAuth, requireUsername, userWriteLim
             const headRows = await txQuery('SELECT state_json, state_gzip, state_bytes FROM commits WHERE id = $1', [sourceCommitId]);
             if (!headRows[0]) return { status: 'commit-missing' };
 
-            await assertProjectAllowance(req.user.id, txQuery);
-            await assertStorageAllowance(req.user.id, Number(headRows[0].state_bytes ?? 0), txQuery);
+            await assertProjectAllowance(req.user, txQuery);
+            await assertStorageAllowance(req.user, Number(headRows[0].state_bytes ?? 0), txQuery);
             const sourceName = src.visibility === 'public' ? src.published_name : src.name;
             const sourceDescription = src.visibility === 'public' ? src.published_description : src.description;
             const sourceTags = src.visibility === 'public' ? src.published_tags : src.tags;
