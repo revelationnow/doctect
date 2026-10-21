@@ -1,0 +1,277 @@
+1
+00:00:00,000 --> 00:00:02,430
+Some pages belong in two places.
+
+2
+00:00:02,513 --> 00:00:07,303
+March the fourteenth belongs to March,
+and it also belongs to Week 11.
+
+3
+00:00:07,422 --> 00:00:11,550
+This episode is about references:
+how one page lives in both,
+
+4
+00:00:11,550 --> 00:00:14,371
+and how to link and label across them.
+
+5
+00:00:14,582 --> 00:00:17,762
+In the hierarchy, open
+Weeks, then Week 11.
+
+6
+00:00:17,824 --> 00:00:21,714
+Its seven rows are in italics,
+with a small link icon.
+
+7
+00:00:21,793 --> 00:00:23,143
+They aren't pages.
+
+8
+00:00:23,264 --> 00:00:27,685
+They're references: pointers to the
+real days, which live under March.
+
+9
+00:00:27,901 --> 00:00:32,288
+Select one, and instead of a title
+and fields there is just a card:
+
+10
+00:00:32,288 --> 00:00:34,371
+this node links to March 14.
+
+11
+00:00:34,456 --> 00:00:36,696
+A reference has nothing of its own.
+
+12
+00:00:36,781 --> 00:00:40,221
+Anything that lands on it goes
+straight through to the real day.
+
+13
+00:00:40,430 --> 00:00:42,490
+Why not simply copy the days?
+
+14
+00:00:42,621 --> 00:00:44,831
+Because a copy is a second page.
+
+15
+00:00:44,869 --> 00:00:47,457
+Write on one, and the other never knows.
+
+16
+00:00:47,568 --> 00:00:51,278
+A reference keeps one page,
+reachable from two places,
+
+17
+00:00:51,278 --> 00:00:53,727
+and the PDF prints it only once.
+
+18
+00:00:53,936 --> 00:00:55,536
+Let's make some of our own.
+
+19
+00:00:55,590 --> 00:00:59,115
+On the top page, Add New
+Page, and call it Birthdays.
+
+20
+00:00:59,147 --> 00:01:02,154
+It should list its pages
+the way Weeks and Notes do,
+
+21
+00:01:02,154 --> 00:01:04,427
+so it gets the List Index template.
+
+22
+00:01:04,566 --> 00:01:07,682
+A new page borrows the first
+template in the project,
+
+23
+00:01:07,682 --> 00:01:10,107
+here Year View, so this step matters.
+
+24
+00:01:10,314 --> 00:01:14,226
+Hover Birthdays, and the link
+button, Link Existing Page,
+
+25
+00:01:14,226 --> 00:01:17,564
+opens a picker: the same
+tree as the sidebar.
+
+26
+00:01:17,690 --> 00:01:20,450
+I'll unfold Quarter 1, and then March.
+
+27
+00:01:20,513 --> 00:01:23,985
+Every day of March is in
+here, each one a real page.
+
+28
+00:01:24,093 --> 00:01:27,713
+I want March the fourteenth, and
+clicking it makes the reference.
+
+29
+00:01:27,928 --> 00:01:29,688
+One more, from the summer.
+
+30
+00:01:29,758 --> 00:01:32,408
+Quarter 3, July, and July the second.
+
+31
+00:01:32,484 --> 00:01:37,072
+Each pick is added at the end of the list,
+so add them in the order you want them to
+
+32
+00:01:37,072 --> 00:01:37,704
+appear.
+
+33
+00:01:37,806 --> 00:01:42,756
+And there's no limit: a page can be
+referenced from as many places as you like.
+
+34
+00:01:42,964 --> 00:01:47,843
+Birthdays now lists both days, and each
+one is a link to the real day page.
+
+35
+00:01:47,974 --> 00:01:52,384
+In the sidebar, the new rows are
+italic: references, not copies.
+
+36
+00:01:52,597 --> 00:01:55,716
+To reach Birthdays from
+the year page, one change:
+
+37
+00:01:55,716 --> 00:01:59,397
+its second list shows three
+sections, starting at four.
+
+38
+00:01:59,497 --> 00:02:03,587
+Make that four, and Birthdays joins
+Weeks, Notes and To-Do Lists.
+
+39
+00:02:03,795 --> 00:02:08,055
+From a day, the way back to its week
+is a link called Go to Referrer.
+
+40
+00:02:08,129 --> 00:02:12,080
+On the Day View template, the
+weekday chip in the corner uses it:
+
+41
+00:02:12,080 --> 00:02:16,828
+find the reference that points at this
+day, and go to the page it sits on.
+
+42
+00:02:17,035 --> 00:02:21,594
+March 14 now has two references,
+the week's and the birthday list's.
+
+43
+00:02:21,686 --> 00:02:25,963
+Go to Referrer takes the first one
+ever made, which is the week's,
+
+44
+00:02:25,963 --> 00:02:28,416
+so this chip still means: my week.
+
+45
+00:02:28,627 --> 00:02:33,597
+Month View's week numbers come from a
+formula instead, called child referrer.
+
+46
+00:02:33,669 --> 00:02:38,469
+It asks which page references this month's
+days, and prints that page's title.
+
+47
+00:02:38,679 --> 00:02:42,334
+It has four parts: which day to
+start from, how many to scan,
+
+48
+00:02:42,334 --> 00:02:45,879
+which kind of page to prefer,
+and which field to print.
+
+49
+00:02:45,922 --> 00:02:47,782
+You rarely type it by hand.
+
+50
+00:02:47,868 --> 00:02:51,818
+Insert Referrer Field opens a
+builder that writes it for you.
+
+51
+00:02:52,025 --> 00:02:54,375
+Let's export and follow it all the way.
+
+52
+00:02:54,517 --> 00:02:57,896
+It's a long document, more
+than thirteen hundred pages,
+
+53
+00:02:57,896 --> 00:02:59,927
+so the export takes a moment.
+
+54
+00:03:00,069 --> 00:03:05,556
+It walks every page in order, skips the
+references so each day prints only once,
+
+55
+00:03:05,556 --> 00:03:08,618
+and writes every link as a real PDF link.
+
+56
+00:03:08,828 --> 00:03:12,215
+From the year page, Birthdays,
+which lists both days.
+
+57
+00:03:12,321 --> 00:03:15,015
+Then March 14, the real day page.
+
+58
+00:03:15,087 --> 00:03:20,331
+And the weekday chip, Sat, goes to Week
+11, the page that holds its reference.
+
+59
+00:03:20,539 --> 00:03:23,702
+One page, two ways in,
+and a way back from each.
+
+60
+00:03:23,825 --> 00:03:27,593
+Next time: variants, and one
+document for every device.
