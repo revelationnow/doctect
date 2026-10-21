@@ -8,6 +8,8 @@
 //   --shots  dry runs: screenshot after every beat to <out>/dry/beat-NN.png
 // Needs <out>/narration.json from narrate.js (except --dry). Writes
 // <out>/frames/ (screencast) and <out>/timeline.json for assemble.js.
+// An episode may export `teardown(ctx)`: it runs off camera once every beat
+// has played (e.g. saving the finished project for the next episode).
 import fs from 'node:fs';
 import path from 'node:path';
 import { checkEpisode, episodeOutDir } from './lib/episode.js';
@@ -119,6 +121,12 @@ export async function recordEpisode(episode, { dry = false, until = Infinity, sh
             await page.waitForTimeout(500);
             return page.evaluate(() => window.__viewer.state.page);
         },
+        /** Scrolls the PDF reader on by one page with the mouse wheel. */
+        async pdfNextPage({ steps = 12 } = {}) {
+            const step = await page.evaluate(() => window.__viewer.pageStep());
+            // wheel deltas are screen pixels; the reader scrolls them divided by the page zoom
+            await human.wheel(step * ZOOM, { at: { x: 720 + human.rnd() * 40, y: 450 }, steps });
+        },
         /**
          * Inside a beat's `do`: waits until sentence k of the beat's narration starts
          * (or ends, with { end: true }), plus `offset` seconds. A no-op in dry runs.
@@ -150,6 +158,7 @@ export async function recordEpisode(episode, { dry = false, until = Infinity, sh
     const t0 = now();
     timeline.t0 = t0;
     let chapterNo = 0;
+    let finished = false;
     try {
         for (let i = 0; i < episode.beats.length && i <= until; i++) {
             const beat = episode.beats[i];
@@ -200,6 +209,7 @@ export async function recordEpisode(episode, { dry = false, until = Infinity, sh
             }
         }
         await sleep(dry ? 0 : 1200);
+        finished = until >= episode.beats.length - 1;
     } finally {
         timeline.end = now() - t0;
         if (capture) {
@@ -207,6 +217,14 @@ export async function recordEpisode(episode, { dry = false, until = Infinity, sh
             timeline.frames = capture.frames;
         }
         fs.writeFileSync(path.join(outDir, dry ? 'timeline-dry.json' : 'timeline.json'), JSON.stringify(timeline, null, 2));
+        if (!finished) {
+            await cleanup?.();
+            cleanup = null;
+        }
+    }
+    try {
+        if (episode.teardown) await episode.teardown(ctx);
+    } finally {
         await cleanup?.();
         cleanup = null;
     }

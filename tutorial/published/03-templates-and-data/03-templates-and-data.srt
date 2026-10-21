@@ -1,0 +1,442 @@
+1
+00:00:00,000 --> 00:00:02,100
+Here's the cover we made last time.
+
+2
+00:00:02,150 --> 00:00:06,412
+A recipe book needs recipes, so
+in this episode we'll add pages,
+
+3
+00:00:06,412 --> 00:00:11,723
+give them a design of their own, and
+have each page fill in its own details.
+
+4
+00:00:11,933 --> 00:00:13,903
+Two ideas carry the whole app.
+
+5
+00:00:14,020 --> 00:00:16,720
+The first is the hierarchy, on the left.
+
+6
+00:00:16,858 --> 00:00:20,077
+Every page in your document
+is a node in this tree,
+
+7
+00:00:20,077 --> 00:00:23,294
+and right now there's
+just one: Family Recipes.
+
+8
+00:00:23,500 --> 00:00:25,520
+The second idea is templates.
+
+9
+00:00:25,586 --> 00:00:27,976
+A node doesn't hold a design itself.
+
+10
+00:00:28,062 --> 00:00:31,652
+It points at a template, which
+holds the shapes and the text.
+
+11
+00:00:31,779 --> 00:00:34,499
+This cover points at one called A4 Blank.
+
+12
+00:00:34,704 --> 00:00:38,965
+To add a page inside the cover,
+hover its row and click the plus.
+
+13
+00:00:39,109 --> 00:00:41,649
+There is the new page, tucked underneath.
+
+14
+00:00:41,797 --> 00:00:44,777
+Select it, and it looks
+exactly like the cover.
+
+15
+00:00:45,069 --> 00:00:49,085
+That's because a new page borrows
+the first template in the project,
+
+16
+00:00:49,085 --> 00:00:50,989
+and so far there's only one.
+
+17
+00:00:51,125 --> 00:00:54,425
+I'll give it a name before
+we fix that: Tomato Soup.
+
+18
+00:00:54,634 --> 00:00:57,104
+Templates live behind
+this switch at the top.
+
+19
+00:00:57,233 --> 00:01:01,014
+New Template adds an empty one,
+and the pencil renames it.
+
+20
+00:01:01,150 --> 00:01:02,730
+I'll call it Recipe.
+
+21
+00:01:02,938 --> 00:01:04,518
+One thing to watch for.
+
+22
+00:01:04,665 --> 00:01:09,343
+New templates start at the size of
+a reMarkable Paper Pro, not A4.
+
+23
+00:01:09,476 --> 00:01:14,006
+Page Presets, in Template Settings,
+makes it A4 to match the cover.
+
+24
+00:01:14,212 --> 00:01:16,812
+I'd like the same dotted
+card as the cover.
+
+25
+00:01:16,959 --> 00:01:21,719
+So I'll open the cover's template, click
+the card, and copy it with Control C.
+
+26
+00:01:21,927 --> 00:01:24,887
+Back to Recipe, and paste with Control V.
+
+27
+00:01:24,954 --> 00:01:29,208
+Pasted things always land twenty
+points down and to the right,
+
+28
+00:01:29,208 --> 00:01:33,644
+even on a different template,
+so I'll set X and Y back to 24.
+
+29
+00:01:37,293 --> 00:01:39,813
+Now the template needs a page to use it.
+
+30
+00:01:39,904 --> 00:01:45,524
+Back in the hierarchy, select Tomato Soup,
+and set its Assigned Template to Recipe.
+
+31
+00:01:45,650 --> 00:01:47,650
+The cover keeps its own design.
+
+32
+00:01:49,311 --> 00:01:52,071
+Every recipe needs its name at the top.
+
+33
+00:01:52,160 --> 00:01:56,976
+But if I type Tomato Soup into the template,
+every recipe will be called Tomato
+
+34
+00:01:56,976 --> 00:01:57,530
+Soup.
+
+35
+00:01:57,678 --> 00:02:00,238
+What the template needs is a placeholder.
+
+36
+00:02:00,445 --> 00:02:05,390
+Drag out a text box, and type the word
+title inside double curly braces.
+
+37
+00:02:05,476 --> 00:02:10,416
+Press Escape, and the placeholder turns
+into the name of the page: Tomato Soup.
+
+38
+00:02:10,623 --> 00:02:12,423
+And which page is it showing?
+
+39
+00:02:12,554 --> 00:02:14,744
+The one picked in Preview, up here.
+
+40
+00:02:14,806 --> 00:02:19,003
+While you design, it decides whose
+details fill the placeholders.
+
+41
+00:02:19,119 --> 00:02:22,629
+And title works everywhere,
+because every page has one.
+
+42
+00:02:22,837 --> 00:02:26,060
+Now to style it like the
+cover: Playfair Display,
+
+43
+00:02:26,060 --> 00:02:29,007
+34 points, bold, and the same deep brown.
+
+44
+00:02:29,107 --> 00:02:33,497
+The styling lives on the template
+too, so every recipe page gets it.
+
+45
+00:02:34,484 --> 00:02:36,364
+On to the other recipes.
+
+46
+00:02:36,414 --> 00:02:41,294
+In the hierarchy, Duplicate, on the row,
+copies a page along with its template.
+
+47
+00:02:41,347 --> 00:02:44,537
+The copy arrives with Copy
+on the end of its name,
+
+48
+00:02:44,537 --> 00:02:49,957
+so I'll rename it Banana Bread, then
+duplicate that one for a Weeknight Pad Thai.
+
+49
+00:02:55,054 --> 00:02:57,944
+Click through them, and each
+one shows its own name.
+
+50
+00:02:57,999 --> 00:03:02,153
+One template, three pages, and nothing
+on the template had to change.
+
+51
+00:03:02,359 --> 00:03:06,163
+A recipe card wants more than a
+name, though: how many it serves,
+
+52
+00:03:06,163 --> 00:03:07,700
+and how long it takes.
+
+53
+00:03:07,741 --> 00:03:09,591
+Those go in data fields.
+
+54
+00:03:09,664 --> 00:03:13,464
+Select Tomato Soup, click Add,
+and call the field servings.
+
+55
+00:03:13,834 --> 00:03:15,614
+Give it a value: 4.
+
+56
+00:03:15,665 --> 00:03:19,330
+And a second field,
+time, set to 35 minutes.
+
+57
+00:03:19,398 --> 00:03:23,275
+Values are plain text, so
+write them however reads best.
+
+58
+00:03:23,482 --> 00:03:27,283
+Over in the template, I'll add
+a second line, under the title:
+
+59
+00:03:27,283 --> 00:03:30,230
+a text box that starts
+with the word Serves.
+
+60
+00:03:30,265 --> 00:03:34,935
+It picked up the title's style, so
+I'll make it 16 points, and not bold.
+
+61
+00:03:35,676 --> 00:03:36,976
+Now the fields.
+
+62
+00:03:37,119 --> 00:03:40,660
+The buttons under Insert Data
+Field add placeholders for you,
+
+63
+00:03:40,660 --> 00:03:42,709
+so there's nothing to misspell.
+
+64
+00:03:42,765 --> 00:03:45,135
+Servings, a separator, and time.
+
+65
+00:03:45,354 --> 00:03:46,614
+Here's the catch.
+
+66
+00:03:46,687 --> 00:03:50,692
+Switch the preview to Banana Bread,
+and the line just says Serves.
+
+67
+00:03:50,744 --> 00:03:55,074
+Banana Bread has no fields yet, and
+a missing field comes out blank.
+
+68
+00:03:55,157 --> 00:03:57,077
+No error, and no warning.
+
+69
+00:03:57,182 --> 00:04:00,102
+So it pays to flip through
+the preview now and then.
+
+70
+00:04:00,311 --> 00:04:04,048
+Fields belong to each page,
+so Banana Bread gets its own:
+
+71
+00:04:04,048 --> 00:04:06,920
+servings 8, and an hour and ten minutes.
+
+72
+00:04:07,015 --> 00:04:10,575
+Field names have to match
+exactly, capitals included.
+
+73
+00:04:10,623 --> 00:04:13,833
+Servings with a capital S
+would be a different field.
+
+74
+00:04:14,041 --> 00:04:19,115
+And the same two fields for the
+Pad Thai: serves 2, in 25 minutes.
+
+75
+00:04:19,231 --> 00:04:22,831
+For three recipes, typing
+fields in by hand is fine.
+
+76
+00:04:22,879 --> 00:04:28,719
+For dozens, the generator in episode 10
+builds the pages and their fields from code.
+
+77
+00:04:28,926 --> 00:04:31,506
+One more idea, and it's a handy one.
+
+78
+00:04:31,572 --> 00:04:34,372
+I'd like each card to
+say whose recipe it is.
+
+79
+00:04:34,405 --> 00:04:37,139
+So the template gets a
+small line at the bottom:
+
+80
+00:04:37,139 --> 00:04:40,065
+From the kitchen of, and
+an author placeholder.
+
+81
+00:04:41,761 --> 00:04:44,141
+No page has an author, so it's blank.
+
+82
+00:04:44,221 --> 00:04:47,890
+Rather than adding one to every
+recipe, I'll add it once,
+
+83
+00:04:47,890 --> 00:04:50,393
+to the cover: author, Grandma Rose.
+
+84
+00:04:50,614 --> 00:04:52,564
+And every recipe picks it up.
+
+85
+00:04:52,703 --> 00:04:55,995
+When a page doesn't have a
+field, the app asks its parent,
+
+86
+00:04:55,995 --> 00:04:59,083
+then the parent's parent,
+all the way up the tree.
+
+87
+00:04:59,289 --> 00:05:01,499
+A page's own value still wins.
+
+88
+00:05:01,620 --> 00:05:06,216
+The Pad Thai is Dad's recipe, so it
+gets an author field of its own,
+
+89
+00:05:06,216 --> 00:05:08,291
+and only that page changes.
+
+90
+00:05:08,499 --> 00:05:10,439
+Let's export it and flip through.
+
+91
+00:05:10,489 --> 00:05:14,619
+Export PDF builds the whole
+document right in your browser.
+
+92
+00:05:14,909 --> 00:05:19,307
+The cover, then three recipes, each
+one filled in from its own fields,
+
+93
+00:05:19,307 --> 00:05:22,949
+with Grandma Rose on two of
+them and Dad on the third.
+
+94
+00:05:23,087 --> 00:05:27,567
+The rest of each page stays empty,
+for writing the recipe out by hand.
+
+95
+00:05:27,772 --> 00:05:32,344
+Next time, the cover gets an index:
+a data grid that lists every recipe,
+
+96
+00:05:32,344 --> 00:05:33,932
+and links straight to it.

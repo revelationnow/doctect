@@ -45,6 +45,11 @@ const anchorsOnPage = () => [...(currentPageDiv()?.querySelectorAll('.annotation
 window.__viewer = {
     get state() { return { ...state, pages: doc.numPages }; },
     goToPage(n) { viewer.currentPageNumber = n; },
+    /** Scroll distance from one page's top to the next, for paging with the wheel. */
+    pageStep() {
+        const [a, b] = [0, 1].map(i => viewer.getPageView(i)?.div);
+        return a && b ? b.offsetTop - a.offsetTop : (a?.offsetHeight ?? 0);
+    },
     /** Link rectangles on the current page. */
     links() { return anchorsOnPage().map(a => ({ ...rectOf(a), href: a.getAttribute('href') })); },
     /** The nth link on the current page covering text that reads exactly `text`. */

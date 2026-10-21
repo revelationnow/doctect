@@ -3,6 +3,8 @@
 // with the editor's own data attributes for rows the screen can't name.
 // Every open project tab keeps its own mounted pane, so editor locators are
 // scoped to the active one.
+import fs from 'node:fs';
+import { FIXTURES_DIR, fixturePath } from './episode.js';
 
 export const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const exact = (s) => new RegExp(`^${escapeRe(s)}$`);
@@ -102,4 +104,48 @@ export async function newProjectFromPreset(ctx, presetTitle) {
     await ctx.click(presetCard(page, presetTitle));
     await page.getByText('Create New Project').waitFor({ state: 'hidden', timeout: 60000 });
     await editorReady(page);
+}
+
+/** The project JSON editor (opened from the editor toolbar's JSON button). */
+const jsonEditor = (page) => page.locator('.editor-dialog-panel', { has: page.locator('h2:text-is("Project JSON Editor")') }).first();
+
+/**
+ * Off camera: the active project as the JSON editor's Text view shows it, with
+ * the selection and clipboard cleared, so the next episode can start from it.
+ */
+export async function readProjectJson(page) {
+    await pane(page).getByRole('button', { name: 'JSON', exact: true }).click();
+    const editor = jsonEditor(page);
+    await editor.getByRole('button', { name: 'Text', exact: true }).click();
+    const state = JSON.parse(await editor.locator('textarea').inputValue());
+    await editor.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await editor.waitFor({ state: 'detached' });
+    return { ...state, selectedNodeId: state.rootId, selectedNodeIds: [state.rootId], selectedTemplateId: '',
+        selectedTemplateIds: [], selectedElementIds: [], clipboard: [] };
+}
+
+/** Off camera: replaces the active project with `state` through the JSON editor, then waits for the save. */
+export async function loadProjectJson(page, state) {
+    await pane(page).getByRole('button', { name: 'JSON', exact: true }).click();
+    const editor = jsonEditor(page);
+    await editor.getByRole('button', { name: 'Text', exact: true }).click();
+    await editor.locator('textarea').fill(JSON.stringify(state, null, 2));
+    await editor.getByRole('button', { name: 'Apply Changes', exact: true }).click();
+    await editor.waitFor({ state: 'detached' });
+    await page.getByRole('status').filter({ hasText: 'Saving locally' }).first().waitFor({ timeout: 5000 }).catch(() => {});
+    await page.getByRole('status').filter({ hasText: 'Saved locally' }).first().waitFor({ timeout: 30000 });
+}
+
+/** Off camera: saves the project the episode left open as tutorial/fixtures/<name>.json. */
+export async function saveFixture(ctx, name) {
+    await ctx.goto('/app');
+    await editorReady(ctx.page);
+    const state = await readProjectJson(ctx.page);
+    fs.mkdirSync(FIXTURES_DIR, { recursive: true });
+    fs.writeFileSync(fixturePath(name), `${JSON.stringify(state, null, 2)}\n`);
+}
+
+/** Off camera: replaces the open project with a fixture an earlier episode saved. */
+export async function loadFixture(ctx, name) {
+    await loadProjectJson(ctx.page, JSON.parse(fs.readFileSync(fixturePath(name), 'utf8')));
 }

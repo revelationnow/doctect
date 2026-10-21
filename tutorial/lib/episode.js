@@ -4,6 +4,7 @@
 //   meta  — { id, number, level, title, summary, learn: [..], docs: [..],
 //             prev?, next?: { number, title, summary }, thumbnail?: { beat, headline } }
 //   setup — optional async (ctx) => void, runs off camera before capture
+//   teardown — optional async (ctx) => void, runs off camera after the last beat
 //   beats — [{ chapter?, say?, at?, do?, hold?, lowerThird?, allowAlert? }]
 //     say  — caption text (see lib/speech.js for [shown](=spoken) overrides)
 //     at   — when `do` starts: a sentence index (default 0, with the first
@@ -28,6 +29,10 @@ export const BUILD_DIR = path.join(TUTORIAL_DIR, 'build');
 export const CACHE_DIR = path.join(BUILD_DIR, 'cache');
 export const MODELS_DIR = path.join(BUILD_DIR, 'models');
 export const PYTHON = path.join(BUILD_DIR, 'venv', 'bin', 'python');
+// Projects one episode leaves behind for a later one to start from (committed,
+// so any episode can be re-recorded on its own).
+export const FIXTURES_DIR = path.join(TUTORIAL_DIR, 'fixtures');
+export const fixturePath = (name) => path.join(FIXTURES_DIR, `${name}.json`);
 
 export function checkEpisode(mod, file) {
     const { meta, beats } = mod;

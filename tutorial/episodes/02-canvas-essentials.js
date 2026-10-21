@@ -44,6 +44,9 @@ export async function setup(ctx) {
     await ctx.wait(900);
 }
 
+// Episode 3 carries on with this book.
+export const teardown = (ctx) => app.saveFixture(ctx, '02-family-recipes-cover');
+
 export const beats = [
     {
         chapter: 'Welcome', lowerThird: false,
