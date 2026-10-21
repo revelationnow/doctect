@@ -91,15 +91,38 @@ export async function recordEpisode(episode, { dry = false, until = Infinity, sh
         lowerThird: (kicker, title) => page.evaluate(([k, t]) => window.__studio.lowerThird(k, t), [kicker, title]),
         /** Runs `trigger`, saves the download into <out>/downloads, shows the download bubble. */
         async download(trigger, { timeout = 180000 } = {}) {
-            const pending = page.waitForEvent('download', { timeout });
-            await trigger();
-            const d = await pending;
+            return (await ctx.downloads(trigger, 1, { timeout }))[0];
+        },
+        /** Like download(), for a trigger that saves several files (one PDF per variant, say). */
+        async downloads(trigger, count, { timeout = 180000 } = {}) {
             const dir = path.join(outDir, 'downloads');
             fs.mkdirSync(dir, { recursive: true });
-            const file = path.join(dir, d.suggestedFilename());
-            await d.saveAs(file);
-            await page.evaluate(n => window.__studio?.toast(n), d.suggestedFilename()).catch(() => {});
-            return file;
+            // listen before triggering: back-to-back downloads must not slip past one another
+            const events = [];
+            const arrived = new Promise((resolve, reject) => {
+                const timer = setTimeout(() => {
+                    page.off('download', onDownload);
+                    reject(new Error(`expected ${count} downloads, got ${events.length}`));
+                }, timeout);
+                function onDownload(d) {
+                    events.push(d);
+                    if (events.length < count) return;
+                    clearTimeout(timer);
+                    page.off('download', onDownload);
+                    resolve();
+                }
+                page.on('download', onDownload);
+            });
+            await trigger();
+            await arrived;
+            const files = [];
+            for (const d of events) {
+                const file = path.join(dir, d.suggestedFilename());
+                await d.saveAs(file);
+                await page.evaluate(n => window.__studio?.toast(n), d.suggestedFilename()).catch(() => {});
+                files.push(file);
+            }
+            return files;
         },
         /** Opens a local PDF in the tutorial reader page. */
         async openPdf(file, { title } = {}) {

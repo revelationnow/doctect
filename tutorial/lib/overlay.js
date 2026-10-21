@@ -6,7 +6,9 @@
 //
 // installStudio() runs in the page (as an init script) and must stay
 // self-contained. It mounts a shadow root on <html>, outside React's #root,
-// with pointer-events: none, so it can never intercept or restyle the app.
+// with pointer-events: none, so it can never intercept the app, and its
+// styles stay inside it (one deliberate exception, backdrop blur, is noted
+// where the host is mounted).
 // It also swaps window.prompt/confirm/alert for scripted versions: answers
 // come from window.__studioDialogs.queue (filled by the recorder before the
 // click that opens the dialog) and every call is logged so the recorder can
@@ -125,6 +127,17 @@ export function installStudio() {
         .toast .ico { width: 36px; height: 36px; border-radius: 8px; background: #e8f0fe; display: flex; align-items: center; justify-content: center; flex: none; }
         .toast .name { font-weight: 600; word-break: break-all; }
         .toast .sub { color: #5f6368; font-size: 13px; }
+        .mail { position: fixed; top: 14px; right: 18px; width: 420px; background: #fff; border-radius: 14px; padding: 16px 18px;
+            display: flex; gap: 14px; box-shadow: 0 14px 40px rgba(15,23,42,.24), 0 0 0 1px rgba(15,23,42,.06);
+            opacity: 0; transform: translateY(-10px); transition: opacity .25s, transform .25s; z-index: 46; font-size: 14px; color: #1f2937; }
+        .mail.on { opacity: 1; transform: none; }
+        .mail .ico { width: 38px; height: 38px; border-radius: 50%; background: #dbeafe; display: flex; align-items: center;
+            justify-content: center; flex: none; }
+        .mail .from { font-size: 12px; color: #64748b; }
+        .mail .subj { font-weight: 600; margin-top: 1px; }
+        .mail .body { color: #475569; font-size: 13px; margin-top: 3px; }
+        .mail .act { display: inline-block; margin-top: 10px; padding: 7px 14px; border-radius: 8px; background: #2563eb; color: #fff;
+            font-weight: 600; font-size: 13px; }
         .palette { position: fixed; background: #fff; border-radius: 10px; padding: 10px; display: grid; grid-template-columns: repeat(6, 26px);
             gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.22), 0 0 0 1px rgba(0,0,0,.08); opacity: 0; transition: opacity .15s; z-index: 45; }
         .palette.on { opacity: 1; }
@@ -141,6 +154,15 @@ export function installStudio() {
     </style>
     <div class="layer" id="layer"></div>`;
     document.documentElement.appendChild(host);
+    // The one style the studio imposes on the app: no backdrop blur. Headless
+    // Chromium composites in software, where the blur behind a dialog is
+    // recomputed on every frame (~70 ms each), so the cursor crawled and the
+    // capture fell to a few frames a second whenever a dialog was open. The
+    // dialogs keep their dimmed backdrop.
+    const noBlur = document.createElement('style');
+    noBlur.id = '__studio-no-blur';
+    noBlur.textContent = '*, *::before, *::after { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }';
+    document.documentElement.appendChild(noBlur);
     const layer = root.getElementById('layer');
     const el = (cls, html = '') => { const d = document.createElement('div'); d.className = cls; d.innerHTML = html; layer.appendChild(d); return d; };
 
@@ -366,6 +388,26 @@ export function installStudio() {
         },
         filePickerHighlight(i) { [...(this._pick?.querySelectorAll('.row') || [])].forEach((n, k) => n.classList.toggle('hi', k === i)); },
         filePickerClose() { const p = this._pick; if (!p) return; this._pick = null; p.classList.remove('on'); setTimeout(() => p.remove(), 220); },
+
+        // ---- an arriving email (the verification link in the cloud episodes) --
+        _mail: null,
+        mail({ from = '', subject = '', body = '', action = 'Open' }) {
+            this.mailClose();
+            const m = el('mail', `<div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div>
+                <div><div class="from"></div><div class="subj"></div><div class="body"></div><div class="act"></div></div>`);
+            m.querySelector('.from').textContent = from;
+            m.querySelector('.subj').textContent = subject;
+            m.querySelector('.body').textContent = body;
+            m.querySelector('.act').textContent = action;
+            this._mail = m;
+            requestAnimationFrame(() => requestAnimationFrame(() => m.classList.add('on')));
+        },
+        /** Where the email's button is, once it has slid in. */
+        mailActionRect() {
+            const r = this._mail?.querySelector('.act')?.getBoundingClientRect();
+            return r ? { x: r.x, y: r.y, width: r.width, height: r.height } : null;
+        },
+        mailClose() { const m = this._mail; if (!m) return; this._mail = null; m.classList.remove('on'); setTimeout(() => m.remove(), 260); },
 
         // ---- download bubble ------------------------------------------------
         toast(name, sub = 'Download complete', ms = 3200) {
