@@ -1,0 +1,239 @@
+1
+00:00:00,000 --> 00:00:03,260
+Back to the 2026 planner from episode one.
+
+2
+00:00:03,297 --> 00:00:07,539
+Its calendars are grids, with a
+problem the recipe index never had:
+
+3
+00:00:07,539 --> 00:00:12,477
+day 1 has to land under the right weekday,
+and that's a different column every
+
+4
+00:00:12,477 --> 00:00:13,107
+month.
+
+5
+00:00:13,319 --> 00:00:16,819
+This is the Month View
+template, previewing January.
+
+6
+00:00:16,946 --> 00:00:20,529
+Thirty-one days in seven
+columns, with Monday first.
+
+7
+00:00:20,561 --> 00:00:25,056
+And January the first sits under
+Thursday, after three blank cells.
+
+8
+00:00:25,264 --> 00:00:29,384
+Click the calendar, and find
+Offset, under Grid Configuration.
+
+9
+00:00:29,440 --> 00:00:32,790
+Static would skip the same
+number of cells in every month.
+
+10
+00:00:32,897 --> 00:00:34,757
+This one is set to Dynamic.
+
+11
+00:00:34,965 --> 00:00:38,461
+Dynamic reads a field from
+the first day, weekday_num,
+
+12
+00:00:38,461 --> 00:00:41,365
+and adds the number beside it: minus one.
+
+13
+00:00:41,461 --> 00:00:46,631
+weekday_num starts counting at Sunday,
+which is zero, so Thursday is 4.
+
+14
+00:00:46,765 --> 00:00:51,135
+This calendar starts on Monday,
+not Sunday, hence the minus one.
+
+15
+00:00:51,229 --> 00:00:53,868
+Four, minus one: three blank cells.
+
+16
+00:00:54,075 --> 00:00:59,065
+Switch it to Static, and day 1 drops
+back into the first cell, under Monday.
+
+17
+00:00:59,203 --> 00:01:02,353
+Back to Dynamic, and it
+moves to Thursday again.
+
+18
+00:01:02,426 --> 00:01:04,456
+That one setting does all the work.
+
+19
+00:01:05,519 --> 00:01:07,839
+February is the interesting one.
+
+20
+00:01:07,968 --> 00:01:12,238
+It starts on a Sunday, weekday
+zero, so the sum is minus one.
+
+21
+00:01:12,385 --> 00:01:16,409
+A negative offset wraps around
+once, by the number of columns,
+
+22
+00:01:16,409 --> 00:01:20,358
+and day 1 lands in the last
+column, where Sunday belongs.
+
+23
+00:01:20,567 --> 00:01:23,583
+Final Data Subset takes
+a window of a list.
+
+24
+00:01:23,639 --> 00:01:26,735
+The year page shows it best:
+two grids, one source,
+
+25
+00:01:26,735 --> 00:01:29,049
+the seven sections under the year.
+
+26
+00:01:29,086 --> 00:01:32,776
+The first grid takes four,
+starting at zero: the quarters.
+
+27
+00:01:32,984 --> 00:01:37,434
+The second skips four and takes
+three: Weeks, Notes and To-Do Lists.
+
+28
+00:01:37,500 --> 00:01:40,480
+Same children, two windows, no overlap.
+
+29
+00:01:40,687 --> 00:01:44,350
+Now let's add a little calendar
+of January to this page.
+
+30
+00:01:44,392 --> 00:01:47,629
+G for grid, and drag out
+some room under the lists.
+
+31
+00:01:48,185 --> 00:01:53,000
+Its source is the year itself, and the
+year's children are quarters, not days.
+
+32
+00:01:53,119 --> 00:01:55,329
+Deep Traversal walks further down.
+
+33
+00:01:55,462 --> 00:01:59,592
+Add Level, and take one child,
+starting at zero: Quarter 1.
+
+34
+00:01:59,799 --> 00:02:02,809
+Another level, one child again: January.
+
+35
+00:02:02,859 --> 00:02:06,299
+And a third level with no
+count, so it takes every day.
+
+36
+00:02:06,423 --> 00:02:09,217
+Three levels down, from
+the year to its days.
+
+37
+00:02:10,038 --> 00:02:13,905
+Now the cells are January's
+days, showing their full titles.
+
+38
+00:02:14,026 --> 00:02:18,666
+To make a calendar, the Display Template
+becomes day_num, just the number.
+
+39
+00:02:18,701 --> 00:02:25,457
+Then seven columns, small gaps, and small
+cells: 28 by 18 points, with 9 point text.
+
+40
+00:02:29,750 --> 00:02:34,390
+And the same dynamic offset as
+Month View: weekday_num, minus one.
+
+41
+00:02:34,449 --> 00:02:37,599
+January the first moves
+across to Thursday.
+
+42
+00:02:39,770 --> 00:02:43,310
+Change the second level to
+start at 1, and it's February,
+
+43
+00:02:43,310 --> 00:02:45,610
+wrapped round to start on Sunday.
+
+44
+00:02:45,691 --> 00:02:48,541
+And every cell is a link
+to its own day page.
+
+45
+00:02:48,751 --> 00:02:50,101
+One last tip.
+
+46
+00:02:50,237 --> 00:02:54,339
+Ask a level for a child that isn't
+there, a fourth month in a quarter,
+
+47
+00:02:54,339 --> 00:02:56,817
+say, and the grid has nothing to show.
+
+48
+00:02:56,933 --> 00:03:00,752
+The editor fills it with Item
+placeholders, there's no error,
+
+49
+00:03:00,752 --> 00:03:02,943
+and the PDF would show nothing.
+
+50
+00:03:02,989 --> 00:03:06,929
+So when a grid goes blank, check
+the hierarchy before the grid.
+
+51
+00:03:07,150 --> 00:03:11,865
+Next time: references, and how one
+page can appear in two places at once.

@@ -1,0 +1,6 @@
+00:00 Welcome
+00:13 The calendar problem
+00:25 Dynamic offset
+01:20 Slicing
+01:40 Reaching grandchildren
+02:48 When a grid goes blank
