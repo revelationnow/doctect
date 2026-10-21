@@ -97,6 +97,69 @@ describe('GalleryPage', () => {
             expect(screen.queryByText(/in the spotlight/i)).toBeNull();
         });
 
+        describe('planners & notebooks | templates tabs', () => {
+            const templateHome: GalleryHome = {
+                spotlight: mkItem('ts', 'Dot Grid Pick', { category: 'templates' }),
+                trending: [mkItem('tt1', 'Cornell Sheet', { category: 'templates' })],
+                newest: [mkItem('tn1', 'Isometric Sheet', { category: 'templates' })],
+                categories: [],
+            };
+            beforeEach(() => {
+                vi.spyOn(cloudApi, 'galleryFacets').mockResolvedValue({
+                    ...facets, total: 16,
+                    categories: [...facets.categories, { key: 'templates', label: 'Note templates', count: 11 }],
+                });
+                vi.spyOn(cloudApi, 'galleryHome').mockImplementation(async tab => (tab === 'templates' ? templateHome : home));
+            });
+
+            it('opens on planners & notebooks, with each tab counted', async () => {
+                renderAt();
+                const planners = await screen.findByRole('tab', { name: /planners & notebooks \(5\)/i });
+                expect(planners).toHaveAttribute('aria-selected', 'true');
+                expect(screen.getByRole('tab', { name: /templates \(11\)/i })).toHaveAttribute('aria-selected', 'false');
+                expect(await screen.findByText('Spot Pick')).toBeInTheDocument();
+                expect(cloudApi.galleryHome).toHaveBeenCalledWith('planners');
+                expect(screen.getByRole('link', { name: /browse all 16 projects/i })).toBeInTheDocument();
+            });
+
+            it('switches to templates in place, keeping the choice in the URL', async () => {
+                renderAt();
+                await screen.findByText('Spot Pick');
+                fireEvent.click(screen.getByRole('tab', { name: /templates/i }));
+                expect(await screen.findByText('Dot Grid Pick')).toBeInTheDocument();
+                expect(lastSearch).toBe('?tab=templates');
+                expect(cloudApi.galleryHome).toHaveBeenLastCalledWith('templates');
+                expect(cloudApi.gallery).not.toHaveBeenCalled();
+                const trending = screen.getByRole('heading', { name: /trending/i }).closest('section') as HTMLElement;
+                expect(within(trending).getByRole('link', { name: /see all/i }))
+                    .toHaveAttribute('href', '/gallery?category=templates&sort=trending');
+                expect(screen.getByRole('link', { name: /browse all 11 templates/i }))
+                    .toHaveAttribute('href', '/gallery?category=templates&view=grid');
+                expect(screen.queryByRole('link', { name: /browse all 16 projects/i })).toBeNull();
+
+                fireEvent.click(screen.getByRole('tab', { name: /planners & notebooks/i }));
+                expect(await screen.findByText('Spot Pick')).toBeInTheDocument();
+                expect(lastSearch).toBe('');
+                // Each tab's landing is fetched once.
+                expect(cloudApi.galleryHome).toHaveBeenCalledTimes(2);
+            });
+
+            it('opens straight onto the templates tab from a link', async () => {
+                renderAt('/gallery?tab=templates');
+                expect(await screen.findByText('Dot Grid Pick')).toBeInTheDocument();
+                expect(screen.getByRole('tab', { name: /templates/i })).toHaveAttribute('aria-selected', 'true');
+                expect(cloudApi.gallery).not.toHaveBeenCalled();
+            });
+
+            it('moves between tabs with the arrow keys', async () => {
+                renderAt();
+                const planners = await screen.findByRole('tab', { name: /planners & notebooks/i });
+                fireEvent.keyDown(planners, { key: 'ArrowRight' });
+                expect(await screen.findByText('Dot Grid Pick')).toBeInTheDocument();
+                expect(screen.getByRole('tab', { name: /templates/i })).toHaveFocus();
+            });
+        });
+
         it('typing a search opens results with the q param', async () => {
             renderAt();
             await screen.findByText(/in the spotlight/i);

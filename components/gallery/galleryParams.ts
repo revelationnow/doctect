@@ -1,4 +1,4 @@
-import { GalleryQuery, GallerySort } from '../../services/cloudApi';
+import { GalleryHomeTab, GalleryQuery, GallerySort } from '../../services/cloudApi';
 
 // The gallery's whole state lives in the URL so every view is a shareable link.
 // Params: q, tag (repeatable, ANDed), category, format, rating (minimum stars), sort,
@@ -32,6 +32,10 @@ export function readParams(sp: URLSearchParams): GalleryParams {
         page: Math.max(0, parseInt(sp.get('page') ?? '0', 10) || 0),
     };
 }
+
+// The landing's tab (?tab=templates); planners & notebooks is the default and has no param.
+export const readHomeTab = (sp: URLSearchParams): GalleryHomeTab =>
+    sp.get('tab') === 'templates' ? 'templates' : 'planners';
 
 // Any browse param leaves the curated landing for the results grid.
 export const isBrowsing = (sp: URLSearchParams) => BROWSE_KEYS.some(k => sp.has(k));

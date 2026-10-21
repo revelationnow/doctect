@@ -172,6 +172,10 @@ export interface GalleryQuery {
 export interface GalleryFacet { key: string; label: string; count: number; }
 export interface GalleryTag { tag: string; label: string; count: number; }
 export interface GalleryFacets { total: number; categories: GalleryFacet[]; formats: GalleryFacet[]; tags: GalleryTag[]; }
+// The landing's two tabs: planners & notebooks (everything that is not a single-page note
+// template) and templates.
+export type GalleryHomeTab = 'planners' | 'templates';
+
 export interface GalleryHome {
     spotlight: GalleryItem | null;
     trending: GalleryItem[];
@@ -282,7 +286,8 @@ export const cloudApi = {
         if (params.limit) qs.set('limit', String(params.limit));
         return api<{ items: GalleryItem[]; page: number; hasMore: boolean; total: number; sort: GallerySort }>(`/api/gallery?${qs}`);
     },
-    galleryHome: () => api<GalleryHome>('/api/gallery/home'),
+    galleryHome: (tab: GalleryHomeTab = 'planners') =>
+        api<GalleryHome>(tab === 'planners' ? '/api/gallery/home' : `/api/gallery/home?tab=${tab}`),
     galleryFacets: () => api<GalleryFacets>('/api/gallery/facets'),
     galleryDetail: async (id: string) =>
         (await api<{ project: GalleryDetail }>(`/api/gallery/${id}`)).project,

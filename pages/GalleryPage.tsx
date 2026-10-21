@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
-import { cloudApi, GalleryFacets, GalleryHome as GalleryHomeData, GalleryItem, GallerySort } from '../services/cloudApi';
+import { cloudApi, GalleryFacets, GalleryHome as GalleryHomeData, GalleryHomeTab, GalleryItem, GallerySort } from '../services/cloudApi';
 import { AppHeader } from '../components/AppHeader';
 import { ProjectCard } from '../components/gallery/ProjectCard';
 import { GalleryDirectory } from '../components/gallery/GalleryDirectory';
 import { GalleryFilters } from '../components/gallery/GalleryFilters';
 import { GalleryHome } from '../components/gallery/GalleryHome';
-import { isBrowsing, readParams, toQuery } from '../components/gallery/galleryParams';
+import { isBrowsing, readHomeTab, readParams, toQuery } from '../components/gallery/galleryParams';
 import { categoryLabel, formatLabel } from '../shared/galleryFacets.js';
 
 const PAGE_SIZE = 24;
@@ -34,6 +34,7 @@ export function GalleryPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const params = readParams(searchParams);
     const browsing = isBrowsing(searchParams);
+    const homeTab = readHomeTab(searchParams);
     // Stable key for the results fetch: the URL minus the layout toggle, which changes
     // how results look but not which results they are.
     const resultsKey = (() => {
@@ -45,7 +46,9 @@ export function GalleryPage() {
 
     const [qInput, setQInput] = useState(params.q);
     const [facets, setFacets] = useState<GalleryFacets | null>(null);
-    const [home, setHome] = useState<GalleryHomeData | null>(null);
+    // Each tab's landing is fetched once and kept, so switching back is instant.
+    const [homes, setHomes] = useState<Partial<Record<GalleryHomeTab, GalleryHomeData>>>({});
+    const home = homes[homeTab] ?? null;
     const [results, setResults] = useState<Results | null>(null);   // null = loading
     const [error, setError] = useState<string | null>(null);
 
@@ -90,10 +93,20 @@ export function GalleryPage() {
 
     useEffect(() => {
         if (browsing || home) return;
-        cloudApi.galleryHome()
-            .then(h => { setHome(h); setError(null); })
+        cloudApi.galleryHome(homeTab)
+            .then(h => { setHomes(prev => ({ ...prev, [homeTab]: h })); setError(null); })
             .catch(() => setError('Could not load the gallery.'));
-    }, [browsing]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [browsing, homeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // The tab is landing state, not a filter: it stays on the landing and is left out of
+    // isBrowsing, but lives in the URL so a tab can be linked to and Back returns to it.
+    const selectHomeTab = (tab: GalleryHomeTab) => {
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            if (tab === 'planners') next.delete('tab'); else next.set('tab', tab);
+            return next;
+        });
+    };
 
     useEffect(() => {
         if (!browsing) return;
@@ -141,8 +154,8 @@ export function GalleryPage() {
                 {!browsing ? (
                     galleryEmpty
                         ? <div className="text-sm text-slate-400 text-center py-16">Nothing here yet. Publish the first project!</div>
-                        : home === null ? (!error && <SkeletonGrid count={8} />)
-                        : <GalleryHome home={home} facets={facets} />
+                        : <GalleryHome home={home} facets={facets} tab={homeTab} onTabChange={selectHomeTab}
+                            placeholder={!error && <SkeletonGrid count={8} />} />
                 ) : (
                     <>
                         <div className="flex flex-wrap items-center gap-2 mb-4 min-h-7">

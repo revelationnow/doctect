@@ -248,19 +248,31 @@ const dayHash = (day) => {
     return hash;
 };
 
+// The landing has two tabs so neither kind crowds out the other: single-page note templates
+// (the 'templates' category) and planners & notebooks (everything else, including projects
+// the index has not categorized yet).
+const TEMPLATES_CATEGORY = 'templates';
+const HOME_TABS = {
+    planners: `(f.category IS NULL OR f.category <> '${TEMPLATES_CATEGORY}')`,
+    templates: `f.category = '${TEMPLATES_CATEGORY}'`,
+};
+
 // Everything the unfiltered gallery landing shows, in one round trip. Each row is a bounded
 // query (LIMIT or a per-category ROW_NUMBER cap), so the landing never loads the catalog.
 router.get('/api/gallery/home', async (req, res) => {
+    const tab = Object.hasOwn(HOME_TABS, req.query.tab) ? req.query.tab : 'planners';
+    const where = `${PUBLISHED} AND ${HOME_TABS[tab]}`;
     const row = orderBy => query(
-        `SELECT ${cardFields} FROM ${cardFrom} WHERE ${PUBLISHED} ORDER BY ${orderBy}, p.id LIMIT ${HOME_ROW_SIZE}`, []);
+        `SELECT ${cardFields} FROM ${cardFrom} WHERE ${where} ORDER BY ${orderBy}, p.id LIMIT ${HOME_ROW_SIZE}`, []);
     const trending = await row(SORTS.trending);
     const newest = await row(SORTS.recent);
     const pool = await query(
-        `SELECT ${cardFields} FROM ${cardFrom} WHERE ${PUBLISHED} ORDER BY ${SORTS.rating}, p.id LIMIT ${SPOTLIGHT_POOL}`, []);
-    const ranked = await query(
+        `SELECT ${cardFields} FROM ${cardFrom} WHERE ${where} ORDER BY ${SORTS.rating}, p.id LIMIT ${SPOTLIGHT_POOL}`, []);
+    // Templates are one category, so their per-category row would only repeat Trending.
+    const ranked = tab === 'templates' ? [] : await query(
         `SELECT * FROM (
              SELECT ${cardFields}, ROW_NUMBER() OVER (PARTITION BY f.category ORDER BY ${SORTS.trending}, p.id) AS rn
-             FROM ${cardFrom} WHERE ${PUBLISHED} AND f.category IS NOT NULL
+             FROM ${cardFrom} WHERE ${where} AND f.category IS NOT NULL
          ) ranked WHERE rn <= ${HOME_ROW_SIZE}`, []);
 
     const spotlightRow = pool.length ? pool[dayHash(new Date().toISOString().slice(0, 10)) % pool.length] : null;
@@ -277,6 +289,7 @@ router.get('/api/gallery/home', async (req, res) => {
         if (list?.length) categories.push({ key: c.key, label: c.label, emoji: c.emoji, items: await toCards(list) });
     }
     res.json({
+        tab,
         spotlight: spotlightRow ? (await toCards([spotlightRow]))[0] : null,
         trending: await toCards(trending),
         newest: await toCards(newest),
