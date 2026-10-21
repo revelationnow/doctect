@@ -1,0 +1,7 @@
+00:00 Welcome
+00:12 Drawing a grid
+00:31 Columns and cell size
+00:53 What each cell says
+01:17 Table styling
+02:19 A fixed source
+03:05 Cells are links

@@ -1,0 +1,302 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:03.301
+Our recipe book has a
+cover and three recipes.
+
+2
+00:00:03.396 --> 00:00:07.056
+Today the cover gets an index:
+a list of every recipe,
+
+3
+00:00:07.056 --> 00:00:09.611
+with each line a link to its page.
+
+4
+00:00:09.710 --> 00:00:12.460
+Lists like that are what
+data grids are for.
+
+5
+00:00:12.670 --> 00:00:17.630
+The index goes on the cover, so I'll
+open the cover's template, A4 Blank.
+
+6
+00:00:17.775 --> 00:00:20.445
+The preview shows it as Family Recipes.
+
+7
+00:00:20.653 --> 00:00:23.723
+Press G for the grid tool,
+and drag out some room.
+
+8
+00:00:23.762 --> 00:00:27.468
+The grid fills itself with one
+cell for each child of the page.
+
+9
+00:00:27.521 --> 00:00:31.611
+The cover has three children, the
+recipes, so there are three cells.
+
+10
+00:00:31.823 --> 00:00:34.693
+Cols sets how many cells sit side by side.
+
+11
+00:00:34.754 --> 00:00:36.744
+For a list, I want just one.
+
+12
+00:00:36.953 --> 00:00:38.163
+Now they're narrow.
+
+13
+00:00:38.194 --> 00:00:41.985
+A grid's width and height, in
+Geometry, are the size of one cell,
+
+14
+00:00:41.985 --> 00:00:43.344
+not the whole grid.
+
+15
+00:00:43.449 --> 00:00:47.729
+So a width of 300 makes
+every row 300 points wide.
+
+16
+00:00:47.850 --> 00:00:50.640
+A height of 30, and I'll center it with X.
+
+17
+00:00:50.856 --> 00:00:53.536
+Gap Y puts a little air between the rows.
+
+18
+00:00:53.744 --> 00:00:58.174
+Display Template decides what each
+cell says, and it starts out as title.
+
+19
+00:00:58.250 --> 00:01:00.050
+I'd like the time in there too.
+
+20
+00:01:00.093 --> 00:01:04.783
+The buttons underneath insert fields:
+title, a separator, then time.
+
+21
+00:01:05.216 --> 00:01:09.464
+The text itself is styled like
+any text box: Playfair Display,
+
+22
+00:01:09.464 --> 00:01:12.386
+15 points, in the brown from the cover.
+
+23
+00:01:12.519 --> 00:01:17.291
+A grid has one style for all its
+cells, so every line changes at once.
+
+24
+00:01:17.514 --> 00:01:20.386
+The grid has a white background
+and a black outline,
+
+25
+00:01:20.386 --> 00:01:22.404
+which looks heavy on this paper.
+
+26
+00:01:22.446 --> 00:01:25.706
+Clearing the fill and the stroke
+lets the dots show through.
+
+27
+00:01:25.912 --> 00:01:29.309
+Cell Border Mode draws lines
+between and around cells.
+
+28
+00:01:29.423 --> 00:01:32.010
+Inside Only puts them between the rows.
+
+29
+00:01:32.051 --> 00:01:33.821
+But look: nothing's there.
+
+30
+00:01:34.092 --> 00:01:35.792
+This is the first trap.
+
+31
+00:01:35.824 --> 00:01:39.964
+The color and width shown here are
+borrowed from the outline, just for show.
+
+32
+00:01:40.057 --> 00:01:44.187
+Until you set them yourself, cell
+borders have no color and no width.
+
+33
+00:01:44.235 --> 00:01:47.435
+A color, a width, Dashed for
+the style, and there they are.
+
+34
+00:01:47.762 --> 00:01:50.342
+Alternate Rows shades every other row.
+
+35
+00:01:50.428 --> 00:01:54.265
+And here is the same trap again:
+the switch alone does nothing,
+
+36
+00:01:54.265 --> 00:01:56.038
+until you pick its color.
+
+37
+00:01:57.223 --> 00:02:00.133
+Header Row is the one
+that surprises people.
+
+38
+00:02:00.222 --> 00:02:02.152
+It doesn't add a row of headings.
+
+39
+00:02:02.196 --> 00:02:05.418
+It restyles whatever lands
+in the first row, here,
+
+40
+00:02:05.418 --> 00:02:09.406
+Tomato Soup, and the shading
+moves down to start after it.
+
+41
+00:02:09.525 --> 00:02:12.615
+That's not what an index
+needs, so it stays off.
+
+42
+00:02:12.824 --> 00:02:15.824
+A heading above the list
+is just a text box.
+
+43
+00:02:15.894 --> 00:02:18.224
+I'll call it Recipes, in italics.
+
+44
+00:02:19.820 --> 00:02:21.120
+One more grid.
+
+45
+00:02:21.233 --> 00:02:25.339
+I want every recipe page to list
+all the recipes along the bottom,
+
+46
+00:02:25.339 --> 00:02:27.393
+so you can jump between them.
+
+47
+00:02:27.448 --> 00:02:31.318
+On the Recipe template, I'll drag
+one out above the author line.
+
+48
+00:02:31.532 --> 00:02:33.392
+Item 1 to Item 6?
+
+49
+00:02:33.610 --> 00:02:35.340
+Those are placeholders.
+
+50
+00:02:35.373 --> 00:02:39.728
+The source is Children of Current
+Page, and a recipe has no children,
+
+51
+00:02:39.728 --> 00:02:41.746
+so there is nothing to show.
+
+52
+00:02:41.797 --> 00:02:44.297
+In the PDF it would come out empty.
+
+53
+00:02:44.505 --> 00:02:48.685
+Children of Specific Page pins
+the source to one page instead.
+
+54
+00:02:48.797 --> 00:02:54.087
+Select Page, then Family Recipes, and
+every recipe lists the same three.
+
+55
+00:02:54.190 --> 00:02:58.761
+Pinning is the right choice for anything
+that should look the same on every page,
+
+56
+00:02:58.761 --> 00:02:59.688
+like a menu.
+
+57
+00:02:59.897 --> 00:03:05.048
+Smaller text, no backgrounds, and no outline,
+so it sits quietly at the foot of the
+
+58
+00:03:05.048 --> 00:03:05.608
+page.
+
+59
+00:03:05.842 --> 00:03:09.057
+Every cell in a grid is a
+link to the page it shows.
+
+60
+00:03:09.182 --> 00:03:12.886
+There's nothing to set up, but
+the canvas doesn't follow links,
+
+61
+00:03:12.886 --> 00:03:14.842
+so let's export and try them.
+
+62
+00:03:15.051 --> 00:03:16.451
+Here's the index.
+
+63
+00:03:16.584 --> 00:03:19.584
+Click Banana Bread, and
+we land on its page.
+
+64
+00:03:19.790 --> 00:03:23.800
+And from the strip along the
+bottom, the Pad Thai, on page four.
+
+65
+00:03:24.007 --> 00:03:29.011
+Next time: links you make yourself, starting
+with a way back to the cover from every
+
+66
+00:03:29.011 --> 00:03:29.309
+page.
