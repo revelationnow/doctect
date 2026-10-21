@@ -1,0 +1,5 @@
+00:00 Welcome
+00:13 Publishing
+01:16 Forking
+02:27 Reviewing a merge request
+02:56 Bringing it home
