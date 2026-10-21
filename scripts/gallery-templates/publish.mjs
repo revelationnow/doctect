@@ -7,6 +7,7 @@
 // the app. A manifest records each slug's project id; running again commits the new state to the
 // same project and republishes instead of creating a duplicate.
 //
+// The owner is given by --owner-email or --owner-username.
 // Local (SQLite):   env -u DATABASE_URL SQLITE_PATH=<db> node scripts/gallery-templates/publish.mjs --owner-email <email>
 // Production:       node --env-file=<.env with DATABASE_URL> scripts/gallery-templates/publish.mjs --production --owner-email <email>
 //
@@ -20,7 +21,8 @@ const arg = name => {
 };
 const production = process.argv.includes('--production');
 const ownerEmail = arg('--owner-email');
-if (!ownerEmail) throw new Error('--owner-email is required');
+const ownerUsername = arg('--owner-username');
+if (!ownerEmail === !ownerUsername) throw new Error('pass exactly one of --owner-email or --owner-username');
 if (production && !process.env.DATABASE_URL) throw new Error('--production needs DATABASE_URL');
 if (!production && process.env.DATABASE_URL) throw new Error('DATABASE_URL is set: pass --production to publish to it');
 
@@ -38,9 +40,10 @@ const manifestPath = production
 const manifest = fs.existsSync(manifestPath) ? JSON.parse(fs.readFileSync(manifestPath, 'utf8')) : {};
 const lock = dbType === 'postgres' ? ' FOR UPDATE' : '';
 
-const [user] = await query(
-    'SELECT id, email, username, role FROM "user" WHERE lower(email) = lower($1)', [ownerEmail]);
-if (!user) throw new Error(`no account with email ${ownerEmail}`);
+const [user] = ownerEmail
+    ? await query('SELECT id, email, username, role FROM "user" WHERE lower(email) = lower($1)', [ownerEmail])
+    : await query('SELECT id, email, username, role FROM "user" WHERE username = $1', [ownerUsername]);
+if (!user) throw new Error(`no account ${ownerEmail ?? ownerUsername}`);
 if (!user.username) throw new Error('the owner account has no username; set one in the app first');
 console.log(`${production ? 'PRODUCTION' : 'local'} (${dbType}) · publishing as ${user.username}`);
 
