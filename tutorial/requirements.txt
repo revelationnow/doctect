@@ -1,0 +1,12 @@
+# Python side of the tutorial pipeline (narration, QA, compositing).
+# python3 -m venv tutorial/build/venv && tutorial/build/venv/bin/pip install -r tutorial/requirements.txt
+# plus the spaCy English model misaki uses for G2P:
+#   tutorial/build/venv/bin/pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+kokoro-onnx==0.6.1
+misaki==0.7.4
+num2words==0.5.14
+spacy==3.8.16
+soundfile==0.14.0
+numpy==2.5.4
+sherpa-onnx==1.13.8
+opencv-python-headless==5.0.0.93
