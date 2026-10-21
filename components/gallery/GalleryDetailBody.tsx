@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { GitFork, Download, Flag, ExternalLink, History, Pencil } from 'lucide-react';
+import { GitFork, Download, Flag, ExternalLink, History, Pencil, Tablet } from 'lucide-react';
 import { API_BASE } from '../../services/cloudApi';
 import { HistoryModal } from '../cloud/HistoryModal';
 import { LazyEditListingModal } from '../cloud/LazyEditListingModal';
@@ -11,12 +11,17 @@ import { StarRating } from './StarRating';
 import { ReviewsSection } from './ReviewsSection';
 import { galleryHref } from './galleryParams';
 import { categoryLabel, formatLabel } from '../../shared/galleryFacets.js';
+import { DeviceExportDialog } from '../export/DeviceExportDialog';
+import { FormFactorProvider } from '../editor-layout/FormFactorContext';
+import { useEditorFormFactor } from '../../hooks/useEditorFormFactor';
+import type { AppState } from '../../types';
 
 export function GalleryDetailBody({ detail }: { detail: UseGalleryDetailResult }) {
     const navigate = useNavigate();
     const {
         project, importError, busy, mrs, isOwner, session, fromPath,
         openInEditor, fork, forkVersion, downloadAllVariants, report,
+        templateExport, templateError, downloadAsTemplate, closeTemplateExport,
         showHistory, setShowHistory, onCloneHistoryVersion,
         reviews, myReview, saveReview, deleteMyReview, reportReview,
     } = detail;
@@ -68,6 +73,11 @@ export function GalleryDetailBody({ detail }: { detail: UseGalleryDetailResult }
                     <span className="flex items-center gap-1"><GitFork size={12} /> {project.forkCount} forks</span>
                     <span className="flex items-center gap-1"><Download size={12} /> {project.downloadCount} downloads</span>
                 </div>
+                {templateError && (
+                    <div role="alert" className="mt-4 max-w-xs rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs leading-5 text-red-800">
+                        {templateError}
+                    </div>
+                )}
                 {importError && (
                     <div
                         role="alert"
@@ -81,6 +91,12 @@ export function GalleryDetailBody({ detail }: { detail: UseGalleryDetailResult }
                         className="flex items-center justify-center gap-1.5 bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50">
                         <ExternalLink size={14} /> {busy === 'open' ? 'Loading…' : 'Open in editor'}
                     </button>
+                    {project.category === 'templates' && (
+                        <button onClick={downloadAsTemplate} disabled={busy !== null}
+                            className="flex items-center justify-center gap-1.5 border border-slate-300 rounded-lg px-4 py-2 text-sm font-medium text-slate-700 disabled:opacity-50">
+                            <Tablet size={14} /> {busy === 'template' ? 'Loading…' : 'Download as template'}
+                        </button>
+                    )}
                     <button onClick={downloadAllVariants} disabled={busy !== null}
                         className="flex items-center justify-center gap-1.5 border border-slate-300 rounded-lg px-4 py-2 text-sm font-medium text-slate-700 disabled:opacity-50">
                         <Download size={14} /> {busy === 'download' ? 'Generating…' : 'Download all variants (.zip)'}
@@ -156,6 +172,19 @@ export function GalleryDetailBody({ detail }: { detail: UseGalleryDetailResult }
                     onSaved={() => { setEditing(false); window.location.reload(); }}
                 />
             )}
+            {templateExport && (
+                <GalleryTemplateExport state={templateExport.state} name={templateExport.name} onClose={closeTemplateExport} />
+            )}
         </>
+    );
+}
+
+/** The editor's Export as template dialog, laid out for this screen the way the editor would lay it out. */
+function GalleryTemplateExport({ state, name, onClose }: { state: AppState; name: string; onClose: () => void }) {
+    const { layout, input } = useEditorFormFactor();
+    return (
+        <FormFactorProvider value={layout} input={input}>
+            <DeviceExportDialog isOpen onClose={onClose} getState={() => state} projectName={name} initialForceGreyscale={false} />
+        </FormFactorProvider>
     );
 }

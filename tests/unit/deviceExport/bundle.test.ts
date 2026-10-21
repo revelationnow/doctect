@@ -25,20 +25,20 @@ describe('createDeviceZip', () => {
         zip.addPng(bigme, 'Cover', png(), true);
         const files = Object.keys((await open(await zip.finish())).files).filter(name => !name.endsWith('/')).sort();
         expect(files).toEqual([
-            'Bigme/inkNote_Color/INSTALL.txt',
-            'Bigme/inkNote_Color/noteTemplate/Cover.png',
-            'Boox/Note_Air_4C_Tab_Ultra_C_Pro/INSTALL.txt',
-            'Boox/Note_Air_4C_Tab_Ultra_C_Pro/noteTemplate/Cover.png',
+            'Bigme/B10_inkNote_Color/INSTALL.txt',
+            'Bigme/B10_inkNote_Color/noteTemplate/Cover.png',
+            'Boox/Note_Air_C/INSTALL.txt',
+            'Boox/Note_Air_C/noteTemplate/Cover.png',
             'README.txt',
             'Supernote/Manta/INSTALL.txt',
             'Supernote/Manta/MyStyle/Device_Export/Device_Export.pdf',
             'Supernote/Manta/MyStyle/Device_Export/Guard_Page.png',
-            'reMarkable/reMarkable_2/INSTALL.txt',
-            'reMarkable/reMarkable_2/methods/doctect-x-guard-rm2-00000000.content',
-            'reMarkable/reMarkable_2/methods/doctect-x-guard-rm2-00000000.metadata',
-            'reMarkable/reMarkable_2/methods/doctect-x-guard-rm2-00000000.template',
-            'reMarkable/reMarkable_2/png/Guard_Page.png',
-            'reMarkable/reMarkable_2/png/templates.json',
+            'reMarkable/Paper_Pure_reMarkable_2/INSTALL.txt',
+            'reMarkable/Paper_Pure_reMarkable_2/methods/doctect-x-guard-rm2-00000000.content',
+            'reMarkable/Paper_Pure_reMarkable_2/methods/doctect-x-guard-rm2-00000000.metadata',
+            'reMarkable/Paper_Pure_reMarkable_2/methods/doctect-x-guard-rm2-00000000.template',
+            'reMarkable/Paper_Pure_reMarkable_2/png/Guard_Page.png',
+            'reMarkable/Paper_Pure_reMarkable_2/png/templates.json',
         ]);
     });
 
@@ -46,7 +46,7 @@ describe('createDeviceZip', () => {
         const zip = createDeviceZip('P');
         zip.addPng(rm2, 'Guard Page', png(), false);
         zip.addPng(rm2, 'Cover', png(), true);
-        const raw = await (await open(await zip.finish())).file('reMarkable/reMarkable_2/png/templates.json')!.async('string');
+        const raw = await (await open(await zip.finish())).file('reMarkable/Paper_Pure_reMarkable_2/png/templates.json')!.async('string');
         // The fragment is hand-merged over SSH, so the invisible icon glyph must be written as an escape.
         expect(raw).toContain('\\' + 'ue9fe');
         const json = JSON.parse(raw);
@@ -64,7 +64,7 @@ describe('createDeviceZip', () => {
         zip.addPng(air, 'Day', png(), false);
         const names = Object.keys((await open(await zip.finish())).files).filter(name => name.endsWith('.png')).sort();
         expect(names).toEqual([
-            'Boox/Note_Air_4C_Tab_Ultra_C_Pro/noteTemplate/Day.png',
+            'Boox/Note_Air_C/noteTemplate/Day.png',
             'Supernote/Manta/MyStyle/P/Day-2.png',
             'Supernote/Manta/MyStyle/P/Day.png',
             'Supernote/Manta/MyStyle/P/page-3.png',
@@ -90,14 +90,33 @@ describe('createDeviceZip', () => {
         zip.addPng(bigme, 'A', png(), false);
         const out = await open(await zip.finish());
         const read = (path: string) => out.file(path)!.async('string');
-        const rm = await read('reMarkable/reMarkable_2/INSTALL.txt');
+        const rm = await read('reMarkable/Paper_Pure_reMarkable_2/INSTALL.txt');
         expect(rm).toContain('scp methods/* root@10.11.99.1:/home/root/.local/share/remarkable/xochitl/');
         expect(rm).toContain('/usr/share/remarkable/templates/');
         expect(rm).toContain('templates.json');
         expect(await read('Supernote/Manta/INSTALL.txt')).toContain('Note/MyStyle');
-        expect(await read('Boox/Note_Air_4C_Tab_Ultra_C_Pro/INSTALL.txt')).toContain('Storage/noteTemplate');
-        expect(await read('Bigme/inkNote_Color/INSTALL.txt')).toContain('Storage/noteTemplate');
+        expect(await read('Boox/Note_Air_C/INSTALL.txt')).toContain('Storage/noteTemplate');
+        expect(await read('Bigme/B10_inkNote_Color/INSTALL.txt')).toContain('Storage/noteTemplate');
         expect(await read('README.txt')).toContain('Supernote/Manta');
+    });
+
+    it('sends Kindle and Kobo users to the PDF, and lays out PocketBook and generic sizes flat', async () => {
+        const zip = createDeviceZip('Plan');
+        for (const id of ['kindle_scribe_11', 'kobo_libra_colour', 'pocketbook_inkpad_eo', 'generic_1860x2480']) {
+            const profile = getProfile(id)!;
+            zip.addPng(profile, 'Day', png(), false);
+            zip.addPdf(profile, new Uint8Array([37, 80]).buffer);
+        }
+        const out = await open(await zip.finish());
+        const read = (path: string) => out.file(path)!.async('string');
+        expect(Object.keys(out.files)).toEqual(expect.arrayContaining(['Kindle/Scribe_2025/Day.png', 'Kindle/Scribe_2025/Plan.pdf', 'Generic/1860x2480/Plan.pdf']));
+        const kindle = await read('Kindle/Scribe_2025/INSTALL.txt');
+        expect(kindle).toContain('cannot install custom notebook templates');
+        expect(kindle).toContain('Send Plan.pdf to your Kindle with Send to Kindle');
+        expect(kindle).toContain('Do not copy it over USB');
+        expect(await read('Kobo/Libra_Colour/INSTALL.txt')).toContain('copy Plan.pdf onto it');
+        expect(await read('PocketBook/InkPad_Eo/INSTALL.txt')).toContain('PocketBook: InkPad Eo (also InkPad Eo 2)');
+        expect(await read('Generic/1860x2480/INSTALL.txt')).toContain('10.3" screens of 1860 x 2480 pixels');
     });
 
     it('warns before the reMarkable steps and walks the PNG route through a backed-up templates.json merge', async () => {
@@ -105,7 +124,7 @@ describe('createDeviceZip', () => {
         zip.addPng(rm2, 'A', png(), false);
         zip.addPng(getProfile('rm_pp')!, 'A', png(), false);
         const out = await open(await zip.finish());
-        const rm = await out.file('reMarkable/reMarkable_2/INSTALL.txt')!.async('string');
+        const rm = await out.file('reMarkable/Paper_Pure_reMarkable_2/INSTALL.txt')!.async('string');
         const pro = await out.file('reMarkable/Paper_Pro/INSTALL.txt')!.async('string');
 
         // The warning comes before any command.
@@ -145,7 +164,7 @@ describe('createDeviceZip', () => {
         zip.addPng(rm2, 'A', png(), false);
         zip.report('A (reMarkable 2, .template): too many shapes (30000) for a .template; only the PNG is included');
         const out = await open(await zip.finish());
-        const install = await out.file('reMarkable/reMarkable_2/INSTALL.txt')!.async('string');
+        const install = await out.file('reMarkable/Paper_Pure_reMarkable_2/INSTALL.txt')!.async('string');
         expect(install).not.toContain('scp methods/*');
         expect(install).toMatch(/Option A[^\n]*\n[\s\S]*no Methods templates[\s\S]*CONVERSION-REPORT\.txt/);
         expect(install).toContain('Option B');

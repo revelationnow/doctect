@@ -45,12 +45,21 @@ describe('runDeviceExport', () => {
         expect(calls.generate).toEqual([{ pageNodeIds: ['root', 'p3'], isGreyscale: true }]);
         expect(result).toMatchObject({ fileName: 'Plan_device_templates.zip', imageCount: 4, failures: 0 });
         const names = await entries(result.blob);
-        expect(names).toContain('reMarkable/reMarkable_2/png/Root.png');
-        expect(names).toContain('reMarkable/reMarkable_2/png/Wide.png');
+        expect(names).toContain('reMarkable/Paper_Pure_reMarkable_2/png/Root.png');
+        expect(names).toContain('reMarkable/Paper_Pure_reMarkable_2/png/Wide.png');
         expect(names).toContain('Supernote/Manta/MyStyle/Plan/Wide.png');
         expect(names.filter(name => name.endsWith('.template'))).toHaveLength(2);
         expect(names).toContain('CONVERSION-REPORT.txt');
         expect(calls.destroyed).toBe(1);
+    });
+
+    it('always adds the PDF for Kindle and Kobo, which write on it instead of a template', async () => {
+        const { deps } = fakeDeps();
+        const names = await entries((await runDeviceExport(request({ deviceIds: ['kindle_scribe_11', 'kobo_elipsa_2e', 'generic_1404x1872'] }), { deps })).blob);
+        expect(names).toContain('Kindle/Scribe_2025/Plan.pdf');
+        expect(names).toContain('Kobo/Elipsa_2E/Plan.pdf');
+        expect(names).toContain('Generic/1404x1872/Root.png');
+        expect(names.some(name => name.startsWith('Generic/') && name.endsWith('.pdf'))).toBe(false);
     });
 
     it('turns the box for landscape pages', async () => {
@@ -101,7 +110,7 @@ describe('runDeviceExport', () => {
         const result = await runDeviceExport(request(), { deps });
         expect(result).toMatchObject({ imageCount: 3, failures: 1 });
         const report = await (await JSZip.loadAsync(await result.blob.arrayBuffer())).file('CONVERSION-REPORT.txt')!.async('string');
-        expect(report).toContain('Root (Manta (A5 X2)): skipped: canvas lost');
+        expect(report).toContain('Root (Manta): skipped: canvas lost');
     });
 
     it('keeps the PNG when only the .template fails', async () => {
@@ -123,8 +132,8 @@ describe('runDeviceExport', () => {
         const templates = (await entries(rm2Only.blob)).filter(name => name.endsWith('.template'));
         expect(templates).toHaveLength(2);
         expect(templates.map(name => name.replace(/-[0-9a-f]{8}\.template$/, ''))).toEqual([
-            'reMarkable/reMarkable_2/methods/doctect-plan-same-2-rm2',
-            'reMarkable/reMarkable_2/methods/doctect-plan-same-rm2',
+            'reMarkable/Paper_Pure_reMarkable_2/methods/doctect-plan-same-2-rm2',
+            'reMarkable/Paper_Pure_reMarkable_2/methods/doctect-plan-same-rm2',
         ]);
 
         const both = await runDeviceExport(request({ state: twins, pageNodeIds: ['root', 'p2'], deviceIds: ['rm2', 'rm_pp'] }), { deps: fakeDeps().deps });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEVICE_PROFILES, PLATFORMS, fitRect, getProfile, keepsColour, targetBox } from '../../../services/deviceExport/deviceProfiles';
+import { DEVICE_PROFILES, PLATFORMS, RENAMED_PROFILE_IDS, alwaysIncludesPdf, fitRect, getProfile, keepsColour, offersPdf, targetBox } from '../../../services/deviceExport/deviceProfiles';
 
 describe('device profiles', () => {
     it('are well formed', () => {
@@ -11,6 +11,8 @@ describe('device profiles', () => {
             expect(Number.isInteger(p.height) && p.height >= p.width, p.id).toBe(true);
             expect(p.source, p.id).toMatch(/^https:\/\//);
             expect(p.folder, p.id).toMatch(/^[A-Za-z0-9_]+$/);
+            expect(p.inches, p.id).toBeGreaterThan(5);
+            expect(p.inches, p.id).toBeLessThan(14);
             if (p.platform === 'remarkable') expect(p.remarkableScreen, p.id).toBeTruthy();
             else expect(p.remarkableScreen, p.id).toBeUndefined();
         }
@@ -21,9 +23,29 @@ describe('device profiles', () => {
     it('pins the sizes the manufacturers document', () => {
         expect(getProfile('rm2')).toMatchObject({ width: 1404, height: 1872, colour: false, remarkableScreen: 'rm2', rotateMethods: true });
         expect(getProfile('rm_pp')).toMatchObject({ width: 1620, height: 2160, colour: true, remarkableScreen: 'rmPP' });
-        expect(getProfile('supernote_a5x_a6x_nomad')).toMatchObject({ width: 1404, height: 1872, colour: false });
+        expect(getProfile('supernote_a5x')).toMatchObject({ width: 1404, height: 1872, inches: 10.3, colour: false });
+        expect(getProfile('supernote_nomad')).toMatchObject({ width: 1404, height: 1872, inches: 7.8, colour: false });
         expect(getProfile('supernote_manta')).toMatchObject({ width: 1920, height: 2560, colour: false });
         expect(getProfile('nope')).toBeUndefined();
+    });
+
+    it('gives each physical screen its own option within a brand', () => {
+        // A shared option is one file for several models, so it must not hide a different size or colour.
+        const screens = DEVICE_PROFILES.map(p => `${p.platform} ${p.width}x${p.height} ${p.inches} ${p.colour}`);
+        expect(new Set(screens).size).toBe(screens.length);
+    });
+
+    it('maps every retired id onto current options', () => {
+        for (const ids of Object.values(RENAMED_PROFILE_IDS)) for (const id of ids) expect(getProfile(id), id).toBeDefined();
+        for (const old of Object.keys(RENAMED_PROFILE_IDS)) expect(getProfile(old), old).toBeUndefined();
+    });
+
+    it('ships the PDF where templates cannot be installed, and never to reMarkable', () => {
+        expect(alwaysIncludesPdf(getProfile('kindle_scribe_11')!)).toBe(true);
+        expect(alwaysIncludesPdf(getProfile('kobo_libra_colour')!)).toBe(true);
+        expect(alwaysIncludesPdf(getProfile('supernote_manta')!)).toBe(false);
+        expect(offersPdf(getProfile('rm_pp')!)).toBe(false);
+        expect(offersPdf(getProfile('generic_1404x1872')!)).toBe(true);
     });
 
     it('swaps the box for landscape pages', () => {
