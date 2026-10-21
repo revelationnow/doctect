@@ -1,0 +1,275 @@
+{
+  "selectedNodeIds": [
+    "root"
+  ],
+  "selectedTemplateIds": [],
+  "selectedElementIds": [],
+  "tool": "select",
+  "showJsonModal": false,
+  "showNodeSelector": false,
+  "nodeSelectorMode": "grid_source",
+  "editingElementId": null,
+  "clipboard": [],
+  "templatePreviewNodeId": "root",
+  "activeLayerId": "layer_5e9a671o3",
+  "nodes": {
+    "root": {
+      "id": "root",
+      "parentId": null,
+      "type": "week",
+      "title": "Meals this week",
+      "data": {},
+      "children": [
+        "day_zwfy5gkk6",
+        "day_dd2vtxcgv",
+        "day_69r3hyxqm",
+        "day_930f8py93",
+        "day_4fm77flnk",
+        "day_v0bvo9lq4",
+        "day_xk138x57i"
+      ]
+    },
+    "day_zwfy5gkk6": {
+      "id": "day_zwfy5gkk6",
+      "parentId": "root",
+      "type": "day",
+      "title": "Monday",
+      "children": [],
+      "data": {
+        "date": "October 26"
+      }
+    },
+    "day_dd2vtxcgv": {
+      "id": "day_dd2vtxcgv",
+      "parentId": "root",
+      "type": "day",
+      "title": "Tuesday",
+      "children": [],
+      "data": {
+        "date": "October 27"
+      }
+    },
+    "day_69r3hyxqm": {
+      "id": "day_69r3hyxqm",
+      "parentId": "root",
+      "type": "day",
+      "title": "Wednesday",
+      "children": [],
+      "data": {
+        "date": "October 28"
+      }
+    },
+    "day_930f8py93": {
+      "id": "day_930f8py93",
+      "parentId": "root",
+      "type": "day",
+      "title": "Thursday",
+      "children": [],
+      "data": {
+        "date": "October 29"
+      }
+    },
+    "day_4fm77flnk": {
+      "id": "day_4fm77flnk",
+      "parentId": "root",
+      "type": "day",
+      "title": "Friday",
+      "children": [],
+      "data": {
+        "date": "October 30"
+      }
+    },
+    "day_v0bvo9lq4": {
+      "id": "day_v0bvo9lq4",
+      "parentId": "root",
+      "type": "day",
+      "title": "Saturday",
+      "children": [],
+      "data": {
+        "date": "October 31"
+      }
+    },
+    "day_xk138x57i": {
+      "id": "day_xk138x57i",
+      "parentId": "root",
+      "type": "day",
+      "title": "Sunday",
+      "children": [],
+      "data": {
+        "date": "November 1"
+      }
+    }
+  },
+  "rootId": "root",
+  "variants": {
+    "default": {
+      "id": "default",
+      "name": "Default",
+      "templates": {
+        "week": {
+          "id": "week",
+          "name": "Week",
+          "width": 595.28,
+          "height": 841.89,
+          "elements": [
+            {
+              "type": "text",
+              "x": 40,
+              "y": 40,
+              "w": 515,
+              "h": 50,
+              "text": "{{title}}",
+              "fontSize": 32,
+              "fontWeight": "bold",
+              "id": "gen_week_0_fgbo9",
+              "layerId": "layer_5e9a671o3",
+              "textOverflow": "clip",
+              "textWrap": true,
+              "textPadding": {
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            },
+            {
+              "type": "grid",
+              "x": 40,
+              "y": 120,
+              "w": 515,
+              "h": 56,
+              "fontSize": 18,
+              "fill": "#f1f5f9",
+              "gridConfig": {
+                "cols": 1,
+                "gapX": 0,
+                "gapY": 8,
+                "sourceType": "current",
+                "displayField": "{{title}} · {{date}}"
+              },
+              "id": "gen_week_1_ncrwk",
+              "layerId": "layer_5e9a671o3",
+              "textOverflow": "clip",
+              "textWrap": false
+            }
+          ],
+          "layers": [
+            {
+              "id": "layer_5e9a671o3",
+              "name": "Layer 1",
+              "order": 0,
+              "visible": true,
+              "locked": false
+            }
+          ]
+        },
+        "day": {
+          "id": "day",
+          "name": "Day",
+          "width": 595.28,
+          "height": 841.89,
+          "elements": [
+            {
+              "type": "text",
+              "x": 40,
+              "y": 40,
+              "w": 400,
+              "h": 50,
+              "text": "{{title}}",
+              "fontSize": 32,
+              "fontWeight": "bold",
+              "id": "gen_day_0_zed58",
+              "layerId": "layer_0ty2xnq2m",
+              "textOverflow": "clip",
+              "textWrap": true,
+              "textPadding": {
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            },
+            {
+              "type": "text",
+              "x": 40,
+              "y": 92,
+              "w": 400,
+              "h": 24,
+              "text": "{{date}}",
+              "fontSize": 14,
+              "textColor": "#64748b",
+              "id": "gen_day_1_3ilvu",
+              "layerId": "layer_0ty2xnq2m",
+              "textOverflow": "clip",
+              "textWrap": true,
+              "textPadding": {
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            },
+            {
+              "type": "text",
+              "x": 455,
+              "y": 50,
+              "w": 100,
+              "h": 24,
+              "text": "← Week",
+              "fontSize": 14,
+              "linkTarget": "parent",
+              "id": "gen_day_2_ihpf5",
+              "layerId": "layer_0ty2xnq2m",
+              "textOverflow": "clip",
+              "textWrap": true,
+              "textPadding": {
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            },
+            {
+              "type": "rect",
+              "x": 40,
+              "y": 140,
+              "w": 515,
+              "h": 660,
+              "fill": "#94a3b8",
+              "fillType": "pattern",
+              "patternType": "lines-h",
+              "patternSpacing": 24,
+              "id": "gen_day_3_qnb9h",
+              "layerId": "layer_0ty2xnq2m"
+            }
+          ],
+          "layers": [
+            {
+              "id": "layer_0ty2xnq2m",
+              "name": "Layer 1",
+              "order": 0,
+              "visible": true,
+              "locked": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "schemaVersion": 12,
+  "generator": {
+    "formatVersion": 1,
+    "templateScript": "// One overview page for the week, one page per day.\nconst t = {};\nt.week = { id: 'week', name: 'Week', width: A4_WIDTH, height: A4_HEIGHT, elements: [\n  { type: 'text', x: 40, y: 40, w: 515, h: 50, text: '{{title}}', fontSize: 32, fontWeight: 'bold' },\n  { type: 'grid', x: 40, y: 120, w: 515, h: 56, fontSize: 18, fill: '#f1f5f9',\n    gridConfig: { cols: 1, gapX: 0, gapY: 8, sourceType: 'current', displayField: '{{title}} · {{date}}' } },\n] };\nt.day = { id: 'day', name: 'Day', width: A4_WIDTH, height: A4_HEIGHT, elements: [\n  { type: 'text', x: 40, y: 40, w: 400, h: 50, text: '{{title}}', fontSize: 32, fontWeight: 'bold' },\n  { type: 'text', x: 40, y: 92, w: 400, h: 24, text: '{{date}}', fontSize: 14, textColor: '#64748b' },\n  { type: 'text', x: 455, y: 50, w: 100, h: 24, text: '← Week', fontSize: 14, linkTarget: 'parent' },\n  { type: 'rect', x: 40, y: 140, w: 515, h: 660, fill: '#94a3b8',\n    fillType: 'pattern', patternType: 'lines-h', patternSpacing: 24 },\n] };\nreturn t;",
+    "hierarchyScript": "// A week of meal plans, starting on Monday 26 October 2026.\nconst nodes = {};\nnodes.root = { id: 'root', parentId: null, type: 'week', title: 'Meals this week', data: {}, children: [] };\nconst days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];\ndays.forEach((name, i) => {\n  const date = new Date(2026, 9, 26 + i);\n  const id = createId('day');\n  nodes[id] = { id, parentId: 'root', type: 'day', title: name, children: [],\n    data: { date: date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) } };\n  nodes.root.children.push(id);\n});\nreturn { nodes, rootId: 'root' };",
+    "generatedAt": "2026-10-21T13:49:32.011Z"
+  },
+  "activeVariantId": "default",
+  "selectedNodeId": "root",
+  "selectedTemplateId": "",
+  "scale": 0.8,
+  "viewMode": "templates",
+  "sidebarWidth": 288,
+  "propertiesPanelWidth": 320,
+  "snapToGrid": false,
+  "showGrid": false
+}
