@@ -47,6 +47,23 @@ node tutorial/assemble.js $E              # mp4 + captions + chapters + descript
 Narration is cached per sentence, so editing a few lines only re-synthesizes those. Pacing
 follows narration length, so any narration change needs a re-record.
 
+Before recording, `--dry --shots` saves a screenshot at the end of every beat
+(`tutorial-videos/<id>/dry/`), and the dry timeline, multiplied by four, estimates how long
+each beat's actions take. A beat whose actions outlast its narration plays as silence, so
+compare the two and give the voice something useful to say there:
+
+```bash
+python3 -c "import json; t=json.load(open('tutorial-videos/<id>/timeline-dry.json')); \
+n={b['beat']: b['duration'] for b in json.load(open('tutorial-videos/<id>/narration.json'))['beats']}; \
+[print(b['beat'], round((b['end']-b['start'])*4, 1), round(n[b['beat']], 1)) for b in t['beats']]"
+```
+
+Episodes build on each other: an episode's `teardown(ctx)` can save the finished project to
+`tutorial/fixtures/<name>.json` (`app.saveFixture`), and a later one starts from it
+(`app.loadFixture`). The cloud episodes (11, 12) seed accounts and gallery listings off camera
+through the real UI (`lib/cloud.js`), and stage another member's fork and merge request
+through the API mid-episode (`cloud.apiAs`).
+
 ## Storyboards
 
 ```js
@@ -64,8 +81,9 @@ export const beats = [
   `[{{title}}](=title in double curly braces)`; recurring fixes go in `LEXICON` in `lib/speech.js`.
 - `ctx` (see `record.js`): `click`, `drag`, `type`, `paste`, `press`, `wheel`, `hover`,
   `pick` (native `<select>`), `pickColor`, `chooseFile`, `dialogs.arm`/`dialogs.replay`
-  (prompt/confirm/alert), `download`, `openPdf`, `spotlight`, `zoom`, `titleCard`, `endCard`,
-  `goto`, `state`.
+  (prompt/confirm/alert), `download`/`downloads` (one or several files from one click),
+  `openPdf`, `clickPdfLink`, `pdfNextPage`, `spotlight`, `zoom`, `titleCard`, `endCard`,
+  `atSentence`, `goto`, `state`.
 - Follow the narration style guide in the spec. Talk to one person, why before how, no hype,
   admit the sharp edges.
 
@@ -77,7 +95,10 @@ export const beats = [
   CSS px while frames stay 1920×1080. The Tailwind Play CDN is replaced by a locally compiled
   sheet. `/__tutorial/*` serves the PDF reader page and files.
 - **Overlay** (`lib/overlay.js`): cursor, ripples, key chips, lower thirds, cards, spotlights,
-  and stand-ins for native UI that headless Chromium never paints.
+  and stand-ins for native UI that headless Chromium never paints (and an arriving email, for
+  the verification link). It also switches off backdrop blur: composited in software, the blur
+  behind a dialog cost ~70 ms a frame, so the cursor crawled and capture dropped to a few
+  frames a second whenever a dialog was open.
 - **Capture** (`lib/screencast.js`): CDP screencast JPEGs with timestamps; `video/compose.py`
   resamples them to constant 30 fps and applies zooms.
 - **Voice** (`voice/tts.py`): Kokoro-82M (`af_heart`), misaki G2P, one clip per sentence.
