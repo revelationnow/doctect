@@ -30,6 +30,7 @@ export const LEXICON = [
     [/(\d+(?:\.\d+)?)\s?px\b/g, '$1 pixels'],
     [/(\d+(?:\.\d+)?)\s?%/g, '$1 percent'],
     [/\bUI\b/g, 'U I'],
+    [/\b([Gg])reyscale\b/g, '$1ray scale'],
 ];
 
 const OVERRIDE = /\[([^\]]*)\]\(=([^)]*)\)/g;
