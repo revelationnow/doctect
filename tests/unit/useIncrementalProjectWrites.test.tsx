@@ -55,12 +55,14 @@ async function harness(strict = false, floor = 0) {
   const hook = renderHook(() => useIncrementalProjectWrites(options), strict ? { wrapper: StrictMode } : undefined);
   const selection = { activeVariantId: 'default', selectedNodeId: 'root', selectedNodeIds: ['root'],
     selectedTemplateId: 'page-0', selectedTemplateIds: ['page-0'], selectedElementIds: [], activeLayerId: 'content' };
-  function event(generation: number, structural = false): EditorDocumentEvent {
+  /** `structural` replaces the template's layer sequence; `'preserved'` edits the template but keeps its layers. */
+  function event(generation: number, structural: boolean | 'preserved' = false): EditorDocumentEvent {
     const before = folds.parts.document;
     const template = before.variants.default.templates['page-0'];
-    const edit = applyDocumentChanges(before, structural ? [{ type: 'put-template', variantId: 'default', template: { ...template, layers: [...template.layers!] } }]
+    const edit = applyDocumentChanges(before, structural === 'preserved' ? [{ type: 'put-template', variantId: 'default', template: { ...template, name: `edit-${generation}` } }]
+      : structural ? [{ type: 'put-template', variantId: 'default', template: { ...template, layers: [...template.layers!] } }]
       : [{ type: 'put-node', node: { ...before.nodes.root, data: { label: `edit-${generation}` } } }]);
-    const receipt = reconcileLayerFolds(folds, edit, { before, after: edit.after, mappings: structural
+    const receipt = reconcileLayerFolds(folds, edit, { before, after: edit.after, mappings: structural === true
       ? [{ type: 'continue', from: { variantId: 'default', templateId: 'page-0', position: 0 }, to: { variantId: 'default', templateId: 'page-0', position: 0 } }] : [] });
     folds = receipt.after;
     return { source, editorGeneration: generation, origin: 'edit', kind: 'incremental', edit,
@@ -298,6 +300,20 @@ describe('verified write-owner readmission', () => {
       const following = h.send({ ...h.event(3, true), foldBasis: { type: 'after-structural', editorGeneration: 1 } });
       await act(async () => { await next.admission.flush(); }); expect(await following).toBe(true);
       expect(h.worker.messages.at(-1)!.request).toMatchObject({ type: 'structural-command', command: { batch: { editorGeneration: 4 } } });
+    } finally { h.dispose(); }
+  });
+
+  it('keeps later template saves admissible after a saved structural edit is no longer the latest structural ack', async () => {
+    // New Template, then two edits to it: every later save still names the structural edit as its basis,
+    // while each preserved-layer save becomes the queue's latest structural acknowledgement.
+    const h = await readmissionHarness();
+    try {
+      const structure = h.send(h.event(1, true)); await act(async () => { await h.old.flush(); }); expect(await structure).toBe(true);
+      for (const generation of [2, 3]) {
+        const saving = h.send({ ...h.event(generation, 'preserved'), foldBasis: { type: 'after-structural', editorGeneration: 1 } });
+        await act(async () => { await h.old.flush(); }); expect(await saving).toBe(true);
+      }
+      expect(h.result.current.documentState.status).toBe('saved');
     } finally { h.dispose(); }
   });
 
@@ -682,7 +698,7 @@ it('metadata uses a write generation without consuming the next editor generatio
 
 it('translates a local structural dependency across an intervening metadata write', async () => {
   const h = await harness(); const meta = h.metadata('First metadata'); await h.resolveDocument(0, 1); await meta;
-  const structure = h.send(h.event(1, true)); await h.resolveDocument(1, 2); await structure;
+  const structure = h.send(h.event(1, true));
   const next = h.send({ ...h.event(2), foldBasis: { type: 'after-structural', editorGeneration: 1 } });
   // A later template edit carries the dependency when mappings are needed.
   const templateEvent = { ...h.event(3, true), foldBasis: { type: 'after-structural' as const, editorGeneration: 1 } };
@@ -690,7 +706,13 @@ it('translates a local structural dependency across an intervening metadata writ
   const request = h.documents[3].command;
   expect(request.type).toBe('save-document-changes');
   if (request.type === 'save-document-changes') expect(request.structural?.basis).toEqual({ type: 'after-structural', editorGeneration: 2 });
-  await h.resolveDocument(2, 3); await next; await h.resolveDocument(3, 4); await templateSave;
+  await h.resolveDocument(1, 2); await structure; await h.resolveDocument(2, 3); await next; await h.resolveDocument(3, 4); await templateSave;
+  // Once the structural save is acknowledged, later edits rebind to the fold it produced.
+  const preserved = h.send({ ...h.event(4, 'preserved'), foldBasis: { type: 'after-structural', editorGeneration: 3 } });
+  const later = h.documents[4].command;
+  expect(later.type).toBe('save-document-changes');
+  if (later.type === 'save-document-changes') expect(later.structural?.basis).toEqual({ type: 'generation', generation: 0 });
+  await h.resolveDocument(4, 5); expect(await preserved).toBe(true);
 });
 
 it('preference failure stays separate from document dirty state', async () => {

@@ -211,7 +211,12 @@ function createOwner(initial: IncrementalProjectWritesOptions) {
     }
     void operation.then(ack => {
       if (phase !== 'active' || submission.epoch !== persistenceEpoch || !stillCurrent()) return false;
-      accept(submission.lane, submission.generation, ack, submission.replacement); return true;
+      accept(submission.lane, submission.generation, ack, submission.replacement);
+      // Later edits keep naming this structural save as their basis, but the queue only
+      // retains its acknowledgement until a newer structural ack (any save carrying layer
+      // mappings) replaces it. Rebind to the fold it produced, as readmission does.
+      if (structural?.write === submission.generation && submission.lane === 'document') structural = { ...structural, reboundFold: foldOf(ack) };
+      return true;
     }).catch(error => { if (phase === 'active' && submission.epoch === persistenceEpoch && stillCurrent()) {
       for (const lane of submissionLanes(submission)) fail(lane, error);
     } return false; })
