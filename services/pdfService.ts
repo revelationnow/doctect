@@ -1167,7 +1167,7 @@ export const generatePDF = async (state: AppState, options: GeneratePDFOptions =
 
             // Handle Line
             if (el.type === 'line') {
-                const strokeRgb = hexToRgb(el.stroke || '#000000');
+                const strokeRgb = options.isGreyscale ? hexToGreyscale(el.stroke || '#000000') : hexToRgb(el.stroke || '#000000');
                 if (strokeRgb) {
                     doc.setDrawColor(strokeRgb.r, strokeRgb.g, strokeRgb.b);
                     doc.setLineWidth(Number(el.strokeWidth) || 1);

@@ -222,3 +222,22 @@ describe('element opacity composition with SVG-internal opacity', () => {
         expect(pdf).not.toMatch(/\/ca 0\.06/);
     });
 });
+
+describe('greyscale export of line elements', () => {
+    const line = {
+        id: 'l1', type: 'line', x: 50, y: 50, w: 200, h: 0, rotation: 0,
+        fill: '', stroke: '#0000ff', strokeWidth: 2, opacity: 1, layerId: 'main', zIndex: 1,
+    };
+
+    it('desaturates the stroke', async () => {
+        const pdf = await exportBytes(makeState([line]), { isGreyscale: true });
+        // #0000ff -> y=29 -> "0.11 G"
+        expect(pdf).toMatch(/\b0\.11 G\b/);
+        expect(pdf).not.toContain('0. 0. 1. RG');
+    });
+
+    it('keeps the stroke color without the greyscale option', async () => {
+        const pdf = await exportBytes(makeState([line]));
+        expect(pdf).toContain('0. 0. 1. RG');
+    });
+});
