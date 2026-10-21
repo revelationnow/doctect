@@ -53,9 +53,9 @@ describe('DeviceExportDialog', () => {
         const { dialog } = setup();
         expect(status(dialog)).toBe('Pick at least one page and one device.');
         expect((within(dialog).getByRole('button', { name: 'Export' }) as HTMLButtonElement).disabled).toBe(true);
-        fireEvent.click(box(dialog, 'reMarkable 2'));
+        fireEvent.click(box(dialog, 'Paper Pure'));
         expect(status(dialog)).toBe('2 pages × 1 device = 2 templates (.zip)');
-        fireEvent.click(box(dialog, 'Manta (A5 X2)'));
+        fireEvent.click(box(dialog, 'Manta'));
         expect(status(dialog)).toBe('2 pages × 2 devices = 4 templates (.zip)');
     });
 
@@ -75,7 +75,7 @@ describe('DeviceExportDialog', () => {
 
     it('stops at the image cap', () => {
         const { dialog } = setup({}, 400);
-        fireEvent.click(box(dialog, 'reMarkable 2'));
+        fireEvent.click(box(dialog, 'Paper Pure'));
         fireEvent.click(within(dialog).getByRole('button', { name: 'Select all pages of Daily' }));
         expect(status(dialog)).toBe('Too many files: pick fewer pages or devices.');
         expect((within(dialog).getByRole('button', { name: 'Export' }) as HTMLButtonElement).disabled).toBe(true);
@@ -83,15 +83,15 @@ describe('DeviceExportDialog', () => {
 
     it('offers the PDF template only for Supernote, Boox and Bigme', () => {
         const { dialog } = setup();
-        fireEvent.click(box(dialog, 'reMarkable 2'));
+        fireEvent.click(box(dialog, 'Paper Pure'));
         expect(within(dialog).queryByRole('checkbox', { name: 'Also include a PDF template' })).toBeNull();
-        fireEvent.click(box(dialog, 'Manta (A5 X2)'));
+        fireEvent.click(box(dialog, 'Manta'));
         expect(box(dialog, 'Also include a PDF template')).toBeTruthy();
     });
 
     it('exports, downloads, tracks, remembers settings and closes', async () => {
         const { dialog, props } = setup();
-        fireEvent.click(box(dialog, 'Manta (A5 X2)'));
+        fireEvent.click(box(dialog, 'Manta'));
         fireEvent.click(box(dialog, 'Force greyscale'));
         fireEvent.click(box(dialog, 'Also include a PDF template'));
         await act(async () => { fireEvent.click(within(dialog).getByRole('button', { name: 'Export' })); });
@@ -107,12 +107,12 @@ describe('DeviceExportDialog', () => {
     it('opens with remembered settings, and with defaults when storage is unreadable', () => {
         localStorage.setItem('doctect-device-export', JSON.stringify({ devices: ['rm2', 'gone'], forceGreyscale: true, includePdf: false }));
         const first = setup();
-        expect(box(first.dialog, 'reMarkable 2').checked).toBe(true);
+        expect(box(first.dialog, 'Paper Pure').checked).toBe(true);
         expect(box(first.dialog, 'Force greyscale').checked).toBe(true);
         cleanup();
         vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('denied'); });
         const second = setup({ initialForceGreyscale: true });
-        expect(box(second.dialog, 'reMarkable 2').checked).toBe(false);
+        expect(box(second.dialog, 'Paper Pure').checked).toBe(false);
         expect(box(second.dialog, 'Force greyscale').checked).toBe(true);
     });
 
@@ -121,7 +121,7 @@ describe('DeviceExportDialog', () => {
             .mockRejectedValueOnce(new Error('No templates could be produced: boom'))
             .mockResolvedValueOnce({ blob: new Blob(['zip']), fileName: 'f.zip', imageCount: 1, failures: 0 });
         const { dialog, props } = setup({ runExport });
-        fireEvent.click(box(dialog, 'reMarkable 2'));
+        fireEvent.click(box(dialog, 'Paper Pure'));
         await act(async () => { fireEvent.click(within(dialog).getByRole('button', { name: 'Export' })); });
         expect(within(dialog).getByRole('alert').textContent).toBe('Export failed: No templates could be produced: boom');
         await act(async () => { fireEvent.click(within(dialog).getByRole('button', { name: 'Export' })); });
@@ -137,7 +137,7 @@ describe('DeviceExportDialog', () => {
             }))
             .mockResolvedValueOnce({ blob: new Blob(['zip']), fileName: 'f.zip', imageCount: 1, failures: 0 });
         const { dialog, props } = setup({ runExport });
-        fireEvent.click(box(dialog, 'reMarkable 2'));
+        fireEvent.click(box(dialog, 'Paper Pure'));
         act(() => { fireEvent.click(within(dialog).getByRole('button', { name: 'Export' })); });
         act(() => progress({ phase: 'rendering', done: 1, total: 2 }));
         expect(status(dialog)).toBe('Rendering 1 / 2');
@@ -161,7 +161,7 @@ describe('DeviceExportDialog', () => {
     it('keeps focus inside the dialog during a run and puts it on Export after a failure', async () => {
         const runExport = vi.fn().mockRejectedValueOnce(new Error('boom'));
         const { dialog } = setup({ runExport });
-        fireEvent.click(box(dialog, 'reMarkable 2'));
+        fireEvent.click(box(dialog, 'Paper Pure'));
         const exportButton = within(dialog).getByRole('button', { name: 'Export' });
         exportButton.focus();
         act(() => { fireEvent.click(exportButton); });
@@ -205,7 +205,7 @@ describe('DeviceExportDialog', () => {
         let progress!: (p: { phase: 'rendering'; done: number; total: number }) => void;
         const runExport = vi.fn().mockImplementationOnce((_req, { onProgress }) => new Promise(() => { progress = onProgress; }));
         const { dialog } = setup({ runExport });
-        fireEvent.click(box(dialog, 'reMarkable 2'));
+        fireEvent.click(box(dialog, 'Paper Pure'));
         act(() => { fireEvent.click(within(dialog).getByRole('button', { name: 'Export' })); });
         act(() => progress({ phase: 'rendering', done: 1, total: 2 }));
         const live = within(dialog).getByRole('status');
@@ -253,6 +253,17 @@ describe('DeviceExportDialog', () => {
     it('renders nothing when closed', () => {
         render(<DeviceExportDialog isOpen={false} onClose={vi.fn()} getState={() => makeState(1)} projectName="P" initialForceGreyscale={false} />);
         expect(screen.queryByRole('dialog')).toBeNull();
+    });
+});
+
+describe('DeviceExportDialog device options', () => {
+    it('names each option by its model and describes its screen size and the models sharing it', () => {
+        const { dialog } = setup();
+        const nomad = box(dialog, 'Nomad');
+        expect(nomad).toHaveAccessibleDescription('7.8″ A6 X2 · A6 X');
+        expect(box(dialog, 'A5 X')).toHaveAccessibleDescription('10.3″');
+        expect(box(dialog, '1404 × 1872 px')).toHaveAccessibleDescription(/^10\.3″ Lenovo Smart Paper/);
+        expect(within(dialog).getByRole('heading', { name: 'Rescale to' })).toBeTruthy();
     });
 });
 

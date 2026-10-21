@@ -6,7 +6,7 @@ import type { AppState } from '../../types';
 import { useFormFactor } from '../editor-layout/FormFactorContext';
 import { useBackDismiss } from '../editor-layout/useBackDismiss';
 import { trapTab } from '../editor-layout/focusTrap';
-import { DEVICE_PROFILES, PLATFORMS, PLATFORM_LABELS, getProfile } from '../../services/deviceExport/deviceProfiles';
+import { DEVICE_PROFILES, PLATFORMS, PLATFORM_LABELS, getProfile, offersPdf, type DeviceProfile } from '../../services/deviceExport/deviceProfiles';
 import { buildPageGroups, defaultSelection, exportBlockReason, filterGroups, imageCount, type TemplateGroup } from '../../services/deviceExport/selection';
 import { readDeviceExportSettings, writeDeviceExportSettings } from '../../services/deviceExport/settings';
 import { runDeviceExport, type DeviceExportProgress } from '../../services/deviceExport/exportJob';
@@ -72,7 +72,7 @@ function OpenDeviceExportDialog({ onClose, getState, projectName, initialForceGr
     const visible = filterGroups(groups, query);
     const count = imageCount(pages.size, devices.size);
     const blocked = exportBlockReason(pages.size, devices.size);
-    const pdfCapable = [...devices].some(id => getProfile(id)?.platform !== 'remarkable');
+    const pdfCapable = [...devices].some(id => { const profile = getProfile(id); return profile !== undefined && offersPdf(profile); });
 
     const close = () => { run.current?.abort(); run.current = null; onClose(); };
     useBackDismiss(true, () => { close(); });
@@ -196,15 +196,14 @@ function OpenDeviceExportDialog({ onClose, getState, projectName, initialForceGr
                     <section aria-labelledby="device-export-devices">
                         <h3 id="device-export-devices" className="mb-2 text-sm font-semibold text-slate-800">Rescale to</h3>
                         {PLATFORMS.map(platform => (
-                            <fieldset key={platform} className="mb-2">
-                                <legend className="text-xs font-semibold uppercase tracking-wide text-slate-400">{PLATFORM_LABELS[platform]}</legend>
-                                <div className="flex flex-wrap gap-x-4">
+                            <fieldset key={platform} className="mb-3">
+                                <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                    {platform === 'generic' ? 'Other devices, by screen' : PLATFORM_LABELS[platform]}
+                                </legend>
+                                <div className="grid gap-x-6 sm:grid-cols-2">
                                     {DEVICE_PROFILES.filter(profile => profile.platform === platform).map(profile => (
-                                        <label key={profile.id} className={row}>
-                                            <input type="checkbox" checked={devices.has(profile.id)} disabled={running}
-                                                onChange={() => setDevices(current => toggled(current, profile.id))} />
-                                            {profile.name}
-                                        </label>
+                                        <DeviceOption key={profile.id} profile={profile} checked={devices.has(profile.id)} disabled={running} phone={phone}
+                                            onToggle={() => setDevices(current => toggled(current, profile.id))} />
                                     ))}
                                 </div>
                             </fieldset>
@@ -236,6 +235,24 @@ function OpenDeviceExportDialog({ onClose, getState, projectName, initialForceGr
             </div>
         </div>,
         document.body,
+    );
+}
+
+/** One screen: the model as the checkbox's name, the models sharing it and the diagonal as its description. */
+function DeviceOption({ profile, checked, disabled, phone, onToggle }: {
+    profile: DeviceProfile; checked: boolean; disabled: boolean; phone: boolean; onToggle: () => void;
+}) {
+    const id = useId();
+    return (
+        <label className={clsx('flex gap-2 py-1 text-sm', phone ? 'min-h-11 items-center' : 'items-start')}>
+            <input type="checkbox" checked={checked} disabled={disabled} onChange={onToggle} className={clsx(!phone && 'mt-0.5')}
+                aria-labelledby={`${id}-name`} aria-describedby={`${id}-size${profile.also ? ` ${id}-also` : ''}`} />
+            <span className="min-w-0 flex-1">
+                <span id={`${id}-name`} className="block text-slate-700">{profile.name}</span>
+                {profile.also && <span id={`${id}-also`} className="block text-xs leading-4 text-slate-400">{profile.also}</span>}
+            </span>
+            <span id={`${id}-size`} className="shrink-0 text-xs tabular-nums text-slate-400">{profile.inches}″</span>
+        </label>
     );
 }
 

@@ -1,8 +1,8 @@
 ---
 title: Export as Template
-summary: The Export as template segment of the export button (⋯ › Export as template… on touch, or Download as template on a gallery template's page) renders chosen pages as note templates sized for reMarkable, Supernote, Boox and Bigme e-ink tablets, and downloads them as one zip with install notes.
+summary: The Export as template segment of the export button (⋯ › Export as template… on touch, or Download as template on a gallery template's page) renders chosen pages as note templates sized for reMarkable, Supernote, Boox, Bigme, Kindle Scribe, Kobo, PocketBook and other e-ink tablets, and downloads them as one zip with install notes.
 aliases: e-ink templates, note templates, device templates, remarkable template, supernote template, boox template, bigme template, methods template, png template, export for device
-keywords: export, device, devices, e-ink, eink, remarkable, paper pro, supernote, manta, nomad, boox, note air, palma, bigme, template, png, zip, methods, templates.json, mystyle, notetemplate, install, greyscale, conversion report
+keywords: export, device, devices, rescale, e-ink, eink, remarkable, paper pro, paper pure, supernote, manta, nomad, boox, note air, note max, palma, bigme, kindle, kindle scribe, send to kindle, kobo, elipsa, libra colour, pocketbook, inkpad, template, png, zip, methods, templates.json, mystyle, notetemplate, install, greyscale, conversion report
 ---
 
 **Export as template** turns pages of your project into the note *templates* an e-ink tablet draws behind your handwriting: one PNG per page at the exact pixel size of each device you pick, in the folder layout that device expects, plus a short INSTALL.txt per model. Everything renders in the browser and arrives as a single `.zip`; nothing is sent to a device for you.
@@ -31,20 +31,55 @@ Each group starts with its **first page ticked**, so a fresh dialog exports one 
 
 ## Choosing devices
 
-The **Rescale to** section lists the models a template can be sized for, by platform:
+The **Rescale to** section lists one option per screen, grouped by brand, largest screen first. Each option shows the model, the screen's diagonal on the right and, in grey underneath, any other models with exactly the same screen — the same pixels, size and colour — which get the same file. Models whose screens have the same pixels but a different size, such as the 10.3″ Supernote A5 X and the 7.8″ Nomad, are separate options: a template is drawn to the pixels, so the same page looks about a quarter smaller on the 7.8″ screen. **Other devices, by screen** offers the common e-ink panel sizes by their pixels for a tablet that is not listed (Lenovo Smart Paper, Huawei MatePad Paper, Viwoods and others).
 
-| Platform | Models | Pixels (portrait) |
-| --- | --- | --- |
-| reMarkable | reMarkable 2 · Paper Pro · Paper Pro Move | 1404×1872 · 1620×2160 · 954×1696 |
-| Supernote | A5 X / A6 X / Nomad (A6 X2) · Manta (A5 X2) | 1404×1872 · 1920×2560 |
-| Boox | Note Air 3 / Nova Air · Note Air 4C / Tab Ultra C Pro · Go 10.3 · Go 7 · Go Color 7 · Note Max · Palma | 1404×1872 · 1860×2480 · 1860×2480 · 1264×1680 · 1264×1680 · 2400×3200 · 824×1648 |
-| Bigme | inkNote Color+ / Color Lite · B751c (7″) | 1860×2480 · 1264×1680 |
+| Platform | Option | Also covers | Screen | Pixels (portrait) | Colour |
+| --- | --- | --- | --- | --- | --- |
+| reMarkable | Paper Pro |  | 11.8″ | 1620×2160 | yes |
+|  | Paper Pure | reMarkable 2 | 10.3″ | 1404×1872 |  |
+|  | Paper Pro Move |  | 7.3″ | 954×1696 | yes |
+| Supernote | Manta | A5 X2 | 10.7″ | 1920×2560 |  |
+|  | A5 X |  | 10.3″ | 1404×1872 |  |
+|  | Nomad | A6 X2 · A6 X | 7.8″ | 1404×1872 |  |
+| Boox | Note Max |  | 13.3″ | 2400×3200 |  |
+|  | Tab X C |  | 13.3″ | 2400×3200 | yes |
+|  | Note Air C | Air3 C to Air6 C · Tab Ultra C Pro | 10.3″ | 1860×2480 | yes |
+|  | Go 10.3 | Gen II · Lumi | 10.3″ | 1860×2480 |  |
+|  | Note Air3 |  | 10.3″ | 1404×1872 |  |
+|  | Note Mini C |  | 8.5″ | 1536×2048 | yes |
+|  | Tab Mini C | Nova Air C | 7.8″ | 1404×1872 | yes |
+|  | Nova Air | Nova Air 2 | 7.8″ | 1404×1872 |  |
+|  | Go 7 |  | 7″ | 1264×1680 |  |
+|  | Go Color 7 | Gen II | 7″ | 1264×1680 | yes |
+|  | Palma 3 |  | 6.1″ | 824×1648 |  |
+|  | Palma 2 Pro |  | 6.1″ | 824×1648 | yes |
+| Bigme | B10 | B1051C · inkNote Color+ · Color Lite | 10.3″ | 1860×2480 | yes |
+|  | Galy |  | 8″ | 1440×1920 | yes |
+|  | B751C | B751C S · B7 | 7″ | 1264×1680 | yes |
+| Kindle | Scribe (2025) |  | 11″ | 1980×2640 |  |
+|  | Scribe Colorsoft |  | 11″ | 1980×2640 | yes |
+|  | Scribe (2022, 2024) |  | 10.2″ | 1860×2480 |  |
+| Kobo | Elipsa 2E |  | 10.3″ | 1404×1872 |  |
+|  | Sage |  | 8″ | 1440×1920 |  |
+|  | Libra Colour |  | 7″ | 1264×1680 | yes |
+| PocketBook | InkPad Eo | InkPad Eo 2 | 10.3″ | 1860×2480 | yes |
+|  | Color Note |  | 10.3″ | 1404×1872 | yes |
+|  | InkPad One | InkPad X Pro | 10.3″ | 1404×1872 |  |
+| Other devices, by screen | 2400 × 3200 px |  | 13.3″ | 2400×3200 | yes |
+|  | 1980 × 2640 px |  | 11″ | 1980×2640 | yes |
+|  | 1920 × 2560 px | Viwoods AiPaper | 10.7″ | 1920×2560 | yes |
+|  | 1860 × 2480 px |  | 10.3″ | 1860×2480 | yes |
+|  | 1404 × 1872 px | Lenovo Smart Paper · Huawei MatePad Paper · Meebook M103 | 10.3″ | 1404×1872 | yes |
+|  | 1440 × 1920 px | Viwoods AiPaper Mini | 8″ | 1440×1920 | yes |
+|  | 1264 × 1680 px |  | 7″ | 1264×1680 | yes |
+
+Sizes are from each manufacturer's documentation or, where it gives none, from two independent reviews; Amazon gives only "300 ppi" for the 11″ Kindle Scribes, so their 1980×2640 is the 11″ 3:4 grid at that density.
 
 Each page is scaled to fit that box without distortion and centred on white; a page wider than it is tall is exported landscape, with the width and height swapped.
 
-**Colour.** Models with a colour screen — Paper Pro, Paper Pro Move, Note Air 4C / Tab Ultra C Pro, Go Color 7, inkNote Color+ / Color Lite and B751c — receive colour templates; every other model receives greyscale, converted the same way as the [greyscale export](/docs/reference/greyscale-export). Tick **Force greyscale** to make every model greyscale. The first time, that box starts from the editor's greyscale toggle; after that the dialog remembers your own choice.
+**Colour.** Options marked *Colour* in the table receive colour templates; every other option receives greyscale, converted the same way as the [greyscale export](/docs/reference/greyscale-export). The generic sizes keep colour. Tick **Force greyscale** to make every model greyscale. The first time, that box starts from the editor's greyscale toggle; after that the dialog remembers your own choice.
 
-**Also include a PDF template** appears once a Supernote, Boox or Bigme model is ticked. It adds the selected pages as one PDF, `<project>.pdf`, beside the PNGs in each of those model folders, in that model's colour mode. Pages keep their own size (the device fits PDF pages itself) and the links from [Linking](/docs/editor/linking) stay live between selected pages; a link to a page you did not select is still drawn, just not linked. reMarkable folders never get a PDF.
+**Also include a PDF template** appears once a model other than a reMarkable is ticked. It adds the selected pages as one PDF, `<project>.pdf`, beside the PNGs in each of those model folders, in that model's colour mode. Pages keep their own size (the device fits PDF pages itself) and the links from [Linking](/docs/editor/linking) stay live between selected pages; a link to a page you did not select is still drawn, just not linked. Kindle and Kobo folders always get the PDF, ticked or not: those tablets cannot install templates, so the PDF is what you write on. reMarkable folders never get a PDF.
 
 Ticked devices, **Force greyscale** and **Also include a PDF template** are remembered in this browser when you press **Export**; the page selection starts fresh each time.
 
@@ -77,6 +112,14 @@ The download is `<project>_device_templates.zip`, with one folder per ticked mod
     INSTALL.txt
     noteTemplate/<page>.png
     noteTemplate/<project>.pdf          optional PDF
+  Kindle/<Model>/  and  Kobo/<Model>/
+    INSTALL.txt
+    <project>.pdf                       always included
+    <page>.png
+  PocketBook/<Model>/  and  Generic/<width>x<height>/
+    INSTALL.txt
+    <page>.png
+    <project>.pdf                       optional PDF
 ```
 
 `<project>` and `<page>` are the project and page titles made safe for a device's storage: transliterated to ASCII, with `\ / : * ? " < > |` and control characters removed, spaces turned into `_`, and at most 80 characters. Two pages with the same title in one folder become `Day.png` and `Day-2.png`; a title with nothing usable left (or a name Windows reserves, such as `CON`) falls back to `page-<n>`. In the zip, an untitled page is `Page <n>`.
@@ -92,14 +135,18 @@ reMarkable has no official way to add templates, so both routes in INSTALL.txt n
 
 **Option B — PNG templates** (`png/`). The exact look of the page, but every software update removes them. On a Paper Pro or Paper Pro Move first make the system folder writable (`mount -o remount,rw /`); then copy `png/*.png` to `/usr/share/remarkable/templates/`, add the entries from `png/templates.json` to the `"templates"` list of `/usr/share/remarkable/templates/templates.json` on the tablet, and restart xochitl. INSTALL.txt spells this out command by command: it downloads the tablet's list, keeps a backup, merges the new entries with `jq` (re-running it replaces rather than duplicates), copies the result back, and says how to restore the backup if anything goes wrong. The new pages then appear in a notebook's Templates picker under *Custom*. Each entry carries the page title as its name, the file name without extension, a stock icon code, the category *Custom*, and `landscape` for landscape pages.
 
-## Installing on Supernote, Boox and Bigme
+## Installing on other tablets
 
 - **Supernote:** connect by USB, or use Browse & Access, Supernote Partner or Supernote Cloud, and copy the folder `MyStyle/<project>/` into `Note/MyStyle/` on the device. In a note, open *Templates › Customization* and pick a page. A PDF template is picked the same way; its links work when the linked pages are also applied as template pages, and a PDF cannot be the default template for new notes.
 - **Boox:** connect by USB or send the files with BOOXDrop, and copy the files in `noteTemplate/` into `Storage/noteTemplate/`. In a note, tap the template icon and open the *Local* tab. PDF templates work on the device but do not sync through BOOX cloud.
-- **Bigme:** connect by USB and copy the files in `noteTemplate/` into `Storage/noteTemplate/`. In a note, open the template picker and choose a page from the local templates.
+- **Bigme:** connect by USB and copy the files in `noteTemplate/` into `Storage/noteTemplate/`. In a note, open the template picker and choose a page from the local templates. Bigme does not document custom templates; if the picker has no local templates, import a PNG from the Notes app.
+- **Kindle Scribe:** cannot install custom notebook templates, so you write on the PDF. Send `<project>.pdf` with [Send to Kindle](https://www.amazon.com/sendtokindle) (the web page, the Kindle app or e-mail) and write on its pages. Do not copy it over USB: you can only write on documents that arrive through Send to Kindle. The PNGs can be sent the same way; each becomes a one-page document.
+- **Kobo:** cannot install custom notebook templates either. Copy `<project>.pdf` onto the Kobo over USB (or with the Dropbox or Google Drive link), open it from your library and write on it with the Kobo Stylus.
+- **PocketBook:** copy the folder's files onto the device. On the Android models (InkPad Eo, Color Note, InkPad X Pro) pick a PNG as a page background in the Notes app; on the InkPad One, or if your Notes app has no such choice, open the PDF and write on it. PocketBook does not document custom templates, so the menus may differ.
+- **Other devices, by screen:** copy the PNGs to wherever your tablet's notes app takes custom templates or backgrounds, or open the PDF and write on it.
 
 > [!NOTE]
-> The reMarkable routes are community-documented (reMarkable publishes none); the Supernote, Boox and Bigme sizes and folders follow the manufacturers' own documentation. If a model you own is not listed, pick the listed model of the same platform with the same pixel size.
+> The reMarkable routes are community-documented (reMarkable publishes none); the Supernote and Boox sizes and folders follow the manufacturers' own documentation. If a model you own is not listed, pick an option with the same pixels and screen size — in its brand, or under *Other devices, by screen*.
 
 ## Limits and the conversion report
 

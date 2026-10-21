@@ -127,14 +127,70 @@ function installGuide(folder: ModelFolder, projectSlug: string): string {
             '',
         ].join('\n');
     }
+    const heading = `${PLATFORM_LABELS[profile.platform]}: ${profile.name}${profile.also ? ` (also ${profile.also})` : ''}`;
+    const pdf = `${projectSlug}.pdf`;
+    if (profile.platform === 'kindle') {
+        return [
+            heading,
+            '',
+            'Kindle Scribe cannot install custom notebook templates. Write on the PDF instead:',
+            '',
+            `1. Send ${pdf} to your Kindle with Send to Kindle (amazon.com/sendtokindle, the Kindle app,`,
+            '   or e-mail to your Send-to-Kindle address). Do not copy it over USB: you can only write on',
+            '   documents that arrive through Send to Kindle.',
+            '2. Open it on the Scribe and write on its pages with the pen.',
+            '',
+            'The PNG files can be sent the same way; each becomes a one-page document.',
+            '',
+        ].join('\n');
+    }
+    if (profile.platform === 'kobo') {
+        return [
+            heading,
+            '',
+            'Kobo cannot install custom notebook templates. Write on the PDF instead:',
+            '',
+            ...numbered([
+                `Connect the Kobo by USB and copy ${pdf} onto it, or send it with the Dropbox or Google Drive link.`,
+                'Open it from your library and write on its pages with the Kobo Stylus.',
+            ]),
+            '',
+            'The PNG files are for other note apps; the Kobo notebook cannot use them as backgrounds.',
+            '',
+        ].join('\n');
+    }
+    if (profile.platform === 'pocketbook') {
+        return [
+            heading,
+            '',
+            ...numbered([
+                'Connect the device by USB and copy the files in this folder onto it.',
+                'Android models (InkPad Eo, Color Note, InkPad X Pro): in the Notes app, pick a PNG as the page background.',
+                `InkPad One, or a Notes app without that choice: open ${folder.hasPdf ? pdf : 'a PNG'} and write on it with the stylus.`,
+            ]),
+            '',
+            'PocketBook does not document custom templates, so the menus may differ on your firmware.',
+            '',
+        ].join('\n');
+    }
+    if (profile.platform === 'generic') {
+        return [
+            `Templates for ${profile.inches}" screens of ${profile.width} x ${profile.height} pixels${profile.also ? ` (e.g. ${profile.also})` : ''}.`,
+            '',
+            "Copy the PNG files to wherever your device's notes app takes custom templates or backgrounds.",
+            ...(folder.hasPdf ? [`If it has none, open ${pdf} and write on its pages.`] : []),
+            '',
+        ].join('\n');
+    }
     const isBoox = profile.platform === 'boox';
     return [
-        `${PLATFORM_LABELS[profile.platform]}: ${profile.name}`,
+        heading,
         '',
         isBoox ? '1. Connect the device by USB, or send the files with BOOXDrop.' : '1. Connect the device by USB.',
         '2. Copy the files in noteTemplate/ into Storage/noteTemplate/ on the device.',
         isBoox ? '3. In a note, tap the template icon and open the Local tab.' : '3. In a note, open the template picker and choose a page from the local templates.',
         ...(folder.hasPdf && isBoox ? ['', 'PDF templates work on the device but do not sync through BOOX cloud.'] : []),
+        ...(isBoox ? [] : ['', 'Bigme does not document custom templates; if the picker has no local templates, import a PNG from the Notes app.']),
         '',
     ].join('\n');
 }
@@ -171,7 +227,8 @@ export function createDeviceZip(projectName: string): DeviceZip {
         switch (folder.profile.platform) {
             case 'remarkable': return `${folder.root}/png`;
             case 'supernote': return `${folder.root}/MyStyle/${projectSlug}`;
-            default: return `${folder.root}/noteTemplate`;
+            case 'boox': case 'bigme': return `${folder.root}/noteTemplate`;
+            default: return folder.root;
         }
     };
 
