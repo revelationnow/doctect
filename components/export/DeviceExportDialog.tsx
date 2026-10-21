@@ -194,7 +194,7 @@ function OpenDeviceExportDialog({ onClose, getState, projectName, initialForceGr
                         ))}
                     </section>
                     <section aria-labelledby="device-export-devices">
-                        <h3 id="device-export-devices" className="mb-2 text-sm font-semibold text-slate-800">Devices</h3>
+                        <h3 id="device-export-devices" className="mb-2 text-sm font-semibold text-slate-800">Rescale to</h3>
                         {PLATFORMS.map(platform => (
                             <fieldset key={platform} className="mb-2">
                                 <legend className="text-xs font-semibold uppercase tracking-wide text-slate-400">{PLATFORM_LABELS[platform]}</legend>

@@ -31,7 +31,7 @@ Each group starts with its **first page ticked**, so a fresh dialog exports one 
 
 ## Choosing devices
 
-The **Devices** section lists models by platform:
+The **Rescale to** section lists the models a template can be sized for, by platform:
 
 | Platform | Models | Pixels (portrait) |
 | --- | --- | --- |
