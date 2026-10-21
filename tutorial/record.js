@@ -1,10 +1,11 @@
 // Records one episode: sealed servers, the 133%-zoom studio browser, the
 // episode's off-camera setup, then every beat with its narration timing.
 //
-// Usage: node tutorial/record.js <episode-module> [--dry] [--until N]
+// Usage: node tutorial/record.js <episode-module> [--dry] [--until N] [--shots]
 //   --dry    no capture, no narration waits, 4× faster pointer — a quick
 //            selector check before spending a real-time recording
 //   --until  stop after beat N (dry runs while authoring)
+//   --shots  dry runs: screenshot after every beat to <out>/dry/beat-NN.png
 // Needs <out>/narration.json from narrate.js (except --dry). Writes
 // <out>/frames/ (screencast) and <out>/timeline.json for assemble.js.
 import fs from 'node:fs';
@@ -22,7 +23,7 @@ const now = () => Date.now() / 1000;
 
 let cleanup = null;
 
-export async function recordEpisode(episode, { dry = false, until = Infinity } = {}) {
+export async function recordEpisode(episode, { dry = false, until = Infinity, shots = false } = {}) {
     const outDir = episodeOutDir(episode);
     const narration = dry ? null : JSON.parse(fs.readFileSync(path.join(outDir, 'narration.json'), 'utf8'));
     if (narration && narration.beats.length !== episode.beats.length) {
@@ -56,6 +57,8 @@ export async function recordEpisode(episode, { dry = false, until = Infinity } =
         type: (...a) => human.type(...a),
         paste: (...a) => human.paste(...a),
         press: (...a) => human.press(...a),
+        showKeys: (...a) => human.showKeys(...a),
+        tool: (...a) => human.tool(...a),
         wheel: (...a) => human.wheel(...a),
         pick: (...a) => human.pick(...a),
         pickColor: (...a) => human.pickColor(...a),
@@ -182,6 +185,10 @@ export async function recordEpisode(episode, { dry = false, until = Infinity } =
             if (!dry) await sleep((narrationStart + nb.duration - now()) * 1000);
             await sleep((dry ? 0.05 : beat.hold ?? BREATH) * 1000);
             timeline.beats.push({ beat: i, chapter: beat.chapter ?? null, start: beatStart - t0, narrationStart: narrationStart - t0, end: now() - t0 });
+            if (dry && shots) {
+                fs.mkdirSync(path.join(outDir, 'dry'), { recursive: true });
+                await page.screenshot({ path: path.join(outDir, 'dry', `beat-${String(i).padStart(2, '0')}.png`) });
+            }
 
             if (!beat.allowAlert) {
                 const alerts = await page.locator('[role="alert"]').allTextContents().catch(() => []);
@@ -217,7 +224,7 @@ if (process.argv[1]?.endsWith('record.js') && process.argv[2]) {
     }
     const episode = checkEpisode(await import(path.resolve(process.argv[2])), process.argv[2]);
     try {
-        await recordEpisode(episode, { dry: flag('--dry'), until: value('--until') !== undefined ? Number(value('--until')) : Infinity });
+        await recordEpisode(episode, { dry: flag('--dry'), shots: flag('--shots'), until: value('--until') !== undefined ? Number(value('--until')) : Infinity });
     } catch (err) {
         console.error(`✗ ${err.message}`);
         await cleanup?.();

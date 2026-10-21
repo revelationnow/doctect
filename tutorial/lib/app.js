@@ -32,6 +32,33 @@ export const sidebarTab = (page, name) => pane(page).getByRole('button', { name,
 /** Templates mode's "Preview:" node selector in the toolbar. */
 export const previewSelect = (page) => pane(page).locator('div:has(> span:text-is("Preview:")) > select').first();
 
+/** Node Properties' Title input and Assigned Template select. */
+export const nodeTitleInput = (page) => propertiesColumn(page).locator('label:text-is("Title") + input').first();
+export const assignedTemplateSelect = (page) => propertiesColumn(page).locator('label:text-is("Assigned Template") + select').first();
+
+/** A collapsible Element Properties section: 'geometry', 'appearance', 'typography', 'interaction'… */
+export const section = (page, name) => pane(page).getByTestId(`${name}-section`);
+
+/** Toolbar buttons by their tooltip, and the zoom steppers. */
+export const toolbarButton = (page, title) => pane(page).locator(`button[title="${title}"]`).first();
+export const zoomOutButton = (page) => pane(page).locator('button:has(svg.lucide-zoom-out)').first();
+export const zoomInButton = (page) => pane(page).locator('button:has(svg.lucide-zoom-in)').first();
+
+/** Converts page coordinates (points) to screen coordinates for the current zoom. */
+export async function pagePoint(page, x, y, pageWidth = 595.28) {
+    const box = await canvas(page).boundingBox();
+    const s = box.width / pageWidth;
+    return { x: box.x + x * s, y: box.y + y * s };
+}
+
+/** Replaces a field's value the way a person does: click, select all, type. */
+export async function retype(ctx, locator, value, { commit = 'Tab' } = {}) {
+    await ctx.click(locator);
+    await ctx.page.keyboard.press('Control+a');
+    await ctx.type(String(value));
+    if (commit) await ctx.page.keyboard.press(commit);
+}
+
 /** The top-bar tab for an open project. */
 export const projectTab = (page, title) => page.locator('[data-testid="project-tab"]', { hasText: exact(title) }).first();
 

@@ -1,0 +1,10 @@
+00:00 Welcome
+00:28 The tools
+00:42 Drag, don't click
+01:04 Selecting and moving
+01:36 Fills and borders
+02:06 Text and fonts
+02:51 Shapes and alignment
+03:28 Zoom, pan and snap
+03:52 Undo, and saving
+04:04 The result

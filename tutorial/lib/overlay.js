@@ -29,7 +29,17 @@ export function installStudio() {
         window.confirm = scripted('confirm');
         window.alert = scripted('alert');
     }
-    if (window.__studio || !document.documentElement) return;
+    if (window.__studio) return;
+    if (!document.documentElement) {
+        // too early: mount the moment the document element appears
+        const wait = new MutationObserver(() => {
+            if (!document.documentElement) return;
+            wait.disconnect();
+            installStudio();
+        });
+        wait.observe(document, { childList: true });
+        return;
+    }
 
     const host = document.createElement('div');
     host.id = '__studio';

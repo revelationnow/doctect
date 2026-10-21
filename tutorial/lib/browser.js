@@ -3,7 +3,7 @@
 // captured surface stays a crisp 1920×1080 (device-scale tricks don't work:
 // CDP screencasts capture at CSS-pixel size).
 //
-// Routes, all fulfilled locally:
+// Routes (answered locally; fonts are fetched once, then served from cache):
 //   cdn.tailwindcss.com      → the compiled sheet from tutorial/styles (the
 //                              Play CDN is unreachable from sandboxed hosts)
 //   /__tutorial/viewer/*     → tutorial/viewer (the PDF reader page)
@@ -11,8 +11,9 @@
 //                              URLs must not contain an excluded segment
 //                              such as build/ — see the workspace-boundary test)
 //   /__tutorial/files/<name> → files registered with studio.serveFile()
+//   cdn.jsdelivr.net/fontsource/fonts/* → the same Google fonts as static TTFs
 import { chromium } from 'playwright';
-import { execFileSync } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -36,6 +37,31 @@ const pdfjsFile = (name) => {
     if (name.startsWith('standard_fonts/')) return path.join(PDFJS, name);
     return path.join(PDFJS, 'web', name);
 };
+
+// The PDF exporter embeds most Google fonts from jsDelivr's fontsource TTF
+// endpoint, which sandboxed recorders can't reach (a real browser can). The
+// same fonts come from Google's own CSS API as static TTFs when the client
+// doesn't advertise WOFF2, so the recorder answers fontsource requests with
+// those, cached in tutorial/build/cache/fonts. Without this, every recorded
+// export silently falls back to Helvetica.
+const FONT_FAMILY_NAMES = { 'eb-garamond': 'EB Garamond', 'source-sans-3': 'Source Sans 3', 'pt-sans': 'PT Sans', 'pt-serif': 'PT Serif' };
+const familyName = (slug) => FONT_FAMILY_NAMES[slug] ?? slug.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+const curl = (args) => new Promise((resolve, reject) => {
+    execFile('curl', ['-sS', '--fail', '--max-time', '60', ...args], { encoding: 'buffer', maxBuffer: 32 * 1024 * 1024 },
+        (err, stdout) => (err ? reject(err) : resolve(stdout)));
+});
+async function googleFontTtf(slug, weight, style) {
+    const dir = path.join(CACHE_DIR, 'fonts');
+    const file = path.join(dir, `${slug}-${weight}-${style}.ttf`);
+    if (fs.existsSync(file)) return file;
+    const variant = `${weight}${style === 'italic' ? 'italic' : ''}`;
+    const css = (await curl(['-A', 'Mozilla/4.0', `https://fonts.googleapis.com/css?family=${encodeURIComponent(familyName(slug))}:${variant}`])).toString();
+    const url = css.match(/url\((https:[^)]+\.ttf)\)/)?.[1];
+    if (!url) throw new Error(`no TTF for ${slug} ${variant}`);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(file, await curl([url]));
+    return file;
+}
 
 /** Compiles (once per source change) the Tailwind sheet the app expects from the Play CDN. */
 export function tailwindSheet() {
@@ -69,6 +95,16 @@ export async function launchStudio({ headless = true } = {}) {
         contentType: 'text/javascript',
         body: `(()=>{const s=document.createElement('style');s.textContent=${JSON.stringify(css)};(document.head||document.documentElement).prepend(s);})();`,
     }));
+    await context.route('https://cdn.jsdelivr.net/fontsource/fonts/**', async route => {
+        const m = new URL(route.request().url()).pathname.match(/fonts\/([a-z0-9-]+)@[^/]+\/[a-z0-9-]+?-(\d+)-(normal|italic)\.ttf$/);
+        try {
+            if (!m) throw new Error('unrecognised fontsource path');
+            await route.fulfill({ body: fs.readFileSync(await googleFontTtf(m[1], m[2], m[3])), contentType: 'font/ttf' });
+        } catch (err) {
+            process.stderr.write(`font route: ${route.request().url()}: ${err.message}\n`);
+            await route.abort();
+        }
+    });
     const served = new Map();
     await context.route('**/__tutorial/**', async route => {
         const url = new URL(route.request().url());

@@ -115,15 +115,22 @@ export function createHuman(page, { seed = 1, onEvent = () => {}, speed = 1 } = 
         await sleep(120 / speed);
     }
 
+    /** Press, travel, release. `hold` keeps a modifier down throughout (e.g. 'Shift', 'Control'). */
     async function drag(from, to, opts = {}) {
         await move(from, opts.fromOpts ?? {});
         await sleep(120 / speed);
+        if (opts.hold) {
+            await showKeys([KEY_LABELS[opts.hold] ?? opts.hold], opts.holdLabel ?? '');
+            await page.keyboard.down(opts.hold);
+            await sleep(150 / speed);
+        }
         await page.mouse.down();
         event('click');
         await sleep(90 / speed);
         await move(to, { duration: opts.duration ?? 700, ...(opts.toOpts ?? {}) });
         await sleep(90 / speed);
         await page.mouse.up();
+        if (opts.hold) await page.keyboard.up(opts.hold);
         await sleep(160 / speed);
     }
 
@@ -225,7 +232,16 @@ export function createHuman(page, { seed = 1, onEvent = () => {}, speed = 1 } = 
         await fakeClick({ x: pos.x, y: pos.y }, { dwell: 80 });
         await page.evaluate(() => { window.__studio.paletteClose(); window.__studio.lockShape(null); });
         await loc.fill(hex);
+        // a real picker closing hands focus back to the page; leaving it in the
+        // input would swallow the next single-key tool shortcut
+        await loc.evaluate(el => el.blur());
         await sleep(200 / speed);
+    }
+
+    /** A canvas tool shortcut (V, T, R…), first stepping out of any focused field. */
+    async function tool(key) {
+        await page.evaluate(() => { if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur(); });
+        await press(key);
     }
 
     /**
@@ -283,7 +299,7 @@ export function createHuman(page, { seed = 1, onEvent = () => {}, speed = 1 } = 
     }
 
     return {
-        ensure, pointOf, move, click, fakeClick, drag, type, paste, press, wheel, hover, pick, pickColor,
+        ensure, pointOf, move, click, fakeClick, drag, type, paste, press, tool, wheel, hover, pick, pickColor, showKeys,
         armDialogs, replayDialogs, resetDialogs, chooseFile,
         get pos() { return pos; },
         set pos(p) { pos = p; },

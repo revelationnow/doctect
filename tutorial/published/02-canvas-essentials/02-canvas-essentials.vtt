@@ -1,0 +1,339 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:02.510
+Last time we explored a finished planner.
+
+2
+00:00:02.577 --> 00:00:06.830
+This time we start with an empty
+page and make something of our own:
+
+3
+00:00:06.830 --> 00:00:09.207
+the cover of a family recipe book.
+
+4
+00:00:09.275 --> 00:00:14.275
+Along the way you'll meet every drawing
+tool, and the few rules the canvas plays by.
+
+5
+00:00:14.502 --> 00:00:18.112
+This is a fresh, blank
+project: one A4 page.
+
+6
+00:00:18.183 --> 00:00:19.463
+First, a name.
+
+7
+00:00:19.552 --> 00:00:24.431
+The tab takes its name from the top
+page, so I'll call it Family Recipes.
+
+8
+00:00:24.638 --> 00:00:28.238
+And I'll zoom out one step, so
+the whole page fits on screen.
+
+9
+00:00:28.443 --> 00:00:30.383
+Across the top are the tools.
+
+10
+00:00:30.446 --> 00:00:32.686
+Select, and the hand, for panning.
+
+11
+00:00:32.741 --> 00:00:37.092
+Then text, rectangle, ellipse,
+triangle, line, and the data grid,
+
+12
+00:00:37.092 --> 00:00:39.551
+which gets an episode of its own.
+
+13
+00:00:39.627 --> 00:00:42.127
+Each one has a single-letter shortcut.
+
+14
+00:00:42.335 --> 00:00:44.255
+Press R for the rectangle.
+
+15
+00:00:44.364 --> 00:00:47.784
+Now, here's the rule that
+catches everyone the first time.
+
+16
+00:00:47.915 --> 00:00:49.865
+A single click draws nothing.
+
+17
+00:00:49.983 --> 00:00:51.363
+You have to drag.
+
+18
+00:00:51.569 --> 00:00:54.699
+Press, drag to the opposite
+corner, and let go.
+
+19
+00:00:55.264 --> 00:01:00.360
+The tool stays active after you draw, so
+dragging again makes a second rectangle,
+
+20
+00:01:00.360 --> 00:01:01.994
+not a moved first one.
+
+21
+00:01:02.089 --> 00:01:03.929
+Control Z takes it back.
+
+22
+00:01:04.135 --> 00:01:07.525
+Press V for the select tool,
+and click the rectangle.
+
+23
+00:01:07.631 --> 00:01:11.300
+You get eight handles for
+resizing, a rotate handle on top,
+
+24
+00:01:11.300 --> 00:01:15.281
+and this small dot in the middle:
+the pivot it turns around.
+
+25
+00:01:15.487 --> 00:01:16.957
+Drag it to move it.
+
+26
+00:01:17.095 --> 00:01:21.325
+The arrow keys nudge it one point
+at a time, or ten with Shift held.
+
+27
+00:01:21.533 --> 00:01:25.485
+For exact numbers, Geometry, on
+the right, takes typed values.
+
+28
+00:01:25.598 --> 00:01:31.937
+I want this card 24 points in
+from every edge: X and Y of 24,
+
+29
+00:01:31.937 --> 00:01:35.928
+a width of 547, and a height of 794.
+
+30
+00:01:36.133 --> 00:01:37.273
+Now the look.
+
+31
+00:01:37.389 --> 00:01:39.629
+Fill can be a color, or a pattern.
+
+32
+00:01:39.746 --> 00:01:43.336
+I'll switch it to Pattern, choose
+Dots, and pick a soft peach.
+
+33
+00:01:46.109 --> 00:01:49.299
+That's dot grid paper,
+made from one rectangle.
+
+34
+00:01:49.402 --> 00:01:54.509
+The PDF stores it as a single repeating
+pattern rather than thousands of dots,
+
+35
+00:01:54.509 --> 00:01:56.331
+so the file stays small.
+
+36
+00:01:56.536 --> 00:02:00.189
+For the border, a darker orange,
+two points wide, and dashed.
+
+37
+00:02:00.324 --> 00:02:02.742
+And Radius rounds the corners off.
+
+38
+00:02:06.308 --> 00:02:07.868
+Press T for text.
+
+39
+00:02:08.017 --> 00:02:11.833
+Text is the one tool where a
+single click does make something:
+
+40
+00:02:11.833 --> 00:02:14.237
+a small box that grows as you type.
+
+41
+00:02:14.307 --> 00:02:18.627
+For a title, though, I'd rather drag out
+the full width, so it stays centered.
+
+42
+00:02:18.845 --> 00:02:21.055
+Type the title, then press Escape.
+
+43
+00:02:21.160 --> 00:02:24.700
+That commits the text and drops
+you back to the select tool.
+
+44
+00:02:24.906 --> 00:02:26.816
+The font picker is searchable.
+
+45
+00:02:26.932 --> 00:02:29.602
+I'll type play, and take Playfair Display.
+
+46
+00:02:29.704 --> 00:02:33.124
+After that, a bigger size,
+bold, and a deep brown.
+
+47
+00:02:36.551 --> 00:02:39.271
+Now a subtitle, dragged out the same way.
+
+48
+00:02:39.324 --> 00:02:43.670
+Notice it starts with the same
+font, size and color as the title.
+
+49
+00:02:43.781 --> 00:02:46.191
+The text tool remembers
+your last settings.
+
+50
+00:02:46.305 --> 00:02:51.405
+This one needs to be smaller, so 18
+points, and italic instead of bold.
+
+51
+00:02:51.612 --> 00:02:53.752
+A circle for a little decoration.
+
+52
+00:02:53.825 --> 00:02:58.375
+E for ellipse, and hold Shift as you
+drag, to keep it perfectly round.
+
+53
+00:02:58.581 --> 00:03:00.991
+A solid peach fill, and no border.
+
+54
+00:03:03.448 --> 00:03:05.408
+And a short line under the title.
+
+55
+00:03:05.440 --> 00:03:07.752
+L for line, and drag it across.
+
+56
+00:03:12.061 --> 00:03:13.711
+Is everything centered?
+
+57
+00:03:13.866 --> 00:03:15.016
+Not quite.
+
+58
+00:03:15.094 --> 00:03:18.508
+I'll select it all by dragging
+a box from outside the page,
+
+59
+00:03:18.508 --> 00:03:21.594
+and the toolbar grows a
+row of alignment buttons.
+
+60
+00:03:21.724 --> 00:03:26.143
+Align Center lines up every middle,
+halfway between the outermost edges,
+
+61
+00:03:26.143 --> 00:03:27.990
+which here are the card's.
+
+62
+00:03:28.202 --> 00:03:30.922
+To look closer, hold Control and scroll.
+
+63
+00:03:31.062 --> 00:03:33.762
+The zoom centers on
+wherever the pointer is.
+
+64
+00:03:33.848 --> 00:03:39.044
+The hand tool, H, drags the view around,
+and so does holding down the middle mouse
+
+65
+00:03:39.044 --> 00:03:39.738
+button.
+
+66
+00:03:39.946 --> 00:03:43.685
+The magnet turns on snapping,
+and shows the grid it snaps to.
+
+67
+00:03:43.762 --> 00:03:48.242
+The grid gets finer as you zoom in, so
+it doesn't fight you on detail work.
+
+68
+00:03:48.299 --> 00:03:50.079
+I'll switch both off again.
+
+69
+00:03:52.242 --> 00:03:57.642
+If anything goes wrong, Control Z steps
+back, and Control Y steps forward again.
+
+70
+00:03:57.742 --> 00:04:00.042
+And there is no save button to forget.
+
+71
+00:04:00.095 --> 00:04:04.045
+This badge shows the project is
+saved in your browser as you work.
+
+72
+00:04:04.252 --> 00:04:06.152
+Let's see it as a PDF.
+
+73
+00:04:09.656 --> 00:04:12.179
+One page, exactly as designed.
+
+74
+00:04:12.283 --> 00:04:16.811
+In the next episode, we turn this
+cover into a whole recipe notebook,
+
+75
+00:04:16.811 --> 00:04:20.683
+with a page template that fills
+itself in for every recipe.
