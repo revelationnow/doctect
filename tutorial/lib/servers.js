@@ -18,7 +18,14 @@ const waitForHttp = async (url, timeoutMs = 30000) => {
     throw new Error(`server at ${url} not up after ${timeoutMs}ms`);
 };
 
-export async function startServers(tag) {
+// Ports default to the historical 3001/5199 pair; pass others (or set
+// TUTORIAL_API_PORT / TUTORIAL_WEB_PORT) to run a dry run beside a recording.
+export async function startServers(tag, {
+    apiPort = Number(process.env.TUTORIAL_API_PORT || 3001),
+    webPort = Number(process.env.TUTORIAL_WEB_PORT || 5199),
+} = {}) {
+    const apiOrigin = `http://localhost:${apiPort}`;
+    const webOrigin = `http://localhost:${webPort}`;
     const apiLog = `/tmp/tutorial-${tag}-api.log`;
     const env = { ...process.env };
     // EMPTY STRINGS, not delete: the server loads dotenv, which re-populates
@@ -30,10 +37,11 @@ export async function startServers(tag) {
     env.DATABASE_URL = '';
     const sqlitePath = `/tmp/tutorial-${tag}-${Date.now()}.db`;
     Object.assign(env, {
+        PORT: String(apiPort),
         SQLITE_PATH: sqlitePath,
-        BETTER_AUTH_URL: 'http://localhost:3001/api/auth',
-        TRUSTED_ORIGINS: 'http://localhost:5199',
-        CLIENT_URL: 'http://localhost:5199',
+        BETTER_AUTH_URL: `${apiOrigin}/api/auth`,
+        TRUSTED_ORIGINS: `${webOrigin},${apiOrigin}`,
+        CLIENT_URL: webOrigin,
     });
 
     // detached: true makes each child the leader of its own new process
@@ -48,20 +56,24 @@ export async function startServers(tag) {
         stdio: ['ignore', fs.openSync(apiLog, 'w'), fs.openSync(apiLog, 'a')],
         detached: true,
     });
-    const vite = spawn('npx', ['vite', '--port', '5199', '--strictPort'], {
+    // VITE_API_BASE is what services/cloudApi.ts prefixes every /api call
+    // with; without it the client asks the vite origin for /api/me, gets a
+    // 404, and every page shows "Unable to verify account authority".
+    const vite = spawn('npx', ['vite', '--port', String(webPort), '--strictPort'], {
         cwd: ROOT,
-        env: { ...env, VITE_API_URL: 'http://localhost:3001/api/auth' },
+        env: { ...env, VITE_API_URL: `${apiOrigin}/api/auth`, VITE_API_BASE: apiOrigin },
         stdio: 'ignore',
         detached: true,
     });
 
-    await waitForHttp('http://localhost:3001/api/me');
-    await waitForHttp('http://localhost:5199/');
+    await waitForHttp(`${apiOrigin}/api/me`);
+    await waitForHttp(`${webOrigin}/`);
 
     return {
         apiLog,
         sqlitePath,
-        baseUrl: 'http://localhost:5199',
+        apiOrigin,
+        baseUrl: webOrigin,
         /** Latest verification link logged by the console-fallback mailer. */
         lastVerificationLink() {
             const log = fs.readFileSync(apiLog, 'utf8');

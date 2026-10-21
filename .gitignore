@@ -37,6 +37,8 @@ coverage/
 .worktrees/
 tutorial-videos/
 tutorial/.venv/
+tutorial/.models/
+tutorial/.cache/
 
 # Single-page gallery templates: build output and local preview database
 gallery-templates/out/
