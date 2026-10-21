@@ -37,6 +37,10 @@ interface PropertiesPanelProps {
     incrementalActions?: IncrementalPropertyActions;
 }
 
+/** The object without its undefined-valued fields (the same object when it has none). */
+const definedFields = <T extends object>(value: T): T => (Object.values(value).includes(undefined)
+    ? Object.fromEntries(Object.entries(value).filter(([, field]) => field !== undefined)) as T : value);
+
 const INITIAL_ELEMENT_PROPERTY_SECTIONS: ElementPropertySectionState = {
     grid: true,
     geometry: true,
@@ -222,7 +226,14 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ state, activeP
                         }
                         traversalSequences.current.set(next.traversalPath, path.length === oldPath.length ? token : {});
                     }
-                    return { ...updates, gridConfig: next };
+                    // Cleared boxes (and Add Level's open-ended count) arrive as undefined, which the
+                    // workspace store rejects as non-JSON: an undefined field means "unset".
+                    if (next.traversalPath?.some(step => Object.values(step).includes(undefined))) {
+                        const steps = next.traversalPath.map(definedFields);
+                        traversalSequences.current.set(steps, traversalSequences.current.get(next.traversalPath) ?? {});
+                        next.traversalPath = steps;
+                    }
+                    return { ...updates, gridConfig: definedFields(next) };
                 }, saveHistory);
             } else incrementalActions.patchElements(selectedElementIds, previous => {
                 const patch = typeof updates === 'function' ? updates(previous) : updates;

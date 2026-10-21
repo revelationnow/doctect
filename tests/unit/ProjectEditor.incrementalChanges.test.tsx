@@ -14,6 +14,7 @@ import * as references from '../../services/document/references';
 import * as snapshots from '../../services/projectDocumentSnapshot';
 import * as canvasTextLayout from '../../services/canvasTextLayout';
 import { generatePDF } from '../../services/pdfService';
+import { canonicalStringify } from '../../services/localWorkspace/canonical';
 import { runGeneratorSandbox } from '../../services/generatorSandbox';
 import type { EditorPersistenceDrain, EditorSourceBinding } from '../../services/document/contracts';
 
@@ -1977,6 +1978,27 @@ describe('real ProjectEditor incremental boundary', () => {
       expect(element.gridConfig).toEqual({ sourceType: 'current', cols: 9, gapX: 4 + i, gapY: 5,
         traversalPath: [{ sliceStart: i, sliceCount: i + 1 }, { sliceStart: 0, sliceCount: undefined }] });
     });
+  });
+
+  it('G4 traversal levels and cleared data subsets stay storable JSON', () => {
+    // The workspace store rejects undefined values: Add Level's open-ended count and a cleared
+    // Final Data Subset box must leave the field unset rather than write undefined into it.
+    const project = makeIncrementalProject(); const template = project.initialState.variants.default.templates['page-0'];
+    template.elements[0] = { ...template.elements[0], type: 'grid', gridConfig: {
+      sourceType: 'current', cols: 2, gapX: 4, gapY: 5, dataSliceStart: 1, dataSliceCount: 2,
+    } as any };
+    const h = renderIncrementalEditor(project); fireEvent.click(screen.getByTitle('Layers')); fireEvent.click(screen.getByTestId('element-row-title'));
+    const grid = () => h.onDocumentEdit.mock.calls.at(-1)![0].edit.after.variants.default.templates['page-0'].elements[0].gridConfig;
+    fireEvent.click(screen.getByRole('button', { name: 'Add Level' }));
+    expect(grid().traversalPath).toEqual([{ sliceStart: 0 }]);
+    expect(Object.hasOwn(grid().traversalPath[0], 'sliceCount')).toBe(false);
+    fireEvent.change(screen.getByPlaceholderText('Count'), { target: { value: '3' } });
+    fireEvent.change(screen.getByPlaceholderText('Count'), { target: { value: '' } });
+    expect(Object.hasOwn(grid().traversalPath[0], 'sliceCount')).toBe(false);
+    fireEvent.change(screen.getByPlaceholderText('Count (All)'), { target: { value: '' } });
+    expect(Object.hasOwn(grid(), 'dataSliceCount')).toBe(false);
+    expect(grid()).toMatchObject({ dataSliceStart: 1, cols: 2 });
+    expect(() => canonicalStringify(grid())).not.toThrow();
   });
 
   it('G4 deletes one layer and retags orphans atomically preserving relative zIndex rather than array order', () => {
