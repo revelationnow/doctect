@@ -1,0 +1,141 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:04.150
+Last time, the cover's index
+started linking to every recipe.
+
+2
+00:00:04.286 --> 00:00:08.646
+But once you're on a recipe, there's no
+way back, and no way to the next one.
+
+3
+00:00:08.711 --> 00:00:11.051
+Today we add the links you set yourself.
+
+4
+00:00:11.261 --> 00:00:16.198
+On the Recipe template, I'll start a
+small navigation bar along the top:
+
+5
+00:00:16.198 --> 00:00:18.711
+a text box that says All recipes.
+
+6
+00:00:18.820 --> 00:00:20.700
+Small, and in the same brown.
+
+7
+00:00:24.650 --> 00:00:29.100
+Links live at the very bottom of
+Element Properties, under Interaction.
+
+8
+00:00:29.177 --> 00:00:31.691
+The On Click menu has nine targets.
+
+9
+00:00:31.797 --> 00:00:33.837
+This one is Go to Parent Page.
+
+10
+00:00:35.173 --> 00:00:37.883
+Notice it never asks for a page number.
+
+11
+00:00:38.022 --> 00:00:43.139
+This template draws all three recipes, so
+a page number would be right on one and
+
+12
+00:00:43.139 --> 00:00:44.842
+wrong on the other two.
+
+13
+00:00:44.989 --> 00:00:48.001
+Instead, a link names a
+relationship, my parent,
+
+14
+00:00:48.001 --> 00:00:51.639
+and each page works out where
+that is when you export.
+
+15
+00:00:51.849 --> 00:00:53.149
+Now sideways.
+
+16
+00:00:53.201 --> 00:00:56.929
+A Next label on the right, and
+its target is Go to Sibling,
+
+17
+00:00:56.929 --> 00:01:01.981
+with an offset of 1: one step forward
+among the pages that share its parent.
+
+18
+00:01:02.464 --> 00:01:07.194
+And Previous on the left: the same
+target, with an offset of minus 1.
+
+19
+00:01:07.244 --> 00:01:10.131
+It takes a minute to set
+up, but it happens once,
+
+20
+00:01:10.131 --> 00:01:13.504
+on the template, and every
+recipe gets the whole bar.
+
+21
+00:01:14.501 --> 00:01:17.261
+One rule is worth knowing
+before you export.
+
+22
+00:01:17.358 --> 00:01:21.725
+Tomato Soup is the first recipe,
+so it has no previous page.
+
+23
+00:01:21.868 --> 00:01:24.608
+A link like that isn't
+left pointing at nothing.
+
+24
+00:01:24.709 --> 00:01:27.359
+The whole element is left off that page.
+
+25
+00:01:27.566 --> 00:01:29.236
+Let's export and check.
+
+26
+00:01:29.330 --> 00:01:33.180
+Page one is still the cover, so
+I'll scroll on to Tomato Soup.
+
+27
+00:01:33.275 --> 00:01:36.625
+It has All recipes, and
+Next, but no Previous.
+
+28
+00:01:36.830 --> 00:01:41.080
+Next takes us to Banana Bread, the
+middle recipe, which has both.
+
+29
+00:01:41.287 --> 00:01:46.457
+And All recipes goes back to the cover,
+with its index, ready for the next pick.
+
+30
+00:01:46.667 --> 00:01:50.537
+Next time: layers, stacking, and
+the finer points of styling.
