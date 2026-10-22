@@ -354,10 +354,12 @@ All base properties + required gridConfig:
 gridConfig: {
   // ...core config above...
 
-  // Cell borders. Defaults to the element's own stroke/strokeWidth when omitted.
+  // Cell borders come only from these fields: without gridBorderColor and gridBorderWidth,
+  // cells have none. The element's own stroke/strokeWidth draws one outline around the
+  // whole grid, never around each cell.
   gridBorderMode: "all",              // "all" | "outside" | "inside" | "none"
-  gridBorderColor: "#c8b58c",         // override cell border color
-  gridBorderWidth: 1,                 // override cell border width
+  gridBorderColor: "#c8b58c",         // cell border color (needed for cell borders)
+  gridBorderWidth: 1,                 // cell border width (needed for cell borders)
   gridBorderStyle: "solid",           // "solid" | "dashed" | "dotted" | "double" | "none"
   gridBorderRadius: 0,                // rounded cell corners
   showEmptyCellBorders: false,        // also draw borders on empty/offset cells (default false)

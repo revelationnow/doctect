@@ -150,6 +150,10 @@ describe('HierarchyGeneratorModal', () => {
         // A dynamic offset is read from the first item the grid shows, and the calendar example says so.
         expect(screen.getByRole('dialog')).toHaveTextContent('The grid reads "startWeekday" from the FIRST day it shows');
         expect(screen.getByRole('dialog')).not.toHaveTextContent(/Month node data stores/);
+        // Cell borders never fall back to the element's stroke, in the canvas or the PDF, so the prompt mustn't say they do.
+        expect(screen.getByRole('dialog')).toHaveTextContent('Cell borders come only from these fields');
+        expect(screen.getByRole('dialog')).toHaveTextContent('whole grid, never around each cell');
+        expect(screen.getByRole('dialog')).not.toHaveTextContent(/Defaults to the element's own stroke/);
         expect(screen.getByRole('dialog')).not.toHaveTextContent('Detach Saved Generator');
         expect(screen.getByRole('dialog')).not.toHaveTextContent(/remove source before publishing/i);
         expect(screen.queryByRole('button', { name: 'Detach Saved Generator' })).not.toBeInTheDocument();
