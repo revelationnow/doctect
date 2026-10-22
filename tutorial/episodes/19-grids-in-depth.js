@@ -177,14 +177,16 @@ export const beats = [
             await ctx.atSentence(1, { offset: 3.3 }); // "the color and width shown here"
             await ctx.move(cellBorder(page).locator('input[type=color]'));
             await ctx.move(cellBorder(page).locator('input[type=number]').first(), { ax: 0.3 });
+            // the gray goes in as this sentence ends, so the next beat's three settings fit its first sentence
+            await ctx.atSentence(1, { end: true, offset: -2.2 });
+            await ctx.unspotlight();
+            await ctx.pickColor(cellBorder(page).locator('input[type=color]'), '#64748b');
         },
     },
     {
-        say: 'So: a gray, half a point for the width, and then the switch. Three empty cells now. '
+        say: 'So: a gray, half a point, and the switch. Three empty cells now. '
             + 'The offset re-read the first day left, Thursday the second. The slice ran first.',
         do: async (page, ctx) => {
-            await ctx.unspotlight();
-            await ctx.pickColor(cellBorder(page).locator('input[type=color]'), '#64748b');
             const width = cellBorder(page).locator('input[type=number]').first();
             await ctx.click(width, { ax: 0.3 }); // left of the number spinner, which a click would step
             await ctx.page.keyboard.press('Control+a');
