@@ -196,7 +196,7 @@ export const beats = [
             await ctx.spotlight(text, '', 8);
             await ctx.atSentence(0, { offset: 3.2 });
             await ctx.move(dialogButton(page, 'Close without Saving'));
-            await ctx.atSentence(1, { offset: 1.5 });
+            await ctx.atSentence(1, { offset: 1.0 });
             await ctx.unspotlight();
             await ctx.click(dialogButton(page, 'Close without Saving'));
             await closeDialog(page).waitFor({ state: 'detached' });
