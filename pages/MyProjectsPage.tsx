@@ -1,15 +1,20 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Trash2, Globe, Lock, Pencil } from 'lucide-react';
-import { cloudApi, MyProject, StorageUsage } from '../services/cloudApi';
+import { useNavigate } from 'react-router-dom';
+import { Trash2, Globe, Lock, Pencil, ExternalLink } from 'lucide-react';
+import { cloudApi, ApiError, MyProject, StorageUsage } from '../services/cloudApi';
+import { IMPORT_STAGE_ERROR_MESSAGE } from '../services/importProject';
+import { stageCloudProjectOpen } from '../services/openCloudProject';
 import { AppHeader } from '../components/AppHeader';
 import { LazyEditListingModal } from '../components/cloud/LazyEditListingModal';
 
 const formatMB = (bytes: number) => `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 
 export function MyProjectsPage() {
+    const navigate = useNavigate();
     const [projects, setProjects] = useState<MyProject[] | null>(null);
     const [usage, setUsage] = useState<StorageUsage | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [openingId, setOpeningId] = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -25,6 +30,21 @@ export function MyProjectsPage() {
     }, []);
 
     useEffect(() => { load(); }, [load]);
+
+    // Opens the project's cloud head as a new editor tab linked to it, or switches to the tab this
+    // browser already links to it (its local edits untouched), then goes to the editor.
+    const onOpen = async (p: MyProject) => {
+        setOpeningId(p.id);
+        setError(null);
+        try {
+            await stageCloudProjectOpen(p.id);
+            navigate('/app');
+        } catch (e) {
+            console.error('Could not open the cloud project in the editor:', e);
+            setError(e instanceof ApiError ? e.message : IMPORT_STAGE_ERROR_MESSAGE);
+            setOpeningId(null);
+        }
+    };
 
     const onDelete = async (p: MyProject) => {
         const ok = window.confirm(
@@ -91,6 +111,13 @@ export function MyProjectsPage() {
                                         {formatMB(p.storedBytes)} · {p.commitCount} versions · updated {new Date(p.updatedAt).toLocaleDateString()}
                                     </div>
                                 </div>
+                                <button
+                                    onClick={() => onOpen(p)}
+                                    disabled={openingId !== null}
+                                    className="flex items-center gap-1 text-xs text-slate-600 hover:text-blue-700 disabled:opacity-50"
+                                >
+                                    <ExternalLink size={12} /> {openingId === p.id ? 'Opening…' : 'Open'}
+                                </button>
                                 {p.visibility === 'public' && (
                                     <button
                                         onClick={() => setEditingId(p.id)}

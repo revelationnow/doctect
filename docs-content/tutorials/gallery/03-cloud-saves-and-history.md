@@ -3,7 +3,7 @@ title: Cloud Saves & Version History
 difficulty: beginner
 time: 7 min
 summary: Explicit snapshots to the cloud, a commit history you can restore from, and the My Projects page.
-keywords: cloud, save, commit, history, restore, my projects, storage, snapshot
+keywords: cloud, save, commit, history, restore, my projects, open, another browser, another computer, storage, snapshot
 prerequisites: gallery/accounts-and-usernames
 ---
 
@@ -72,13 +72,15 @@ Saved projects need a home page, and it's the [**My projects**](/docs/reference/
 
 Each row is one cloud project: its name, a **public** or **private** badge (private is the default — publishing is what flips it), its size, how many versions it holds, and when it was last updated. This list is the full inventory of what the cloud holds under your name — projects you've only ever kept local don't appear, because the cloud has never heard of them. Public rows carry one extra action, **Edit listing**, which opens [the gallery listing editor](/docs/gallery/publishing#fixing-a-listing-after-the-fact) for that project.
 
+The first action on every row is **Open**, and it's what makes the cloud a way back to your work from anywhere. Sign in on another computer or in a fresh browser, come here, click **Open**, and the project's latest save — the commit marked **HEAD** in its history — arrives in the editor as a new tab. That tab is linked to the cloud project just as if you'd saved it from there: **Save to cloud** adds the next version to the same history instead of starting a second cloud project, and **Version history** lists every version, ready to restore. In a browser that already has a tab linked to the project, **Open** simply switches to that tab rather than opening a duplicate — and whatever is in it, including local edits you haven't saved to the cloud, stays exactly as it was. (If you've saved from somewhere else in the meantime, that tab's next save gets the *"Cloud project changed since your last save"* message from the Cloud menu tip above, with **Reload cloud version** right there.)
+
 The bar on top is your **storage meter**: every account gets **50 MB**, the sum of all commits across all your projects. Snapshots of typical planners are small, so this goes further than it sounds — but a project saved fifty times does carry fifty snapshots' worth of weight. The bar turns red as you approach the limit, and a save past it is refused with a message pointing right back to this page. (There's a project-count ceiling too — 25 cloud projects per account.)
 
-Which is what **Delete** is for. It asks once, naming the project and exactly what's at stake — *"Delete "Sketchbook" and all 2 of its saved versions? This cannot be undone."* — and it means it: the project, every commit in its history, and its gallery page if it was published, all gone in one step, and the storage comes back immediately. There's deliberately no trash can or grace period. If some version of the project might still matter, this is the moment to open it and check — after confirming, no restore can reach it.
+Which is what **Delete** is for. It asks once, naming the project and exactly what's at stake — *"Delete "Sketchbook" and all 2 of its saved versions? This cannot be undone."* — and it means it: the project, every commit in its history, and its gallery page if it was published, all gone in one step, and the storage comes back immediately. There's deliberately no trash can or grace period. If some version of the project might still matter, this is the moment to **Open** it and check its Version history — after confirming, no restore can reach it.
 
 > [!NOTE]
 > Deleting a cloud project never touches your browser. If the project is still open in a tab, everything local stays — you've deleted its cloud copy and history, not your working copy. The reverse is also true, from the first section: closing a tab never deletes the cloud copy. Local and cloud only ever change when you explicitly act on that side.
 
 ## Where you stand
 
-Your work can now outlive your browser: named snapshots on the server, a history you can walk backward and forward without ever losing a version, and one page that shows everything the cloud holds for you. What your projects *can't* do yet is be seen — every save so far is private. Turning a commit into a public gallery page, with previews, tags, and a description, is exactly where this track goes next.
+Your work can now outlive your browser: named snapshots on the server, a history you can walk backward and forward without ever losing a version, and one page that shows everything the cloud holds for you and opens any of it in whichever browser you sign in to. What your projects *can't* do yet is be seen — every save so far is private. Turning a commit into a public gallery page, with previews, tags, and a description, is exactly where this track goes next.
