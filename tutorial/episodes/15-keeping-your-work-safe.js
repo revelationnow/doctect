@@ -180,7 +180,7 @@ export const beats = [
             await ctx.spotlight(text, '', 8);
             await ctx.atSentence(0, { offset: 3.2 });
             await ctx.move(dialogButton(page, 'Close without Saving'));
-            await ctx.atSentence(1, { offset: 1.9 });
+            await ctx.atSentence(1, { offset: 1.5 });
             await ctx.unspotlight();
             await ctx.click(dialogButton(page, 'Close without Saving'));
             await closeDialog(page).waitFor({ state: 'detached' });
@@ -206,8 +206,11 @@ export const beats = [
             await savedLocally(page);
             await ctx.atSentence(1);
             await ctx.openFile(ctx.state.json, { title: path.basename(ctx.state.json) });
+            await ctx.atSentence(1, { offset: 2.2 });
             await ctx.move(await textBox(page, 'pre', '"nodes"'), { ax: 0.9 });
             await ctx.move(await textBox(page, 'pre', '"Family Cookbook"'), { ax: 0.95, duration: 900 });
+            await ctx.atSentence(2);
+            await ctx.move(page.locator('#name'), { ax: 0.1 });
         },
     },
     {
@@ -232,20 +235,23 @@ export const beats = [
             await ctx.click(app.pane(page).getByRole('button', { name: 'JSON', exact: true }));
             await jsonEditor(page).waitFor();
             await ctx.click(jsonEditor(page).getByRole('button', { name: 'Text', exact: true }));
+            await ctx.click(jsonEditor(page).locator('textarea'), { ay: 0.3 });
         },
     },
     {
         say: 'In Text mode, select all, paste, and Apply Changes. The recipe book is back, and the tab reads Family Cookbook again.',
         do: async (page, ctx) => {
             const editor = jsonEditor(page);
-            await ctx.click(editor.locator('textarea'), { ay: 0.3 });
+            await ctx.atSentence(0, { offset: 0.9 });
             await ctx.press('Control+a');
+            await ctx.atSentence(0, { offset: 1.6 });
             await ctx.paste(fs.readFileSync(ctx.state.json, 'utf8'));
             await ctx.click(editor.getByRole('button', { name: 'Apply Changes', exact: true }));
             await editor.waitFor({ state: 'detached' });
-            await app.projectTab(page, 'Family Cookbook').waitFor();
-            await ctx.atSentence(1);
+            await ctx.atSentence(1, { offset: 0.2 });
             await ctx.move(app.nodeRow(page, 'Weeknight Pad Thai with Crispy Tofu'), { ax: 0.3 });
+            await app.projectTab(page, 'Family Cookbook').waitFor();
+            await ctx.atSentence(1, { offset: 1.6 });
             await ctx.move(app.projectTab(page, 'Family Cookbook'), { ax: 0.4 });
         },
     },
@@ -264,13 +270,13 @@ export const beats = [
         do: async (page, ctx) => {
             await savedLocally(page);
             await ctx.move(cloudButton(page));
-            await ctx.atSentence(1);
+            await ctx.atSentence(1, { offset: -0.3 });
             await ctx.click(cloudButton(page));
             const item = page.getByRole('button', { name: 'Save to cloud (new)' });
             await ctx.move(item);
             await ctx.dialogs.arm({ text: 'Back from the JSON file' });
             await ctx.click(item);
-            await ctx.dialogs.replay();
+            await ctx.dialogs.replay({ typeWpm: 260 });
             await item.waitFor({ state: 'detached' });
         },
     },
@@ -324,7 +330,7 @@ export const beats = [
             await ctx.move(page.getByRole('button', { name: 'Save to cloud', exact: true }));
             await ctx.atSentence(0, { offset: 4.2 });
             await ctx.move(page.getByRole('button', { name: 'Version history', exact: true }));
-            await ctx.atSentence(1, { offset: 1.2 });
+            await ctx.atSentence(1, { offset: 0.9 });
             await ctx.click(cloudButton(page));
         },
     },
