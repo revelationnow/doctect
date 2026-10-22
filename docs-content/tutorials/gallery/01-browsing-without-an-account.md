@@ -44,7 +44,7 @@ The filters narrow things down, and they combine:
 | **Category** | One of the categories from the landing rows, with a count of how many projects it holds. |
 | **Size or device** | The page size the project was built for: A4, A5, US Letter, a reMarkable, a Kindle Scribe, a 10.3″ Boox or Supernote, and so on. Projects that ship several editions appear under each of them. Devices that share a screen size share one entry, because a file made for one fits all of them. |
 | **4+ stars** | Only projects averaging four stars or more. |
-| **Tags** | Click any tag chip — on a card, a project page, or the landing — to filter by it. Click a second one later and you get projects carrying **both**. |
+| **Tags** | Click any tag chip — on a card, a project page, or the landing — to filter by it. Each click opens a fresh view filtered by that tag alone, replacing the search and every other filter — an earlier tag included. Tags combine only when you type them into the address: `?tag=weekly&tag=a5` shows projects carrying **both**. |
 
 The **sort** menu orders the results: **Trending** (the default), **Newest**, **Top rated**, **Most downloaded**, and **Best match** while you're searching. **Top rated** is fair to newcomers *and* resistant to flukes: a project with a single five-star review won't outrank one with a hundred reviews averaging 4.8. The **grid / list** switch shows the same results either as cards or as a compact table with category, size, rating, downloads, and dates side by side. Long result lists page with **Previous / Next**, and say which page you're on out of how many.
 

@@ -201,7 +201,7 @@ Press **Preview**: 1 variant, 4 templates, **13 nodes, 11 estimated pages** — 
 
 ## Validation errors you'll meet
 
-When a run fails, the message appears in red next to the **Preview** button, prefixed with its category (`Runtime:` for exceptions your own code throws, `Hierarchy:` for contract violations like everything below). The two you will actually meet, first: the typo'd `type` and the forgotten `push`. Here's the first one on purpose — a hierarchy script for the same templates, with one letter wrong:
+When a run fails, the message appears in red next to the **Preview** button. An error from your own code — a `throw`, a misspelled variable, a script that doesn't even parse — is prefixed with the script it came from (`Hierarchy script: …`), plus the line when it's a syntax error (`Template script, line 13: Unexpected identifier 'textColor'`). Contract violations like everything below are prefixed with their category instead (`Hierarchy:`). The two you will actually meet, first: the typo'd `type` and the forgotten `push`. Here's the first one on purpose — a hierarchy script for the same templates, with one letter wrong:
 
 ```javascript
 const nodes = {};

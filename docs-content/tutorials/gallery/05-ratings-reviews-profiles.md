@@ -46,7 +46,7 @@ Expectations, honestly set: reporting sends the review to a human, full stop. Yo
 
 ## Author profiles
 
-Usernames aren't just signatures — every one of them is a link. The "by atlas_designs" on a gallery card, the author line on a project page, the name on a review: all of them lead to that person's [public profile](/docs/reference/profile-page) at `/u/` followed by their username.
+Usernames aren't just signatures. The author line on a project page and the name on a review both lead to that person's [public profile](/docs/reference/profile-page) at `/u/` followed by their username. The "by atlas_designs" on a gallery card, and the author name in a list-view row, are plain text, though — open the project and follow its author line from there.
 
 ![The public profile page for atlas_designs: username, join date, and a grid of published project cards](/docs-assets/gallery/profile-page.png "A profile is exactly three things: the handle, the join date, and the published work")
 

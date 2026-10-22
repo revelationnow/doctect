@@ -56,7 +56,7 @@ Hiding a layer doesn't touch its element rows in the panel — they stay listed,
 
 ## Ordering
 
-Every element's final stacking position comes from two steps, and mixing them up is the single most common confusion about layers: **[layer order](/docs/reference/layer-order) always wins first.** Picture layers as separate transparent sheets stacked on a table. Every element on a higher sheet renders in front of every element on a lower sheet, full stop — regardless of either element's own [Z-Index](/docs/editor/elements-and-properties#rotation-opacity-stacking). Z-Index only breaks ties *within one sheet*; it has no way to reach across to a different one.
+Every element's final stacking position comes from two steps, and mixing them up is the single most common confusion about layers: **[layer order](/docs/reference/layer-order) always wins first.** Picture layers as separate transparent sheets stacked on a table. Every element on a higher sheet renders in front of every element on a lower sheet, full stop — on the canvas and in the exported PDF alike, regardless of either element's own [Z-Index](/docs/editor/elements-and-properties#rotation-opacity-stacking). Z-Index only breaks ties *within one sheet*; it has no way to reach across to a different one.
 
 Concretely: an element with Z-Index 999 on the back layer still renders behind an element with Z-Index 0 on the front layer. Raising the back-layer element's Z-Index further changes nothing about that — it can climb to the top of its own layer, but it can never climb off it.
 

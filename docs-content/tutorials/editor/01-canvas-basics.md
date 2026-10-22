@@ -67,7 +67,7 @@ That handle set is the same on every non-line shape: eight resize handles (the f
 Click empty canvas to deselect everything. Click-and-drag across empty canvas instead, and you get a **marquee**: a selection box that, on release, selects every shape it touches even partially — drag it in whichever direction is convenient, corner to corner. Shift-click a shape to add it to whatever's already selected, and shift-click a selected shape again to drop it back out. Once two or more shapes are selected this way, the toolbar grows a row of [alignment and distribution buttons](/docs/reference/alignment-tools) — enough to be worth knowing exists, even though lining shapes up is its own later tutorial.
 
 > [!TIP]
-> Holding `kbd:Ctrl` (`kbd:Cmd` on a Mac) when you start dragging an already-selected shape peels off a copy on the spot and drags *that*, leaving the original exactly where it was — a quick, mouse-only duplicate that doesn't need `kbd:Ctrl+D`.
+> Holding `kbd:Ctrl` (`kbd:Cmd` on a Mac) when you start dragging an already-selected shape peels off a copy on the spot and drags *that*, leaving the original exactly where it was — a quick, mouse-only duplicate that doesn't need `kbd:Ctrl+D`. The copy is made only once the press turns into a drag (the pointer moving more than 5 points), so a `kbd:Ctrl`-click that stays put copies nothing.
 
 `kbd:Escape` cancels whatever's actively happening — a shape mid-drag, an open marquee box, a move, a resize, a rotation, a pan — snapping everything back to how it was right before that action started. It does *not* clear a selection that's just sitting there: select a shape, do nothing else, and pressing `kbd:Escape` leaves it selected.
 

@@ -70,12 +70,12 @@ Here's the honest part: **PDF Architect has no in-place conflict resolver.** The
 
 Resolution is manual, and it belongs to the **fork author**, not the owner. The workable path — the one the page itself spells out in the conflict banner (*"fork the latest version again and re-apply their changes"*) — is:
 
-1. **Re-fork the upstream as it is now.** The fresh fork branches from your *current* head, which already contains the owner's conflicting change.
+1. **Re-fork the upstream once the change is published.** A fork copies the project's *published* version — not your latest cloud save, which is what the conflict check compares against — so the fresh fork contains your conflicting change only once you've published it. Re-fork any sooner and the new request conflicts all over again.
 2. **Re-apply the improvement on top of that.** Because the new fork point already includes the owner's version of the disputed unit, re-doing the change is no longer a divergence — it's a straightforward edit on top of the latest.
 3. **Propose again.** The new request diffs the re-forked fork against the (unchanged) upstream and comes up clean and mergeable.
 4. **Close the stale request.** The old conflicted one has been superseded; close it so it stops cluttering the list.
 
-The reason re-forking works where in-place fixing can't is that the shared fork point *moves*: the original request is forever anchored to a fork point that predates the owner's change, so it can never stop diverging from it, whereas a fresh fork is anchored to the version that *contains* that change.
+The reason re-forking works where in-place fixing can't is that the shared fork point *moves*: the original request is forever anchored to a fork point that predates the owner's change, so it can never stop diverging from it, whereas a fresh fork, taken once that change is published, is anchored to the version that *contains* it.
 
 ## Closing without merging
 
