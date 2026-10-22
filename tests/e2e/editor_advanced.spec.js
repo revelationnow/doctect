@@ -328,7 +328,7 @@ if (typeof caches !== 'undefined' || typeof importScripts !== 'undefined') throw
 
         await page.getByRole('button', { name: 'Preview', exact: true }).click();
 
-        await expect(page.getByRole('alert')).toContainText('Runtime: Template script must return synchronously.');
+        await expect(page.getByRole('alert')).toContainText('Template script must return synchronously.');
         await expect(page.getByRole('button', { name: 'Preview', exact: true })).toBeEnabled();
         await markerServer.observeNoHitsFor(MIN_NO_HIT_OBSERVATION_MS);
         expect(markerServer.hits).toEqual([]);

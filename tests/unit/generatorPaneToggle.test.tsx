@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { generatorErrorPane } from '../../services/generatorErrorPane';
+import { describeGeneratorFailure, generatorErrorPane, generatorSyntaxErrorLine } from '../../services/generatorErrorPane';
 import { HierarchyGeneratorModal } from '../../components/HierarchyGeneratorModal';
 import { FormFactorProvider } from '../../components/editor-layout/FormFactorContext';
 
@@ -18,6 +18,17 @@ describe('generatorErrorPane', () => {
         ['Combined generator source exceeds 1 MiB.', null],
     ] as const)('%s -> %s', (message, pane) => {
         expect(generatorErrorPane(message)).toBe(pane);
+    });
+
+    it('names the failing script, and keeps a message that already names it', () => {
+        expect(describeGeneratorFailure("Unexpected identifier 'textColor'", 'template', 13)).toBe("Template script, line 13: Unexpected identifier 'textColor'");
+        expect(describeGeneratorFailure('foo is not defined', 'hierarchy', null)).toBe('Hierarchy script: foo is not defined');
+        expect(describeGeneratorFailure('Template script must return synchronously.', 'template', null)).toBe('Template script must return synchronously.');
+    });
+
+    it('finds the line of a syntax error by parsing, and none when the script parses', async () => {
+        expect(await generatorSyntaxErrorLine("const t = {};\nt.day = { id: 'day',\n  x: 40 y: 40 };\nreturn t;")).toBe(3);
+        expect(await generatorSyntaxErrorLine("const t = {};\nreturn t;")).toBeNull();
     });
 
     it('prefers the sandbox phase and falls back to the message prefix without one', () => {
@@ -100,7 +111,7 @@ describe('Generator pane toggle', () => {
         runGeneratorSandbox.mockResolvedValueOnce({ ok: false, category: 'runtime', message: 'boom', phase: 'hierarchy' });
         renderModal('phone');
         fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
-        expect((await screen.findByRole('alert')).textContent).toContain('Runtime: boom');
+        expect((await screen.findByRole('alert')).textContent).toContain('Hierarchy script: boom');
         const hierarchyTab = screen.getByRole('tab', { name: /^Hierarchy/ });
         expect(dot(hierarchyTab)).not.toBeNull();
         expect(hierarchyTab.textContent).toBe('Hierarchy, has error');

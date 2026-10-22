@@ -144,6 +144,9 @@ describe('HierarchyGeneratorModal', () => {
         fireEvent.click(screen.getByRole('button', { name: 'LLM Helper & Schema Documentation' }));
 
         expect(screen.getAllByText(workflow, { exact: true })).toHaveLength(2);
+        // Page sizes and positions are PDF points, in the prompt as everywhere else.
+        expect(screen.getByRole('dialog')).toHaveTextContent('page width in points (RM_PP_WIDTH = 509)');
+        expect(screen.getByRole('dialog')).not.toHaveTextContent(/in pixels|\(pixels\)/);
         expect(screen.getByRole('dialog')).not.toHaveTextContent('Detach Saved Generator');
         expect(screen.getByRole('dialog')).not.toHaveTextContent(/remove source before publishing/i);
         expect(screen.queryByRole('button', { name: 'Detach Saved Generator' })).not.toBeInTheDocument();
@@ -493,6 +496,17 @@ describe('HierarchyGeneratorModal', () => {
         confirm.mockReturnValue(true);
         fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
         expect(props.onClose).toHaveBeenCalledOnce();
+    });
+
+    it('names the script and line of a syntax error', async () => {
+        runGeneratorSandbox.mockResolvedValue({ ok: false, category: 'runtime', message: "Unexpected identifier 'textColor'", phase: 'template' });
+        renderModal();
+        fireEvent.change(screen.getByLabelText('Template script'), {
+            target: { value: "const t = {};\nt.day = { id: 'day', elements: [\n  { type: 'text', fontSize: 14 textColor: '#64748b' },\n] };\nreturn t;" },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+
+        expect(await screen.findByRole('alert')).toHaveTextContent("Template script, line 3: Unexpected identifier 'textColor'");
     });
 
     it('announces preview errors as live alerts', async () => {

@@ -13,7 +13,7 @@ import { GeneratorVisualPreviewModal } from './GeneratorVisualPreviewModal';
 import clsx from 'clsx';
 import { useFormFactor } from './editor-layout/FormFactorContext';
 import { useBackDismiss } from './editor-layout/useBackDismiss';
-import { generatorErrorPane, GeneratorPane } from '../services/generatorErrorPane';
+import { describeGeneratorFailure, generatorErrorPane, generatorSyntaxErrorLine, GeneratorPane } from '../services/generatorErrorPane';
 
 interface HierarchyGeneratorModalProps {
   isOpen: boolean;
@@ -226,8 +226,8 @@ Each template defines a page layout:
 {
   id: "template_id",      // unique identifier
   name: "Display Name",   // shown in UI
-  width: 509,             // page width in pixels (RM_PP_WIDTH = 509)
-  height: 679,            // page height in pixels (RM_PP_HEIGHT = 679)
+  width: 509,             // page width in points (RM_PP_WIDTH = 509)
+  height: 679,            // page height in points (RM_PP_HEIGHT = 679)
   elements: []            // array of elements (see Element Types below)
 }
 \`\`\`
@@ -238,14 +238,14 @@ Each element MUST have these required base properties:
 {
   id: "unique_id",        // unique within template
   type: "rect",           // "rect" | "ellipse" | "text" | "triangle" | "line" | "grid" | "svg"
-  x: 0,                   // x position (pixels)
-  y: 0,                   // y position (pixels)
-  w: 100,                 // width (pixels)
-  h: 50,                  // height (pixels)
+  x: 0,                   // x position (points)
+  y: 0,                   // y position (points)
+  w: 100,                 // width (points)
+  h: 50,                  // height (points)
   rotation: 0,            // rotation in degrees (rotates around the element's center)
   fill: "#ffffff",        // fill color (hex or "none")
   stroke: "#000000",      // stroke color (hex or "none")
-  strokeWidth: 1,         // stroke width (pixels)
+  strokeWidth: 1,         // stroke width (points)
   opacity: 1,             // 0 to 1
   zIndex: 0               // optional: stacking order. Higher = drawn on top. Elements later
                           // in the array already draw over earlier ones, but zIndex lets you
@@ -292,7 +292,7 @@ All base properties + required text properties:
 \`\`\`javascript
 {
   text: "Sample Text",                // the text content (can use {{bindings}})
-  fontSize: 16,                       // font size in pixels
+  fontSize: 16,                       // font size in points
   fontFamily: "Inter",                // MUST be one of: ${fontList}
   textColor: "#000000",               // text color (separate from fill)
   fontWeight: "normal",               // "normal" | "bold"
@@ -321,8 +321,8 @@ All base properties + required gridConfig:
 {
   gridConfig: {
     cols: 3,                          // number of columns (rows auto-calculated) remember to use this in width calculation as width is one cell's width and not the overall grid width
-    gapX: 2,                          // horizontal gap between cells (pixels)
-    gapY: 2,                          // vertical gap between cells (pixels)
+    gapX: 2,                          // horizontal gap between cells (points)
+    gapY: 2,                          // vertical gap between cells (points)
     sourceType: "current",            // "current" = children of this node, "specific" = children of sourceId
     sourceId: "",                     // node ID if sourceType is "specific"
     displayField: "title",            // which field to show. "title" shows the node's title;
@@ -673,8 +673,8 @@ const GeneratorHelpPanel: React.FC<{ isOpen: boolean; onToggle: () => void }> = 
                     <tbody>
                       <tr className="border-b"><td className="p-2 font-mono">id</td><td className="p-2">string</td><td className="p-2">Unique template identifier</td></tr>
                       <tr className="border-b"><td className="p-2 font-mono">name</td><td className="p-2">string</td><td className="p-2">Display name in UI</td></tr>
-                      <tr className="border-b"><td className="p-2 font-mono">width</td><td className="p-2">number</td><td className="p-2">Page width in pixels</td></tr>
-                      <tr className="border-b"><td className="p-2 font-mono">height</td><td className="p-2">number</td><td className="p-2">Page height in pixels</td></tr>
+                      <tr className="border-b"><td className="p-2 font-mono">width</td><td className="p-2">number</td><td className="p-2">Page width in points</td></tr>
+                      <tr className="border-b"><td className="p-2 font-mono">height</td><td className="p-2">number</td><td className="p-2">Page height in points</td></tr>
                       <tr><td className="p-2 font-mono">elements</td><td className="p-2">array</td><td className="p-2">Shapes, text, grids (can be [])</td></tr>
                     </tbody>
                   </table>
@@ -2157,8 +2157,16 @@ const HierarchyGeneratorSession: React.FC<HierarchyGeneratorSessionProps> = ({
       }, undefined, controller.signal);
       if (requestId !== previewRequestRef.current) return;
       if (sandboxResult.ok === false) {
-        const category = sandboxResult.category[0].toUpperCase() + sandboxResult.category.slice(1);
-        setPreviewState({ status: 'error', message: `${category}: ${sandboxResult.message}`, phase: sandboxResult.phase });
+        const { phase } = sandboxResult;
+        if (!phase) {
+          const category = sandboxResult.category[0].toUpperCase() + sandboxResult.category.slice(1);
+          setPreviewState({ status: 'error', message: `${category}: ${sandboxResult.message}` });
+          return;
+        }
+        // Name the failing script, and the line when it doesn't parse: the editors show no line numbers.
+        const line = await generatorSyntaxErrorLine(phase === 'template' ? source.templateScript : source.hierarchyScript).catch(() => null);
+        if (requestId !== previewRequestRef.current) return;
+        setPreviewState({ status: 'error', message: describeGeneratorFailure(sandboxResult.message, phase, line), phase });
         return;
       }
       const validation = validateGeneratedProject(sandboxResult.value);
