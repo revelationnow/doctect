@@ -60,7 +60,7 @@ What validation actually enforces, field by field: `id` must equal the key the n
 
 The `type` check has teeth: every node's `type` must name a template that exists — and if your templates script returned [variants](/docs/generator/templates-in-code#the-template-contract), it must exist in *every* variant, not just the active one. Two injected helpers make the contract cheap to satisfy:
 
-- `templates` — the map your templates script returned, keyed by template id. It's the **active variant's** map, already normalized. Mostly useful for guarding early: `if (!templates.day) throw new Error('missing day template');` turns a silent mismatch into an error on the line that matters.
+- `templates` — the map your templates script returned, keyed by template id. It's the **active variant's** map, already normalized. Mostly useful for guarding early: `if (!templates.day) throw new Error('missing day template');` stops the run at the line that matters, with your own message, instead of at validation's "references unknown template type 'day'" after the whole tree is built.
 - `createId(prefix)` — [mints ids](/docs/reference/create-id-helper) like `day_k3f8w1q2x`: your prefix, an underscore, and up to nine random base-36 characters. Called with no argument, the prefix is `node`.
 
 (Those two are the hierarchy script's *entire* injected scope — the page-size constants live only in the templates script.)

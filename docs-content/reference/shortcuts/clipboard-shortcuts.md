@@ -9,4 +9,4 @@ keywords: copy, cut, paste, duplicate, clipboard, ctrl c, ctrl x, ctrl v, ctrl d
 
 The `kbd:Ctrl+P` alias has a quirk: with nothing copied yet, it falls through to your browser's own **Print** dialog instead of pasting. `kbd:Ctrl+D` duplicates in one step (the same 20pt offset) — but *what* it duplicates depends on the selection: the selected canvas element(s) if any, otherwise the selected **node(s)** in Hierarchy mode or **template(s)** in Templates mode.
 
-A mouse-only shortcut for the same result: hold `kbd:Ctrl` while you start dragging an already-selected shape to peel off a copy on the spot. The copy appears only once the press becomes a drag, so a `kbd:Ctrl`-click without one copies nothing. See [Undo, clipboard, and nudging](/docs/editor/canvas-basics#undo-clipboard-and-nudging).
+A mouse-only shortcut for the same result: hold `kbd:Ctrl` while you start dragging a shape (or any shape of a multi-selection) to peel off a copy on the spot. The copy appears only once the press becomes a drag, so a `kbd:Ctrl`-click without one copies nothing. See [Undo, clipboard, and nudging](/docs/editor/canvas-basics#undo-clipboard-and-nudging).

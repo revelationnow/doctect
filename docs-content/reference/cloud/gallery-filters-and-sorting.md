@@ -12,7 +12,7 @@ The gallery's filter row sits under the search box on every gallery view. Each c
 | **Category** | `?category=planners` | Note templates, Planners, Trackers & habits, Journals & writing, Learning & study, Work & money, Home & hobbies, Games & play, or Other. |
 | **Size or device** | `?format=a5` | The page size of the project's first page, per variant. A project with A4 and reMarkable editions is listed under both. Devices with identical screens share one entry. |
 | **4+ stars** | `?rating=4` | Plain average of four stars or more. |
-| **Tag** | `?tag=weekly` | Repeatable; see [Gallery Tags](/docs/reference/gallery-tags). |
+| **Tag** | `?tag=weekly` | Not in the row: click a tag on the gallery's landing page or on a project's page. Repeatable; each active tag shows as a removable `#tag` chip. See [Gallery Tags](/docs/reference/gallery-tags). |
 | **Sort** | `?sort=trending` | `trending` (default), `recent` (Newest), `rating` (Top rated), `popular` (Most downloaded), and `relevance` (Best match, the default while searching). |
 | **Grid / list** | `?view=list` | Same results, as cards or as a compact table. |
 
