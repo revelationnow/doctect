@@ -137,6 +137,7 @@ export const beats = [
             + 'The menu lists everything under the pointer, top to bottom, with its type and its layer.',
         do: async (page, ctx) => {
             await ctx.move(await at(page, ...FAMILY));
+            await ctx.atSentence(0, { offset: 2.8 }); // "...right-click"
             await ctx.showKeys(['Right-click']);
             await ctx.click(await at(page, ...FAMILY), { button: 'right' });
             await menu(page).waitFor();
@@ -200,8 +201,11 @@ export const beats = [
         do: async (page, ctx) => {
             await ctx.move(await at(page, 24, 24));
             await ctx.wait(500);
+            await ctx.atSentence(1);
+            await fillSwatch(page).scrollIntoViewIfNeeded();
+            await ctx.move(appearance(page).getByText('Fill', { exact: true }).first());
             await ctx.atSentence(2);
-            await pickFill(ctx, PALER_PEACH);
+            await ctx.pickColor(fillSwatch(page), PALER_PEACH, PALETTE);
         },
     },
     {
