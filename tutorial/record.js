@@ -131,6 +131,16 @@ export async function recordEpisode(episode, { dry = false, until = Infinity, sh
             await ctx.goto(`/__tutorial/viewer/?file=${encodeURIComponent(name)}&title=${encodeURIComponent(title ?? name)}`);
             await page.waitForFunction(() => window.__viewer?.state.ready, null, { timeout: 120000 });
         },
+        /** Shows a local text file or image full screen, in a plain viewer with the PDF reader's bar. */
+        async openFile(file, { title } = {}) {
+            const name = path.basename(file);
+            studio.serveFile(name, file);
+            await ctx.goto(`/__tutorial/viewer/text.html?file=${encodeURIComponent(name)}&title=${encodeURIComponent(title ?? name)}`);
+            await page.waitForFunction(() => window.__fileView?.ready, null, { timeout: 30000 });
+        },
+        /** A plain on-screen card (a message, a file list): { title, lines: [string | { text, mono, dim }], mono }. */
+        note: (card) => page.evaluate(c => window.__studio.note(c), card),
+        noteClose: () => page.evaluate(() => window.__studio?.noteClose()),
         /**
          * Clicks a link in the PDF reader — by the text it covers ({ text, nth }) or by position
          * as page fractions ({ near: [fx, fy] }) — and waits for the jump to land.

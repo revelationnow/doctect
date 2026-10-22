@@ -79,11 +79,12 @@ export const beats = [
 
 - `say` is the caption text. `[shown](=spoken)` changes what the voice reads, e.g.
   `[{{title}}](=title in double curly braces)`; recurring fixes go in `LEXICON` in `lib/speech.js`.
-- `ctx` (see `record.js`): `click`, `drag`, `type`, `paste`, `press`, `wheel`, `hover`,
-  `pick` (native `<select>`), `pickColor`, `chooseFile`, `dialogs.arm`/`dialogs.replay`
-  (prompt/confirm/alert), `download`/`downloads` (one or several files from one click),
-  `openPdf`, `clickPdfLink`, `pdfNextPage`, `spotlight`, `zoom`, `titleCard`, `endCard`,
-  `atSentence`, `goto`, `state`.
+- `ctx` (see `record.js`): `click` (`{ hold: 'Alt' }` for a modifier click, `{ button: 'right' }`),
+  `drag`, `type`, `paste`, `press`, `wheel`, `hover`, `pick` (native `<select>`), `pickColor`,
+  `chooseFile`, `dialogs.arm`/`dialogs.replay` (prompt/confirm/alert), `download`/`downloads`
+  (one or several files from one click), `openPdf`, `clickPdfLink`, `pdfNextPage`, `openFile`
+  (a text file or image, full screen), `note`/`noteClose` (a plain on-screen card), `spotlight`,
+  `zoom`, `titleCard`, `endCard`, `atSentence`, `goto`, `state`.
 - Follow the narration style guide in the spec. Talk to one person, why before how, no hype,
   admit the sharp edges.
 

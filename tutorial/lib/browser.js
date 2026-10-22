@@ -6,7 +6,7 @@
 // Routes (answered locally; fonts are fetched once, then served from cache):
 //   cdn.tailwindcss.com      → the compiled sheet from tutorial/styles (the
 //                              Play CDN is unreachable from sandboxed hosts)
-//   /__tutorial/viewer/*     → tutorial/viewer (the PDF reader page)
+//   /__tutorial/viewer/*     → tutorial/viewer (the PDF reader page, and text.html for text files and images)
 //   /__tutorial/pdfjs/*      → node_modules/pdfjs-dist (flattened: the reader's
 //                              URLs must not contain an excluded segment
 //                              such as build/ — see the workspace-boundary test)
@@ -29,7 +29,8 @@ const CHROMIUM = process.env.TUTORIAL_CHROMIUM
 
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css',
     '.json': 'application/json', '.pdf': 'application/pdf', '.svg': 'image/svg+xml', '.png': 'image/png',
-    '.wasm': 'application/wasm', '.map': 'application/json', '.bcmap': 'application/octet-stream', '.pfb': 'application/octet-stream' };
+    '.wasm': 'application/wasm', '.map': 'application/json', '.bcmap': 'application/octet-stream', '.pfb': 'application/octet-stream',
+    '.txt': 'text/plain; charset=utf-8', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.zip': 'application/zip' };
 
 const PDFJS = path.join(ROOT, 'node_modules', 'pdfjs-dist');
 const pdfjsFile = (name) => {
@@ -89,6 +90,8 @@ export async function launchStudio({ headless = true } = {}) {
         colorScheme: 'light',
         args: ['--disable-features=Translate,MediaRouter', '--no-first-run'],
     });
+    // Copy buttons in the app (the generator's LLM prompt) write to the clipboard.
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
 
     const css = tailwindSheet();
     await context.route('https://cdn.tailwindcss.com/**', route => route.fulfill({

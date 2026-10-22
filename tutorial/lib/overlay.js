@@ -138,6 +138,14 @@ export function installStudio() {
         .mail .body { color: #475569; font-size: 13px; margin-top: 3px; }
         .mail .act { display: inline-block; margin-top: 10px; padding: 7px 14px; border-radius: 8px; background: #2563eb; color: #fff;
             font-weight: 600; font-size: 13px; }
+        .note { position: fixed; top: 64px; left: 50%; width: 640px; max-height: 72%; overflow: hidden; background: #fff; border-radius: 14px;
+            padding: 18px 22px; box-shadow: 0 14px 40px rgba(15,23,42,.24), 0 0 0 1px rgba(15,23,42,.06); opacity: 0;
+            transform: translate(-50%, -10px); transition: opacity .25s, transform .25s; z-index: 46; font-size: 15px; color: #1f2937; }
+        .note.on { opacity: 1; transform: translate(-50%, 0); }
+        .note .ttl { font-weight: 600; font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+        .note .ln { white-space: pre-wrap; line-height: 1.55; }
+        .note .ln.mono { font-family: ui-monospace, 'DejaVu Sans Mono', monospace; font-size: 14px; }
+        .note .ln.dim { color: #94a3b8; }
         .palette { position: fixed; background: #fff; border-radius: 10px; padding: 10px; display: grid; grid-template-columns: repeat(6, 26px);
             gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.22), 0 0 0 1px rgba(0,0,0,.08); opacity: 0; transition: opacity .15s; z-index: 45; }
         .palette.on { opacity: 1; }
@@ -408,6 +416,24 @@ export function installStudio() {
             return r ? { x: r.x, y: r.y, width: r.width, height: r.height } : null;
         },
         mailClose() { const m = this._mail; if (!m) return; this._mail = null; m.classList.remove('on'); setTimeout(() => m.remove(), 260); },
+
+        // ---- a plain note card: a message, a file list ------------------------
+        _note: null,
+        note({ title = '', lines = [], mono = false }) {
+            this.noteClose();
+            const n = el('note', '<div class="ttl"></div>');
+            n.querySelector('.ttl').textContent = title;
+            for (const line of lines) {
+                const d = document.createElement('div');
+                const spec = typeof line === 'string' ? { text: line } : line;
+                d.className = `ln${mono || spec.mono ? ' mono' : ''}${spec.dim ? ' dim' : ''}`;
+                d.textContent = spec.text;
+                n.appendChild(d);
+            }
+            this._note = n;
+            requestAnimationFrame(() => requestAnimationFrame(() => n.classList.add('on')));
+        },
+        noteClose() { const n = this._note; if (!n) return; this._note = null; n.classList.remove('on'); setTimeout(() => n.remove(), 260); },
 
         // ---- download bubble ------------------------------------------------
         toast(name, sub = 'Download complete', ms = 3200) {

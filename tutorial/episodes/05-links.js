@@ -79,7 +79,7 @@ export const beats = [
         },
     },
     {
-        say: 'Links live at the very bottom of Element Properties, under Interaction. The On Click menu has nine targets. '
+        say: 'Links live at the very bottom of Element Properties, under Interaction. The On Click menu has eight targets. '
             + 'This one is Go to Parent Page.',
         do: async (page, ctx) => {
             await showInteraction(ctx);

@@ -24,7 +24,7 @@ export function mulberry32(seed) {
 }
 
 const KEY_LABELS = {
-    Control: 'Ctrl', Meta: 'Cmd', Escape: 'Esc', ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓',
+    Control: 'Ctrl', Meta: 'Cmd', Alt: 'Alt', Escape: 'Esc', ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓',
     Backspace: 'Backspace', Delete: 'Delete', Enter: 'Enter', Tab: 'Tab', ' ': 'Space', Space: 'Space',
 };
 const keyParts = (combo) => combo.split('+').map(k => KEY_LABELS[k] ?? (k.length === 1 ? k.toUpperCase() : k));
@@ -86,14 +86,20 @@ export function createHuman(page, { seed = 1, onEvent = () => {}, speed = 1 } = 
         return to;
     }
 
+    /** `hold` keeps a modifier down for the click (e.g. 'Alt', 'Control', 'Shift'), with a key chip. */
     async function click(target, opts = {}) {
         await move(target, opts);
+        if (opts.hold) {
+            await showKeys([KEY_LABELS[opts.hold] ?? opts.hold, '+', 'Click'], opts.holdLabel ?? '');
+            await page.keyboard.down(opts.hold);
+        }
         await sleep((opts.dwell ?? 110 + rnd() * 120) / speed);
         const button = opts.button ?? 'left';
         await page.mouse.down({ button });
         event('click');
         await sleep(55 + rnd() * 45);
         await page.mouse.up({ button });
+        if (opts.hold) await page.keyboard.up(opts.hold);
         if (opts.count === 2) {
             await sleep(70);
             await page.mouse.down({ button, clickCount: 2 });

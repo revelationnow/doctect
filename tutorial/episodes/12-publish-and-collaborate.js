@@ -296,11 +296,11 @@ export const beats = [
         },
     },
     {
-        say: 'Publish again whenever you want the gallery to have it too. And that is the series: from a first planner, '
-            + 'to a book that people share and improve together. Thanks for watching.',
+        say: "Because the book is published, the merge has already updated it in the gallery: anyone who opens or downloads it "
+            + "gets Sam's recipe. That's the core series. The in-depth episodes start next, with every kind of link.",
         hold: 3,
         do: async (page, ctx) => {
-            await ctx.atSentence(2, { offset: 0.5 });
+            await ctx.atSentence(1, { offset: 0.3 });
             await ctx.endCard();
         },
     },

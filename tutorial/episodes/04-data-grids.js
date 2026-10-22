@@ -188,7 +188,8 @@ export const beats = [
             await ctx.click(header.locator('button').first());
             await ctx.click(header.locator('button').nth(1));
             await ctx.move(await at(page, 300, 527));
-            await ctx.atSentence(2);
+            // off on the last sentence, once the narration has finished describing what it did
+            await ctx.atSentence(3);
             await ctx.click(header.locator('button').first());
         },
     },
