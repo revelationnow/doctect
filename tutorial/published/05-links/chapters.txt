@@ -1,5 +1,5 @@
 00:00 Welcome
 00:11 A back link
-00:51 Next and previous
-01:14 Links with nowhere to go
-01:27 Trying them
+00:50 Next and previous
+01:11 Links with nowhere to go
+01:25 Trying them

@@ -1,6 +1,6 @@
 # Links: making every page navigable
 
-*Episode 5 · Building blocks · 01:54*
+*Episode 5 · Building blocks · 01:52*
 
 ## Welcome
 
@@ -10,7 +10,7 @@ Last time, the cover's index started linking to every recipe. But once you're on
 
 On the Recipe template, I'll start a small navigation bar along the top: a text box that says All recipes. Small, and in the same brown.
 
-Links live at the very bottom of Element Properties, under Interaction. The On Click menu has nine targets. This one is Go to Parent Page.
+Links live at the very bottom of Element Properties, under Interaction. The On Click menu has eight targets. This one is Go to Parent Page.
 
 Notice it never asks for a page number. This template draws all three recipes, so a page number would be right on one and wrong on the other two. Instead, a link names a relationship, my parent, and each page works out where that is when you export.
 
