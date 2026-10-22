@@ -201,7 +201,7 @@ export const beats = [
             await ctx.pick(onClick(page), 'Go to Specific Page');
             await ctx.click(targetButton(page));
             await picker(page).waitFor();
-            await ctx.wait(500);
+            await ctx.wait(300);
             await ctx.click(pickerRow(page, 'Notes').locator('span.truncate'));
             await picker(page).waitFor({ state: 'detached' });
             await ctx.atSentence(1);
@@ -329,7 +329,8 @@ export const beats = [
     },
     {
         chapter: 'Leaving the document',
-        say: 'Open URL is the one target that leaves the PDF. On Year View, the cover gets a web address near the bottom, '
+        // "On Year View" comes out of the voice as "on your view"; "the Year View template" doesn't
+        say: 'Open URL is the one target that leaves the PDF. On the Year View template, the cover gets a web address near the bottom, '
             + 'black on black until I make it white.',
         do: async (page, ctx) => {
             await ctx.unspotlight();
@@ -443,7 +444,6 @@ export const beats = [
                 await ctx.wait(450);
             }
             await ctx.move(app.nodeRow(page, 'Notes'), { ax: 0.3 });
-            await ctx.move(await at(page, 230, 70));
         },
     },
     {
