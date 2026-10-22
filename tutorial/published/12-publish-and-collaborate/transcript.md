@@ -1,6 +1,6 @@
 # Publishing, forks & merge requests
 
-*Episode 12 · Share & collaborate · 03:37*
+*Episode 12 · Share & collaborate · 03:34*
 
 ## Welcome
 
@@ -46,4 +46,4 @@ The merge happened in the cloud. The book open in our editor hasn't changed, and
 
 Reload cloud version brings the merged book into the editor. And there's Sam's Shakshuka: on the cover's index, and as a page of its own.
 
-Publish again whenever you want the gallery to have it too. And that is the series: from a first planner, to a book that people share and improve together. Thanks for watching.
+Because the book is published, the merge has already updated it in the gallery: anyone who opens or downloads it gets Sam's recipe. That's the core series. The in-depth episodes start next, with every kind of link.

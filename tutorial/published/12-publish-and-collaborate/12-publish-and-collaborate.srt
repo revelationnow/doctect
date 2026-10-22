@@ -14,273 +14,274 @@ forking someone else's work, and taking
 in changes a friend proposes to ours.
 
 4
-00:00:13,785 --> 00:00:18,825
+00:00:13,784 --> 00:00:18,824
 Publish to gallery, in the Cloud menu,
 puts the latest cloud version on a public
 
 5
-00:00:18,825 --> 00:00:19,390
+00:00:18,824 --> 00:00:19,389
 page.
 
 6
-00:00:19,469 --> 00:00:22,971
+00:00:19,468 --> 00:00:22,970
 A description and a few tags
 are how people will find it:
 
 7
-00:00:22,971 --> 00:00:28,259
+00:00:22,970 --> 00:00:28,258
 search reads both, and every tag becomes
 a link to everything else that shares it.
 
 8
-00:00:28,289 --> 00:00:30,209
+00:00:28,288 --> 00:00:30,208
 There's no category to pick.
 
 9
-00:00:30,323 --> 00:00:33,363
+00:00:30,322 --> 00:00:33,362
 The gallery works that out
 from the tags and the name.
 
 10
-00:00:33,573 --> 00:00:35,983
+00:00:33,567 --> 00:00:35,977
 Then the preview pages, up to six.
 
 11
-00:00:36,102 --> 00:00:39,563
+00:00:36,096 --> 00:00:39,557
 The first one you tick becomes
 the cover on the gallery card,
 
 12
-00:00:39,563 --> 00:00:41,912
+00:00:39,557 --> 00:00:41,906
 and the cover page is ticked already.
 
 13
-00:00:42,010 --> 00:00:43,560
+00:00:42,004 --> 00:00:43,554
 I'll add Tomato Soup.
 
 14
-00:00:43,999 --> 00:00:48,009
+00:00:43,758 --> 00:00:47,768
 Publish draws the previews, uploads
 them, and the book is live.
 
 15
-00:00:48,078 --> 00:00:52,165
+00:00:47,837 --> 00:00:51,924
 Each preview is a real render of
 the page, made in your browser,
 
 16
-00:00:52,165 --> 00:00:54,458
+00:00:51,924 --> 00:00:54,217
 so a big project takes a moment.
 
 17
-00:00:54,677 --> 00:00:56,917
+00:00:54,422 --> 00:00:56,662
 Here it is in the gallery, under New.
 
 18
-00:00:56,992 --> 00:00:59,592
+00:00:56,737 --> 00:00:59,337
 Its page shows exactly what we chose.
 
 19
-00:00:59,655 --> 00:01:02,911
+00:00:59,400 --> 00:01:02,656
 And because it's ours, there's
 an Edit listing button,
 
 20
-00:01:02,911 --> 00:01:08,045
+00:01:02,656 --> 00:01:07,790
 which changes the description, tags and
 previews without publishing anything new.
 
 21
-00:01:08,254 --> 00:01:12,374
+00:01:07,999 --> 00:01:12,119
 One thing to remember: the gallery
 shows the version you published.
 
 22
-00:01:12,452 --> 00:01:16,732
+00:01:12,197 --> 00:01:16,477
 Anything you save after that stays
 private, until you publish again.
 
 23
-00:01:16,938 --> 00:01:18,628
+00:01:16,680 --> 00:01:18,370
 Now someone else's work.
 
 24
-00:01:18,686 --> 00:01:21,880
+00:01:18,428 --> 00:01:21,622
 Sam's meal planner could do
 with brighter day titles.
 
 25
-00:01:22,016 --> 00:01:26,170
+00:01:21,758 --> 00:01:25,912
 Signed in, its page offers one
 more button: Fork this project.
 
 26
-00:01:26,377 --> 00:01:30,807
+00:01:26,118 --> 00:01:30,548
 A fork is a copy in your own cloud
 that remembers where it came from.
 
 27
-00:01:30,910 --> 00:01:33,970
+00:01:30,651 --> 00:01:33,711
 It opens in the editor
 like any other project.
 
 28
-00:01:34,176 --> 00:01:36,509
+00:01:33,916 --> 00:01:36,249
 The Cloud menu knows the difference.
 
 29
-00:01:36,645 --> 00:01:41,071
+00:01:36,385 --> 00:01:40,811
 It says this is forked from upstream,
 with a link back to Sam's page,
 
 30
-00:01:41,071 --> 00:01:44,015
+00:01:40,811 --> 00:01:43,755
 and it offers Propose changes to upstream.
 
 31
-00:01:44,224 --> 00:01:46,044
+00:01:43,961 --> 00:01:45,781
 First, the change itself.
 
 32
-00:01:46,155 --> 00:01:49,985
+00:01:45,892 --> 00:01:49,722
 In Templates, I'll open the Day
 template and select its title.
 
 33
-00:01:50,032 --> 00:01:52,042
+00:01:49,769 --> 00:01:51,779
 Orange, from the color picker.
 
 34
-00:01:52,152 --> 00:01:57,393
+00:01:51,889 --> 00:01:57,130
 Then it has to be saved to the cloud,
 because a merge request always proposes your
 
 35
-00:01:57,393 --> 00:02:00,392
+00:01:57,130 --> 00:02:00,129
 latest save, never
 what's only in this tab.
 
 36
-00:02:02,688 --> 00:02:07,721
+00:02:00,336 --> 00:02:05,369
 Propose changes to upstream asks for a
 title and a short note about what changed,
 
 37
-00:02:07,721 --> 00:02:08,468
+00:02:05,369 --> 00:02:06,116
 and why.
 
 38
-00:02:08,512 --> 00:02:13,232
+00:02:06,160 --> 00:02:10,880
 Sam will read it before he sees a single
 page, so write it the way you'd want to
 
 39
-00:02:13,232 --> 00:02:14,132
+00:02:10,880 --> 00:02:11,780
 receive it.
 
 40
-00:02:15,789 --> 00:02:18,909
+00:02:11,984 --> 00:02:15,104
 That makes a merge request,
 with a page of its own.
 
 41
-00:02:18,966 --> 00:02:22,782
+00:02:15,161 --> 00:02:18,977
 It lists the changes, here one
 template, and it waits for Sam:
 
 42
-00:02:22,782 --> 00:02:24,816
+00:02:18,977 --> 00:02:21,011
 he can merge it, or close it.
 
 43
-00:02:24,910 --> 00:02:27,030
+00:02:21,105 --> 00:02:23,225
 It's his project, so it's his call.
 
 44
-00:02:27,239 --> 00:02:29,529
+00:02:23,438 --> 00:02:25,728
 Meanwhile, Sam forked our book too.
 
 45
-00:02:29,620 --> 00:02:32,847
+00:02:25,819 --> 00:02:29,046
 He added a recipe, and
 proposed it back to us.
 
 46
-00:02:32,947 --> 00:02:36,720
+00:02:29,146 --> 00:02:32,919
 Merge requests for your projects
 are listed on their gallery pages,
 
 47
-00:02:36,720 --> 00:02:38,547
+00:02:32,919 --> 00:02:34,746
 where only you can see them.
 
 48
-00:02:38,757 --> 00:02:43,827
+00:02:34,964 --> 00:02:40,034
 Its page lists what changed: the page
 hierarchy, because Sam added a page.
 
 49
-00:02:43,860 --> 00:02:46,898
+00:02:40,067 --> 00:02:43,105
 Render before and after
 draws a page both ways,
 
 50
-00:02:46,898 --> 00:02:50,380
+00:02:43,105 --> 00:02:46,587
 so you can see the change,
 not just read about it.
 
 51
-00:02:50,591 --> 00:02:54,911
+00:02:46,792 --> 00:02:51,112
 Merge makes a new version of our
 project with Sam's recipe in it.
 
 52
-00:02:55,038 --> 00:02:56,358
+00:02:51,239 --> 00:02:52,559
 It asks first.
 
 53
-00:02:56,855 --> 00:02:58,685
+00:02:52,765 --> 00:02:54,595
 The merge happened in the cloud.
 
 54
-00:02:58,740 --> 00:03:02,707
+00:02:54,650 --> 00:02:58,617
 The book open in our editor hasn't
 changed, and that's on purpose:
 
 55
-00:03:02,707 --> 00:03:05,540
+00:02:58,617 --> 00:03:01,450
 nothing changes your
 work behind your back.
 
 56
-00:03:05,660 --> 00:03:10,100
+00:03:01,570 --> 00:03:06,010
 Try to save, and the cloud says it
 has moved on, and overwrites nothing.
 
 57
-00:03:13,896 --> 00:03:17,856
+00:03:07,847 --> 00:03:11,807
 Reload cloud version brings the
 merged book into the editor.
 
 58
-00:03:17,925 --> 00:03:22,705
+00:03:11,876 --> 00:03:16,656
 And there's Sam's Shakshuka: on the
 cover's index, and as a page of its own.
 
 59
-00:03:22,917 --> 00:03:26,397
-Publish again whenever you want
-the gallery to have it too.
+00:03:16,865 --> 00:03:21,824
+Because the book is published, the merge
+has already updated it in the gallery:
 
 60
-00:03:26,447 --> 00:03:30,838
-And that is the series: from a first
-planner, to a book that people share and
+00:03:21,824 --> 00:03:25,275
+anyone who opens or downloads
+it gets Sam's recipe.
 
 61
-00:03:30,838 --> 00:03:32,057
-improve together.
+00:03:25,328 --> 00:03:26,858
+That's the core series.
 
 62
-00:03:32,136 --> 00:03:33,336
-Thanks for watching.
+00:03:26,896 --> 00:03:30,396
+The in-depth episodes start
+next, with every kind of link.
