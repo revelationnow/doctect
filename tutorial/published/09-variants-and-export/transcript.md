@@ -1,6 +1,6 @@
 # Variants & export: one document, every device
 
-*Episode 9 · Advanced · 02:31*
+*Episode 9 · Advanced · 02:28*
 
 ## Welcome
 

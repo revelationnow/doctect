@@ -14,167 +14,167 @@ This episode is about variants:
 one document, in several sizes.
 
 4
-00:00:13,279 --> 00:00:16,729
+00:00:13,278 --> 00:00:16,728
 In Templates mode, the bar
 at the top lists variants.
 
 5
-00:00:16,863 --> 00:00:19,263
+00:00:16,862 --> 00:00:19,262
 There is one so far, called Default.
 
 6
-00:00:19,351 --> 00:00:23,100
+00:00:19,350 --> 00:00:23,099
 A variant is a complete set of
 templates for one page size.
 
 7
-00:00:23,166 --> 00:00:26,636
+00:00:23,165 --> 00:00:26,635
 The pages and their fields
 are shared by every variant.
 
 8
-00:00:26,843 --> 00:00:28,333
+00:00:26,840 --> 00:00:28,330
 The plus adds one.
 
 9
-00:00:28,449 --> 00:00:32,453
+00:00:28,446 --> 00:00:32,450
 I'll call it reMarkable, and choose
 the Paper Pro from the size list.
 
 10
-00:00:32,570 --> 00:00:35,685
+00:00:32,567 --> 00:00:35,682
 Auto-Reflow scales every
 element to the new page,
 
 11
-00:00:35,685 --> 00:00:39,240
+00:00:35,682 --> 00:00:39,237
 and Scale Typography shrinks
 the text along with it.
 
 12
-00:00:39,448 --> 00:00:44,468
+00:00:39,442 --> 00:00:44,462
 Create Variant copies every template,
 fitted to the new size, and switches to it.
 
 13
-00:00:44,676 --> 00:00:47,412
+00:00:44,670 --> 00:00:47,406
 Here's the recipe page
 at the tablet's size.
 
 14
-00:00:47,525 --> 00:00:50,844
+00:00:47,519 --> 00:00:50,838
 The reMarkable page is wider
 for its height than A4,
 
 15
-00:00:50,844 --> 00:00:55,754
+00:00:50,838 --> 00:00:55,748
 and reflow scales width and height
 separately, so the whisk got squashed.
 
 16
-00:00:55,819 --> 00:00:58,939
+00:00:55,813 --> 00:00:58,933
 I'll make it square again: 34 by 34.
 
 17
-00:01:00,792 --> 00:01:05,591
+00:00:59,819 --> 00:01:04,618
 The A4 version is still there, untouched:
 switching between them is just this
 
 18
-00:01:05,591 --> 00:01:06,402
+00:01:04,618 --> 00:01:05,429
 dropdown.
 
 19
-00:01:06,545 --> 00:01:11,425
+00:01:05,572 --> 00:01:10,452
 Each variant keeps its own templates, so
 a fix in one never touches the other.
 
 20
-00:01:11,643 --> 00:01:16,663
+00:01:10,661 --> 00:01:15,681
 Sizes are stored in points, and the unit
 menu in Template Settings converts them.
 
 21
-00:01:16,781 --> 00:01:22,601
+00:01:15,799 --> 00:01:21,619
 Switch to millimeters, and the
 tablet page reads about 180 by 240.
 
 22
-00:01:22,807 --> 00:01:27,360
+00:01:21,825 --> 00:01:26,378
 If you'll make more books like this one,
 Save Preset turns the whole project into a
 
 23
-00:01:27,360 --> 00:01:28,433
+00:01:26,378 --> 00:01:27,451
 starting point.
 
 24
-00:01:28,565 --> 00:01:30,995
+00:01:27,583 --> 00:01:30,013
 Give it a name and a short description.
 
 25
-00:01:31,122 --> 00:01:35,842
+00:01:30,140 --> 00:01:34,860
 Everything comes along: both variants,
 every template, and the pages too.
 
 26
-00:01:38,143 --> 00:01:42,617
+00:01:35,943 --> 00:01:40,417
 It now waits in the New Project
 dialog, beside the built-in presets.
 
 27
-00:01:42,671 --> 00:01:46,121
+00:01:40,471 --> 00:01:43,921
 Every project made from it
 is an independent copy.
 
 28
-00:01:46,330 --> 00:01:49,908
+00:01:44,125 --> 00:01:47,703
 Everything you have built
 is one JSON document.
 
 29
-00:01:49,952 --> 00:01:54,896
+00:01:47,747 --> 00:01:52,691
 The JSON button opens it, as a tree
 you can browse, or as plain text.
 
 30
-00:01:54,934 --> 00:02:00,145
+00:01:52,729 --> 00:01:57,940
 It is handy for bulk changes, and Apply
 Changes lands any edit as a single undo
 
 31
-00:02:00,145 --> 00:02:00,724
+00:01:57,940 --> 00:01:58,519
 step.
 
 32
-00:02:00,931 --> 00:02:04,101
+00:01:58,726 --> 00:02:01,896
 Export PDF prints the
 variant you are looking at.
 
 33
-00:02:04,194 --> 00:02:08,226
+00:02:01,989 --> 00:02:06,021
 The All button beside it prints
 every variant, one PDF each,
 
 34
-00:02:08,226 --> 00:02:10,089
+00:02:06,021 --> 00:02:07,884
 named after its variant.
 
 35
-00:02:10,153 --> 00:02:14,371
+00:02:07,948 --> 00:02:12,166
 And the greyscale button from episode
 six works on all of them at once.
 
 36
-00:02:16,797 --> 00:02:20,756
+00:02:14,108 --> 00:02:18,067
 Here's the reMarkable copy: the
 same pages, with the same links,
 
 37
-00:02:20,756 --> 00:02:22,367
+00:02:18,067 --> 00:02:19,678
 shaped for the tablet.
 
 38
-00:02:22,574 --> 00:02:27,044
+00:02:19,883 --> 00:02:24,353
 Next time: the generator, where a few
 lines of code build a whole planner.
