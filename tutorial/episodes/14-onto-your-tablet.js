@@ -80,7 +80,13 @@ async function scrollTo(ctx, target, frac = 0.35, steps = 8) {
     const dy = t.y + t.height / 2 - (box.y + box.height * frac);
     if (Math.abs(dy) < 20) return;
     await ctx.wheel(dy * ZOOM, { at: { x: box.x + box.width * (0.6 + ctx.human.rnd() * 0.08), y: box.y + box.height * 0.55 }, steps });
-    await page.waitForTimeout(250);
+    await page.waitForTimeout(150); // let the scroll settle before the next box is measured
+}
+
+/** Waits for the count line to read `text` (the narration quotes these numbers). */
+async function expectCount(page, text) {
+    await countLine(page).filter({ hasText: text }).waitFor({ timeout: 10000 })
+        .catch(async () => { throw new Error(`count line reads "${await countLine(page).innerText()}", expected "${text}"`); });
 }
 
 /** Moves to `target` only if it is still on screen (the export can finish, and close the dialog, before the pointer gets there). */
@@ -290,6 +296,7 @@ export const beats = [
             await ctx.click(searchBox(page));
             await ctx.type('December', { wpm: 150 });
             await pageRow(page, 'Month View', 'December').waitFor();
+            await groupHead(page, 'Day View').filter({ hasText: 'Day View (31)' }).waitFor({ timeout: 5000 });
             await ctx.atSentence(1);
             await ctx.move(groupHead(page, 'Day View'), { ax: 0.35 });
             await ctx.click(tick(page, pageRow(page, 'Month View', 'December')));
@@ -388,6 +395,7 @@ export const beats = [
         say: 'The line at the bottom keeps count: two pages on three devices, six templates. '
             + 'The ceiling is 400 images per export, about what a phone browser can zip.',
         do: async (page, ctx) => {
+            await expectCount(page, '2 pages × 3 devices = 6 templates (.zip)');
             await ctx.spotlight(countLine(page), '', 6);
             await ctx.move(countLine(page), { ax: 0.4 });
             await ctx.atSentence(1, { end: true });
@@ -400,10 +408,12 @@ export const beats = [
         do: async (page, ctx) => {
             await scrollTo(ctx, groupHead(page, 'Day View'), 0.4, 12);
             await ctx.click(allOf(page, 'Day View'));
+            await expectCount(page, 'Too many files: pick fewer pages or devices.');
             await ctx.move(countLine(page), { ax: 0.3 });
             await ctx.move(exportButton(page));
             await ctx.atSentence(1);
             await ctx.click(noneOf(page, 'Day View'));
+            await expectCount(page, '2 pages × 3 devices = 6 templates (.zip)');
             await ctx.move(countLine(page), { ax: 0.35 });
         },
     },
@@ -432,6 +442,7 @@ export const beats = [
             await ctx.atSentence(2);
             await ctx.click(asTemplate(page));
             await dialog(page).waitFor();
+            await expectCount(page, '10 pages × 3 devices = 30 templates (.zip)');
             await ctx.spotlight(countLine(page), '', 6);
             await ctx.move(countLine(page), { ax: 0.45 });
             await ctx.atSentence(2, { end: true, offset: -1 });
