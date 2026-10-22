@@ -1,4 +1,4 @@
-Data grids: an index page and tables | PDF Architect tutorial 4 of 12 (Building blocks)
+Data grids: an index page and tables | PDF Architect tutorial 4 of 19 (Building blocks)
 
 The recipe notebook gets an index. One data grid on the cover lists every recipe and links to it; a second, pinned to a specific page, runs along the bottom of every recipe. Along the way: why a grid's width is one cell, display templates, and the two table-styling settings that do nothing until you give them a value.
 
@@ -16,8 +16,8 @@ Chapters:
 00:31 Columns and cell size
 00:53 What each cell says
 01:17 Table styling
-02:19 A fixed source
-03:05 Cells are links
+02:18 A fixed source
+03:04 Cells are links
 
 Read more in the in-app docs:
 • /docs/editor/grids-basics-and-styling

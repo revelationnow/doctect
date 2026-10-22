@@ -20,283 +20,283 @@ Lists like that are what
 data grids are for.
 
 5
-00:00:12.670 --> 00:00:17.630
+00:00:12.668 --> 00:00:17.628
 The index goes on the cover, so I'll
 open the cover's template, A4 Blank.
 
 6
-00:00:17.775 --> 00:00:20.445
+00:00:17.773 --> 00:00:20.443
 The preview shows it as Family Recipes.
 
 7
-00:00:20.653 --> 00:00:23.723
+00:00:20.663 --> 00:00:23.733
 Press G for the grid tool,
 and drag out some room.
 
 8
-00:00:23.762 --> 00:00:27.468
+00:00:23.772 --> 00:00:27.478
 The grid fills itself with one
 cell for each child of the page.
 
 9
-00:00:27.521 --> 00:00:31.611
+00:00:27.531 --> 00:00:31.621
 The cover has three children, the
 recipes, so there are three cells.
 
 10
-00:00:31.823 --> 00:00:34.693
+00:00:31.830 --> 00:00:34.700
 Cols sets how many cells sit side by side.
 
 11
-00:00:34.754 --> 00:00:36.744
+00:00:34.761 --> 00:00:36.751
 For a list, I want just one.
 
 12
-00:00:36.953 --> 00:00:38.163
+00:00:36.957 --> 00:00:38.167
 Now they're narrow.
 
 13
-00:00:38.194 --> 00:00:41.985
+00:00:38.198 --> 00:00:41.989
 A grid's width and height, in
 Geometry, are the size of one cell,
 
 14
-00:00:41.985 --> 00:00:43.344
+00:00:41.989 --> 00:00:43.348
 not the whole grid.
 
 15
-00:00:43.449 --> 00:00:47.729
+00:00:43.453 --> 00:00:47.733
 So a width of 300 makes
 every row 300 points wide.
 
 16
-00:00:47.850 --> 00:00:50.640
+00:00:47.854 --> 00:00:50.644
 A height of 30, and I'll center it with X.
 
 17
-00:00:50.856 --> 00:00:53.536
+00:00:50.850 --> 00:00:53.530
 Gap Y puts a little air between the rows.
 
 18
-00:00:53.744 --> 00:00:58.174
+00:00:53.735 --> 00:00:58.165
 Display Template decides what each
 cell says, and it starts out as title.
 
 19
-00:00:58.250 --> 00:01:00.050
+00:00:58.241 --> 00:01:00.041
 I'd like the time in there too.
 
 20
-00:01:00.093 --> 00:01:04.783
+00:01:00.084 --> 00:01:04.774
 The buttons underneath insert fields:
 title, a separator, then time.
 
 21
-00:01:05.216 --> 00:01:09.464
+00:01:04.988 --> 00:01:09.236
 The text itself is styled like
 any text box: Playfair Display,
 
 22
-00:01:09.464 --> 00:01:12.386
+00:01:09.236 --> 00:01:12.158
 15 points, in the brown from the cover.
 
 23
-00:01:12.519 --> 00:01:17.291
+00:01:12.291 --> 00:01:17.063
 A grid has one style for all its
 cells, so every line changes at once.
 
 24
-00:01:17.514 --> 00:01:20.386
+00:01:17.268 --> 00:01:20.140
 The grid has a white background
 and a black outline,
 
 25
-00:01:20.386 --> 00:01:22.404
+00:01:20.140 --> 00:01:22.158
 which looks heavy on this paper.
 
 26
-00:01:22.446 --> 00:01:25.706
+00:01:22.200 --> 00:01:25.460
 Clearing the fill and the stroke
 lets the dots show through.
 
 27
-00:01:25.912 --> 00:01:29.309
+00:01:25.664 --> 00:01:29.061
 Cell Border Mode draws lines
 between and around cells.
 
 28
-00:01:29.423 --> 00:01:32.010
+00:01:29.175 --> 00:01:31.762
 Inside Only puts them between the rows.
 
 29
-00:01:32.051 --> 00:01:33.821
+00:01:31.803 --> 00:01:33.573
 But look: nothing's there.
 
 30
-00:01:34.092 --> 00:01:35.792
+00:01:33.779 --> 00:01:35.479
 This is the first trap.
 
 31
-00:01:35.824 --> 00:01:39.964
+00:01:35.511 --> 00:01:39.651
 The color and width shown here are
 borrowed from the outline, just for show.
 
 32
-00:01:40.057 --> 00:01:44.187
+00:01:39.744 --> 00:01:43.874
 Until you set them yourself, cell
 borders have no color and no width.
 
 33
-00:01:44.235 --> 00:01:47.435
+00:01:43.922 --> 00:01:47.122
 A color, a width, Dashed for
 the style, and there they are.
 
 34
-00:01:47.762 --> 00:01:50.342
+00:01:47.327 --> 00:01:49.907
 Alternate Rows shades every other row.
 
 35
-00:01:50.428 --> 00:01:54.265
+00:01:49.993 --> 00:01:53.830
 And here is the same trap again:
 the switch alone does nothing,
 
 36
-00:01:54.265 --> 00:01:56.038
+00:01:53.830 --> 00:01:55.603
 until you pick its color.
 
 37
-00:01:57.223 --> 00:02:00.133
+00:01:56.014 --> 00:01:58.924
 Header Row is the one
 that surprises people.
 
 38
-00:02:00.222 --> 00:02:02.152
+00:01:59.013 --> 00:02:00.943
 It doesn't add a row of headings.
 
 39
-00:02:02.196 --> 00:02:05.418
+00:02:00.987 --> 00:02:04.209
 It restyles whatever lands
 in the first row, here,
 
 40
-00:02:05.418 --> 00:02:09.406
+00:02:04.209 --> 00:02:08.197
 Tomato Soup, and the shading
 moves down to start after it.
 
 41
-00:02:09.525 --> 00:02:12.615
+00:02:08.316 --> 00:02:11.406
 That's not what an index
 needs, so it stays off.
 
 42
-00:02:12.824 --> 00:02:15.824
+00:02:11.609 --> 00:02:14.609
 A heading above the list
 is just a text box.
 
 43
-00:02:15.894 --> 00:02:18.224
+00:02:14.679 --> 00:02:17.009
 I'll call it Recipes, in italics.
 
 44
-00:02:19.820 --> 00:02:21.120
+00:02:18.078 --> 00:02:19.378
 One more grid.
 
 45
-00:02:21.233 --> 00:02:25.339
+00:02:19.491 --> 00:02:23.597
 I want every recipe page to list
 all the recipes along the bottom,
 
 46
-00:02:25.339 --> 00:02:27.393
+00:02:23.597 --> 00:02:25.651
 so you can jump between them.
 
 47
-00:02:27.448 --> 00:02:31.318
+00:02:25.706 --> 00:02:29.576
 On the Recipe template, I'll drag
 one out above the author line.
 
 48
-00:02:31.532 --> 00:02:33.392
+00:02:29.780 --> 00:02:31.640
 Item 1 to Item 6?
 
 49
-00:02:33.610 --> 00:02:35.340
+00:02:31.858 --> 00:02:33.588
 Those are placeholders.
 
 50
-00:02:35.373 --> 00:02:39.728
+00:02:33.621 --> 00:02:37.976
 The source is Children of Current
 Page, and a recipe has no children,
 
 51
-00:02:39.728 --> 00:02:41.746
+00:02:37.976 --> 00:02:39.994
 so there is nothing to show.
 
 52
-00:02:41.797 --> 00:02:44.297
+00:02:40.045 --> 00:02:42.545
 In the PDF it would come out empty.
 
 53
-00:02:44.505 --> 00:02:48.685
+00:02:42.749 --> 00:02:46.929
 Children of Specific Page pins
 the source to one page instead.
 
 54
-00:02:48.797 --> 00:02:54.087
+00:02:47.041 --> 00:02:52.331
 Select Page, then Family Recipes, and
 every recipe lists the same three.
 
 55
-00:02:54.190 --> 00:02:58.761
+00:02:52.434 --> 00:02:57.005
 Pinning is the right choice for anything
 that should look the same on every page,
 
 56
-00:02:58.761 --> 00:02:59.688
+00:02:57.005 --> 00:02:57.932
 like a menu.
 
 57
-00:02:59.897 --> 00:03:05.048
+00:02:58.137 --> 00:03:03.288
 Smaller text, no backgrounds, and no outline,
 so it sits quietly at the foot of the
 
 58
-00:03:05.048 --> 00:03:05.608
+00:03:03.288 --> 00:03:03.848
 page.
 
 59
-00:03:05.842 --> 00:03:09.057
+00:03:04.055 --> 00:03:07.270
 Every cell in a grid is a
 link to the page it shows.
 
 60
-00:03:09.182 --> 00:03:12.886
+00:03:07.395 --> 00:03:11.099
 There's nothing to set up, but
 the canvas doesn't follow links,
 
 61
-00:03:12.886 --> 00:03:14.842
+00:03:11.099 --> 00:03:13.055
 so let's export and try them.
 
 62
-00:03:15.051 --> 00:03:16.451
+00:03:13.260 --> 00:03:14.660
 Here's the index.
 
 63
-00:03:16.584 --> 00:03:19.584
+00:03:14.793 --> 00:03:17.793
 Click Banana Bread, and
 we land on its page.
 
 64
-00:03:19.790 --> 00:03:23.800
+00:03:17.999 --> 00:03:22.009
 And from the strip along the
 bottom, the Pad Thai, on page four.
 
 65
-00:03:24.007 --> 00:03:29.011
+00:03:22.214 --> 00:03:27.218
 Next time: links you make yourself, starting
 with a way back to the cover from every
 
 66
-00:03:29.011 --> 00:03:29.309
+00:03:27.218 --> 00:03:27.516
 page.

@@ -1,6 +1,6 @@
 # Data grids: an index page and tables
 
-*Episode 4 · Building blocks · 03:33*
+*Episode 4 · Building blocks · 03:31*
 
 ## Welcome
 
