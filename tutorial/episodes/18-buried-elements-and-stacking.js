@@ -214,7 +214,7 @@ export const beats = [
     },
     {
         chapter: 'Layer order beats Z-Index',
-        say: "While the card's selected, look at Geometry. Its Z-Index is 1. Click the title's row: its Z-Index is 1 as well.",
+        say: "While the card's selected, look at Geometry. Its [Z-Index](=zee index) is 1. Click the title's row: its Z-Index is 1 as well.",
         do: async (page, ctx) => {
             await zIndexField(page).scrollIntoViewIfNeeded();
             await ctx.atSentence(1);
@@ -266,13 +266,21 @@ export const beats = [
     },
     {
         chapter: 'The result',
-        say: "Let's export. On the cover, lighter dots. And on a recipe page, lighter dots too, still under every word.",
+        // The export and the reader take a few seconds: this beat's words cover them, and the
+        // next beat (what the pages show) only starts once the PDF is open.
+        say: "Let's export. The PDF is drawn a layer at a time, back to front, in the same order as the canvas.",
         do: async (page, ctx) => {
             ctx.state.pdf = await ctx.download(() => ctx.click(page.getByRole('button', { name: 'Export PDF' }).first()));
             await ctx.wait(800);
             await ctx.openPdf(ctx.state.pdf, { title: 'Family Recipes.pdf' });
             await ctx.move({ x: 860, y: 560 });
-            await ctx.atSentence(2);
+        },
+    },
+    {
+        say: 'On the cover, lighter dots. And on a recipe page, lighter dots too, still under every word.',
+        do: async (page, ctx) => {
+            await ctx.move({ x: 720, y: 330 });
+            await ctx.atSentence(1);
             await ctx.pdfNextPage();
             await ctx.move({ x: 760, y: 200 });
         },

@@ -114,7 +114,6 @@ async function showInteraction(ctx) {
 
 /** Waits until the edit just made has reached local storage. */
 async function savedLocally(page) {
-    await page.getByRole('status').filter({ hasText: 'Saving locally' }).first().waitFor({ timeout: 1500 }).catch(() => {});
     await page.getByRole('status').filter({ hasText: 'Saved locally' }).first().waitFor({ timeout: 30000 });
 }
 

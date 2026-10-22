@@ -368,14 +368,14 @@ export const beats = [
             await app.retype(ctx, size, 12);
             await ctx.click(ty.locator('button[title="Align Left"]'));
             await ctx.click(ty.locator('button[title="Align Top"]'));
-            // back up to the grid's settings, ready for the offset
-            await scrollPanelTo(ctx, grid(page).getByText('Display Template', { exact: true }));
         },
     },
     {
         chapter: 'Static offset',
         say: 'But look where the first is: under Monday. October the first, 2026, is a Thursday.',
         do: async (page, ctx) => {
+            // back up to the grid's settings, ready for the offset (the pointer is still in the panel)
+            await scrollPanelTo(ctx, grid(page).getByText('Display Template', { exact: true }));
             await closeUp(ctx, [30, 56, 476, 400]);
             await ctx.move(await num(page, 0, 0));
             await ctx.atSentence(1);
@@ -546,6 +546,8 @@ export const beats = [
                 await ctx.move(await num(page, c, 0, 200), { duration: 450 });
                 await ctx.wait(300);
             }
+            await ctx.atSentence(1, { offset: 1.2 }); // "no day num of its own": October's cell
+            await ctx.move(await num(page, 3, 0, 200), { duration: 800 });
         },
     },
     {
@@ -584,6 +586,7 @@ export const beats = [
         do: async (page, ctx) => {
             ctx.unzoom();
             await app.retype(ctx, level(page, 0).locator('input[placeholder="Start"]'), 3);
+            await app.canvas(page).getByText('Item 1', { exact: true }).waitFor({ timeout: 5000 });
             await ctx.atSentence(1);
             await ctx.move(await num(page, 3, 0, 200));
             await ctx.move(await num(page, 1, 1, 200), { duration: 900 });

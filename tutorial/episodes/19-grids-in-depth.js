@@ -124,9 +124,9 @@ export const beats = [
             await ctx.atSentence(2);
             await ctx.spotlight(await boxOf(sourceBlock(page), traversalBlock(page)), '', 6);
             await ctx.move(traversalBlock(page), { ay: 0.3 });
-            await ctx.atSentence(2, { offset: 2.3 });
+            await ctx.atSentence(2, { offset: 3.1 }); // "Final Data Subset"
             await ctx.spotlight(subset(page), '', 6);
-            await ctx.atSentence(2, { offset: 4.6 });
+            await ctx.atSentence(2, { offset: 6.3 }); // "and the offset comes last"
             await ctx.spotlight(offsetRow(page), '', 6);
             await ctx.atSentence(3);
             await ctx.unspotlight();
@@ -172,13 +172,15 @@ export const beats = [
             await expectValue(subset(page).locator('input[placeholder="Count (All)"]'), '');
             await ctx.spotlight(await boxOf(cellBorder(page), emptyBorders(page)), '', 6);
             await ctx.move(emptyBorders(page).locator('button'));
-            await ctx.atSentence(1, { offset: 1.5 });
+            await ctx.atSentence(1, { offset: 1.0 }); // "a real cell border"
+            await ctx.move(cellBorder(page), { ax: 0.15 });
+            await ctx.atSentence(1, { offset: 3.3 }); // "the color and width shown here"
             await ctx.move(cellBorder(page).locator('input[type=color]'));
             await ctx.move(cellBorder(page).locator('input[type=number]').first(), { ax: 0.3 });
         },
     },
     {
-        say: 'So: a gray, half a point, and the switch. Three empty cells now. '
+        say: 'So: a gray, half a point for the width, and then the switch. Three empty cells now. '
             + 'The offset re-read the first day left, Thursday the second. The slice ran first.',
         do: async (page, ctx) => {
             await ctx.unspotlight();
@@ -263,7 +265,7 @@ export const beats = [
         hold: 3,
         do: async (page, ctx) => {
             ctx.unzoom();
-            await scrollPanelTo(ctx, sourceBlock(page));
+            await scrollPanelTo(ctx, traversalBlock(page));
             await ctx.move(traversalBlock(page), { ay: 0.2 });
             await ctx.move(subset(page), { duration: 700 });
             await ctx.move(offsetRow(page), { duration: 700 });
