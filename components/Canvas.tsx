@@ -358,6 +358,9 @@ export const Canvas: React.FC<CanvasProps> = ({
     const clickCycleStackRef = useRef<string[] | null>(null);
     // Shift-click cycling: which stack member of the current selection to swap on a clean click.
     const shiftCycleRef = useRef<{ stackIds: string[]; member: string } | null>(null);
+    // Ctrl/Cmd-drag duplicates: the ids to copy, held until the press becomes a drag, so a
+    // Ctrl-click (on a Mac, Control-click is a right-click) never leaves a hidden copy behind.
+    const pendingCloneRef = useRef<string[] | null>(null);
     const [persistentGroupRotation, setPersistentGroupRotation] = useState(0);
 
     // Reset persistent rotation and pivots when selection changes
@@ -599,7 +602,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         setIsDragging(false); setIsResizing(false); setIsRotating(false); setIsPanning(false); setIsDraggingPivot(false);
         hasSavedHistory.current = false; setInitialPositions({});
         initialGroupElements.current = []; initialResizeStateRef.current = null;
-        clickCycleStackRef.current = null; shiftCycleRef.current = null;
+        clickCycleStackRef.current = null; shiftCycleRef.current = null; pendingCloneRef.current = null;
     };
     useLayoutEffect(() => {
         if (onEditElements && ownSelection.current !== selectionKey) {
@@ -954,33 +957,14 @@ export const Canvas: React.FC<CanvasProps> = ({
                 }
 
                 const initialPos: Record<string, { x: number, y: number }> = {};
-
-                if (e.ctrlKey || e.metaKey) {
-                    const clonedElements: TemplateElement[] = [];
-                    const clonedIds: string[] = [];
-                    elements.forEach(el => {
-                        if (newSelection.includes(el.id)) {
-                            const newId = Math.random().toString(36).substring(2, 11);
-                            
-                            // Deep copy specific fields like gridConfig if needed
-                            const clone = JSON.parse(JSON.stringify(el)) as TemplateElement;
-                            clone.id = newId;
-
-                            clonedElements.push(clone);
-                            clonedIds.push(newId);
-                            initialPos[newId] = { x: el.x, y: el.y };
-                        }
-                    });
-                    if (onEditElements) { onInteractionStart(); hasSavedHistory.current = true; }
-                    appendElements(clonedElements, clonedIds, true);
-                } else {
-                    onSelectElements(newSelection);
-                    elements.forEach(el => {
-                        if (newSelection.includes(el.id)) {
-                            initialPos[el.id] = { x: el.x, y: el.y };
-                        }
-                    });
-                }
+                onSelectElements(newSelection);
+                elements.forEach(el => {
+                    if (newSelection.includes(el.id)) {
+                        initialPos[el.id] = { x: el.x, y: el.y };
+                    }
+                });
+                // Ctrl/Cmd: the copies are made once the press turns into a drag (handleMouseMove).
+                pendingCloneRef.current = (e.ctrlKey || e.metaKey) ? newSelection : null;
 
                 setInitialPositions(initialPos);
 
@@ -1195,22 +1179,51 @@ export const Canvas: React.FC<CanvasProps> = ({
         }
 
         if (isDragging && Object.keys(initialPositions).length > 0) {
+            const rawDx = coords.x - dragStart.x;
+            const rawDy = coords.y - dragStart.y;
+            // With a mouse, a press is still a click until the pointer passes the threshold: a
+            // wobble moves nothing, and mouseup can still cycle the selection. Touch keeps direct
+            // manipulation from the first move (a long press reverts it).
+            if (!movedSinceDownRef.current) {
+                const pastThreshold = Math.abs(rawDx) > MIN_DRAG_THRESHOLD || Math.abs(rawDy) > MIN_DRAG_THRESHOLD;
+                if (!pastThreshold && !isTouch) return;
+                if (pastThreshold) movedSinceDownRef.current = true;
+            }
             if (!hasSavedHistory.current) {
                 onInteractionStart();
                 hasSavedHistory.current = true;
             }
 
-            const rawDx = coords.x - dragStart.x;
-            const rawDy = coords.y - dragStart.y;
-            if (Math.abs(rawDx) > MIN_DRAG_THRESHOLD || Math.abs(rawDy) > MIN_DRAG_THRESHOLD) {
-                movedSinceDownRef.current = true;
+            let dragged = elements;
+            let startPositions = initialPositions;
+            if (pendingCloneRef.current) {
+                // A Ctrl/Cmd press became a drag: copy the selection where it stands and drag the
+                // copies, leaving the originals in place.
+                const sourceIds = pendingCloneRef.current;
+                pendingCloneRef.current = null;
+                const clonedElements: TemplateElement[] = [];
+                const clonePositions: Record<string, { x: number, y: number }> = {};
+                elements.forEach(el => {
+                    if (sourceIds.includes(el.id)) {
+                        // Deep copy specific fields like gridConfig if needed
+                        const clone = JSON.parse(JSON.stringify(el)) as TemplateElement;
+                        clone.id = Math.random().toString(36).substring(2, 11);
+                        clonedElements.push(clone);
+                        clonePositions[clone.id] = { x: el.x, y: el.y };
+                    }
+                });
+                appendElements(clonedElements, clonedElements.map(clone => clone.id), true);
+                setInitialPositions(clonePositions);
+                dragged = [...elements, ...clonedElements];
+                startPositions = clonePositions;
             }
+
             const dx = snapToGrid ? Math.round(rawDx / effectiveGridSize) * effectiveGridSize : rawDx;
             const dy = snapToGrid ? Math.round(rawDy / effectiveGridSize) * effectiveGridSize : rawDy;
 
-            const updatedElements = elements.map(el => {
-                if (initialPositions[el.id]) {
-                    return { ...el, x: initialPositions[el.id].x + dx, y: initialPositions[el.id].y + dy };
+            const updatedElements = dragged.map(el => {
+                if (startPositions[el.id]) {
+                    return { ...el, x: startPositions[el.id].x + dx, y: startPositions[el.id].y + dy };
                 }
                 return el;
             });
@@ -1676,6 +1689,7 @@ export const Canvas: React.FC<CanvasProps> = ({
             }
         }
         clickCycleStackRef.current = null;
+        pendingCloneRef.current = null;
 
         finishInteraction?.();
         if (onEditElements) hasSavedHistory.current = false;

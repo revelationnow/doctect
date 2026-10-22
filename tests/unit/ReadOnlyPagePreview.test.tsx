@@ -41,6 +41,36 @@ describe('ReadOnlyPagePreview', () => {
     expect(container.querySelector('.canvas-scroll-container')).toBeNull();
   });
 
+  it('stacks by layer first, so a high Z-Index on a lower layer stays behind a higher layer', () => {
+    const layered: PageTemplate = {
+      ...template,
+      layers: [
+        { id: 'back', name: 'Background', order: 0, visible: true, locked: false },
+        { id: 'front', name: 'Content', order: 1, visible: true, locked: false },
+      ],
+      elements: [
+        { ...template.elements[0], id: 'card', layerId: 'back', zIndex: 99 },
+        { ...template.elements[1], id: 'title', layerId: 'front', zIndex: 1 },
+      ],
+    };
+    const { container } = render(
+      <ReadOnlyPagePreview
+        template={layered}
+        nodes={nodes}
+        currentNodeId="root"
+        scale={1}
+        textLayoutSession={createTestCanvasTextLayoutSession()}
+      />,
+    );
+    const card = container.querySelector<HTMLElement>('[data-element-id="card"]')!;
+    const title = container.querySelector<HTMLElement>('[data-element-id="title"]')!;
+    // Painted in document order, the Content title follows the Background card...
+    expect(card.compareDocumentPosition(title)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    // ...and no CSS z-index can lift the card back over it.
+    expect(card.style.zIndex).toBe('');
+    expect(title.style.zIndex).toBe('');
+  });
+
   it('renders the background overlay before elements and child overlays after elements', () => {
     const { container } = render(
       <ReadOnlyPagePreview

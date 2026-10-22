@@ -82,7 +82,9 @@ export const CanvasElement: React.FC<CanvasElementProps> = (props) => {
         transform: `translate(${element.x}px, ${element.y}px) rotate(${element.rotation || 0}deg)`,
         transformOrigin: element.transformOrigin ? `${element.transformOrigin.x * bounds.w}px ${element.transformOrigin.y * bounds.h}px` : 'center',
         opacity: element.opacity,
-        zIndex: element.zIndex || 0,
+        // No CSS z-index: elements arrive already in stacking order (sortElementsForRender: layer,
+        // then Z-Index), and a z-index here would let a high Z-Index on a lower layer paint over a
+        // higher layer, which the PDF never does.
         pointerEvents: (tool === 'select') ? 'auto' : 'none',
         // Apply flip if needed (scaleX/Y) - wait, flip is usually separate or part of transform?
         // Looking at previous code, flip wasn't in the main transform here?

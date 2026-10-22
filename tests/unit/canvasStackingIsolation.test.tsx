@@ -16,8 +16,7 @@ describe('canvas stacking isolation', () => {
         const { container } = renderCanvas([big, small], layers, { selectedElementIds: ['small'] });
 
         // the high-z element's DOM node
-        const bigDiv = [...container.querySelectorAll<HTMLElement>('div')]
-            .find(d => d.style.zIndex === '150');
+        const bigDiv = container.querySelector<HTMLElement>('[data-element-id="big"]');
         expect(bigDiv).toBeTruthy();
 
         // it must live inside an isolation:isolate wrapper

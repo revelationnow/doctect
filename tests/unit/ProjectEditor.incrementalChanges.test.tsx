@@ -2140,13 +2140,14 @@ describe('real ProjectEditor incremental boundary', () => {
     const h = renderIncrementalEditor(); h.setZoom(1); fireEvent.click(screen.getByTitle('Layers'));
     const canvas = h.container.querySelector('.canvas-scroll-container')!;
     fireEvent.mouseDown(h.container.querySelector('[data-element-id="title"]')!, { clientX: 40, clientY: 40, button: 0 });
+    // Every move is past the 5-unit drag threshold (a smaller wobble is still a click and moves nothing).
     for (let i = 1; i <= 12; i++) {
-      fireEvent.mouseMove(canvas, { clientX: 40 + i * 2, clientY: 40 + i });
+      fireEvent.mouseMove(canvas, { clientX: 46 + i * 2, clientY: 40 + i });
       if (i === 4) { fireEvent.click(screen.getByTitle('Collapse layer')); h.resizeSidebar(375); }
     }
     const events = h.onDocumentEdit.mock.calls.map(([event]) => event);
     expect(events).toHaveLength(12); expect(new Set(events.map(event => event.groupId)).size).toBe(1);
-    events.forEach((event, i) => expect(event.edit.after.variants.default.templates['page-0'].elements[0]).toMatchObject({ x: 12 + (i + 1) * 2, y: 24 + i + 1 }));
+    events.forEach((event, i) => expect(event.edit.after.variants.default.templates['page-0'].elements[0]).toMatchObject({ x: 18 + (i + 1) * 2, y: 24 + i + 1 }));
     if (ending === 'finish') { fireEvent.mouseUp(canvas); expect(h.onDocumentEdit).toHaveBeenCalledTimes(12); fireEvent.click(screen.getByTitle('Undo (Ctrl+Z)')); }
     else fireEvent.pointerCancel(canvas);
     const reverted = h.onDocumentEdit.mock.calls.at(-1)![0]; expect(reverted.edit.after).toBe(events[0].edit.before);
