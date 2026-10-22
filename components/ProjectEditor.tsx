@@ -584,12 +584,13 @@ function useLegacyEditor({ projectId, projectName, initialState, isActive, onNam
                         let elChanged = false;
                         let newEl = { ...el };
                         if (newEl.type === 'grid' && newEl.gridConfig?.sourceType === 'specific' && newEl.gridConfig.sourceId && idsToDelete.has(newEl.gridConfig.sourceId)) {
-                            newEl.gridConfig = { ...newEl.gridConfig, sourceType: 'current', sourceId: undefined };
+                            const { sourceId: _sourceId, ...gridConfig } = newEl.gridConfig;
+                            newEl.gridConfig = { ...gridConfig, sourceType: 'current' };
                             elChanged = true;
                         }
                         if (newEl.linkTarget === 'specific_node' && newEl.linkValue && idsToDelete.has(newEl.linkValue)) {
                             newEl.linkTarget = 'none';
-                            newEl.linkValue = undefined;
+                            delete newEl.linkValue;
                             elChanged = true;
                         }
                         if (elChanged) tplChanged = true;

@@ -198,12 +198,15 @@ export function createEditOperations(document: DocumentState, context: EditConte
         const elements = template.elements.map(element => {
           if (!element || typeof element !== 'object') return element;
           let next = element;
+          // Repaired fields are removed, never set to undefined: the local store only takes JSON values.
           if (element.type === 'grid' && element.gridConfig?.sourceType === 'specific'
             && element.gridConfig.sourceId && deleted.has(element.gridConfig.sourceId)) {
-            next = { ...next, gridConfig: { ...element.gridConfig, sourceType: 'current', sourceId: undefined } };
+            const { sourceId: _sourceId, ...gridConfig } = element.gridConfig;
+            next = { ...next, gridConfig: { ...gridConfig, sourceType: 'current' } };
           }
           if (element.linkTarget === 'specific_node' && element.linkValue && deleted.has(element.linkValue)) {
-            next = { ...next, linkTarget: 'none', linkValue: undefined };
+            const { linkValue: _linkValue, ...rest } = next;
+            next = { ...rest, linkTarget: 'none' };
           }
           changed ||= next !== element;
           return next;

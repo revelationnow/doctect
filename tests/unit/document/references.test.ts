@@ -4,6 +4,7 @@ import { applyDocumentChanges as apply } from '../../../services/document/applyC
 import { createEditOperations } from '../../../services/document/editOperations';
 import { buildReferenceIndex, updateReferenceIndex, affectedReferences } from '../../../services/document/references';
 import { partitionState } from '../../../services/document/partition';
+import { canonicalStringify } from '../../../services/localWorkspace/canonical';
 import { makeIncrementalProject } from '../../helpers/incrementalFixtures';
 
 const n = (nodeId: string): RecordAddress => ({ kind: 'node', nodeId });
@@ -170,8 +171,12 @@ describe('reference index', () => {
     expect(edit.after.nodes.ref).toBeUndefined();
     expect(edit.after.nodes.root.children).toEqual([]);
     const [link, grid] = edit.after.variants.default.templates['page-0'].elements;
-    expect(link).toMatchObject({ linkTarget: 'none', linkValue: undefined });
-    expect(grid.gridConfig).toMatchObject({ sourceType: 'current', sourceId: undefined });
+    expect(link).toMatchObject({ linkTarget: 'none' });
+    expect(grid.gridConfig).toMatchObject({ sourceType: 'current' });
+    // The repaired fields are removed, not left as undefined, which the local store refuses to save.
+    expect(Object.keys(link)).not.toContain('linkValue');
+    expect(Object.keys(grid.gridConfig!)).not.toContain('sourceId');
+    expect(() => canonicalStringify(ops.deleteNodes(['child']))).not.toThrow();
     expect(edit.affected).toEqual(expect.arrayContaining([n('child'), n('ref'), n('root'), t('page-0')]));
     expect(edit.affected).not.toContainEqual(t('page-1'));
     expect(document.nodes.root.children).toEqual(['child', 'ref']);
