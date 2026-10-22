@@ -284,7 +284,7 @@ export const beats = [
         },
     },
     {
-        say: "Search reaches the pages tucked under more. I'd like December's month page too. "
+        say: "Search reaches the pages [tucked under more](=tucked under, more). I'd like December's month page too. "
             + 'In the search box, Escape clears it and keeps the tick. Anywhere else, Escape closes the picker.',
         do: async (page, ctx) => {
             await ctx.click(searchBox(page));
