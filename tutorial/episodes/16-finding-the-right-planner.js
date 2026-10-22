@@ -270,6 +270,10 @@ export const beats = [
             const address = (url.pathname + url.search).replace(/([?&])/g, '$1\u200b');
             await ctx.spotlight(resultsLine(page), address, 6);
             await ctx.move(resultCount(page));
+            await ctx.atSentence(1);
+            const label = await resultsLine(page).boundingBox();
+            await ctx.move({ x: label.x + label.width * 0.42, y: label.y + label.height + 52 }, { duration: 700 });
+            await ctx.move({ x: label.x + label.width * 0.6, y: label.y + label.height + 76 }, { duration: 1400 });
         },
     },
     {
@@ -360,23 +364,23 @@ export const beats = [
             await ctx.atSentence(1);
             await ctx.click(signIn);
             await page.getByRole('heading', { name: 'Sign In' }).waitFor();
-            await ctx.move(page.getByLabel('Email', { exact: true }));
-        },
-    },
-    {
-        say: 'My email and password, then Sign In. That lands me in the editor, though, not back on the planner. '
-            + "The browser's Back button returns me to it.",
-        do: async (page, ctx) => {
             await ctx.click(page.getByLabel('Email', { exact: true }));
             await ctx.type(you.email, { wpm: 200 });
             await ctx.click(page.getByLabel('Password', { exact: true }));
             await ctx.type(you.password, { wpm: 220 });
+        },
+    },
+    {
+        say: "Signing in lands me in the editor, though, not back on the planner. The browser's Back button returns me to it.",
+        do: async (page, ctx) => {
+            const t0 = Date.now(); // TIMING
             await ctx.click(page.getByRole('button', { name: 'Sign In', exact: true }));
             // the app signs in, reloads /login?verified=1, and ends in the editor: `from` is lost
             await page.waitForURL(url => new URL(url).pathname === '/app', { timeout: 20000 });
             await app.editorReady(page);
+            console.log(`TIMING signin ${((Date.now() - t0) / 1000).toFixed(1)}s`); // TIMING
             await ctx.move(app.projectTab(page, 'Blank Project'));
-            await ctx.atSentence(2);
+            await ctx.atSentence(1);
             await ctx.showKeys(['Alt', '+', '←']);
             await ctx.wait(500);
             await page.goBack();
@@ -394,10 +398,9 @@ export const beats = [
             + 'Five stars, and one line about why.',
         do: async (page, ctx) => {
             await ctx.move(reviewForm(page).getByRole('radiogroup', { name: 'Rating' }));
-            await ctx.atSentence(1, { offset: 1.2 });
-            await ctx.move(reviewForm(page).getByPlaceholder('Share what you think (optional)'));
-            await ctx.atSentence(2);
+            await ctx.atSentence(1);
             await ctx.click(reviewForm(page).getByRole('radio', { name: '5 stars' }));
+            await ctx.atSentence(1, { offset: 1.9 });
             await ctx.click(reviewForm(page).getByPlaceholder('Share what you think (optional)'));
             await ctx.type('Exactly what I wanted on my Paper Pro. Every date is one tap away.', { wpm: 240 });
         },
@@ -435,7 +438,9 @@ export const beats = [
             const download = page.getByRole('button', { name: /Download all variants/ });
             await ctx.move(download);
             await ctx.atSentence(1);
+            const t0 = Date.now(); // TIMING
             ctx.state.zip = await ctx.download(() => ctx.click(download), { timeout: 240000 });
+            console.log(`TIMING zip ${((Date.now() - t0) / 1000).toFixed(1)}s`); // TIMING
         },
     },
     {
@@ -451,6 +456,7 @@ export const beats = [
     },
     {
         say: "Here's that one in a PDF reader: the same linked planner, at my tablet's size.",
+        hold: 1.5,
         do: async (page, ctx) => {
             await ctx.noteClose();
             await ctx.openPdf(ctx.state.pdf, { title: path.basename(ctx.state.pdf) });
@@ -483,9 +489,11 @@ export const beats = [
             + "Like any Open in editor copy, it's mine, with no link back.",
         do: async (page, ctx) => {
             const older = historyDialog(page).locator('div.flex.items-center.justify-between', { hasText: 'The 2026 planner' });
+            const t0 = Date.now(); // TIMING
             await ctx.click(older.getByRole('button', { name: 'Open in editor' }));
             await page.waitForURL(url => new URL(url).pathname === '/app', { timeout: 30000 });
             await app.editorReady(page);
+            console.log(`TIMING open ${((Date.now() - t0) / 1000).toFixed(1)}s`); // TIMING
             await ctx.wait(600);
             await ctx.move(app.projectTab(page, 'Planner 2026'));
             await ctx.atSentence(1);

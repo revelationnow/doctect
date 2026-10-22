@@ -149,8 +149,8 @@ const fieldRow = (page, name) => app.propertiesColumn(page).locator(`label:text-
 const COL = (c) => 44 + 60 * c; // a column's left edge, in points
 const ROW = (r) => 84 + 62 * r; // a row's top edge on the Month template
 const LETTER_Y = 72;
-/** Where a cell's number sits once it prints top left (beat 15 on). */
-const num = (page, c, r, top = ROW(r)) => at(page, COL(c) + 11, top + 9);
+/** Just under a cell's number once it prints top left (beat 15 on), so the pointer doesn't hide it. */
+const num = (page, c, r, top = ROW(r)) => at(page, COL(c) + 9, top + 26);
 const letter = (page, c) => at(page, COL(c) + 29, LETTER_Y);
 
 /** A post-production close-up framing page rectangles (points), optionally with panel elements beside them. */
@@ -241,9 +241,9 @@ export const beats = [
             await ctx.unspotlight();
             await ctx.click(app.sidebarTab(page, 'Templates'));
             await app.selectTemplate(ctx, 'Month');
-            await ctx.move(await at(page, 150, 38));
-            await ctx.move(await letter(page, 0), { duration: 500 });
-            await ctx.move(await letter(page, 6), { duration: 1200 });
+            await ctx.move(await at(page, 150, 38), { duration: 500 });
+            await ctx.move(await letter(page, 0), { duration: 400 });
+            await ctx.move(await letter(page, 6), { duration: 900 });
             await ctx.atSentence(1);
             await ctx.click(app.section(page, 'template-settings').getByRole('button', { name: 'Template Settings' }));
         },
@@ -252,7 +252,7 @@ export const beats = [
         say: 'G for the grid tool, and drag out a box under the letters.',
         do: async (page, ctx) => {
             await ctx.tool('g');
-            await ctx.drag(await at(page, 44, 84), await at(page, 462, 194), { duration: 1100 });
+            await ctx.drag(await at(page, 44, 84), await at(page, 462, 194), { duration: 900 });
         },
     },
     {
@@ -302,9 +302,8 @@ export const beats = [
         say: '[Cols](=Columns) sets how many cells sit in a row. A week has seven days, so: seven.',
         do: async (page, ctx) => {
             await ctx.move(gridInput(page, 'Cols'));
-            await ctx.atSentence(1, { offset: 1 });
+            await ctx.atSentence(1);
             await app.retype(ctx, gridInput(page, 'Cols'), 7);
-            await ctx.move(await at(page, 300, 200));
         },
     },
     {
@@ -340,7 +339,7 @@ export const beats = [
             await ctx.atSentence(1);
             await ctx.move(fieldButton(page, 'day_name'));
             await ctx.move(fieldButton(page, 'year'), { duration: 1300 });
-            await ctx.atSentence(1, { offset: 3 });
+            await ctx.atSentence(1, { offset: 3.6 }); // "so I'll clear it first"
             await ctx.click(box);
             await ctx.press('Control+a');
             await ctx.press('Backspace');
@@ -399,7 +398,7 @@ export const beats = [
             + "Its first is a Tuesday, yet it's still under Thursday.",
         do: async (page, ctx) => {
             ctx.unzoom();
-            await ctx.atSentence(1);
+            await ctx.atSentence(0, { end: true, offset: -0.8 });
             await ctx.pick(app.previewSelect(page), 'December');
             await ctx.atSentence(2);
             await ctx.move(await num(page, 3, 0));
@@ -423,6 +422,8 @@ export const beats = [
             await closeUp(ctx, [30, 56, 476, 400], { with: [offsetRow(page)] });
             await ctx.click(offsetRow(page).locator('input[placeholder="Field Name"]'));
             await ctx.type('weekday_nu', { wpm: 70 });
+            await ctx.atSentence(1, { offset: 1.5 }); // "nothing moves": 01 is still under Thursday
+            await ctx.move(await num(page, 3, 0));
             await ctx.atSentence(2);
             await ctx.type('m');
             await expectValue(offsetRow(page).locator('input[placeholder="Field Name"]'), 'weekday_num');
@@ -434,9 +435,9 @@ export const beats = [
             + 'But our columns start with Monday, so every day sits one column left of its number.',
         do: async (page, ctx) => {
             await ctx.move(await letter(page, 2));
-            await ctx.atSentence(1, { offset: 1.8 });
+            await ctx.atSentence(1, { offset: 2.8 }); // "so Tuesday is two"
             await ctx.move(await letter(page, 1), { duration: 700 });
-            await ctx.atSentence(2);
+            await ctx.atSentence(2, { offset: 0.9 }); // "start with Monday"
             await ctx.move(await letter(page, 0), { duration: 700 });
         },
     },
@@ -531,7 +532,7 @@ export const beats = [
         do: async (page, ctx) => {
             await app.selectTemplate(ctx, 'Cover');
             await ctx.press('Control+v');
-            await ctx.atSentence(1, { offset: 1.5 });
+            await ctx.atSentence(1, { offset: 2.5 }); // "so I'll drag them under the months"
             await ctx.drag(await at(page, 240, 150), await at(page, 220, 246), { duration: 1000 });
         },
     },
