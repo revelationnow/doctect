@@ -164,7 +164,7 @@ export const beats = [
     },
     {
         say: "We didn't touch the same thing on the page: I colored the title, Sam spaced out the lines. "
-            + 'But changes are compared a whole template at a time, so two different edits to Day collide. '
+            + 'But changes are compared a whole template at a time, so two different edits to the Day template collide. '
             + "An edit to the Week page wouldn't have.",
         do: async (page, ctx) => {
             await ctx.move(changeRow(page), { ax: 0.4 });
@@ -250,22 +250,22 @@ export const beats = [
         },
     },
     {
-        say: 'Save to cloud, because a request always proposes the latest save. Then Propose changes to upstream. '
+        say: "Save to cloud first, because a request always proposes the latest save, never what's only in this tab. "
+            + 'Then Propose changes to upstream. '
             + "The note tells Sam it's the same change, redone on top of Sam's.",
         do: async (page, ctx) => {
             await ctx.dialogs.arm({ text: 'Orange day titles, on the new lines' });
             await cloudItem(ctx, 'Save to cloud');
-            await ctx.dialogs.replay();
+            await ctx.dialogs.replay({ typeWpm: 280 });
             await page.getByRole('button', { name: 'Save to cloud' }).waitFor({ state: 'detached' });
             await ctx.atSentence(1);
             await cloudItem(ctx, 'Propose changes to upstream…');
             await proposeDialog(page).waitFor();
             await ctx.click(proposeDialog(page).getByPlaceholder("Title, e.g. 'Add iPad variant'"));
-            await ctx.type('Orange day titles', { wpm: 170 });
+            await ctx.type('Orange day titles', { wpm: 240 });
             await ctx.click(proposeDialog(page).getByPlaceholder('What changed and why?'));
-            await ctx.type('Re-applied on top of your roomier lines.', { wpm: 210 });
-            await ctx.click(proposeDialog(page).getByRole('button', { name: 'Create merge request' }));
-            await page.waitForURL(url => new URL(url).pathname.startsWith('/mr/'), { timeout: 20000 });
+            await ctx.type('Re-applied on top of your roomier lines.', { wpm: 280 });
+            await ctx.move(proposeDialog(page).getByRole('button', { name: 'Create merge request' }));
         },
     },
     {
@@ -273,6 +273,8 @@ export const beats = [
         say: 'The new request is open: the same single change, and no conflicts. '
             + "Render before and after shows Sam's current page, then the same page with my title.",
         do: async (page, ctx) => {
+            await ctx.click(proposeDialog(page).getByRole('button', { name: 'Create merge request' }));
+            await page.waitForURL(url => new URL(url).pathname.startsWith('/mr/'), { timeout: 20000 });
             ctx.state.secondRequest = new URL(page.url()).pathname.split('/').pop();
             await page.getByRole('heading', { name: 'Proposed changes' }).waitFor({ timeout: 30000 });
             await status(page, 'open');
@@ -296,6 +298,7 @@ export const beats = [
     },
     {
         say: 'Sam merges it from the other side. One reload, and my request says merged.',
+        hold: 2.5,
         do: async (page, ctx) => {
             const asSam = await cloud.apiSession(ctx, sam);
             await asSam.post(`/api/merge-requests/${ctx.state.secondRequest}/merge`, {});

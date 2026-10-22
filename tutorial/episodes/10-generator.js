@@ -38,8 +38,7 @@ export const meta = episodeMeta(10, {
 });
 
 // ---- the scripts, step by step ------------------------------------------------
-// Typed or pasted exactly as below; the line numbers in the comments are the
-// editor's lines once each piece is in.
+// Typed or pasted exactly as below (the storyboard's Checks list which is which).
 
 const L = (...lines) => lines.join('\n');
 const DAY_OPEN = "t.day = { id: 'day', name: 'Day', width: A4_WIDTH, height: A4_HEIGHT, elements: [";
@@ -831,7 +830,7 @@ export const beats = [
     // 38
     {
         chapter: 'When it goes wrong',
-        say: "Before I make this real, a mistake on purpose. In the loop, I'll misspell day as ['dya'](=d y a).",
+        say: "Before I make this real, a mistake on purpose. In the loop, I'll misspell day as ['dya'](=D Y A).",
         do: async (page, ctx) => {
             await ctx.click(lightbox(page).getByRole('button', { name: 'Close', exact: true }));
             await ctx.click(preview(page).getByRole('button', { name: 'Back to Scripts' }));
@@ -849,7 +848,7 @@ export const beats = [
     {
         allowAlert: true,
         say: 'This time no preview opens. The red text says hierarchy: a node, by its [id](=I D), '
-            + "references unknown template type ['dya'](=d y a).",
+            + "references unknown template type ['dya'](=D Y A).",
         do: async (page, ctx) => {
             ctx.unzoom();
             await ctx.click(previewButton(page));
@@ -1140,6 +1139,7 @@ export const beats = [
             await ctx.note({ title: 'My message', lines: [...head, { text: last }] });
             await ctx.atSentence(1);
             await ctx.note({ title: 'My message', lines: [...head, { text: last.replace(PLACEHOLDER, answer().request) }] });
+            if (ctx.dry) await page.waitForTimeout(400); // the card's fade, so the dry shot shows it
         },
     },
     // 56
