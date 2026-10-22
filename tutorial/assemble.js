@@ -1,6 +1,8 @@
 // Assembles a recorded episode into its deliverables.
-// Usage: node tutorial/assemble.js <episode-module> [--no-foley] [--keep-frames]
+// Usage: node tutorial/assemble.js <episode-module> [--no-foley] [--keep-frames] [--text-only]
 // Also writes <out>/qa/sheet-NN.jpg contact sheets for visual review.
+// --text-only rewrites just the text deliverables from the recorded narration and timeline
+// (say, after the series list changes), leaving the video and thumbnail as they are.
 //
 // <out>/<id>.mp4          1080p30 H.264 + AAC, -16 LUFS
 // <out>/<id>.vtt / .srt   captions, timed per sentence (long ones split)
@@ -120,6 +122,23 @@ function writeText(episode, narration, timeline, outDir) {
     return { cues: cues.length, chapters: chapters.length };
 }
 
+const TEXT_FILES = (id) => ['description.md', 'transcript.md', 'chapters.txt', `${id}.vtt`, `${id}.srt`];
+
+/** Mirrors deliverables from the episode's output folder to tutorial/published/<id>/. */
+function publish(episode, files) {
+    const published = path.join(TUTORIAL_DIR, 'published', episode.meta.id);
+    fs.mkdirSync(published, { recursive: true });
+    for (const f of files) fs.copyFileSync(path.join(episodeOutDir(episode), f), path.join(published, f));
+}
+
+export function rewriteText(episode) {
+    const outDir = episodeOutDir(episode);
+    const narration = JSON.parse(fs.readFileSync(path.join(outDir, 'narration.json'), 'utf8'));
+    const timeline = JSON.parse(fs.readFileSync(path.join(outDir, 'timeline.json'), 'utf8'));
+    writeText(episode, narration, timeline, outDir);
+    publish(episode, TEXT_FILES(episode.meta.id));
+}
+
 function loudnorm(input, output) {
     const target = 'I=-16:TP=-1.5:LRA=11';
     const pre = 'highpass=f=75,acompressor=threshold=-21dB:ratio=2.2:attack=6:release=140:makeup=1.5';
@@ -158,11 +177,7 @@ export async function assembleEpisode(episode, { foley = true, keepFrames = fals
     const frame = frames.reduce((best, f) => (f.t <= target ? f : best), frames[0]);
     await renderThumbnail({ meta: episode.meta, frameFile: path.join(framesDir, frame.file), out: path.join(outDir, 'thumbnail.png') });
 
-    const published = path.join(TUTORIAL_DIR, 'published', id);
-    fs.mkdirSync(published, { recursive: true });
-    for (const f of ['description.md', 'transcript.md', 'chapters.txt', `${id}.vtt`, `${id}.srt`, 'thumbnail.png']) {
-        fs.copyFileSync(path.join(outDir, f), path.join(published, f));
-    }
+    publish(episode, [...TEXT_FILES(id), 'thumbnail.png']);
     for (const f of ['video.mp4', 'audio.m4a', 'mix.wav']) fs.rmSync(path.join(outDir, f), { force: true });
     if (!keepFrames) fs.rmSync(framesDir, { recursive: true, force: true });
 
@@ -175,5 +190,6 @@ export async function assembleEpisode(episode, { foley = true, keepFrames = fals
 
 if (process.argv[1]?.endsWith('assemble.js') && process.argv[2]) {
     const episode = checkEpisode(await import(path.resolve(process.argv[2])), process.argv[2]);
-    await assembleEpisode(episode, { foley: !process.argv.includes('--no-foley'), keepFrames: process.argv.includes('--keep-frames') });
+    if (process.argv.includes('--text-only')) rewriteText(episode);
+    else await assembleEpisode(episode, { foley: !process.argv.includes('--no-foley'), keepFrames: process.argv.includes('--keep-frames') });
 }

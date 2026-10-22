@@ -1,4 +1,4 @@
-Canvas essentials: designing a cover page | PDF Architect tutorial 2 of 12 (Foundations)
+Canvas essentials: designing a cover page | PDF Architect tutorial 2 of 19 (Foundations)
 
 We start from an empty A4 page and design the cover of a family recipe book. You'll learn every drawing tool and its shortcut, why a single click draws nothing, how selection, nudging and exact geometry work, pattern fills and borders, text and fonts, lining things up, and getting around the canvas with zoom, pan and snapping.
 

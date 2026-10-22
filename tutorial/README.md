@@ -47,6 +47,10 @@ node tutorial/assemble.js $E              # mp4 + captions + chapters + descript
 Narration is cached per sentence, so editing a few lines only re-synthesizes those. Pacing
 follows narration length, so any narration change needs a re-record.
 
+When only the series list changes (a title, a new episode), `node tutorial/assemble.js $E --text-only`
+rewrites the description and other text files without touching the video. End cards name the
+next episode on screen, though, so the episode before a renamed one needs a re-record.
+
 Before recording, `--dry --shots` saves a screenshot at the end of every beat
 (`tutorial-videos/<id>/dry/`), and the dry timeline, multiplied by four, estimates how long
 each beat's actions take. A beat whose actions outlast its narration plays as silence, so

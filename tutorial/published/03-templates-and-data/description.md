@@ -1,4 +1,4 @@
-Pages, templates & data binding | PDF Architect tutorial 3 of 12 (Foundations)
+Pages, templates & data binding | PDF Architect tutorial 3 of 19 (Foundations)
 
 The recipe-book cover from Episode 2 becomes a notebook. We add pages to the hierarchy, give them a template of their own, and use placeholders and data fields so every page fills in its own name, servings and cooking time, plus a field every page inherits from the cover.
 

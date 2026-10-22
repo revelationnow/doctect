@@ -1,4 +1,4 @@
-Gallery, accounts & cloud history | PDF Architect tutorial 11 of 12 (Share & collaborate)
+Gallery, accounts & cloud history | PDF Architect tutorial 11 of 19 (Share & collaborate)
 
 Everything so far has lived in one browser. This episode steps outside it: the gallery, where people share what they make and anyone can borrow it, and an account, which gives our recipe book a history in the cloud that we can step back through.
 
@@ -21,7 +21,7 @@ Read more in the in-app docs:
 • /docs/gallery/browsing-without-an-account
 • /docs/gallery/cloud-saves-and-history
 
-Previous: Episode 10, The generator: building documents in code
+Previous: Episode 10, The generator, step by step
 Next: Episode 12, Publishing, forks & merge requests
 
 Narration is synthesized (Kokoro-82M); everything on screen is the real app, recorded live.

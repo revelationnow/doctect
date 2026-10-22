@@ -1,4 +1,4 @@
-References & referrer formulas | PDF Architect tutorial 8 of 12 (Advanced)
+References & referrer formulas | PDF Architect tutorial 8 of 19 (Advanced)
 
 Some pages belong in two places: March 14 belongs to March, and to Week 11. In the 2026 Planner we look at the references that make that possible, make a few of our own, and follow the links and labels that work across them, right through to the exported PDF.
 
@@ -22,7 +22,7 @@ Read more in the in-app docs:
 • /docs/editor/references-and-referrer-formulas
 • /docs/reference/child-referrer-formula
 
-Previous: Episode 7, Real calendars: offsets, slicing & traversal
+Previous: Episode 7, Grids from the ground up
 Next: Episode 9, Variants & export: one document, every device
 
 Narration is synthesized (Kokoro-82M); everything on screen is the real app, recorded live.
