@@ -173,6 +173,8 @@ async function scrollPanelTo(ctx, target, top = 140) {
     const box = await target.boundingBox();
     if (!box || Math.abs(box.y - top) < 30) return;
     const panel = await app.propertiesColumn(ctx.page).boundingBox();
+    // a wheel over a focused number box changes its value instead of scrolling: let go of the field first
+    await ctx.page.evaluate(() => document.activeElement?.blur());
     // wheel deltas are screen pixels; the page scrolls them divided by the page zoom
     await ctx.wheel((box.y - top) * ZOOM, { at: { x: panel.x + panel.width * 0.55, y: panel.y + panel.height * 0.6 }, steps: 8 });
 }

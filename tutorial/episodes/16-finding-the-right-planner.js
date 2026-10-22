@@ -373,12 +373,10 @@ export const beats = [
     {
         say: "Signing in lands me in the editor, though, not back on the planner. The browser's Back button returns me to it.",
         do: async (page, ctx) => {
-            const t0 = Date.now(); // TIMING
             await ctx.click(page.getByRole('button', { name: 'Sign In', exact: true }));
             // the app signs in, reloads /login?verified=1, and ends in the editor: `from` is lost
             await page.waitForURL(url => new URL(url).pathname === '/app', { timeout: 20000 });
             await app.editorReady(page);
-            console.log(`TIMING signin ${((Date.now() - t0) / 1000).toFixed(1)}s`); // TIMING
             await ctx.move(app.projectTab(page, 'Blank Project'));
             await ctx.atSentence(1);
             await ctx.showKeys(['Alt', '+', '←']);
@@ -432,15 +430,17 @@ export const beats = [
     {
         chapter: 'Taking it home',
         say: 'Now, taking it home. Download all variants renders every edition right here in the browser, and hands over one zip. '
-            + 'A planner this size takes a few seconds.',
+            + 'For this planner, that\'s three editions of [1,368](=thirteen hundred and sixty-eight) pages each, so it takes a few seconds.',
         do: async (page, ctx) => {
             await scroll(ctx, -900, { x: 1000, y: 400 });
             const download = page.getByRole('button', { name: /Download all variants/ });
             await ctx.move(download);
             await ctx.atSentence(1);
-            const t0 = Date.now(); // TIMING
-            ctx.state.zip = await ctx.download(() => ctx.click(download), { timeout: 240000 });
-            console.log(`TIMING zip ${((Date.now() - t0) / 1000).toFixed(1)}s`); // TIMING
+            const zip = ctx.download(() => ctx.click(download), { timeout: 240000 });
+            await page.getByRole('button', { name: 'Generating…' }).waitFor();
+            await ctx.atSentence(2);
+            await ctx.move(page.getByText('1368 pages'));
+            ctx.state.zip = await zip;
         },
     },
     {
@@ -489,11 +489,9 @@ export const beats = [
             + "Like any Open in editor copy, it's mine, with no link back.",
         do: async (page, ctx) => {
             const older = historyDialog(page).locator('div.flex.items-center.justify-between', { hasText: 'The 2026 planner' });
-            const t0 = Date.now(); // TIMING
             await ctx.click(older.getByRole('button', { name: 'Open in editor' }));
             await page.waitForURL(url => new URL(url).pathname === '/app', { timeout: 30000 });
             await app.editorReady(page);
-            console.log(`TIMING open ${((Date.now() - t0) / 1000).toFixed(1)}s`); // TIMING
             await ctx.wait(600);
             await ctx.move(app.projectTab(page, 'Planner 2026'));
             await ctx.atSentence(1);

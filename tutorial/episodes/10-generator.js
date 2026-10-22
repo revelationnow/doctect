@@ -1105,9 +1105,16 @@ export const beats = [
             await nodeTable.waitFor();
             await ctx.move(generator(page).locator('h4:text-is("Template Properties")'));
             await ctx.atSentence(0, { offset: 3.6 });
-            const rows = nodeTable.locator('td.font-mono');
-            await ctx.move(rows.first());
-            await ctx.move(rows.last(), { duration: 1800 });
+            // At this window height the panel runs past the dialog's clipped foot; read down the rows
+            // that show (moving to a hidden one would scroll the whole dialog).
+            const dialog = await generator(page).boundingBox();
+            const rows = (await nodeTable.locator('td.font-mono').evaluateAll(cells => cells.map(c => {
+                const r = c.getBoundingClientRect();
+                return { x: r.x, y: r.y, width: r.width, height: r.height };
+            }))).filter(r => r.y + r.height <= dialog.y + dialog.height - 4);
+            const at = (r) => ({ x: r.x + Math.min(r.width / 2, 30), y: r.y + r.height / 2 });
+            await ctx.move(at(rows[0]));
+            await ctx.move(at(rows.at(-1)), { duration: 1800 });
             await ctx.atSentence(0, { end: true, offset: -0.4 });
             await ctx.click(generator(page).getByRole('button', { name: 'LLM Prompt', exact: true }));
             await promptBlock(page).waitFor();
@@ -1122,22 +1129,12 @@ export const beats = [
             const lines = prompt.split('\n');
             const last = lines.at(-1);
             if (!last.endsWith(PLACEHOLDER)) throw new Error(`the prompt's last line should end with the placeholder: ${last}`);
-            await showHeading(ctx, PLACEHOLDER);
-            const [ph] = await phraseBox(promptBlock(page), PLACEHOLDER);
-            await ctx.spotlight(ph, '', 5);
-            await ctx.move({ x: ph.x + ph.width * 0.5, y: ph.y + ph.height + 10 });
+            // The message card: the prompt's first lines, folded, then its last line; the placeholder
+            // there gives way to the request (the dialog clips the prompt's own last lines at this height).
+            const head = [...lines.slice(0, 4).map(text => ({ text: text || ' ', dim: true })), { text: '…', dim: true }, { text: ' ' }];
+            await ctx.note({ title: 'My message', lines: [...head, { text: last }] });
             await ctx.atSentence(1);
-            await ctx.unspotlight();
-            const sent = last.replace(PLACEHOLDER, answer().request);
-            await ctx.note({
-                title: 'My message',
-                lines: [
-                    ...lines.slice(0, 4).map(text => ({ text: text || ' ', dim: true })),
-                    { text: '…', dim: true },
-                    { text: ' ' },
-                    { text: sent },
-                ],
-            });
+            await ctx.note({ title: 'My message', lines: [...head, { text: last.replace(PLACEHOLDER, answer().request) }] });
         },
     },
     // 56

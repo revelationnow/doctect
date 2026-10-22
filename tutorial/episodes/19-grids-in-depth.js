@@ -65,6 +65,8 @@ async function scrollPanelTo(ctx, target, top = 150) {
     const box = await target.boundingBox();
     if (!box || Math.abs(box.y - top) < 30) return;
     const panel = await app.propertiesColumn(ctx.page).boundingBox();
+    // a wheel over a focused number box changes its value instead of scrolling: let go of the field first
+    await ctx.page.evaluate(() => document.activeElement?.blur());
     // wheel deltas are screen pixels; the page scrolls them divided by the page zoom
     await ctx.wheel((box.y - top) * ZOOM, { at: { x: panel.x + panel.width * 0.55, y: panel.y + panel.height * 0.6 }, steps: 8 });
 }
@@ -117,7 +119,8 @@ export const beats = [
         do: async (page, ctx) => {
             await ctx.click(await cell(page, 2, 2)); // 15
             await grid(page).waitFor();
-            await ctx.move(grid(page).getByRole('button', { name: 'Grid Configuration' }));
+            await ctx.atSentence(1);
+            await scrollPanelTo(ctx, sourceBlock(page), 160); // Source to Offset, all in view
             await ctx.atSentence(2);
             await ctx.spotlight(await boxOf(sourceBlock(page), traversalBlock(page)), '', 6);
             await ctx.move(traversalBlock(page), { ay: 0.3 });
@@ -166,6 +169,7 @@ export const beats = [
         do: async (page, ctx) => {
             ctx.unzoom();
             await scrollPanelTo(ctx, formatting(page));
+            await expectValue(subset(page).locator('input[placeholder="Count (All)"]'), '');
             await ctx.spotlight(await boxOf(cellBorder(page), emptyBorders(page)), '', 6);
             await ctx.move(emptyBorders(page).locator('button'));
             await ctx.atSentence(1, { offset: 1.5 });

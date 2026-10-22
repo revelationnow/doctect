@@ -114,6 +114,7 @@ async function showInteraction(ctx) {
 
 /** Waits until the edit just made has reached local storage. */
 async function savedLocally(page) {
+    await page.getByRole('status').filter({ hasText: 'Saving locally' }).first().waitFor({ timeout: 1500 }).catch(() => {});
     await page.getByRole('status').filter({ hasText: 'Saved locally' }).first().waitFor({ timeout: 30000 });
 }
 
@@ -123,12 +124,14 @@ async function rowAction(ctx, row, title) {
     await ctx.click(row.locator(`button[title="${title}"]`).first());
 }
 
-/** Scrolls the Hierarchy sidebar with the wheel until `row` sits in its lower half. */
+const PAGE_ZOOM = 4 / 3; // the studio browser's page zoom (lib/browser.js): wheel deltas are divided by it
+
+/** Scrolls the Hierarchy sidebar with the wheel until `row` sits a little below its middle. */
 async function scrollSidebarTo(ctx, row) {
     const side = await app.sidebarColumn(ctx.page).boundingBox();
     const box = await row.boundingBox();
     const dy = box.y - (side.y + side.height * 0.55);
-    if (Math.abs(dy) > 20) await ctx.wheel(dy, { at: { x: side.x + side.width * 0.45, y: side.y + side.height * 0.5 }, steps: 10 });
+    if (Math.abs(dy) > 20) await ctx.wheel(dy * PAGE_ZOOM, { at: { x: side.x + side.width * 0.45, y: side.y + side.height * 0.5 }, steps: 10 });
 }
 
 export async function setup(ctx) {
@@ -406,26 +409,24 @@ export const beats = [
             await ctx.click(dialog.getByRole('button', { name: 'Delete Everything', exact: true }));
             await dialog.waitFor({ state: 'detached' });
             await ctx.move(await at(page, 345, 70));
+            // on to Notes, so the next beat's delete lands with its words
+            await ctx.atSentence(2, { offset: 1.0 });
+            await scrollSidebarTo(ctx, app.nodeRow(page, 'Notes'));
         },
     },
     {
         say: "And a fixed link can't outlive its page. Delete Notes, and the chip's On Click drops back to None. The chip still prints, as plain text.",
         do: async (page, ctx) => {
-            // the chip is selected first: deleting a page from the sidebar keeps the selection,
-            // so its On Click changes from Notes to None in front of the viewer
-            await ctx.click(await at(page, 427, 20));
-            await showInteraction(ctx);
-            await spot(ctx, fieldBlock(page, 'On Click'), targetButton(page));
             const notes = app.nodeRow(page, 'Notes');
-            await ctx.wait(600);
-            await ctx.unspotlight(); // the mask would dim the dialog
-            await scrollSidebarTo(ctx, notes);
+            await scrollSidebarTo(ctx, notes); // already in view after the previous beat
             await rowAction(ctx, notes, 'Delete');
             const dialog = deleteDialog(page, 'Delete Page?');
             await dialog.waitFor();
             await ctx.wait(300);
             await ctx.click(dialog.getByRole('button', { name: 'Delete Everything', exact: true }));
             await dialog.waitFor({ state: 'detached' });
+            await ctx.click(await at(page, 427, 20));
+            await showInteraction(ctx);
             // the delete's local save re-lays out the panel when it lands: measure after it
             await savedLocally(page);
             await spot(ctx, fieldBlock(page, 'On Click'));
