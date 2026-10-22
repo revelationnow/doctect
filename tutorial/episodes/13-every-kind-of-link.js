@@ -309,6 +309,8 @@ export const beats = [
             await ctx.atSentence(1);
             await spot(ctx, smartBlock(page, 'Count / Direction'));
             await ctx.move(smartBlock(page, 'Count / Direction').locator('input'));
+            await ctx.atSentence(2);
+            await ctx.move(await at(page, 478, 112));
         },
     },
     {
@@ -329,7 +331,7 @@ export const beats = [
         do: async (page, ctx) => {
             await ctx.unspotlight();
             await app.selectTemplate(ctx, 'Year View');
-            await ctx.atSentence(1);
+            await ctx.atSentence(0, { offset: 2.4 });
             await ctx.tool('t');
             await ctx.drag(await at(page, 130, 612), await at(page, 380, 640), { duration: 800 });
             await ctx.type('example.com/planner', { wpm: 200 });
@@ -363,13 +365,12 @@ export const beats = [
         chapter: 'Deleting',
         say: "Deleting is where links and references part ways. In Hierarchy, I'll select Week 2: our Notes chip, and January 5 and 6 in its top row.",
         do: async (page, ctx) => {
-            await ctx.atSentence(1);
+            await ctx.atSentence(0, { offset: 1.4 });
             await ctx.click(app.sidebarTab(page, 'Hierarchy'));
             await app.toggleNode(ctx, 'Weeks');
             await app.toggleNode(ctx, 'Week 2');
             await app.selectNode(ctx, 'Week 2');
             await ctx.move(await at(page, 427, 20));
-            await ctx.wait(300);
             await ctx.move(await at(page, 110, 70));
             await ctx.move(await at(page, 345, 70));
         },
@@ -383,7 +384,7 @@ export const beats = [
             await dialog.waitFor();
             await ctx.atSentence(1);
             await ctx.move(dialog.getByText('Only the reference goes', { exact: false }));
-            await ctx.atSentence(1, { end: true });
+            await ctx.atSentence(1, { offset: 2.6 });
             await ctx.click(dialog.getByRole('button', { name: 'Delete Reference', exact: true }));
             await dialog.waitFor({ state: 'detached' });
             await ctx.move(await at(page, 110, 70));
@@ -410,17 +411,21 @@ export const beats = [
     {
         say: "And a fixed link can't outlive its page. Delete Notes, and the chip's On Click drops back to None. The chip still prints, as plain text.",
         do: async (page, ctx) => {
+            // the chip is selected first: deleting a page from the sidebar keeps the selection,
+            // so its On Click changes from Notes to None in front of the viewer
+            await ctx.click(await at(page, 427, 20));
+            await showInteraction(ctx);
+            await spot(ctx, fieldBlock(page, 'On Click'), targetButton(page));
             const notes = app.nodeRow(page, 'Notes');
+            await ctx.wait(600);
+            await ctx.unspotlight(); // the mask would dim the dialog
             await scrollSidebarTo(ctx, notes);
-            await ctx.atSentence(1);
             await rowAction(ctx, notes, 'Delete');
             const dialog = deleteDialog(page, 'Delete Page?');
             await dialog.waitFor();
-            await ctx.wait(500);
+            await ctx.wait(300);
             await ctx.click(dialog.getByRole('button', { name: 'Delete Everything', exact: true }));
             await dialog.waitFor({ state: 'detached' });
-            await ctx.click(await at(page, 427, 20));
-            await showInteraction(ctx);
             // the delete's local save re-lays out the panel when it lands: measure after it
             await savedLocally(page);
             await spot(ctx, fieldBlock(page, 'On Click'));

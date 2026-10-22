@@ -277,8 +277,8 @@ export const beats = [
     {
         say: 'Current means whichever page is being drawn. Preview November, and the grid follows: 30 cells now. Then back to October.',
         do: async (page, ctx) => {
-            await ctx.move(app.previewSelect(page));
-            await ctx.atSentence(1);
+            // the menu opens as the first sentence ends, so November lands on "and the grid follows"
+            await ctx.atSentence(0, { end: true, offset: -1 });
             await ctx.pick(app.previewSelect(page), 'November');
             await ctx.move(await at(page, 253, 300));
             await ctx.atSentence(2);
@@ -360,12 +360,15 @@ export const beats = [
             + 'In Typography: 12 points, Align Left, and Align Top.',
         do: async (page, ctx) => {
             const ty = typography(page);
+            const size = ty.locator('input[type=number]').first();
+            await size.scrollIntoViewIfNeeded();
+            await ctx.move(size);
             await ctx.atSentence(1);
-            await app.retype(ctx, ty.locator('input[type=number]').first(), 12);
+            await app.retype(ctx, size, 12);
             await ctx.click(ty.locator('button[title="Align Left"]'));
             await ctx.click(ty.locator('button[title="Align Top"]'));
+            // back up to the grid's settings, ready for the offset
             await scrollPanelTo(ctx, grid(page).getByText('Display Template', { exact: true }));
-            await ctx.move(await at(page, 160, 200));
         },
     },
     {
