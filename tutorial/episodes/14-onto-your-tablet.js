@@ -94,8 +94,9 @@ function zipCard(names) {
         lines.push({ text: `${folder}/`, key: folder });
         const inside = names.filter(n => n.startsWith(`${folder}/`)).map(n => n.slice(folder.length + 1));
         const methods = inside.filter(n => n.startsWith('methods/'));
-        const rest = inside.filter(n => !n.startsWith('methods/'))
-            .sort((a, b) => (a === 'INSTALL.txt' ? -1 : b === 'INSTALL.txt' ? 1 : a.split('/').length - b.split('/').length || a.localeCompare(b)));
+        // INSTALL.txt first, then each template folder's pictures, then its other files (templates.json, the PDF)
+        const rank = (n) => (n === 'INSTALL.txt' ? 0 : n.endsWith('.png') ? 1 : 2);
+        const rest = inside.filter(n => !n.startsWith('methods/')).sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
         for (const n of rest) lines.push({ text: `    ${n}`, key: `${folder}/${n}` });
         if (methods.length) lines.push({ text: `    methods/  ${methods.length} files (.template, .metadata, .content)`, key: `${folder}/methods/` });
     }
@@ -113,14 +114,24 @@ async function focusCard(page, keys) {
     }, keys);
 }
 
-/** Shows the zip card, each line tagged with its path so focusCard can pick lines out. */
+/**
+ * Shows the zip card, each line tagged with its path so focusCard can pick lines out. The card
+ * lets the page through, so the drawn cursor would take the shape of whatever is under it: keep
+ * it an arrow until the card goes (hideZipCard).
+ */
 async function showZipCard(ctx) {
     const { page } = ctx;
     await ctx.note({ title: path.basename(ctx.state.zip), lines: ctx.state.card.map(l => l.text), mono: true });
     await page.evaluate((keys) => {
         const lines = document.getElementById('__studio')?.shadowRoot?.querySelectorAll('.note .ln') ?? [];
         lines.forEach((line, i) => { line.dataset.key = keys[i]; });
+        window.__studio.lockShape('arrow');
     }, ctx.state.card.map(l => l.key));
+}
+
+async function hideZipCard(ctx) {
+    await ctx.noteClose();
+    await ctx.page.evaluate(() => window.__studio?.lockShape(null));
 }
 
 /** The on-screen box of one card line, by its key. */
@@ -212,7 +223,7 @@ export const beats = [
             await ctx.atSentence(1, { offset: 2.4 });
             const width = settings(page).locator('label:text-is("Width") + input');
             const unit = settings(page).locator('select[title="Dimension unit"]');
-            await ctx.spotlight(await boxAround(width.locator('xpath=..'), unit.locator('xpath=..')), '509 × 679 pt', 6);
+            await ctx.spotlight(await boxAround(width.locator('xpath=..'), unit.locator('xpath=..')), 'reMarkable Paper Pro: 509 × 679', 6);
             await ctx.move(width);
             await ctx.move(settings(page).locator('label:text-is("Height") + input'));
             await ctx.atSentence(2, { end: true });
@@ -287,7 +298,7 @@ export const beats = [
     },
     {
         say: 'One catch: a template is a picture of a page, so a dated page keeps its date. '
-            + "December's would say December on every page I write. "
+            + "Use December's, and every page you write on says December. "
             + "So I'll keep the note and to-do pages, which suit any day, and none clears the rest.",
         do: async (page, ctx) => {
             await ctx.move(groupHead(page, 'Month View'), { ax: 0.3 });
@@ -304,7 +315,7 @@ export const beats = [
     },
     {
         chapter: 'Choosing devices',
-        say: 'Below the pages is Rescale to, grouped by brand, one option per screen. Until one is ticked, Export waits. '
+        say: 'Below the pages, Rescale to lists one option per screen, grouped by brand. Until one is ticked, Export waits. '
             + "I'll tick Paper Pure. The reMarkable 2 under it has the same screen, so it gets the same file.",
         do: async (page, ctx) => {
             await scrollTo(ctx, dialog(page).getByRole('heading', { name: 'Rescale to' }), 0.06, 10);
@@ -336,10 +347,10 @@ export const beats = [
         do: async (page, ctx) => {
             await ctx.unspotlight();
             await scrollTo(ctx, pdfOption(page), 0.8, 10);
-            await ctx.spotlight(forceGrey(page), '', 6);
+            await ctx.spotlight(forceGrey(page), '', 3);
             await ctx.move(forceGrey(page), { ax: 0.2 });
             await ctx.atSentence(1);
-            await ctx.spotlight(pdfOption(page), '', 6);
+            await ctx.spotlight(pdfOption(page), '', 3);
             await ctx.move(pdfOption(page), { ax: 0.25 });
         },
     },
@@ -424,12 +435,12 @@ export const beats = [
         },
     },
     {
-        say: "Here's the Paper Pure's to-do page at full size: [1404 × 1872](=fourteen oh four by eighteen seventy-two) pixels, "
-            + 'exactly its screen, and grey.',
+        say: "Here's the Paper Pure's to-do page: [1404 × 1872](=fourteen oh four by eighteen seventy-two) pixels, "
+            + "the tablet's exact screen, in grey.",
         hold: 1.6,
         do: async (page, ctx) => {
             const rel = ctx.state.card.map(l => l.key).find(k => /^reMarkable\/.*\/png\/To-Do_List_1\.png$/.test(k));
-            await ctx.noteClose();
+            await hideZipCard(ctx);
             await ctx.openFile(path.join(ctx.state.dir, rel), { title: rel });
             await ctx.move({ x: 720, y: 430 });
             await ctx.atSentence(0, { offset: 2.6 });
@@ -470,7 +481,7 @@ export const beats = [
     },
     {
         say: 'So its [INSTALL.txt](=install dot T X T) opens with a warning: both routes need [SSH](=S S H), at your own risk. '
-            + 'Start with the methods files, line drawings that survive software updates; the PNGs look exact, but an update removes them. '
+            + 'Start with methods: line drawings that survive software updates; the PNGs look exact, but an update removes them. '
             + 'On a Paper Pro, getting [SSH](=S S H) at all means a factory reset. The linked PDF needs none of that.',
         do: async (page, ctx) => {
             const keys = ctx.state.card.map(l => l.key);
@@ -490,7 +501,7 @@ export const beats = [
             await ctx.move(await cardLine(page, install));
             await ctx.atSentence(3);
             await focusCard(page, null);
-            await ctx.move({ x: 1180, y: 420 });
+            await ctx.move({ x: 985, y: 300 });
         },
     },
     {
@@ -498,7 +509,7 @@ export const beats = [
         hold: 3,
         do: async (page, ctx) => {
             await ctx.atSentence(0, { offset: 1.2 });
-            await ctx.noteClose();
+            await hideZipCard(ctx);
             await ctx.endCard();
         },
     },
