@@ -286,16 +286,29 @@ async function phraseBox(locator, phrase) {
     }, phrase);
 }
 
-/** Scrolls the LLM prompt with the wheel until `heading` sits near the top of the block, then spotlights it. */
-async function showHeading(ctx, heading) {
+/**
+ * Scrolls the LLM prompt with the wheel until `phrase` sits near the top of its box (or as far as
+ * it goes, for the last line), then spotlights it. `lead` widens the box to the left.
+ */
+async function showHeading(ctx, phrase, { lead = 22, steps = 10 } = {}) {
     const block = promptBlock(ctx.page);
-    const [rect] = await phraseBox(block, heading);
+    const [rect] = await phraseBox(block, phrase);
     const box = await block.boundingBox();
     const delta = rect.y - (box.y + 36);
-    if (Math.abs(delta) > 4) await ctx.wheel(delta * ZOOM, { at: { x: box.x + box.width * 0.6, y: box.y + box.height * 0.55 }, steps: 10 });
+    if (Math.abs(delta) > 4) await ctx.wheel(delta * ZOOM, { at: { x: box.x + box.width * 0.6, y: box.y + box.height * 0.55 }, steps });
     await ctx.page.waitForTimeout(150);
-    const [now] = await phraseBox(block, heading);
-    await ctx.spotlight({ x: now.x - 22, y: now.y, width: now.width + 22, height: now.height }, '', 5);
+    const [now] = await phraseBox(block, phrase);
+    if (now.y < box.y || now.y + now.height > box.y + box.height) throw new Error(`"${phrase}" is out of the prompt box's view`);
+    await ctx.spotlight({ x: now.x - lead, y: now.y, width: now.width + lead, height: now.height }, '', 5);
+    return now;
+}
+
+/** Wheels the Schema Reference until `target` sits near the top of its scrolling panel. */
+async function scrollPanelTo(ctx, scroller, target, top = 12) {
+    const [box, t] = [await scroller.boundingBox(), await target.boundingBox()];
+    const delta = t.y - (box.y + top);
+    if (Math.abs(delta) > 4) await ctx.wheel(delta * ZOOM, { at: { x: box.x + box.width * 0.5, y: box.y + box.height * 0.6 }, steps: 8 });
+    await ctx.page.waitForTimeout(120);
 }
 
 /**
@@ -1105,20 +1118,21 @@ export const beats = [
         say: 'Schema Reference, the other tab, is the short version: every property of a template and of a page, in two tables.',
         do: async (page, ctx) => {
             await ctx.click(generator(page).getByRole('button', { name: 'Schema Reference', exact: true }));
-            const nodeTable = generator(page).locator('div', { has: page.locator('h4:text-is("Node Properties")') }).last();
-            await nodeTable.waitFor();
-            await ctx.move(generator(page).locator('h4:text-is("Template Properties")'));
-            await ctx.atSentence(0, { offset: 3.6 });
-            // At this window height the panel runs past the dialog's clipped foot; read down the rows
-            // that show (moving to a hidden one would scroll the whole dialog).
-            const dialog = await generator(page).boundingBox();
-            const rows = (await nodeTable.locator('td.font-mono').evaluateAll(cells => cells.map(c => {
+            const h4 = (name) => generator(page).locator(`h4:text-is("${name}")`);
+            await h4('Constants').waitFor();
+            await ctx.move(h4('Template Properties'));
+            // The panel scrolls as a whole: down to the page's table, read its rows, then on to the constants.
+            const scroller = h4('Template Properties').locator('xpath=ancestor::div[contains(@class,"overflow-auto")][1]');
+            await scrollPanelTo(ctx, scroller, h4('Node Properties'));
+            const view = await scroller.boundingBox();
+            const rows = (await h4('Node Properties').locator('xpath=..').locator('td.font-mono').evaluateAll(cells => cells.map(c => {
                 const r = c.getBoundingClientRect();
                 return { x: r.x, y: r.y, width: r.width, height: r.height };
-            }))).filter(r => r.y + r.height <= dialog.y + dialog.height - 4);
+            }))).filter(r => r.y >= view.y && r.y + r.height <= view.y + view.height);
             const at = (r) => ({ x: r.x + Math.min(r.width / 2, 30), y: r.y + r.height / 2 });
             await ctx.move(at(rows[0]));
-            await ctx.move(at(rows.at(-1)), { duration: 1800 });
+            await ctx.move(at(rows.at(-1)), { duration: 1200 });
+            await scrollPanelTo(ctx, scroller, h4('Constants'));
             await ctx.atSentence(0, { end: true, offset: -1.0 });
             await ctx.click(generator(page).getByRole('button', { name: 'LLM Prompt', exact: true }));
             await promptBlock(page).waitFor();
@@ -1133,11 +1147,14 @@ export const beats = [
             const lines = prompt.split('\n');
             const last = lines.at(-1);
             if (!last.endsWith(PLACEHOLDER)) throw new Error(`the prompt's last line should end with the placeholder: ${last}`);
-            // The message card: the prompt's first lines, folded, then its last line; the placeholder
-            // there gives way to the request (the dialog clips the prompt's own last lines at this height).
-            const head = [...lines.slice(0, 4).map(text => ({ text: text || ' ', dim: true })), { text: '…', dim: true }, { text: ' ' }];
-            await ctx.note({ title: 'My message', lines: [...head, { text: last }] });
+            // the prompt's last line, and its placeholder
+            await ctx.atSentence(0, { offset: 0.8 });
+            const ph = await showHeading(ctx, PLACEHOLDER, { lead: 0, steps: 16 });
+            await ctx.move({ x: ph.x + ph.width * 0.55, y: ph.y + ph.height + 14 });
+            // the message as sent: the prompt's first lines, folded, then that line with the request in its place
             await ctx.atSentence(1);
+            await ctx.unspotlight();
+            const head = [...lines.slice(0, 4).map(text => ({ text: text || ' ', dim: true })), { text: '…', dim: true }, { text: ' ' }];
             await ctx.note({ title: 'My message', lines: [...head, { text: last.replace(PLACEHOLDER, answer().request) }] });
             if (ctx.dry) await page.waitForTimeout(400); // the card's fade, so the dry shot shows it
         },
