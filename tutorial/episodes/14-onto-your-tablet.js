@@ -26,7 +26,7 @@ export const meta = episodeMeta(14, {
         'What is in the zip, and installing on Supernote, Boox and reMarkable',
     ],
     docs: ['/docs/reference/export-as-template', '/docs/reference/greyscale-export'],
-    thumbnail: { beat: 11, headline: 'Onto your tablet' },
+    thumbnail: { beat: 9, headline: 'Onto your tablet' },
 });
 
 // ---- the Export as template dialog --------------------------------------------------
@@ -301,9 +301,9 @@ export const beats = [
             + "Use December's, and every page you write on says December. "
             + "So I'll keep the note and to-do pages, which suit any day, and none clears the rest.",
         do: async (page, ctx) => {
-            await ctx.move(groupHead(page, 'Month View'), { ax: 0.3 });
+            await ctx.move(pageRow(page, 'Day View', 'January 1, 2026'), { ax: 0.5 });
             await ctx.atSentence(1);
-            await ctx.move(pageRow(page, 'Month View', 'January'), { ax: 0.3 });
+            await ctx.move(groupHead(page, 'Month View'), { ax: 0.1 });
             await ctx.atSentence(2);
             for (const name of ['Quarter View', 'Month View', 'Day View', 'Journal']) await ctx.click(noneOf(page, name));
             await scrollTo(ctx, groupHead(page, 'List Index'), 0.3);
@@ -334,6 +334,10 @@ export const beats = [
         say: "Color screens get color templates; every other model gets grey, converted like episode six's greyscale export. "
             + 'So the Paper Pure comes out grey, and the [Boox](=Books) Note Air C keeps its color.',
         do: async (page, ctx) => {
+            await ctx.move(device(page, 'Note Air C'), { ax: 0.25 });
+            await ctx.move(device(page, 'Tab X C'), { ax: 0.25 });
+            await ctx.atSentence(0, { offset: 2.4 });
+            await ctx.move(device(page, 'Manta'), { ax: 0.25 });
             await ctx.atSentence(1);
             await ctx.spotlight(device(page, 'Paper Pure'), 'greyscale screen', 6);
             await ctx.move(device(page, 'Paper Pure'), { ax: 0.3 });
@@ -399,6 +403,7 @@ export const beats = [
             ctx.state.zip = await ctx.download(async () => {
                 await ctx.click(exportButton(page));
                 await ctx.move(countLine(page), { ax: 0.3 });
+                await ctx.move(dialog(page).getByRole('button', { name: 'Cancel' }), { ax: 0.3 });
             });
             await dialog(page).waitFor({ state: 'detached' });
             const zip = await JSZip.loadAsync(fs.readFileSync(ctx.state.zip));
@@ -410,7 +415,17 @@ export const beats = [
                 fs.writeFileSync(path.join(dir, n), await zip.file(n).async('nodebuffer'));
             }
             ctx.state.dir = dir;
-            await ctx.move(asTemplate(page));
+            await ctx.move(asTemplate(page), { ax: 0.3, ay: 2.5 });
+            // reopened, the count line shows both: three devices remembered, one page per template again
+            await ctx.atSentence(2);
+            await ctx.click(asTemplate(page));
+            await dialog(page).waitFor();
+            await ctx.spotlight(countLine(page), '', 6);
+            await ctx.move(countLine(page), { ax: 0.45 });
+            await ctx.atSentence(2, { end: true, offset: -1 });
+            await ctx.unspotlight();
+            await ctx.click(dialog(page).getByRole('button', { name: 'Cancel' }));
+            await dialog(page).waitFor({ state: 'detached' });
         },
     },
     {

@@ -207,9 +207,9 @@ export const beats = [
         say: "Picking a month is traversal's job. Clear the subset, and give the first level a Start of one.",
         do: async (page, ctx) => {
             ctx.unzoom();
-            await scrollPanelTo(ctx, traversalBlock(page));
+            await ctx.move(app.propertiesColumn(page), { ay: 0.3 });
             await ctx.atSentence(1);
-            await ctx.click(subsetStart(page));
+            await ctx.click(subsetStart(page)); // the panel scrolls up to it
             await ctx.press('Control+a');
             await ctx.press('Backspace');
             await expectValue(subsetStart(page), '');
@@ -231,8 +231,7 @@ export const beats = [
         do: async (page, ctx) => {
             ctx.unzoom();
             await app.retype(ctx, levelStart(page, 0), 0);
-            await ctx.move(await cell(page, 0, 0));
-            await ctx.move(await cell(page, 1, 0), { duration: 500 });
+            await ctx.move(await at(page, 50 + 17, 82 + 7.5)); // between the two blank cells
         },
     },
     {
