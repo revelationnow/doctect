@@ -1,7 +1,7 @@
 import type { AppState } from '../../types';
 import { computePageOrder, generatePDF } from '../pdfService';
 import { createDeviceZip } from './bundle';
-import { getProfile, keepsColour, targetBox, type DeviceProfile } from './deviceProfiles';
+import { alwaysIncludesPdf, getProfile, keepsColour, offersPdf, targetBox, type DeviceProfile } from './deviceProfiles';
 import { createNameAllocator, slugify } from './fileNames';
 import type { Drawing } from './pdfDrawing';
 import { buildMethodsTemplate } from './remarkableTemplate';
@@ -127,12 +127,10 @@ export async function runDeviceExport(request: DeviceExportRequest, {
             }
         }
         if (images === 0) throw new DeviceExportError(`No templates could be produced: ${messageOf(firstError)}`);
-        if (request.includePdf) {
-            for (const profile of profiles) {
-                if (profile.platform === 'remarkable') continue;
-                const bytes = colourFor(profile) ? colourPdf : greyPdf;
-                if (bytes) zip.addPdf(profile, bytes);
-            }
+        for (const profile of profiles) {
+            if (!alwaysIncludesPdf(profile) && !(request.includePdf && offersPdf(profile))) continue;
+            const bytes = colourFor(profile) ? colourPdf : greyPdf;
+            if (bytes) zip.addPdf(profile, bytes);
         }
         throwIfAborted();
         onProgress({ phase: 'packaging', done, total });

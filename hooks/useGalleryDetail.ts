@@ -5,6 +5,8 @@ import { IMPORT_STAGE_ERROR_MESSAGE, stageImport } from '../services/importProje
 import { stageForkImport } from '../services/forkProject';
 import { openGalleryProjectInEditor } from '../services/galleryOpen';
 import { downloadVariantsZip } from '../services/pdfService';
+import { migrateState } from '../services/migration';
+import type { AppState } from '../types';
 import { useSession } from '../lib/auth-client';
 
 export interface UseGalleryDetailResult {
@@ -22,6 +24,11 @@ export interface UseGalleryDetailResult {
     fork: () => Promise<void>;
     forkVersion: (commitId: string) => Promise<void>;
     downloadAllVariants: () => Promise<void>;
+    /** The published project behind an open "Download as template" dialog; null while it is closed. */
+    templateExport: { state: AppState; name: string } | null;
+    templateError: string | null;
+    downloadAsTemplate: () => Promise<void>;
+    closeTemplateExport: () => void;
     report: () => Promise<void>;
     onCloneHistoryVersion: (args: { state: unknown; commitId: string }) => Promise<void>;
     reviews: ReviewDto[];
@@ -41,6 +48,8 @@ export function useGalleryDetail(id: string | undefined): UseGalleryDetailResult
     const [busy, setBusy] = useState<string | null>(null);
     const [mrs, setMrs] = useState<MergeRequestDto[]>([]);
     const [showHistory, setShowHistory] = useState(false);
+    const [templateExport, setTemplateExport] = useState<{ state: AppState; name: string } | null>(null);
+    const [templateError, setTemplateError] = useState<string | null>(null);
     const isOwner = !!(session?.user && project && (session.user as any).id === project.ownerId);
 
     useEffect(() => {
@@ -112,6 +121,22 @@ export function useGalleryDetail(id: string | undefined): UseGalleryDetailResult
         }
     };
 
+    // Fetching the state counts as a download, as it does for the PDF zip.
+    const downloadAsTemplate = async () => {
+        if (!id || !project) return;
+        setBusy('template');
+        setTemplateError(null);
+        try {
+            const res = await cloudApi.galleryState(id);
+            setTemplateExport({ state: migrateState(res.state), name: res.name });
+        } catch {
+            setTemplateError('Could not load the template for download');
+        } finally {
+            setBusy(null);
+        }
+    };
+    const closeTemplateExport = () => setTemplateExport(null);
+
     const report = async () => {
         const reason = window.prompt('Why are you reporting this project?');
         if (!reason || !id) return;
@@ -179,6 +204,7 @@ export function useGalleryDetail(id: string | undefined): UseGalleryDetailResult
         project, error, importError, busy, mrs, isOwner, showHistory, setShowHistory,
         fromPath: location.pathname, session,
         openInEditor, fork, forkVersion, downloadAllVariants, report, onCloneHistoryVersion,
+        templateExport, templateError, downloadAsTemplate, closeTemplateExport,
         reviews, myReview, saveReview, deleteMyReview, reportReview,
     };
 }
