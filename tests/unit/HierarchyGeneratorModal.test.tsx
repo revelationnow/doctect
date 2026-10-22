@@ -153,6 +153,7 @@ describe('HierarchyGeneratorModal', () => {
         // Cell borders never fall back to the element's stroke, in the canvas or the PDF, so the prompt mustn't say they do.
         expect(screen.getByRole('dialog')).toHaveTextContent('Cell borders come only from these fields');
         expect(screen.getByRole('dialog')).toHaveTextContent('whole grid, never around each cell');
+        expect(screen.getByRole('dialog')).toHaveTextContent("is styled by the grid element's own text properties");
         expect(screen.getByRole('dialog')).not.toHaveTextContent(/Defaults to the element's own stroke/);
         expect(screen.getByRole('dialog')).not.toHaveTextContent('Detach Saved Generator');
         expect(screen.getByRole('dialog')).not.toHaveTextContent(/remove source before publishing/i);

@@ -316,6 +316,7 @@ otherwise the grid will go off screen, keep a sense of the cell layout in mind w
 - **sourceType: "specific"** uses children of a specific node ID
 - **displayField** determines what text appears in each cell (e.g., "title" shows child.data.title)
 - **Every cell is a link** to the child page it shows: in the exported PDF, tapping a cell opens that page, so grid cells need no separate link elements
+- **Cell text** is styled by the grid element's own text properties, as on a text element: fontSize, fontFamily, textColor, fontWeight, align (default "center") and verticalAlign (default "middle")
 
 All base properties + required gridConfig:
 \`\`\`javascript
