@@ -40,6 +40,15 @@ const renderModal = ({
 afterEach(cleanup);
 
 describe('CloseProjectConfirmModal', () => {
+  it('says that closing removes the whole project from this browser, not just unsaved changes', () => {
+    renderModal();
+    expect(screen.getByText(/Closing removes/)).toHaveTextContent('Closing removes "Pending Project" from this browser.');
+    expect(screen.getByText(/keeps no copy on this computer/)).toHaveTextContent(
+      "Save JSON & Close downloads a copy first. Close without Saving keeps no copy on this computer; cloud saves aren't affected.",
+    );
+    expect(screen.queryByText(/unsaved changes will be lost/)).toBeNull();
+  });
+
   it('admits one discard across same-tick pointer and keyboard-generated clicks', async () => {
     const pending = deferred<void>();
     const onConfirmClose = vi.fn(() => pending.promise);

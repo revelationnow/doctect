@@ -1901,6 +1901,7 @@ function ProjectEditorView({
                 onClose={() => setDeleteConfirmState({ isOpen: false, nodeIds: [] })}
                 onConfirm={executeDeleteNode}
                 nodeTitle={deleteConfirmState.nodeIds.length > 1 ? `${deleteConfirmState.nodeIds.length} Nodes` : (state.nodes[deleteConfirmState.nodeIds[0] || '']?.title || 'Node')}
+                referencesOnly={deleteConfirmState.nodeIds.length > 0 && deleteConfirmState.nodeIds.every(id => !!state.nodes[id]?.referenceId)}
             />
         </div>
     );

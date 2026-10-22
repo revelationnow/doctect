@@ -64,7 +64,7 @@ describe('MergeRequestPage status guidance', () => {
     it('explains a conflicted MR cannot be merged as-is', async () => {
         vi.spyOn(cloudApi, 'getMr').mockResolvedValue(makeDetail({ status: 'conflicted' }, true));
         renderAt();
-        expect(await screen.findByText(/the target project has changed since this was proposed — it can't be merged as-is\. update your fork and propose the changes again\./i)).toBeInTheDocument();
+        expect(await screen.findByText(/the target project has changed since this was proposed — it can't be merged as-is\. fork the latest version and propose your changes again\./i)).toBeInTheDocument();
     });
 
     it('confirms a merged MR was merged into the target project', async () => {

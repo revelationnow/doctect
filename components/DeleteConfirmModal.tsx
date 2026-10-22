@@ -7,9 +7,11 @@ interface DeleteConfirmModalProps {
   onClose: () => void;
   onConfirm: () => void;
   nodeTitle: string;
+  /** Every node being deleted is a reference: only the pointers go, never the pages they point at. */
+  referencesOnly?: boolean;
 }
 
-export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ isOpen, onClose, onConfirm, nodeTitle }) => {
+export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ isOpen, onClose, onConfirm, nodeTitle, referencesOnly = false }) => {
   // Touch back gesture cancels the deletion like Cancel.
   useBackDismiss(isOpen, onClose);
   if (!isOpen) return null;
@@ -21,7 +23,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ isOpen, 
             <div className="p-2 bg-red-100 rounded-full">
                 <AlertTriangle className="w-6 h-6 text-red-600" />
             </div>
-            <h2 className="text-lg font-bold text-red-900">Delete Page?</h2>
+            <h2 className="text-lg font-bold text-red-900">{referencesOnly ? 'Delete Reference?' : 'Delete Page?'}</h2>
             <button onClick={onClose} className="ml-auto p-1 text-red-400 hover:bg-red-100 rounded-full transition-colors">
                 <X size={20} />
             </button>
@@ -29,15 +31,21 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ isOpen, 
         
         <div className="p-6">
             <p className="text-slate-600 mb-4">
-                Are you sure you want to delete <span className="font-semibold text-slate-800">"{nodeTitle}"</span>?
+                Are you sure you want to delete {referencesOnly ? 'the reference to ' : ''}<span className="font-semibold text-slate-800">"{nodeTitle}"</span>?
             </p>
-            <div className="bg-slate-50 p-3 rounded text-sm text-slate-500 border border-slate-200">
-                <p>This action will also delete:</p>
-                <ul className="list-disc list-inside mt-1 ml-1 space-y-1">
-                    <li>All child pages within this section</li>
-                    <li>Any references pointing to these pages</li>
-                </ul>
-            </div>
+            {referencesOnly ? (
+                <div className="bg-slate-50 p-3 rounded text-sm text-slate-500 border border-slate-200">
+                    <p>Only the reference goes. The page it points to, and everything under it, stays where it is.</p>
+                </div>
+            ) : (
+                <div className="bg-slate-50 p-3 rounded text-sm text-slate-500 border border-slate-200">
+                    <p>This action will also delete:</p>
+                    <ul className="list-disc list-inside mt-1 ml-1 space-y-1">
+                        <li>All child pages within this section</li>
+                        <li>Any references pointing to these pages</li>
+                    </ul>
+                </div>
+            )}
         </div>
 
         <div className="p-4 border-t bg-slate-50 flex justify-end gap-3">
@@ -51,7 +59,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ isOpen, 
             onClick={() => { onConfirm(); onClose(); }}
             className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium shadow-sm transition-colors"
           >
-            Delete Everything
+            {referencesOnly ? 'Delete Reference' : 'Delete Everything'}
           </button>
         </div>
       </div>

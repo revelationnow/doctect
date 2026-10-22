@@ -22,7 +22,7 @@ const statusGuidance = (status: string, isTargetOwner: boolean): string | null =
                 ? 'You own the target project — review the changes below, then merge or close.'
                 : 'Waiting for the project owner to review this merge request.';
         case 'conflicted':
-            return "The target project has changed since this was proposed — it can't be merged as-is. Update your fork and propose the changes again.";
+            return "The target project has changed since this was proposed — it can't be merged as-is. Fork the latest version and propose your changes again.";
         case 'merged':
             return 'This merge request was merged into the target project.';
         case 'closed':

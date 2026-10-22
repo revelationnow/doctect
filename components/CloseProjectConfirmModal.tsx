@@ -75,10 +75,10 @@ export const CloseProjectConfirmModal: React.FC<CloseProjectConfirmModalProps> =
                 </div>
                 <div>
                     <p className="text-slate-600 font-medium mb-1">
-                        Do you want to save changes to <span className="font-bold text-slate-800">"{projectName}"</span>?
+                        Closing removes <span className="font-bold text-slate-800">"{projectName}"</span> from this browser.
                     </p>
                     <p className="text-sm text-slate-500 leading-relaxed">
-                        If you close without saving, any unsaved changes will be lost permanently.
+                        Save JSON &amp; Close downloads a copy first. Close without Saving keeps no copy on this computer; cloud saves aren't affected.
                     </p>
                 </div>
             </div>
