@@ -1,0 +1,258 @@
+1
+00:00:00,000 --> 00:00:05,178
+Episode 6 put the dotted card on a locked
+Background layer, under everything else.
+
+2
+00:00:05,217 --> 00:00:09,837
+Today I'll lighten its dots without touching
+the lock or nudging what sits on top.
+
+3
+00:00:09,903 --> 00:00:13,213
+And we'll see what decides
+which element ends up in front.
+
+4
+00:00:13,420 --> 00:00:14,800
+First, the cover.
+
+5
+00:00:14,927 --> 00:00:18,407
+Nothing is locked here, and
+the card lies under the title.
+
+6
+00:00:18,486 --> 00:00:20,686
+Click the title, and you get the title.
+
+7
+00:00:20,766 --> 00:00:25,466
+Click again on the same spot, and the
+selection steps down a level, to the card.
+
+8
+00:00:25,674 --> 00:00:28,054
+One more click wraps back to the title.
+
+9
+00:00:28,126 --> 00:00:31,533
+That's the quickest way when
+you're already on the top element.
+
+10
+00:00:31,612 --> 00:00:35,152
+One catch: a click on the dot in
+the middle doesn't step down.
+
+11
+00:00:35,269 --> 00:00:37,669
+That's the pivot, so click beside it.
+
+12
+00:00:37,876 --> 00:00:42,494
+Alt-click, or Option-click on a Mac,
+digs the same way but never grabs,
+
+13
+00:00:42,494 --> 00:00:44,825
+so nothing can move by accident.
+
+14
+00:00:44,950 --> 00:00:47,930
+Alt-click the subtitle:
+you get the subtitle.
+
+15
+00:00:48,060 --> 00:00:50,090
+Again, same spot: the card.
+
+16
+00:00:50,295 --> 00:00:53,596
+When the pile is deep, or
+things look alike, right-click,
+
+17
+00:00:53,596 --> 00:00:55,814
+or two-finger click on a trackpad.
+
+18
+00:00:55,943 --> 00:00:59,375
+The menu lists everything under
+the pointer, top to bottom,
+
+19
+00:00:59,375 --> 00:01:01,253
+with its type and its layer.
+
+20
+00:01:01,458 --> 00:01:06,477
+Hover a row, and its element is outlined
+on the page, so you know which is which.
+
+21
+00:01:06,565 --> 00:01:08,825
+Click Rect, and the card is selected.
+
+22
+00:01:09,068 --> 00:01:10,248
+Now the job.
+
+23
+00:01:10,395 --> 00:01:13,865
+In Appearance, Fill, I'll take
+the paler peach of the circle.
+
+24
+00:01:13,947 --> 00:01:16,897
+The dots step back, and
+the title hasn't moved.
+
+25
+00:01:17,103 --> 00:01:18,943
+On to the recipe pages.
+
+26
+00:01:19,065 --> 00:01:23,155
+Here the card sits on Background,
+which we locked in episode 6.
+
+27
+00:01:23,235 --> 00:01:26,585
+Right-click the title, and
+only the title is listed.
+
+28
+00:01:26,802 --> 00:01:30,092
+All three canvas tricks skip
+locked and hidden layers.
+
+29
+00:01:30,195 --> 00:01:31,915
+That's what locking is for.
+
+30
+00:01:31,959 --> 00:01:33,739
+Escape closes the menu.
+
+31
+00:01:33,945 --> 00:01:35,935
+The Layers panel skips nothing.
+
+32
+00:01:36,000 --> 00:01:39,239
+Under Background, click Rect,
+and the card is selected,
+
+33
+00:01:39,239 --> 00:01:41,374
+even though its layer is locked.
+
+34
+00:01:41,579 --> 00:01:44,729
+No handles, so it can't
+be dragged or resized.
+
+35
+00:01:44,779 --> 00:01:47,189
+But Element Properties works as usual.
+
+36
+00:01:47,323 --> 00:01:49,373
+Fill: the same paler peach.
+
+37
+00:01:50,080 --> 00:01:53,270
+Background is still locked,
+and nothing else has moved.
+
+38
+00:01:53,474 --> 00:01:56,134
+While the card's selected,
+look at Geometry.
+
+39
+00:01:56,248 --> 00:01:58,018
+Its Z-Index is 1.
+
+40
+00:01:58,071 --> 00:02:01,441
+Click the title's row:
+its Z-Index is 1 as well.
+
+41
+00:02:01,648 --> 00:02:06,357
+Same number, yet the title is on top,
+because layer order counts first.
+
+42
+00:02:06,419 --> 00:02:10,467
+Everything on Content sits in
+front of everything on Background.
+
+43
+00:02:10,672 --> 00:02:13,872
+Z-Index only sorts
+elements within one layer.
+
+44
+00:02:14,016 --> 00:02:16,336
+Watch: I'll give the card 99.
+
+45
+00:02:16,435 --> 00:02:19,235
+Nothing moves; it stays under Content.
+
+46
+00:02:19,379 --> 00:02:21,159
+Control Z puts it back.
+
+47
+00:02:21,374 --> 00:02:25,360
+To bring something forward past a
+layer, move it there with Move to,
+
+48
+00:02:25,360 --> 00:02:27,544
+or drag its layer up by the grip.
+
+49
+00:02:27,749 --> 00:02:29,059
+Let's export.
+
+50
+00:02:29,125 --> 00:02:34,955
+The PDF is drawn a layer at a time, back
+to front, in the same order as the canvas.
+
+51
+00:02:35,159 --> 00:02:37,139
+On the cover, lighter dots.
+
+52
+00:02:37,220 --> 00:02:41,420
+And on a recipe page, lighter
+dots too, still under every word.
+
+53
+00:02:41,626 --> 00:02:44,166
+So: click again for
+what's right underneath.
+
+54
+00:02:44,227 --> 00:02:46,157
+Alt-click when nothing may move.
+
+55
+00:02:46,302 --> 00:02:51,066
+Right-click to see the whole pile, and use
+the Layers panel for anything locked or
+
+56
+00:02:51,066 --> 00:02:51,722
+hidden.
+
+57
+00:02:51,755 --> 00:02:54,515
+Next time: the order a
+grid does things in.

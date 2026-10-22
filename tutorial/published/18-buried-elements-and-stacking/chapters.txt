@@ -1,0 +1,7 @@
+00:00 Welcome
+00:13 Click again
+00:37 Alt-click
+00:50 The right-click menu
+01:17 The Layers panel
+01:53 Layer order beats Z-Index
+02:27 The result
