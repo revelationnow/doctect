@@ -58,6 +58,22 @@ async function textBox(page, selector, needle) {
     return box;
 }
 
+/**
+ * Ctrl+V into a text box, with the key chip: the whole text lands at once, through the input
+ * event React listens for, leaving the caret and the scroll at the end as a paste does.
+ * (ctx.paste types it through the editing pipeline, which Chromium runs a line at a time:
+ * the 1,500-line project file froze the page for about 4 seconds.)
+ */
+async function pasteInto(ctx, field, text) {
+    await ctx.showKeys(['Ctrl', '+', 'V']);
+    await field.evaluate((el, value) => {
+        Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(el, value);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.setSelectionRange(value.length, value.length);
+        el.scrollTop = el.scrollHeight;
+    }, text);
+}
+
 /** Hovers a tab until its cross shows, then clicks the cross; resolves once the dialog is up. */
 async function closeTab(ctx, name) {
     await ctx.hover(app.projectTab(ctx.page, name), 450);
@@ -235,17 +251,17 @@ export const beats = [
             await ctx.click(app.pane(page).getByRole('button', { name: 'JSON', exact: true }));
             await jsonEditor(page).waitFor();
             await ctx.click(jsonEditor(page).getByRole('button', { name: 'Text', exact: true }));
-            await ctx.click(jsonEditor(page).locator('textarea'), { ay: 0.3 });
         },
     },
     {
         say: 'In Text mode, select all, paste, and Apply Changes. The recipe book is back, and the tab reads Family Cookbook again.',
         do: async (page, ctx) => {
             const editor = jsonEditor(page);
+            await ctx.click(editor.locator('textarea'), { ay: 0.3 });
             await ctx.atSentence(0, { offset: 0.9 });
             await ctx.press('Control+a');
             await ctx.atSentence(0, { offset: 1.6 });
-            await ctx.paste(fs.readFileSync(ctx.state.json, 'utf8'));
+            await pasteInto(ctx, editor.locator('textarea'), fs.readFileSync(ctx.state.json, 'utf8'));
             await ctx.click(editor.getByRole('button', { name: 'Apply Changes', exact: true }));
             await editor.waitFor({ state: 'detached' });
             await ctx.atSentence(1, { offset: 0.2 });
@@ -270,7 +286,7 @@ export const beats = [
         do: async (page, ctx) => {
             await savedLocally(page);
             await ctx.move(cloudButton(page));
-            await ctx.atSentence(1, { offset: -0.3 });
+            await ctx.atSentence(1, { offset: -0.6 });
             await ctx.click(cloudButton(page));
             const item = page.getByRole('button', { name: 'Save to cloud (new)' });
             await ctx.move(item);
