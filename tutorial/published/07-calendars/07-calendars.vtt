@@ -1,241 +1,481 @@
 WEBVTT
 
 1
-00:00:00.000 --> 00:00:03.260
-Back to the 2026 planner from episode one.
+00:00:00.000 --> 00:00:02.380
+The calendars in a planner are grids.
 
 2
-00:00:03.297 --> 00:00:07.539
-Its calendars are grids, with a
-problem the recipe index never had:
+00:00:02.481 --> 00:00:06.295
+Today we'll build one on an empty
+page, one setting at a time,
 
 3
-00:00:07.539 --> 00:00:12.477
-day 1 has to land under the right weekday,
-and that's a different column every
+00:00:06.295 --> 00:00:10.112
+and look at what each setting
+does before adding the next.
 
 4
-00:00:12.477 --> 00:00:13.107
-month.
+00:00:10.320 --> 00:00:15.519
+Here's the project, made ahead of time with
+the generator, which episode 10 covers.
 
 5
-00:00:13.319 --> 00:00:16.819
-This is the Month View
-template, previewing January.
+00:00:15.581 --> 00:00:20.738
+A cover called Q4 2026, three
+months under it, and a Notes page.
 
 6
-00:00:16.946 --> 00:00:20.529
-Thirty-one days in seven
-columns, with Monday first.
+00:00:20.834 --> 00:00:23.580
+Every month has a page
+for each of its days.
 
 7
-00:00:20.561 --> 00:00:25.056
-And January the first sits under
-Thursday, after three blank cells.
+00:00:23.798 --> 00:00:26.688
+Click a day, and its data
+fields show on the right.
 
 8
-00:00:25.264 --> 00:00:29.384
-Click the calendar, and find
-Offset, under Grid Configuration.
+00:00:26.784 --> 00:00:28.084
+Two matter today.
 
 9
-00:00:29.440 --> 00:00:32.790
-Static would skip the same
-number of cells in every month.
+00:00:28.223 --> 00:00:32.850
+day_num is the date, and weekday_num
+is the day of the week as a number:
 
 10
-00:00:32.897 --> 00:00:34.757
-This one is set to Dynamic.
+00:00:32.850 --> 00:00:34.643
+four, for this Thursday.
 
 11
-00:00:34.965 --> 00:00:38.461
-Dynamic reads a field from
-the first day, weekday_num,
+00:00:34.848 --> 00:00:38.837
+The months share a template called
+Month, and it's nearly empty:
 
 12
-00:00:38.461 --> 00:00:41.365
-and adds the number beside it: minus one.
+00:00:38.837 --> 00:00:42.328
+a title, and a row of weekday
+letters, Monday first.
 
 13
-00:00:41.461 --> 00:00:46.631
-weekday_num starts counting at Sunday,
-which is zero, so Thursday is 4.
+00:00:42.435 --> 00:00:45.115
+I'll fold Template Settings
+away to make room.
 
 14
-00:00:46.765 --> 00:00:51.135
-This calendar starts on Monday,
-not Sunday, hence the minus one.
+00:00:45.322 --> 00:00:48.943
+G for the grid tool, and drag
+out a box under the letters.
 
 15
-00:00:51.229 --> 00:00:53.868
-Four, minus one: three blank cells.
+00:00:49.152 --> 00:00:52.232
+A grid draws one cell for
+each child of its page.
 
 16
-00:00:54.075 --> 00:00:59.065
-Switch it to Static, and day 1 drops
-back into the first cell, under Monday.
+00:00:52.332 --> 00:00:58.342
+October's children are its 31 days, so
+there are 31 cells, each showing a title.
 
 17
-00:00:59.203 --> 00:01:02.353
-Back to Dynamic, and it
-moves to Thursday again.
+00:00:58.550 --> 00:01:01.500
+The Source decides whose
+children a grid shows.
 
 18
-00:01:02.426 --> 00:01:04.456
-That one setting does all the work.
+00:01:01.566 --> 00:01:04.606
+The other option pins a
+grid to one fixed page.
 
 19
-00:01:05.519 --> 00:01:07.839
-February is the interesting one.
+00:01:04.694 --> 00:01:06.844
+We'll keep Children of Current Page.
 
 20
-00:01:07.968 --> 00:01:12.238
-It starts on a Sunday, weekday
-zero, so the sum is minus one.
+00:01:07.061 --> 00:01:09.911
+Current means whichever
+page is being drawn.
 
 21
-00:01:12.385 --> 00:01:16.409
-A negative offset wraps around
-once, by the number of columns,
+00:01:10.047 --> 00:01:13.627
+Preview November, and the
+grid follows: 30 cells now.
 
 22
-00:01:16.409 --> 00:01:20.358
-and day 1 lands in the last
-column, where Sunday belongs.
+00:01:13.730 --> 00:01:15.350
+Then back to October.
 
 23
-00:01:20.567 --> 00:01:23.583
-Final Data Subset takes
-a window of a list.
+00:01:17.244 --> 00:01:19.564
+First, let's make the cells visible.
 
 24
-00:01:23.639 --> 00:01:26.735
-The year page shows it best:
-two grids, one source,
+00:01:19.597 --> 00:01:24.067
+White cells on white paper are hard
+to see, so they get a pale grey fill.
 
 25
-00:01:26.735 --> 00:01:29.049
-the seven sections under the year.
+00:01:24.162 --> 00:01:27.032
+And the black outline round
+the whole grid can go.
 
 26
-00:01:29.086 --> 00:01:32.776
-The first grid takes four,
-starting at zero: the quarters.
+00:01:27.240 --> 00:01:29.680
+Cols sets how many cells sit in a row.
 
 27
-00:01:32.984 --> 00:01:37.434
-The second skips four and takes
-three: Weeks, Notes and To-Do Lists.
+00:01:29.767 --> 00:01:32.257
+A week has seven days, so: seven.
 
 28
-00:01:37.500 --> 00:01:40.480
-Same children, two windows, no overlap.
+00:01:32.474 --> 00:01:35.826
+They're far too wide, because
+W and H, in Geometry,
 
 29
-00:01:40.687 --> 00:01:44.350
-Now let's add a little calendar
-of January to this page.
+00:01:35.826 --> 00:01:39.034
+are the size of one cell,
+not the whole grid.
 
 30
-00:01:44.392 --> 00:01:47.629
-G for grid, and drag out
-some room under the lists.
+00:01:39.091 --> 00:01:41.391
+The letters are 60 points apart.
 
 31
-00:01:48.185 --> 00:01:53.000
-Its source is the year itself, and the
-year's children are quarters, not days.
+00:01:41.441 --> 00:01:45.761
+So W is 58, leaving two
+for a gap, and H is 60.
 
 32
-00:01:53.119 --> 00:01:55.329
-Deep Traversal walks further down.
+00:01:45.969 --> 00:01:49.109
+Gap X and Gap Y are the
+space between cells.
 
 33
-00:01:55.462 --> 00:01:59.592
-Add Level, and take one child,
-starting at zero: Quarter 1.
+00:01:49.154 --> 00:01:50.484
+Two points each.
 
 34
-00:01:59.799 --> 00:02:02.809
-Another level, one child again: January.
+00:01:50.570 --> 00:01:55.340
+Fifty-eight plus two is sixty, and
+every column now sits under its letter.
 
 35
-00:02:02.859 --> 00:02:06.299
-And a third level with no
-count, so it takes every day.
+00:01:55.545 --> 00:01:59.675
+Display Template decides what each
+cell says, and it starts as title.
 
 36
-00:02:06.423 --> 00:02:09.217
-Three levels down, from
-the year to its days.
+00:01:59.721 --> 00:02:04.287
+The buttons below insert the days' fields,
+but they add to what's in the box,
 
 37
-00:02:10.038 --> 00:02:13.905
-Now the cells are January's
-days, showing their full titles.
+00:02:04.287 --> 00:02:05.901
+so I'll clear it first.
 
 38
-00:02:14.026 --> 00:02:18.666
-To make a calendar, the Display Template
-becomes day_num, just the number.
+00:02:06.106 --> 00:02:07.286
+Now day_num.
 
 39
-00:02:18.701 --> 00:02:25.457
-Then seven columns, small gaps, and small
-cells: 28 by 18 points, with 9 point text.
+00:02:07.383 --> 00:02:11.533
+Each cell reads it from its
+own day page: 01 to 31.
 
 40
-00:02:29.750 --> 00:02:34.390
-And the same dynamic offset as
-Month View: weekday_num, minus one.
+00:02:11.739 --> 00:02:16.589
+A planner prints these smaller, in the
+top-left corner, to leave room for writing.
 
 41
-00:02:34.449 --> 00:02:37.599
-January the first moves
-across to Thursday.
+00:02:16.698 --> 00:02:20.738
+In Typography: 12 points,
+Align Left, and Align Top.
 
 42
-00:02:39.770 --> 00:02:43.310
-Change the second level to
-start at 1, and it's February,
+00:02:21.184 --> 00:02:23.784
+But look where the first is: under Monday.
 
 43
-00:02:43.310 --> 00:02:45.610
-wrapped round to start on Sunday.
+00:02:23.874 --> 00:02:27.274
+October the first, 2026, is a Thursday.
 
 44
-00:02:45.691 --> 00:02:48.541
-And every cell is a link
-to its own day page.
+00:02:27.479 --> 00:02:31.789
+Offset (Skip items) leaves blank
+cells before the first item.
 
 45
-00:02:48.751 --> 00:02:50.101
-One last tip.
+00:02:31.879 --> 00:02:36.009
+Three, for Monday to Wednesday,
+and October starts on a Thursday.
 
 46
-00:02:50.237 --> 00:02:54.339
-Ask a level for a child that isn't
-there, a fourth month in a quarter,
+00:02:36.216 --> 00:02:39.446
+But a static offset is
+the same on every page.
 
 47
-00:02:54.339 --> 00:02:56.817
-say, and the grid has nothing to show.
+00:02:39.483 --> 00:02:40.843
+Preview December.
 
 48
-00:02:56.933 --> 00:03:00.752
-The editor fills it with Item
-placeholders, there's no error,
+00:02:40.876 --> 00:02:44.286
+Its first is a Tuesday, yet
+it's still under Thursday.
 
 49
-00:03:00.752 --> 00:03:02.943
-and the PDF would show nothing.
+00:02:44.490 --> 00:02:48.680
+Each month needs its own number,
+and its first day already knows it.
 
 50
-00:03:02.989 --> 00:03:06.929
-So when a grid goes blank, check
-the hierarchy before the grid.
+00:02:48.723 --> 00:02:53.743
+Switch Static to Dynamic, and the offset
+is read from a field on the first item.
 
 51
-00:03:07.150 --> 00:03:11.865
+00:02:53.948 --> 00:02:55.768
+The field is weekday_num.
+
+52
+00:02:55.832 --> 00:03:00.931
+Until the name is complete, nothing moves:
+Dynamic falls back to the number in the
+
+53
+00:03:00.931 --> 00:03:01.430
+box.
+
+54
+00:03:01.486 --> 00:03:03.526
+Then the first jumps to Wednesday.
+
+55
+00:03:03.730 --> 00:03:05.090
+One column out.
+
+56
+00:03:05.133 --> 00:03:09.479
+weekday_num counts from Sunday,
+which is zero, so Tuesday is two.
+
+57
+00:03:09.574 --> 00:03:14.774
+But our columns start with Monday, so every
+day sits one column left of its number.
+
+58
+00:03:14.981 --> 00:03:18.731
+The plus-minus box adds to
+the field's value: minus one.
+
+59
+00:03:18.801 --> 00:03:22.951
+Two minus one is one blank cell,
+and the first is under Tuesday.
+
+60
+00:03:23.163 --> 00:03:25.133
+Same settings, every month.
+
+61
+00:03:25.237 --> 00:03:29.937
+Back to October: four minus one is
+three, and it's under Thursday again.
+
+62
+00:03:30.141 --> 00:03:32.221
+November is the one to watch.
+
+63
+00:03:32.284 --> 00:03:37.404
+It starts on a Sunday, weekday zero,
+and zero minus one is minus one.
+
+64
+00:03:37.612 --> 00:03:41.964
+There's no column minus one, so a
+negative offset wraps round once:
+
+65
+00:03:41.964 --> 00:03:44.552
+add the seven columns, and it's six.
+
+66
+00:03:44.644 --> 00:03:48.724
+The first lands under Sunday,
+and the 30th starts a sixth row.
+
+67
+00:03:48.928 --> 00:03:50.198
+On to the cover.
+
+68
+00:03:50.228 --> 00:03:53.337
+I'd like the three months
+there, in a row, as links.
+
+69
+00:03:53.400 --> 00:03:55.770
+G again, and a strip under the title.
+
+70
+00:03:56.761 --> 00:03:59.955
+One cell per child again:
+three months, and Notes.
+
+71
+00:04:00.027 --> 00:04:03.286
+Final Data Subset takes
+a window of that list.
+
+72
+00:04:03.382 --> 00:04:06.522
+Start skips from the front,
+and Count keeps that many.
+
+73
+00:04:06.727 --> 00:04:08.977
+Count three, and Notes drops out.
+
+74
+00:04:09.288 --> 00:04:11.158
+Now a calendar for the cover.
+
+75
+00:04:11.274 --> 00:04:14.095
+Rather than build it
+again, I'll copy ours.
+
+76
+00:04:14.159 --> 00:04:19.069
+On Month, V, drag a box across the
+letters and the calendar, and Control C.
+
+77
+00:04:19.432 --> 00:04:21.362
+On the cover, Control V.
+
+78
+00:04:21.406 --> 00:04:24.404
+Pasted things land 20 points
+down and to the right,
+
+79
+00:04:24.404 --> 00:04:26.712
+so I'll drag them under the months.
+
+80
+00:04:27.657 --> 00:04:32.536
+The copy reads the cover's children:
+three months and Notes, so four cells.
+
+81
+00:04:32.622 --> 00:04:36.670
+A month has no day_num of its own,
+so it borrows its first day's.
+
+82
+00:04:36.874 --> 00:04:40.924
+Deep Traversal walks further down
+the tree, one level at a time.
+
+83
+00:04:41.005 --> 00:04:44.821
+Add Level, and give it a Count
+of one: of the cover's children,
+
+84
+00:04:44.821 --> 00:04:46.525
+take the first, October.
+
+85
+00:04:46.730 --> 00:04:51.120
+Add Level again, and leave its Count
+empty: every child of October.
+
+86
+00:04:51.239 --> 00:04:53.639
+The days are back, starting on Thursday.
+
+87
+00:04:53.844 --> 00:04:57.244
+Level one's Start picks the
+month, counting from zero.
+
+88
+00:04:57.363 --> 00:05:01.837
+One is November, wrapped round to
+Sunday as it was on its own page.
+
+89
+00:05:02.054 --> 00:05:05.264
+Start three is Notes, which
+has no pages under it.
+
+90
+00:05:05.396 --> 00:05:09.888
+With nothing to show, the editor fills
+the grid with Item placeholders,
+
+91
+00:05:09.888 --> 00:05:12.226
+and the PDF prints nothing there.
+
+92
+00:05:12.290 --> 00:05:13.440
+Back to one.
+
+93
+00:05:14.530 --> 00:05:18.290
+Grid Configuration lists its
+steps in the order they run.
+
+94
+00:05:18.349 --> 00:05:20.919
+The source first, then Deep Traversal.
+
+95
+00:05:20.957 --> 00:05:24.151
+Then Final Data Subset,
+and the offset last.
+
+96
+00:05:24.281 --> 00:05:28.781
+Episode 19 uses that order to
+fix grids that look wrong.
+
+97
+00:05:28.987 --> 00:05:33.137
+Every cell is a link to the page
+it shows, with nothing to set up.
+
+98
+00:05:33.270 --> 00:05:37.080
+The canvas doesn't follow links,
+so let's export and try them.
+
+99
+00:05:38.503 --> 00:05:43.463
+December, in the month row, opens
+December's page, starting on a Tuesday.
+
+100
+00:05:43.669 --> 00:05:46.119
+And every day opens its own page.
+
+101
+00:05:46.155 --> 00:05:47.995
+Christmas Day is a Friday.
+
+102
+00:05:48.200 --> 00:05:51.080
+That's a grid built up
+from one cell per child.
+
+103
+00:05:51.184 --> 00:05:55.899
 Next time: references, and how one
 page can appear in two places at once.
