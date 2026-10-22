@@ -224,6 +224,10 @@ async function selectWord(ctx, w, n, word, nth = 0) {
 
 /** Moves the pointer off the code, to the empty lower right of an editor. */
 const park = (ctx, w) => ctx.move(editor(ctx.page, w), { ax: 0.86, ay: 0.82 });
+/** Moves the pointer a couple of lines down, off the characters it just clicked. */
+const nudge = (ctx, dy = 40) => ctx.move({ x: ctx.human.pos.x + 8, y: ctx.human.pos.y + dy }, { duration: 260 });
+/** Code is typed briskly, by someone who knows what comes next. */
+const CODE_WPM = 260;
 
 /** The editor must hold exactly the storyboard's step. */
 async function expectScript(page, w, expected) {
@@ -376,15 +380,13 @@ export const beats = [
             + 'and [t.day](=t dot day) is the first one.',
         do: async (page, ctx) => {
             const zoom = when(ctx, 0, 3.7, () => closeUp(ctx, 'T'));
-            await ctx.click(editor(page, 'T'), { ax: 0.06, ay: 0.04 });
+            // an empty editor takes the caret at its start wherever it's clicked; the far right keeps the pointer off the code
+            await ctx.click(editor(page, 'T'), { ax: 0.96, ay: 0.03 });
             await expectSelection(ctx, 'T', 0, 0);
-            await park(ctx, 'T');
-            await ctx.atSentence(1, { offset: 0.6 });
-            await ctx.type('const t = {};\n');
-            await ctx.atSentence(1, { offset: 3.2 });
-            await ctx.type(`${DAY_OPEN}\n] };\nreturn t;`);
+            await ctx.atSentence(0, { offset: 1.4 });
+            await ctx.type('const t = {};\n', { wpm: CODE_WPM });
+            await ctx.type(DAY_OPEN, { wpm: CODE_WPM });
             await zoom;
-            await expectScript(page, 'T', T.pair);
         },
     },
     // 5
@@ -404,9 +406,14 @@ export const beats = [
         say: 'Elements, everything on the page, is an empty list for now. And the script must hand its templates back: return t.',
         do: async (page, ctx) => {
             await spot(ctx, 'T', 2, 'elements: [');
-            await ctx.atSentence(0, { offset: 2.4 });
-            await spot(ctx, 'T', 3, ']');
-            await ctx.atSentence(1);
+            await ctx.atSentence(0, { offset: 2.0 });
+            await ctx.unspotlight();
+            await ctx.type('\n] };', { wpm: CODE_WPM });
+            await spot(ctx, 'T', 3, '] };');
+            await ctx.atSentence(1, { offset: 1.6 });
+            await ctx.unspotlight();
+            await ctx.type('\nreturn t;', { wpm: CODE_WPM });
+            await expectScript(page, 'T', T.pair);
             await spot(ctx, 'T', 4, 'return t;');
         },
     },
@@ -416,12 +423,10 @@ export const beats = [
         do: async (page, ctx) => {
             await ctx.unspotlight();
             await closeUp(ctx, 'H');
-            await ctx.click(editor(page, 'H'), { ax: 0.06, ay: 0.04 });
+            await ctx.click(editor(page, 'H'), { ax: 0.96, ay: 0.03 });
             await expectSelection(ctx, 'H', 0, 0);
-            await park(ctx, 'H');
-            await ctx.type('const nodes = {};\n');
-            await ctx.atSentence(1);
-            await ctx.type(`${ROOT_OPEN('day')}\n${MONDAY}`);
+            await ctx.type('const nodes = {};\n', { wpm: CODE_WPM });
+            await ctx.type(ROOT_OPEN('day'), { wpm: CODE_WPM });
         },
     },
     // 8
@@ -434,7 +439,9 @@ export const beats = [
             await spot(ctx, 'H', 2, 'parentId: null');
             await ctx.atSentence(2);
             await spot(ctx, 'H', 2, "type: 'day'");
-            await ctx.atSentence(3);
+            await ctx.atSentence(3, { offset: -0.4 });
+            await ctx.unspotlight();
+            await ctx.type(`\n${MONDAY}`, { wpm: CODE_WPM });
             await spot(ctx, 'H', 3, "title: 'Monday', data: {}, children: []");
         },
     },
@@ -443,7 +450,7 @@ export const beats = [
         say: 'This script returns the pages, and which one is the root. [nodes](=Nodes) on its own is short for [nodes: nodes](=nodes colon nodes).',
         do: async (page, ctx) => {
             await ctx.unspotlight();
-            await ctx.type(`\n${RETURN_NODES}`);
+            await ctx.type(`\n${RETURN_NODES}`, { wpm: CODE_WPM });
             await expectScript(page, 'H', H.pair);
             await spot(ctx, 'H', 4, RETURN_NODES);
             await ctx.atSentence(1);
@@ -470,7 +477,7 @@ export const beats = [
             if (await card.getAttribute('aria-label') !== 'Day, Default, 1 use') throw new Error('the Day card should read 1 use');
             await ctx.move(card, { ay: 0.35 });
             await ctx.move(cardPage(page, 'Day'));
-            await ctx.atSentence(2, { offset: 1.8 });
+            await ctx.atSentence(2, { offset: 1.0 });
             await ctx.click(preview(page).getByRole('button', { name: 'Back to Scripts' }));
         },
     },
@@ -481,11 +488,10 @@ export const beats = [
             + 'X 40, y 40 is its top left corner: 40 points from the left edge and from the top.',
         do: async (page, ctx) => {
             const zoom = when(ctx, 0, 3.7, () => closeUp(ctx, 'T'));
-            await ctx.atSentence(1, { offset: -0.6 });
+            await ctx.atSentence(0, { offset: 0.3 });
             await clickCaret(ctx, 'T', { endOfLine: 2 });
             await ctx.press('Enter', { chip: false });
-            await park(ctx, 'T');
-            await ctx.type(DAY_TITLE[0]);
+            await ctx.type(DAY_TITLE[0], { wpm: CODE_WPM });
             await zoom;
             await ctx.atSentence(2);
             await spot(ctx, 'T', 3, 'x: 40, y: 40');
@@ -500,7 +506,7 @@ export const beats = [
             await ctx.atSentence(0, { end: true, offset: 0.1 });
             await ctx.unspotlight();
             await ctx.press('Enter', { chip: false });
-            await ctx.type(DAY_TITLE[1]);
+            await ctx.type(DAY_TITLE[1], { wpm: CODE_WPM });
             await expectScript(page, 'T', T.title);
             await spot(ctx, 'T', 4, "text: '{{title}}'");
         },
@@ -539,7 +545,7 @@ export const beats = [
             await ctx.atSentence(2, { offset: -0.9 });
             await clickCaret(ctx, 'H', { before: find(text, 3, '{}').start + 1 });
             await park(ctx, 'H');
-            await ctx.type(" date: 'October 26' ");
+            await ctx.type(" date: 'October 26' ", { wpm: CODE_WPM });
             await expectScript(page, 'H', H.monday);
             await spot(ctx, 'H', 3, "data: { date: 'October 26' }");
         },
@@ -623,9 +629,7 @@ export const beats = [
             await ctx.atSentence(1);
             await ctx.move(previewCard(page, 'Week'), { ay: 0.35 });
             await ctx.move(cardUnused(page, 'Week'));
-            await ctx.atSentence(2, { offset: 0.6 });
-            await ctx.move(cardUses(page, 'Day'));
-            await ctx.atSentence(2, { end: true });
+            await ctx.atSentence(2, { offset: 0.5 });
             await ctx.click(preview(page).getByRole('button', { name: 'Back to Scripts' }));
         },
     },
@@ -635,16 +639,14 @@ export const beats = [
         do: async (page, ctx) => {
             await closeUp(ctx, 'H');
             await selectWord(ctx, 'H', 2, 'day');
-            await ctx.type('week');
-            await ctx.atSentence(1);
-            const text = await editor(page, 'H').inputValue();
-            await ctx.click(await textBox(page, 'H', find(text, 3, "'Monday'").start, find(text, 3, "'Monday'").end));
+            await ctx.type('week', { wpm: CODE_WPM });
+            await ctx.atSentence(1, { offset: -0.4 });
+            await clickCaret(ctx, 'H', { endOfLine: 3 });
             await ctx.press('Home');
             await ctx.press('Shift+End');
-            const line = lineOf(text, 3);
+            const line = lineOf(await editor(page, 'H').inputValue(), 3);
             await expectSelection(ctx, 'H', line.start, line.end);
-            await park(ctx, 'H');
-            await ctx.type(ROOT_TITLE);
+            await ctx.type(ROOT_TITLE, { wpm: 280 });
             await expectScript(page, 'H', H.week);
         },
     },
@@ -737,7 +739,7 @@ export const beats = [
             await ctx.move(cardPage(page, 'Week'));
             await ctx.atSentence(1, { offset: 2.1 });
             await ctx.move(cardUses(page, 'Day'));
-            await ctx.atSentence(1, { end: true });
+            await ctx.atSentence(1, { end: true, offset: -0.8 });
             await ctx.click(preview(page).getByRole('button', { name: 'Back to Scripts' }));
         },
     },
@@ -803,7 +805,7 @@ export const beats = [
     },
     // 37
     {
-        say: 'Preview. The week lists all seven days with their dates, and each day has its way back.',
+        say: 'Preview. The week lists all seven days with their dates. And each day has its way back, at the top right.',
         do: async (page, ctx) => {
             await ctx.unspotlight();
             ctx.unzoom();
@@ -814,15 +816,13 @@ export const beats = [
             const pageBox = await lightbox(page).locator('div.min-h-0.overflow-auto').boundingBox();
             await ctx.zoom({ x: pageBox.x, y: pageBox.y + pageBox.height * 0.4, width: pageBox.width, height: 2 }, { scale: 1.6 });
             await ctx.move({ x: pageBox.x + pageBox.width * 0.4, y: pageBox.y + pageBox.height * 0.2 });
-            await ctx.move({ x: pageBox.x + pageBox.width * 0.4, y: pageBox.y + pageBox.height * 0.62 }, { duration: 1500 });
-            await ctx.atSentence(1, { offset: 2.6 });
+            await ctx.move({ x: pageBox.x + pageBox.width * 0.4, y: pageBox.y + pageBox.height * 0.62 }, { duration: 1200 });
+            await ctx.atSentence(2, { offset: -0.3 });
             ctx.unzoom();
             await ctx.click(lightbox(page).getByRole('button', { name: 'Next', exact: true }));
             await lightbox(page).getByText('Day preview', { exact: true }).waitFor();
             const dayBox = await lightbox(page).locator('div.min-h-0.overflow-auto').boundingBox();
             await ctx.move({ x: dayBox.x + dayBox.width * 0.86, y: dayBox.y + dayBox.height * 0.07 });
-            await ctx.atSentence(1, { end: true, offset: 0.4 });
-            await ctx.click(lightbox(page).getByRole('button', { name: 'Close', exact: true }));
         },
     },
     // 38
@@ -830,15 +830,16 @@ export const beats = [
         chapter: 'When it goes wrong',
         say: "Before I make this real, a mistake on purpose. In the loop, I'll misspell day as ['dya'](=d y a).",
         do: async (page, ctx) => {
+            await ctx.click(lightbox(page).getByRole('button', { name: 'Close', exact: true }));
             await ctx.click(preview(page).getByRole('button', { name: 'Back to Scripts' }));
             await preview(page).waitFor({ state: 'detached' });
             const zoom = when(ctx, 0, 3.7, () => closeUp(ctx, 'H'));
             await zoom;
             await ctx.atSentence(1, { offset: 1.2 });
             await selectWord(ctx, 'H', 11, 'day');
+            await nudge(ctx);
             await ctx.type('dya', { wpm: 120 });
             await expectScript(page, 'H', H.typo);
-            await park(ctx, 'H');
         },
     },
     // 39
@@ -884,6 +885,7 @@ export const beats = [
             await ctx.unspotlight();
             await closeUp(ctx, 'H');
             await selectWord(ctx, 'H', 11, 'dya');
+            await nudge(ctx);
             await ctx.type('day', { wpm: 120 });
             await expectScript(page, 'H', H.final);
             if (await alertText(page).count()) throw new Error('the red message should go on typing');
@@ -903,7 +905,7 @@ export const beats = [
             await clickCaret(ctx, 'T', { before: comma.end });
             await ctx.press('Backspace');
             await expectScript(page, 'T', T.comma);
-            await park(ctx, 'T');
+            await ctx.move(await messageSpot(page)); // off the line, and on the way to Preview
         },
     },
     // 43
@@ -930,15 +932,16 @@ export const beats = [
             await spot(ctx, 'T', 13, '14 textColor');
             const text = await editor(page, 'T').inputValue();
             const fourteen = find(text, 13, 'fontSize: 14');
-            await ctx.atSentence(0, { end: true, offset: -0.6 });
-            await ctx.unspotlight();
+            await ctx.atSentence(0, { end: true, offset: -1.4 });
             await clickCaret(ctx, 'T', { before: fourteen.end });
+            await nudge(ctx);
             await ctx.atSentence(1);
             await ctx.type(',');
             await expectScript(page, 'T', T.final);
+            await spot(ctx, 'T', 13, '14, textColor');
             if (await alertText(page).count()) throw new Error('the red message should go on typing');
-            await park(ctx, 'T');
-            await ctx.atSentence(1, { offset: 0.9 });
+            await ctx.atSentence(1, { offset: 0.5 });
+            await ctx.unspotlight();
             ctx.unzoom();
             await ctx.move(await messageSpot(page));
         },
@@ -1048,12 +1051,10 @@ export const beats = [
             ctx.state.pdf = await ctx.download(() => ctx.click(app.pane(page).getByRole('button', { name: 'Export PDF', exact: true })));
             await ctx.wait(600);
             await ctx.openPdf(ctx.state.pdf, { title: path.basename(ctx.state.pdf) });
-            await ctx.move({ x: 900, y: 420 });
             await ctx.atSentence(1);
             if (await ctx.clickPdfLink({ text: 'Friday · October 30' }) !== 6) throw new Error('Friday should be page 6');
             await ctx.atSentence(1, { offset: 2.2 });
             if (await ctx.clickPdfLink({ text: '← Week' }) !== 1) throw new Error('← Week should go back to page 1');
-            await ctx.move({ x: 1000, y: 380 });
         },
     },
     // 52
@@ -1170,7 +1171,7 @@ export const beats = [
             if (await day.getAttribute('aria-label') !== 'Day – Habit Checklist, Default, 30 uses') throw new Error('Day – Habit Checklist should have 30 uses');
             await ctx.move(month, { ay: 0.35 });
             await ctx.move(day, { ay: 0.35, duration: 900 });
-            await ctx.atSentence(2);
+            await ctx.atSentence(1, { offset: 3.5 });
             await ctx.click(preview(page).getByRole('button', { name: 'Create As New Project' }));
             const name = page.locator('#generated-project-name');
             await name.waitFor();
