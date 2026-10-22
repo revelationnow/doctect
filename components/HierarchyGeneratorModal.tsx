@@ -389,7 +389,8 @@ Example: A monthly calendar grid with specific start day (dynamic offset):
   type: "grid",
   gridConfig: {
     cols: 7,
-    // "offset" field in Month node data stores weekday of 1st (0=Sun, 1=Mon...).
+    // The grid reads "startWeekday" from the FIRST day it shows, so each Day node's
+    // data stores the weekday of the 1st (0=Sun, 1=Mon...).
     // This shifts the first cell (Day 1) to the correct column.
     offsetMode: "dynamic",
     offsetField: "startWeekday",

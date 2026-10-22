@@ -147,6 +147,9 @@ describe('HierarchyGeneratorModal', () => {
         // Page sizes and positions are PDF points, in the prompt as everywhere else.
         expect(screen.getByRole('dialog')).toHaveTextContent('page width in points (RM_PP_WIDTH = 509)');
         expect(screen.getByRole('dialog')).not.toHaveTextContent(/in pixels|\(pixels\)/);
+        // A dynamic offset is read from the first item the grid shows, and the calendar example says so.
+        expect(screen.getByRole('dialog')).toHaveTextContent('The grid reads "startWeekday" from the FIRST day it shows');
+        expect(screen.getByRole('dialog')).not.toHaveTextContent(/Month node data stores/);
         expect(screen.getByRole('dialog')).not.toHaveTextContent('Detach Saved Generator');
         expect(screen.getByRole('dialog')).not.toHaveTextContent(/remove source before publishing/i);
         expect(screen.queryByRole('button', { name: 'Detach Saved Generator' })).not.toBeInTheDocument();
