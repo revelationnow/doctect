@@ -350,6 +350,9 @@ export const beats = [
             await ctx.move(generator(page).getByText('1. Define Templates', { exact: true }));
             await ctx.atSentence(2);
             await ctx.move(generator(page).getByText('2. Build Hierarchy', { exact: true }));
+            await ctx.atSentence(2, { offset: 2.0 });
+            await ctx.move(editor(page, 'H'), { ax: 0.3, ay: 0.12 });
+            await ctx.move(editor(page, 'H'), { ax: 0.32, ay: 0.6, duration: 1800 });
         },
     },
     // 3
@@ -1095,6 +1098,7 @@ export const beats = [
             const shown = await promptBlock(page).textContent();
             const copied = await page.evaluate(() => navigator.clipboard.readText()).catch(() => null);
             if (copied !== null && copied !== shown) throw new Error('the clipboard should hold the prompt');
+            if (ctx.dry) fs.writeFileSync(path.join(ctx.outDir, 'llm-prompt-shown.txt'), shown); // to compare with what was sent
         },
     },
     // 54
@@ -1116,7 +1120,7 @@ export const beats = [
             const at = (r) => ({ x: r.x + Math.min(r.width / 2, 30), y: r.y + r.height / 2 });
             await ctx.move(at(rows[0]));
             await ctx.move(at(rows.at(-1)), { duration: 1800 });
-            await ctx.atSentence(0, { end: true, offset: -0.4 });
+            await ctx.atSentence(0, { end: true, offset: -1.0 });
             await ctx.click(generator(page).getByRole('button', { name: 'LLM Prompt', exact: true }));
             await promptBlock(page).waitFor();
         },
@@ -1162,13 +1166,13 @@ export const beats = [
     },
     // 57
     {
-        say: 'Two templates, a month calendar and a daily habit checklist, and 31 pages: November and its 30 days. '
+        say: 'Two templates, a month calendar and a day page, and 31 pages: November and its 30 days. '
             + 'If Preview goes red instead, paste the message back to the chatbot and ask for a fix. '
             + 'And read what it wrote before you use it. After today, you know what every line does.',
         do: async (page, ctx) => {
-            const month = previewCard(page, 'Month – Calendar'), day = previewCard(page, 'Day – Habit Checklist');
-            if (await month.getAttribute('aria-label') !== 'Month – Calendar, Default, 1 use') throw new Error('Month – Calendar should have 1 use');
-            if (await day.getAttribute('aria-label') !== 'Day – Habit Checklist, Default, 30 uses') throw new Error('Day – Habit Checklist should have 30 uses');
+            const month = previewCard(page, 'Month'), day = previewCard(page, 'Day');
+            if (await month.getAttribute('aria-label') !== 'Month, Default, 1 use') throw new Error('Month should have 1 use');
+            if (await day.getAttribute('aria-label') !== 'Day, Default, 30 uses') throw new Error('Day should have 30 uses');
             await ctx.move(month, { ay: 0.35 });
             await ctx.move(day, { ay: 0.35, duration: 900 });
             await ctx.atSentence(1, { offset: 3.5 });
@@ -1183,9 +1187,7 @@ export const beats = [
             await generator(page).waitFor({ state: 'detached' });
             await app.editorReady(page);
             await ctx.atSentence(3);
-            // November 12th: Monday-first columns, the 1st (a Sunday) in the last one; cells 69 × 100 pt, 4 apart
-            const index = 6 + 12 - 1;
-            await ctx.move(await app.pagePoint(page, 44 + (index % 7) * 73 + 34, 174 + Math.floor(index / 7) * 104 + 50));
+            await ctx.move(app.canvas(page).getByText('12', { exact: true }).first()); // the calendar's 12 November
         },
     },
     // 58

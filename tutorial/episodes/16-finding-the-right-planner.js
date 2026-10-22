@@ -337,7 +337,7 @@ export const beats = [
         },
     },
     {
-        say: "The author's name links to a profile. Priya's shows a username, a join date, and what Priya has published. "
+        say: "The author's name links to a profile. [Priya's](=Preeya's) shows a username, a join date, and what [Priya](=Preeya) has published. "
             + "That's all: no real name, no email.",
         do: async (page, ctx) => {
             await scroll(ctx, -800, { x: 1000, y: 400 });
@@ -353,7 +353,7 @@ export const beats = [
     },
     {
         chapter: 'Leaving a review',
-        say: 'Back to Priya\'s planner, to add a review of my own. Writing one takes an account: '
+        say: 'Back to [Priya\'s](=Preeya\'s) planner, to add a review of my own. Writing one takes an account: '
             + 'Sign in to review goes to the sign-in page.',
         do: async (page, ctx) => {
             await ctx.click(card(page, 'Planner 2026'), { ay: 0.3 });
@@ -429,8 +429,8 @@ export const beats = [
     },
     {
         chapter: 'Taking it home',
-        say: 'Now, taking it home. Download all variants renders every edition right here in the browser, and hands over one zip. '
-            + 'For this planner, that\'s three editions of [1,368](=thirteen hundred and sixty-eight) pages each, so it takes a few seconds.',
+        say: 'Now, taking it home. Download all variants renders every [edition](=eedition) right here in the browser, and hands over one zip. '
+            + 'For this planner, that\'s three [editions](=eeditions) of [1,368](=thirteen hundred and sixty-eight) pages each, so it takes a few seconds.',
         do: async (page, ctx) => {
             await scroll(ctx, -900, { x: 1000, y: 400 });
             const download = page.getByRole('button', { name: /Download all variants/ });
@@ -467,7 +467,7 @@ export const beats = [
         },
     },
     {
-        say: 'Version history lists the versions Priya published, newest first, each with its note. '
+        say: 'Version history lists the versions [Priya](=Preeya) published, newest first, each with its note. '
             + "Saves that were never published don't appear.",
         do: async (page, ctx) => {
             await ctx.goto(`/gallery/${ctx.state.plannerId}`);
