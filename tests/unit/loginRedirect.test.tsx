@@ -41,6 +41,30 @@ describe('LoginPage redirect behavior', () => {
         expect(await screen.findByText('GALLERY_DETAIL_MARKER')).toBeInTheDocument();
     });
 
+    // Sign-in's callback and the emailed verification link reload the page, which drops router
+    // state, so the page to return to also rides along in the URL.
+    it('returns to the page named in the from query after a full page load', async () => {
+        const { container } = renderAt(['/login?from=%2Fgallery%2Fxyz']);
+        fillAndSubmitSignIn(container);
+        expect(await screen.findByText('GALLERY_DETAIL_MARKER')).toBeInTheDocument();
+    });
+
+    it('carries the page to return to in the sign-in callback URL', async () => {
+        const { signIn } = await import('../../lib/auth-client');
+        const { container } = renderAt([{ pathname: '/login', state: { from: '/gallery/xyz' } }]);
+        fillAndSubmitSignIn(container);
+        expect(signIn.email).toHaveBeenCalledWith(
+            expect.objectContaining({ callbackURL: `${window.location.origin}/login?verified=1&from=%2Fgallery%2Fxyz` }),
+            expect.anything(),
+        );
+    });
+
+    it('ignores a return path that would leave the site', async () => {
+        const { container } = renderAt(['/login?from=%2F%2Fevil.example%2Fx']);
+        fillAndSubmitSignIn(container);
+        expect(await screen.findByText('APP_MARKER')).toBeInTheDocument();
+    });
+
     it('defaults to /app when there is no "from" state', async () => {
         const { container } = renderAt(['/login']);
         fillAndSubmitSignIn(container);

@@ -16,6 +16,11 @@ import { cloudApi } from '../services/cloudApi';
 // case (admin plugin) throws an explicit code: "BANNED_USER". Match on the
 // specific code, falling back to a message substring only if a differently-
 // shaped client ever omits `code`.
+// A path on this site to return to after signing in. "//host" and "/\\host" would leave the site.
+const sameSitePath = (value: unknown): string | undefined =>
+    typeof value === 'string' && value.startsWith('/') && !value.startsWith('//') && !value.startsWith('/\\')
+        ? value : undefined;
+
 const isUnverifiedEmailError = (error: any): boolean => {
     if (!error) return false;
     if (error.code) return error.code === 'EMAIL_NOT_VERIFIED';
@@ -41,11 +46,14 @@ export const LoginPage = () => {
     const [waitlistBusy, setWaitlistBusy] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
-    const from = (location.state as { from?: string } | null)?.from;
-    const verifiedBanner = new URLSearchParams(location.search).get('verified') === '1';
-    const oauthErrorParam = new URLSearchParams(location.search).get('error');
+    const params = new URLSearchParams(location.search);
+    // Where to go once signed in: router state on an in-app visit, or the `from` query, which
+    // survives the full page loads that sign-in's callback and the emailed verification link make.
+    const from = sameSitePath((location.state as { from?: string } | null)?.from) ?? sameSitePath(params.get('from'));
+    const verifiedBanner = params.get('verified') === '1';
+    const oauthErrorParam = params.get('error');
     const oauthCapRejected = isSignupCapOAuthError(oauthErrorParam);
-    const verificationCallbackURL = `${window.location.origin}/login?verified=1`;
+    const verificationCallbackURL = `${window.location.origin}/login?verified=1${from ? `&from=${encodeURIComponent(from)}` : ''}`;
     const { data: session } = useSession();
 
     // After clicking the emailed verification link the user lands back on
