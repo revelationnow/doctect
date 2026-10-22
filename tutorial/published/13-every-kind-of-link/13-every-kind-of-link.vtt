@@ -1,0 +1,358 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:04.650
+Episode five used two link targets,
+and episode eight added a third.
+
+2
+00:00:04.722 --> 00:00:08.482
+Five are left, and Go to Sibling
+has an edge case worth knowing.
+
+3
+00:00:08.626 --> 00:00:11.456
+Most of them sit on this
+day page's top bar.
+
+4
+00:00:12.653 --> 00:00:15.873
+Click 2026: Go to Specific Page.
+
+5
+00:00:15.971 --> 00:00:20.671
+It names one page, 2026 Planner,
+instead of a relationship.
+
+6
+00:00:20.710 --> 00:00:24.600
+Home would be three levels up from
+a day, but four from a journal.
+
+7
+00:00:24.650 --> 00:00:27.300
+A fixed page is right on every template.
+
+8
+00:00:27.506 --> 00:00:29.946
+It's also how you jump across the tree.
+
+9
+00:00:29.979 --> 00:00:35.059
+On Week View, a Notes chip: T for text,
+and a box at the end of the top bar.
+
+10
+00:00:35.921 --> 00:00:40.901
+Go to Specific Page, then Select Target
+Page, and pick Notes from the tree.
+
+11
+00:00:40.990 --> 00:00:44.090
+Now all fifty-three weeks
+open the same Notes list.
+
+12
+00:00:45.324 --> 00:00:49.330
+On Day View, the Journal chip
+is Go to Child (by Index).
+
+13
+00:00:49.421 --> 00:00:54.721
+Target Child lists this day's pages, but
+it stores a position: zero, the first.
+
+14
+00:00:54.925 --> 00:00:57.975
+So every day's chip opens
+that day's own Journal.
+
+15
+00:00:58.106 --> 00:01:02.976
+Use it when every page of a kind has
+the same sub-pages, in the same order.
+
+16
+00:01:03.191 --> 00:01:05.901
+The right arrow is Go
+to Sibling, plus one.
+
+17
+00:01:05.947 --> 00:01:09.707
+But January 31 is the last day in January.
+
+18
+00:01:09.759 --> 00:01:14.410
+The link doesn't wrap around; it climbs
+to Quarter 1 and takes the next month's
+
+19
+00:01:14.410 --> 00:01:15.249
+first day.
+
+20
+00:01:15.454 --> 00:01:16.854
+One level only.
+
+21
+00:01:16.940 --> 00:01:21.322
+March 31's next day sits under
+Quarter 2, two levels away,
+
+22
+00:01:21.322 --> 00:01:23.990
+so March 31 gets no right arrow.
+
+23
+00:01:24.118 --> 00:01:26.998
+The editor still draws it; the PDF won't.
+
+24
+00:01:27.072 --> 00:01:31.872
+Any next sibling will do, though: Quarter
+4's right arrow opens the Weeks list.
+
+25
+00:01:32.119 --> 00:01:36.740
+Q1 is Go to Ancestor (Level), two
+levels up: from a day to its month,
+
+26
+00:01:36.740 --> 00:01:38.129
+then its quarter.
+
+27
+00:01:38.184 --> 00:01:41.414
+Use it when the page you want
+is further up than the parent.
+
+28
+00:01:41.620 --> 00:01:44.480
+The count starts from the
+page that draws the chip.
+
+29
+00:01:44.562 --> 00:01:48.962
+Journals sit a level lower, so the
+Journal template's Q1 says three.
+
+30
+00:01:49.088 --> 00:01:52.988
+Ask for more levels than a page
+has, and the chip is left off.
+
+31
+00:01:53.194 --> 00:01:55.940
+Month View's week labels
+need something else.
+
+32
+00:01:55.976 --> 00:01:59.724
+No week references a month;
+weeks reference its days.
+
+33
+00:01:59.817 --> 00:02:03.337
+So Go to Child's Referrer asks
+about the month's children.
+
+34
+00:02:03.542 --> 00:02:09.862
+Start Index is the last day in the
+label's row: 6-month_start_offset.
+
+35
+00:02:09.954 --> 00:02:13.544
+Count / Direction, minus seven,
+walks back up to a week.
+
+36
+00:02:13.648 --> 00:02:16.168
+The first day a week references wins.
+
+37
+00:02:16.374 --> 00:02:20.924
+The filter prefers references on one
+template, and falls back to any.
+
+38
+00:02:20.982 --> 00:02:25.065
+One trap: the count is ignored
+until Start Index holds a value,
+
+39
+00:02:25.065 --> 00:02:28.102
+though that box shows
+zero when it's empty.
+
+40
+00:02:28.307 --> 00:02:32.197
+Open URL is the one target
+that leaves the PDF.
+
+41
+00:02:32.327 --> 00:02:36.548
+On the Year View template, the cover
+gets a web address near the bottom,
+
+42
+00:02:36.548 --> 00:02:38.967
+black on black until I make it white.
+
+43
+00:02:39.186 --> 00:02:44.323
+On Click, Open URL, and the whole
+address, starting with https.
+
+44
+00:02:44.418 --> 00:02:49.038
+It's stored exactly as typed, and most
+readers can't open a bare address.
+
+45
+00:02:49.277 --> 00:02:53.497
+There's nothing in the tree to resolve,
+so the exporter never hides it.
+
+46
+00:02:53.547 --> 00:02:57.477
+With the box empty, the line
+would still print, as plain text.
+
+47
+00:02:57.682 --> 00:03:00.877
+Deleting is where links
+and references part ways.
+
+48
+00:03:01.026 --> 00:03:04.555
+In Hierarchy, I'll select
+Week 2: our Notes chip,
+
+49
+00:03:04.555 --> 00:03:07.326
+and January 5 and 6 in its top row.
+
+50
+00:03:07.699 --> 00:03:10.369
+First, the reference to January 5.
+
+51
+00:03:10.498 --> 00:03:15.014
+The dialog says only the reference
+goes, and the page stays where it is.
+
+52
+00:03:15.085 --> 00:03:18.795
+The week loses its Monday,
+and January keeps its fifth.
+
+53
+00:03:19.625 --> 00:03:21.575
+Now the real January 6.
+
+54
+00:03:21.718 --> 00:03:26.428
+Its Journal and Daily Notes go with it,
+and so does its reference in Week 2.
+
+55
+00:03:26.508 --> 00:03:29.116
+Nothing is left pointing
+at a missing page.
+
+56
+00:03:29.810 --> 00:03:32.340
+And a fixed link can't outlive its page.
+
+57
+00:03:32.412 --> 00:03:35.832
+Delete Notes, and the chip's
+On Click drops back to None.
+
+58
+00:03:35.978 --> 00:03:38.408
+The chip still prints, as plain text.
+
+59
+00:03:38.613 --> 00:03:42.843
+Control Z, three times, and all
+three come back, link included.
+
+60
+00:03:43.048 --> 00:03:44.718
+Let's export and check.
+
+61
+00:03:44.812 --> 00:03:47.092
+Thirteen hundred pages take a moment.
+
+62
+00:03:47.198 --> 00:03:52.777
+Links are only worked out here, page by
+page, so the PDF is the only place to test
+
+63
+00:03:52.777 --> 00:03:53.368
+them.
+
+64
+00:03:53.572 --> 00:03:57.457
+The cover's address line is a live
+link, but it would leave the reader,
+
+65
+00:03:57.457 --> 00:03:58.802
+so I won't click it.
+
+66
+00:03:59.006 --> 00:04:02.936
+Quarter 1, then January 31
+in its little calendar.
+
+67
+00:04:03.030 --> 00:04:07.180
+The right arrow lands on February
+1, the next month's first day.
+
+68
+00:04:07.388 --> 00:04:10.565
+Journal opens this day's
+own journal, and its Q1,
+
+69
+00:04:10.565 --> 00:04:13.538
+three levels up, goes back to the quarter.
+
+70
+00:04:13.745 --> 00:04:15.355
+Now March 31.
+
+71
+00:04:15.420 --> 00:04:20.030
+There's a left arrow, but no right one:
+the next day lives in another quarter.
+
+72
+00:04:20.235 --> 00:04:21.855
+Mar goes up to March.
+
+73
+00:04:21.888 --> 00:04:26.778
+Its sixth week label scans back
+to March 31 and finds Week 14.
+
+74
+00:04:26.906 --> 00:04:29.986
+And Week 14's Notes chip
+opens the Notes list.
+
+75
+00:04:30.549 --> 00:04:34.479
+That's every kind of link, and what
+each does when there's nowhere to go.
+
+76
+00:04:34.540 --> 00:04:37.410
+Next time: getting your
+planner onto a tablet.
