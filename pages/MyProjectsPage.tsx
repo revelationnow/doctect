@@ -48,7 +48,7 @@ export function MyProjectsPage() {
 
     const onDelete = async (p: MyProject) => {
         const ok = window.confirm(
-            `Delete "${p.name}" and all ${p.commitCount} of its saved versions? This cannot be undone.`
+            `Delete "${p.name}" and ${p.commitCount === 1 ? 'its one saved version' : `all ${p.commitCount} of its saved versions`}? This cannot be undone.`
         );
         if (!ok) return;
         setDeletingId(p.id);
@@ -108,7 +108,7 @@ export function MyProjectsPage() {
                                         </span>
                                     </div>
                                     <div className="text-xs text-slate-500 mt-0.5">
-                                        {formatMB(p.storedBytes)} · {p.commitCount} versions · updated {new Date(p.updatedAt).toLocaleDateString()}
+                                        {formatMB(p.storedBytes)} · {p.commitCount} {p.commitCount === 1 ? 'version' : 'versions'} · updated {new Date(p.updatedAt).toLocaleDateString()}
                                     </div>
                                 </div>
                                 <button

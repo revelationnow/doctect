@@ -86,6 +86,18 @@ describe('MyProjectsPage', () => {
         expect(screen.getByText('private')).toBeInTheDocument();
     });
 
+    it('says "1 version", and names one version when deleting, for a project saved once', async () => {
+        mockListProjects.mockResolvedValue({
+            projects: [project({ commitCount: 1 })],
+            usage: { usedBytes: 2 * 1024 * 1024, quotaBytes: 50 * 1024 * 1024 },
+        });
+        const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+        renderPage();
+        expect(await screen.findByText(/2\.0 MB · 1 version · updated/)).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: /Delete/ }));
+        expect(confirm).toHaveBeenCalledWith('Delete "Weekly Planner" and its one saved version? This cannot be undone.');
+    });
+
     it('shows overall storage usage against the quota', async () => {
         renderPage();
         expect(await screen.findByText(/2\.0 MB of 50\.0 MB used/)).toBeInTheDocument();
