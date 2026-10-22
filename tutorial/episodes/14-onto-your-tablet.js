@@ -372,10 +372,12 @@ export const beats = [
         say: 'It puts your pages in one PDF beside the images, with the links between them still working. '
             + "reMarkable folders never get one. I'll add a Supernote Manta, and tick it.",
         do: async (page, ctx) => {
-            await ctx.atSentence(1);
+            // "…still working. reMarkable folders never get one." is one narration sentence (no capital after the stop)
+            await ctx.atSentence(0, { offset: 5.6 });
             await ctx.unspotlight();
-            await ctx.atSentence(2);
-            await scrollTo(ctx, legend(page, 'Supernote'), 0.3, 10);
+            await scrollTo(ctx, legend(page, 'Supernote'), 0.5, 10);
+            await ctx.move(device(page, 'Paper Pure'), { ax: 0.3 });
+            await ctx.atSentence(1);
             await ctx.click(tick(page, device(page, 'Manta')));
             await scrollTo(ctx, pdfOption(page), 0.8, 10);
             await ctx.click(tick(page, pdfOption(page)));
@@ -449,11 +451,11 @@ export const beats = [
             const rm = ctx.state.card.filter(l => l.key.startsWith('reMarkable/')).map(l => l.key);
             await focusCard(page, rm);
             await ctx.move(await cardLine(page, rm.find(k => k.endsWith('/methods/'))));
-            await ctx.atSentence(1, { offset: 2.4 });
+            await ctx.atSentence(1, { offset: 2.8 });
             const manta = ctx.state.card.filter(l => l.key.startsWith('Supernote/')).map(l => l.key);
             await focusCard(page, manta);
             await ctx.move(await cardLine(page, manta.find(k => k.includes('/MyStyle/'))));
-            await ctx.atSentence(1, { offset: 4.2 });
+            await ctx.atSentence(1, { offset: 4.5 });
             const boox = ctx.state.card.filter(l => l.key.startsWith('Boox/')).map(l => l.key);
             await focusCard(page, boox);
             await ctx.move(await cardLine(page, boox.find(k => k.includes('/noteTemplate/'))));
@@ -462,7 +464,7 @@ export const beats = [
     {
         say: "Here's the Paper Pure's to-do page: [1404 × 1872](=fourteen oh four by eighteen seventy-two) pixels, "
             + "the tablet's exact screen, in grey.",
-        hold: 1.6,
+        hold: 1,
         do: async (page, ctx) => {
             const rel = ctx.state.card.map(l => l.key).find(k => /^reMarkable\/.*\/png\/To-Do_List_1\.png$/.test(k));
             await hideZipCard(ctx);
@@ -517,7 +519,7 @@ export const beats = [
             const methods = keys.find(k => /^reMarkable\/.*\/methods\/$/.test(k));
             await focusCard(page, [methods]);
             await ctx.move(await cardLine(page, methods));
-            await ctx.atSentence(1, { offset: 3.4 });
+            await ctx.atSentence(1, { offset: 3.9 });
             const png = keys.filter(k => /^reMarkable\/[^/]+\/png\//.test(k));
             await focusCard(page, png);
             await ctx.move(await cardLine(page, png[0]));
