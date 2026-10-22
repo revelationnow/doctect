@@ -128,7 +128,7 @@ export const beats = [
             + 'Saving locally while I type, then Saved locally.',
         do: async (page, ctx) => {
             await ctx.spotlight(badge(page), '', 6);
-            await ctx.atSentence(0, { offset: 1.4 });
+            await ctx.atSentence(0, { offset: 0.5 });
             await ctx.click(app.nodeTitleInput(page));
             await ctx.press('Control+a');
             await ctx.type('Family Cookbook', { wpm: 60 });
@@ -141,7 +141,7 @@ export const beats = [
         do: async (page, ctx) => {
             await ctx.unspotlight();
             await ctx.move(app.canvas(page), { ay: 0.3 });
-            await ctx.atSentence(2);
+            await ctx.atSentence(2, { offset: -0.3 });
             await savedLocally(page);
             await ctx.showKeys(['F5']);
             await ctx.wait(400);
