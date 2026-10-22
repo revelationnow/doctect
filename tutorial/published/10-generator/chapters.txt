@@ -1,6 +1,11 @@
 00:00 Welcome
-00:15 Two scripts
-00:54 Preview
-01:14 Applying it
-01:34 Where the scripts live
-01:58 The result
+00:13 Two editors
+00:39 The smallest pair
+01:51 The day page
+03:09 A week of pages
+04:57 The list and the way back
+05:59 When it goes wrong
+06:53 Making it real
+07:19 Where the scripts live
+07:47 The result
+07:55 Letting an LLM help

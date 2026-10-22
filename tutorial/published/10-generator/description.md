@@ -1,26 +1,31 @@
-The generator: building documents in code | PDF Architect tutorial 10 of 12 (Advanced)
+The generator, step by step | PDF Architect tutorial 10 of 19 (Advanced)
 
-Some documents are too big to click together: the 2026 Planner has 365 day pages, and a script built them all. We write two short scripts of our own, one for the templates and one for the pages, preview the result in a sealed sandbox, open it as a new project, and see where the scripts are kept afterwards.
+Two short scripts, written from empty editors and read line by line, build a dated week of meal pages. The template script says how pages look; the hierarchy script lists the pages, with a loop that makes the seven days and their dates. We preview in the sandbox, fix the two errors you will meet most, open the result as a new project, and follow its links in the exported PDF. Then the LLM Helper: the generator's own prompt, a chatbot's answer for a November habit tracker, pasted in and previewed. Both finished scripts are below, ready to copy.
 
 In this video:
-• The two scripts: templates, then pages
-• Data fields and links written in code
-• Preview runs in a sandbox and changes nothing
-• Create As New Project versus Replace Current Project
-• Scripts are saved with the project, and never run on opening
-• Structure in code, polish on the canvas
+• The smallest template script and hierarchy script that preview
+• Text, placeholders, data fields, a lined page and a grid, written as code
+• A loop that makes a week of dated pages
+• Reading the two errors you will meet most
+• Create As New Project, and where the scripts are saved
+• Letting a chatbot write the scripts with the LLM Helper prompt
 
 Chapters:
 00:00 Welcome
-00:15 Two scripts
-00:54 Preview
-01:14 Applying it
-01:34 Where the scripts live
-01:58 The result
+00:13 Two editors
+00:39 The smallest pair
+01:51 The day page
+03:09 A week of pages
+04:57 The list and the way back
+05:59 When it goes wrong
+06:53 Making it real
+07:19 Where the scripts live
+07:47 The result
+07:55 Letting an LLM help
 
 Read more in the in-app docs:
-• /docs/generator/generator-basics
-• /docs/reference/hierarchy-script
+• /docs/generator/templates-in-code
+• /docs/generator/hierarchy-in-code
 
 Previous: Episode 9, Variants & export: one document, every device
 Next: Episode 11, Gallery, accounts & cloud history
