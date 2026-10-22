@@ -752,8 +752,11 @@ describe('real ProjectEditor incremental boundary', () => {
     const event = h.onDocumentEdit.mock.calls[0][0];
     expect(event.edit.changes.filter((change: any) => change.type === 'delete-node').map((change: any) => change.nodeId).sort()).toEqual(['a', 'b', 'ref']);
     const before = event.edit.before.variants.other.templates.linked, after = event.edit.after.variants.other.templates.linked;
-    expect(after.elements[0]).toMatchObject({ linkTarget: 'none', linkValue: undefined });
-    expect(after.elements[1].gridConfig).toMatchObject({ sourceType: 'current', sourceId: undefined });
+    // Repaired fields are removed, not left as undefined (the local store refuses undefined values).
+    expect(after.elements[0]).toMatchObject({ linkTarget: 'none' });
+    expect(Object.keys(after.elements[0])).not.toContain('linkValue');
+    expect(after.elements[1].gridConfig).toMatchObject({ sourceType: 'current' });
+    expect(Object.keys(after.elements[1].gridConfig)).not.toContain('sourceId');
     expect(after.elements[2]).toBe(before.elements[2]); expect(after.layers).toBe(before.layers);
     expect(event.edit.after.variants.default).toBe(event.edit.before.variants.default);
     expect(event.edit.after.nodes.root.children).toEqual([]);
