@@ -1,0 +1,6 @@
+00:00 Welcome
+00:10 Four steps, in order
+00:28 Slice, then offset
+00:51 Seeing every cell
+01:12 The right step
+01:31 Blank cells

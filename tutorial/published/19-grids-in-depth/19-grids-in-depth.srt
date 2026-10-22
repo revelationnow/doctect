@@ -1,0 +1,172 @@
+1
+00:00:00,000 --> 00:00:03,619
+When a grid looks wrong, it's
+usually doing what it was told,
+
+2
+00:00:03,619 --> 00:00:05,649
+in an order you didn't expect.
+
+3
+00:00:05,700 --> 00:00:10,190
+Today: that order, on the Quarter View,
+and a switch that shows every cell.
+
+4
+00:00:10,403 --> 00:00:12,233
+I'll click April's calendar.
+
+5
+00:00:12,267 --> 00:00:16,367
+As in episode 7, its steps run
+in the order they're listed.
+
+6
+00:00:16,418 --> 00:00:19,694
+The source and Deep
+Traversal find April's days,
+
+7
+00:00:19,694 --> 00:00:22,901
+Final Data Subset, empty
+here, would trim them,
+
+8
+00:00:22,901 --> 00:00:24,925
+and the offset comes last.
+
+9
+00:00:25,042 --> 00:00:28,272
+April starts on a Wednesday,
+so two blank cells.
+
+10
+00:00:28,476 --> 00:00:30,206
+Here's a mistake I've made.
+
+11
+00:00:30,245 --> 00:00:35,234
+I want this calendar to show the next
+month, and Final Data Subset sounds right:
+
+12
+00:00:35,234 --> 00:00:36,545
+Start Index, one.
+
+13
+00:00:36,757 --> 00:00:38,997
+It's still April, minus the first.
+
+14
+00:00:39,067 --> 00:00:43,327
+The subset runs after traversal,
+so it trimmed a day, not a month.
+
+15
+00:00:43,534 --> 00:00:45,254
+Did the offset change too?
+
+16
+00:00:45,424 --> 00:00:49,195
+The second stayed under Thursday,
+but blank cells don't show here,
+
+17
+00:00:49,195 --> 00:00:51,044
+so there's nothing to count.
+
+18
+00:00:51,260 --> 00:00:54,800
+Empty Cell Borders, under
+Grid Formatting, draws them.
+
+19
+00:00:54,879 --> 00:00:58,322
+It needs a real cell border
+first, and as in episode 4,
+
+20
+00:00:58,322 --> 00:01:01,639
+the color and width shown
+here are only borrowed.
+
+21
+00:01:02,368 --> 00:01:04,988
+So: a gray, half a point, and the switch.
+
+22
+00:01:05,127 --> 00:01:06,767
+Three empty cells now.
+
+23
+00:01:06,881 --> 00:01:10,511
+The offset re-read the first
+day left, Thursday the second.
+
+24
+00:01:10,590 --> 00:01:12,210
+The slice ran first.
+
+25
+00:01:12,424 --> 00:01:14,814
+Picking a month is traversal's job.
+
+26
+00:01:14,923 --> 00:01:18,423
+Clear the subset, and give the
+first level a Start of one.
+
+27
+00:01:19,299 --> 00:01:20,379
+That's May.
+
+28
+00:01:20,511 --> 00:01:23,494
+It starts on a Friday,
+so four bordered blanks:
+
+29
+00:01:23,494 --> 00:01:26,981
+a first row that's mostly
+empty, for a good reason.
+
+30
+00:01:27,201 --> 00:01:30,251
+Back to zero, and April's
+offset is two again.
+
+31
+00:01:31,495 --> 00:01:33,775
+Borders help with a blank grid too.
+
+32
+00:01:33,921 --> 00:01:37,870
+A typo in Display Template,
+day_number instead of day_num,
+
+33
+00:01:37,870 --> 00:01:39,891
+and every cell goes empty.
+
+34
+00:01:40,097 --> 00:01:44,607
+The cells are all still there, so the steps
+above are fine; it's what they print.
+
+35
+00:01:44,671 --> 00:01:47,221
+Fix the name, and the numbers come back.
+
+36
+00:01:47,428 --> 00:01:50,628
+So: traversal, then the
+subset, then the offset.
+
+37
+00:01:50,673 --> 00:01:54,249
+The export runs the same steps,
+and the borders print too,
+
+38
+00:01:54,249 --> 00:01:56,223
+so keep them or switch them off.
