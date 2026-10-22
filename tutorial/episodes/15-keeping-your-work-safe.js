@@ -320,7 +320,7 @@ export const beats = [
             const row = projectRow(page, 'Family Cookbook');
             await ctx.move(row.getByText('Family Cookbook', { exact: true }));
             await ctx.move(row.getByText('private', { exact: true }));
-            await ctx.move(await textBox(page, 'main li', 'versions'), { ax: 0.3 });
+            await ctx.move(await textBox(page, 'main li', 'version'), { ax: 0.3 });
         },
     },
     {
