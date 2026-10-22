@@ -112,6 +112,11 @@ async function showInteraction(ctx) {
     await onClick(ctx.page).scrollIntoViewIfNeeded();
 }
 
+/** Waits until the edit just made has reached local storage. */
+async function savedLocally(page) {
+    await page.getByRole('status').filter({ hasText: 'Saved locally' }).first().waitFor({ timeout: 30000 });
+}
+
 async function rowAction(ctx, row, title) {
     await row.scrollIntoViewIfNeeded();
     await ctx.hover(row.locator('span.truncate').first(), 350);
@@ -416,6 +421,8 @@ export const beats = [
             await dialog.waitFor({ state: 'detached' });
             await ctx.click(await at(page, 427, 20));
             await showInteraction(ctx);
+            // the delete's local save re-lays out the panel when it lands: measure after it
+            await savedLocally(page);
             await spot(ctx, fieldBlock(page, 'On Click'));
             await ctx.atSentence(2);
             await ctx.move(await at(page, 427, 20));
@@ -435,14 +442,20 @@ export const beats = [
     },
     {
         chapter: 'In the PDF',
+        // The export runs several seconds: this beat's words cover it, and the next beat
+        // (the address line) only starts once the PDF is open.
         say: "Let's export and check. Thirteen hundred pages take a moment. "
-            + "The cover's address line is a live link, but it would leave the reader, so I won't click it.",
+            + 'Links are only worked out here, page by page, so the PDF is the only place to test them.',
         do: async (page, ctx) => {
             ctx.state.pdf = await ctx.download(() => ctx.click(page.getByRole('button', { name: 'Export PDF' }).first()));
             await ctx.wait(800);
             await ctx.openPdf(ctx.state.pdf, { title: '2026 Planner.pdf' });
             await ctx.move({ x: 1000, y: 420 });
-            await ctx.atSentence(2);
+        },
+    },
+    {
+        say: "The cover's address line is a live link, but it would leave the reader, so I won't click it.",
+        do: async (page, ctx) => {
             const link = await page.evaluate(() => window.__viewer.links().find(l => l.href?.startsWith('https://')));
             if (!link) throw new Error('no URL link on the cover');
             await ctx.hover(link, 300);
@@ -487,7 +500,7 @@ export const beats = [
             await clickPdfCell(ctx, 478.5, 434);
             await ctx.atSentence(2);
             await ctx.clickPdfLink({ text: 'Notes' });
-            await ctx.move({ x: 760, y: 500 });
+            await ctx.move({ x: 1180, y: 470 }); // the margin, off the list's links
         },
     },
     {

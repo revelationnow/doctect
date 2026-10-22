@@ -371,20 +371,16 @@ export const beats = [
             await ctx.type(you.email, { wpm: 200 });
             await ctx.click(page.getByLabel('Password', { exact: true }));
             await ctx.type(you.password, { wpm: 220 });
-            const shots = [];
-            if (process.env.EP16_DEBUG) {
-                const t0 = Date.now();
-                const timer = setInterval(() => shots.push(page.screenshot({ path: path.join(ctx.outDir, `debug-signin-${Date.now() - t0}.png`) }).catch(() => {})), 120);
-                ctx.state.stopShots = () => clearInterval(timer);
-            }
             await ctx.click(page.getByRole('button', { name: 'Sign In', exact: true }));
+            // the app signs in, reloads /login?verified=1, and ends in the editor: `from` is lost
             await page.waitForURL(url => new URL(url).pathname === '/app', { timeout: 20000 });
             await app.editorReady(page);
-            if (ctx.state.stopShots) { await ctx.wait(800); ctx.state.stopShots(); await Promise.all(shots); }
+            await ctx.move(app.projectTab(page, 'Blank Project'));
             await ctx.atSentence(2);
             await ctx.showKeys(['Alt', '+', '←']);
+            await ctx.wait(500);
             await page.goBack();
-            if (process.env.EP16_DEBUG) console.log('after Back:', page.url());
+            if (new URL(page.url()).pathname !== `/gallery/${ctx.state.plannerId}`) throw new Error(`Back went to ${page.url()}`);
             ctx.human.resetDialogs();
             await ctx.human.ensure();
             await reviewForm(page).waitFor({ timeout: 20000 });

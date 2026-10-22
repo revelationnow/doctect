@@ -43,6 +43,19 @@ const SUBTITLE = [200, 377];
 const TOMATO = [230, 88];
 const TITLE_CENTRE = [297.5, 317.3];
 
+/** Spotlights a properties-panel block once it has scrolled into view and stopped moving. */
+async function spot(ctx, locator) {
+    await locator.scrollIntoViewIfNeeded();
+    let prev = null, box = null;
+    for (let i = 0; i < 30; i++) {
+        box = await locator.boundingBox();
+        if (box && prev && Math.abs(box.y - prev.y) < 0.5 && Math.abs(box.x - prev.x) < 0.5) break;
+        prev = box;
+        await ctx.page.waitForTimeout(80);
+    }
+    await ctx.spotlight(box, '', 6);
+}
+
 async function pickFill(ctx, hex) {
     const swatch = fillSwatch(ctx.page);
     await swatch.scrollIntoViewIfNeeded();
@@ -205,13 +218,12 @@ export const beats = [
         do: async (page, ctx) => {
             await zIndexField(page).scrollIntoViewIfNeeded();
             await ctx.atSentence(1);
-            await ctx.spotlight(zIndexField(page), '', 6);
+            await spot(ctx, zIndexField(page));
             await ctx.move(zIndexField(page).locator('input'));
             await ctx.atSentence(2);
             await ctx.unspotlight();
             await ctx.click(elementRow(page, '{{title}}'), { ax: 0.3 });
-            await zIndexField(page).scrollIntoViewIfNeeded();
-            await ctx.spotlight(zIndexField(page), '', 6);
+            await spot(ctx, zIndexField(page));
         },
     },
     {
