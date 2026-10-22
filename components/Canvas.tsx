@@ -4,6 +4,7 @@ import React, { useRef, useState, useEffect, useLayoutEffect, MouseEvent } from 
 import { AppState, TemplateElement, PageTemplate, AppNode, TraversalStep } from '../types';
 import clsx from 'clsx';
 import { CanvasElement } from './canvas/CanvasElement';
+import { gridLeadingOffset } from './canvas/elementBounds';
 import { ReadOnlyPagePreview } from './canvas/ReadOnlyPagePreview';
 import { OverlayTextEditor } from './canvas/OverlayTextEditor';
 import { SelectionHandles } from './canvas/SelectionHandles';
@@ -544,33 +545,11 @@ export const Canvas: React.FC<CanvasProps> = ({
             const displayCount = items.length > 0 ? items.length : 6;
             const colCount = Math.max(1, cols || 3);
 
-            // Calculate Offset (Logic synced from CanvasElement)
-            let offset = el.gridConfig.offsetStart || 0;
-            const { offsetMode, offsetField, offsetAdjustment } = el.gridConfig;
-
-            if (offsetMode === 'dynamic' && offsetField && items.length > 0) {
-                const firstId = items[0];
-                let firstNode = nodes[firstId];
-                if (firstNode && firstNode.referenceId && nodes[firstNode.referenceId]) {
-                    firstNode = nodes[firstNode.referenceId];
-                }
-
-                if (firstNode && firstNode.data && firstNode.data[offsetField]) {
-                    const parsed = parseInt(firstNode.data[offsetField], 10);
-                    if (!isNaN(parsed)) {
-                        offset = parsed + (offsetAdjustment || 0);
-                    }
-                }
-            }
-
-            if (offset < 0) {
-                offset += colCount;
-            }
-
+            const offset = gridLeadingOffset(el.gridConfig, items, nodes, colCount);
             const rowCount = Math.max(1, Math.ceil((displayCount + offset) / colCount));
 
-            const totalW = colCount * el.w + (colCount - 1) * (gapX || 0);
-            const totalH = rowCount * el.h + (rowCount - 1) * (gapY || 0);
+            const totalW = colCount * el.w + (colCount - 1) * (gapX ?? 10);
+            const totalH = rowCount * el.h + (rowCount - 1) * (gapY ?? 10);
 
             return { x: el.x, y: el.y, w: totalW, h: totalH };
         }
@@ -1425,13 +1404,14 @@ export const Canvas: React.FC<CanvasProps> = ({
 
                     const displayCount = items.length > 0 ? items.length : 6;
                     const colCount = Math.max(1, cols || 3);
-                    const rowCount = Math.max(1, Math.ceil((displayCount + (el.gridConfig.offsetStart || 0)) / colCount));
+                    const offset = gridLeadingOffset(el.gridConfig, items, nodes, colCount);
+                    const rowCount = Math.max(1, Math.ceil((displayCount + offset) / colCount));
 
                     // newW is the TOTAL width. Convert to Cell W.
                     // TotalW = cols * cellW + (cols-1)*gap
                     // cellW = (TotalW - (cols-1)*gap) / cols
-                    const newCellW = (newW - ((colCount - 1) * (gapX || 0))) / colCount;
-                    const newCellH = (newH - ((rowCount - 1) * (gapY || 0))) / rowCount;
+                    const newCellW = (newW - ((colCount - 1) * (gapX ?? 10))) / colCount;
+                    const newCellH = (newH - ((rowCount - 1) * (gapY ?? 10))) / rowCount;
 
                     updateGeometry(elements.map(item => item.id === elId ? {
                         ...item, x: finalX, y: finalY, w: newCellW, h: newCellH

@@ -7,7 +7,7 @@ import { resolveTextOverflowSettings } from '../../services/textOverflow';
 import { resolveCanvasFontFamily, type CanvasTextLayoutSession } from '../../services/canvasTextLayout';
 import { resolveElementPreviewText } from '../../services/previewText';
 import { resolveTextContentBox } from '../../services/textPadding';
-import { getElementBounds, traverseGridData } from './elementBounds';
+import { getElementBounds, gridLeadingOffset, traverseGridData } from './elementBounds';
 import { buildPatternBackgroundStyle } from './patternStyle';
 
 interface CanvasElementProps {
@@ -123,7 +123,7 @@ export const CanvasElement: React.FC<CanvasElementProps> = (props) => {
 
     // Grid
     if (element.type === 'grid' && element.gridConfig) {
-        const { cols, gapX, gapY, sourceType, sourceId, displayField, offsetMode, offsetField, offsetAdjustment, dataSliceStart, dataSliceCount, traversalPath } = element.gridConfig;
+        const { cols, gapX, gapY, sourceType, sourceId, displayField, dataSliceStart, dataSliceCount, traversalPath } = element.gridConfig;
 
         let items: any[] = [];
         let roots: string[] = [];
@@ -150,27 +150,8 @@ export const CanvasElement: React.FC<CanvasElementProps> = (props) => {
         }
 
         const isMock = items.length === 0;
-        let offset = element.gridConfig.offsetStart || 0;
         const colCount = cols || 3;
-
-        if (offsetMode === 'dynamic' && offsetField && items.length > 0) {
-            const firstId = items[0];
-            let firstNode = nodes[firstId];
-            if (firstNode && firstNode.referenceId && nodes[firstNode.referenceId]) {
-                firstNode = nodes[firstNode.referenceId];
-            }
-
-            if (firstNode && firstNode.data && firstNode.data[offsetField]) {
-                const parsed = parseInt(firstNode.data[offsetField], 10);
-                if (!isNaN(parsed)) {
-                    offset = parsed + (offsetAdjustment || 0);
-                }
-            }
-        }
-
-        if (offset < 0) {
-            offset += colCount;
-        }
+        const offset = gridLeadingOffset(element.gridConfig, items, nodes, colCount);
 
         const displayItems = isMock ? Array.from({ length: 6 }) : items;
         const safeGapX = gapX ?? 10;

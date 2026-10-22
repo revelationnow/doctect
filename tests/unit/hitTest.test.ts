@@ -18,6 +18,49 @@ describe('getElementBounds (extracted)', () => {
     it('returns w/h for plain elements', () => {
         expect(getElementBounds(makeEl('a', { w: 40, h: 30 }), nodes, 'root')).toEqual({ w: 40, h: 30 });
     });
+
+    // A month of 30 days in a 7-column calendar; the 1st falls in the last column (offset 6), so
+    // the days need six rows, not five. The cells use the dynamic offset, and so must the bounds.
+    const month = (firstDayData: Record<string, string>, extra: Record<string, AppNode> = {}): Record<string, AppNode> => {
+        const days = Array.from({ length: 30 }, (_, i) => `d${i + 1}`);
+        const out: Record<string, AppNode> = {
+            month: { id: 'month', parentId: null, type: 'month', title: 'November', data: {}, children: days },
+            ...extra,
+        };
+        days.forEach((id, i) => {
+            out[id] = { id, parentId: 'month', type: 'day', title: String(i + 1), data: i === 0 ? firstDayData : {}, children: [] };
+        });
+        return out;
+    };
+    const calendar = (gridConfig: Partial<NonNullable<TemplateElement['gridConfig']>> = {}) => makeEl('cal', {
+        type: 'grid', w: 70, h: 100,
+        gridConfig: { cols: 7, gapX: 4, gapY: 4, sourceType: 'current', displayField: 'title',
+            offsetMode: 'dynamic', offsetField: 'startWeekday', ...gridConfig } as TemplateElement['gridConfig'],
+    });
+
+    it('counts the dynamic offset when it adds a row', () => {
+        expect(getElementBounds(calendar(), month({ startWeekday: '6' }), 'month')).toEqual({ w: 7 * 70 + 6 * 4, h: 6 * 100 + 5 * 4 });
+        expect(getElementBounds(calendar(), month({ startWeekday: '0' }), 'month').h).toBe(5 * 100 + 4 * 4);
+    });
+
+    it('reads the dynamic offset through a reference, and wraps a negative one', () => {
+        const nodesWithRef = month({}, { real: { id: 'real', parentId: null, type: 'day', title: 'Real', data: { startWeekday: '6' }, children: [] } });
+        nodesWithRef.d1 = { ...nodesWithRef.d1, referenceId: 'real' };
+        expect(getElementBounds(calendar(), nodesWithRef, 'month').h).toBe(6 * 100 + 5 * 4);
+        // -1 wraps to 6 empty cells: still six rows
+        expect(getElementBounds(calendar({ offsetAdjustment: -7 }), month({ startWeekday: '6' }), 'month').h).toBe(6 * 100 + 5 * 4);
+    });
+
+    it('uses the cells\' default gap of 10 when a grid sets none', () => {
+        const grid = calendar({ gapX: undefined, gapY: undefined, offsetMode: 'static' });
+        expect(getElementBounds(grid, month({}), 'month')).toEqual({ w: 7 * 70 + 6 * 10, h: 5 * 100 + 4 * 10 });
+    });
+
+    it('lets a click on the row the offset adds hit the grid', () => {
+        const nodesForMonth = month({ startWeekday: '6' });
+        // the sixth row starts at y = 5 * (100 + 4) = 520; "30" sits in its first cell
+        expect(hitTestPoint({ x: 30, y: 560 }, [calendar()], [], nodesForMonth, 'month').map(e => e.id)).toEqual(['cal']);
+    });
 });
 
 describe('hitTestPoint', () => {

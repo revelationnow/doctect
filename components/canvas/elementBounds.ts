@@ -33,6 +33,37 @@ export const traverseGridData = (
     return traverseGridData(nextLevelNodes, steps, depth + 1, nodes);
 };
 
+/**
+ * Empty cells before a grid's first item: its static offset, or in dynamic mode the first item's
+ * offset field (read through a reference) plus the adjustment; a negative offset wraps by one row.
+ * The cells, the element's bounds and the PDF all lay a grid out with this number.
+ */
+export const gridLeadingOffset = (
+    gridConfig: NonNullable<TemplateElement['gridConfig']>,
+    items: string[],
+    nodes: Record<string, AppNode>,
+    colCount: number
+): number => {
+    let offset = gridConfig.offsetStart || 0;
+    const { offsetMode, offsetField, offsetAdjustment } = gridConfig;
+    if (offsetMode === 'dynamic' && offsetField && items.length > 0) {
+        let firstNode = nodes[items[0]];
+        if (firstNode && firstNode.referenceId && nodes[firstNode.referenceId]) {
+            firstNode = nodes[firstNode.referenceId];
+        }
+        if (firstNode && firstNode.data && firstNode.data[offsetField]) {
+            const parsed = parseInt(firstNode.data[offsetField], 10);
+            if (!isNaN(parsed)) {
+                offset = parsed + (offsetAdjustment || 0);
+            }
+        }
+    }
+    if (offset < 0) {
+        offset += colCount;
+    }
+    return offset;
+};
+
 export const getElementBounds = (
     el: TemplateElement,
     nodes: Record<string, AppNode>,
@@ -67,10 +98,12 @@ export const getElementBounds = (
 
         const displayCount = items.length > 0 ? items.length : 6;
         const colCount = Math.max(1, cols || 3);
-        const rowCount = Math.max(1, Math.ceil((displayCount + (el.gridConfig.offsetStart || 0)) / colCount));
+        const offset = gridLeadingOffset(el.gridConfig, items, nodes, colCount);
+        const rowCount = Math.max(1, Math.ceil((displayCount + offset) / colCount));
 
-        const totalW = colCount * el.w + (colCount - 1) * (gapX || 0);
-        const totalH = rowCount * el.h + (rowCount - 1) * (gapY || 0);
+        // Gaps default to 10, as the cells and the PDF lay them out.
+        const totalW = colCount * el.w + (colCount - 1) * (gapX ?? 10);
+        const totalH = rowCount * el.h + (rowCount - 1) * (gapY ?? 10);
 
         return { w: totalW, h: totalH };
     }
