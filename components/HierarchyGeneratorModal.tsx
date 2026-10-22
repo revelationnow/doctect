@@ -614,11 +614,13 @@ const GeneratorHelpPanel: React.FC<{ isOpen: boolean; onToggle: () => void }> = 
   // Dynamic prompt with fonts
   const promptText = useMemo(() => getLLMPrompt(FONTS), []);
 
+  // Open, the panel takes at most 60% of the dialog and scrolls inside it, so its end is always
+  // reachable however short the window; the prompt keeps Copy in view by scrolling on its own.
   return (
-    <div className="border-t border-slate-300">
+    <div className={clsx('border-t border-slate-300 flex flex-col min-h-0', isOpen && 'max-h-[60%]')}>
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-4 py-2 bg-slate-100 hover:bg-slate-200 transition-colors"
+        className="w-full shrink-0 flex items-center justify-between px-4 py-2 bg-slate-100 hover:bg-slate-200 transition-colors"
       >
         <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
           <Book size={16} className="text-indigo-500" />
@@ -628,12 +630,12 @@ const GeneratorHelpPanel: React.FC<{ isOpen: boolean; onToggle: () => void }> = 
       </button>
 
       {isOpen && (
-        <div className="bg-slate-50 border-t border-slate-200">
-          <p className="border-b border-slate-200 px-4 py-3 text-sm text-slate-700">
+        <div className="bg-slate-50 border-t border-slate-200 flex flex-1 flex-col min-h-0">
+          <p className="shrink-0 border-b border-slate-200 px-4 py-3 text-sm text-slate-700">
             {GENERATOR_WORKFLOW_HELP}
           </p>
           {/* Tabs */}
-          <div className="flex border-b border-slate-200">
+          <div className="flex shrink-0 border-b border-slate-200">
             <button
               onClick={() => setActiveTab('prompt')}
               className={`px-4 py-2 text-sm font-medium ${activeTab === 'prompt' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
@@ -648,16 +650,16 @@ const GeneratorHelpPanel: React.FC<{ isOpen: boolean; onToggle: () => void }> = 
             </button>
           </div>
 
-          <div className="p-4 max-h-[70vh] overflow-auto">
+          <div className="p-4 flex flex-1 flex-col min-h-0 overflow-auto">
             {activeTab === 'prompt' && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
+              <div className="flex flex-1 flex-col gap-3 min-h-0">
+                <div className="flex shrink-0 items-center justify-between">
                   <p className="text-sm text-slate-600">
                     Copy this prompt to your favorite LLM (ChatGPT, Claude, etc.) to generate custom scripts:
                   </p>
                   <CopyButton text={promptText} />
                 </div>
-                <pre className="p-3 bg-slate-800 text-slate-200 text-xs rounded-lg overflow-auto max-h-[60vh]">
+                <pre className="flex-1 min-h-0 p-3 bg-slate-800 text-slate-200 text-xs rounded-lg overflow-auto">
                   {promptText}
                 </pre>
               </div>
