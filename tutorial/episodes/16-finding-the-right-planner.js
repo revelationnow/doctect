@@ -354,7 +354,7 @@ export const beats = [
     {
         chapter: 'Leaving a review',
         say: 'Back to [Priya\'s](=Preeya\'s) planner, to add a review of my own. Writing one takes an account: '
-            + 'Sign in to review goes to the sign-in page.',
+            + 'Sign in to review goes to the sign-in page, and brings me straight back.',
         do: async (page, ctx) => {
             await ctx.click(card(page, 'Planner 2026'), { ay: 0.3 });
             const signIn = detail(page).getByRole('link', { name: 'Sign in to review' });
@@ -365,36 +365,24 @@ export const beats = [
             await ctx.click(signIn);
             await page.getByRole('heading', { name: 'Sign In' }).waitFor();
             await ctx.click(page.getByLabel('Email', { exact: true }));
-            await ctx.type(you.email, { wpm: 200 });
+            await ctx.type(you.email, { wpm: 260 });
             await ctx.click(page.getByLabel('Password', { exact: true }));
-            await ctx.type(you.password, { wpm: 220 });
-        },
-    },
-    {
-        say: "Signing in lands me in the editor, though, not back on the planner. The browser's Back button returns me to it.",
-        do: async (page, ctx) => {
+            await ctx.type(you.password, { wpm: 300 });
+            // signing in reloads /login?verified=1&from=…, which hands back to this project's page
+            const reloaded = page.waitForURL(url => new URL(url).searchParams.get('verified') === '1', { timeout: 20000 });
             await ctx.click(page.getByRole('button', { name: 'Sign In', exact: true }));
-            // the app signs in, reloads /login?verified=1, and ends in the editor: `from` is lost
-            await page.waitForURL(url => new URL(url).pathname === '/app', { timeout: 20000 });
-            await app.editorReady(page);
-            await ctx.move(app.projectTab(page, 'Blank Project'));
-            await ctx.atSentence(1);
-            await ctx.showKeys(['Alt', '+', '←']);
-            await ctx.wait(500);
-            await page.goBack();
-            if (new URL(page.url()).pathname !== `/gallery/${ctx.state.plannerId}`) throw new Error(`Back went to ${page.url()}`);
-            ctx.human.resetDialogs();
-            await ctx.human.ensure();
+            await reloaded;
+            await page.waitForURL(url => new URL(url).pathname === `/gallery/${ctx.state.plannerId}`, { timeout: 20000 });
             await reviewForm(page).waitFor({ timeout: 20000 });
-            const form = await reviewForm(page).boundingBox();
-            await scroll(ctx, form.y - 260, { x: 1000, y: 480 });
-            await ctx.move(page.getByText('Rate this project'));
+            await ctx.move(page.getByRole('heading', { name: 'Planner 2026' }));
         },
     },
     {
         say: 'Reviews are signed with your username. The stars are the only required part; the words are optional. '
             + 'Five stars, and one line about why.',
         do: async (page, ctx) => {
+            const form = await reviewForm(page).boundingBox();
+            await scroll(ctx, form.y - 260, { x: 1000, y: 480 });
             await ctx.move(reviewForm(page).getByRole('radiogroup', { name: 'Rating' }));
             await ctx.atSentence(1);
             await ctx.click(reviewForm(page).getByRole('radio', { name: '5 stars' }));
