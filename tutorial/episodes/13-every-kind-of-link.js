@@ -41,12 +41,31 @@ const picker = (page) => page.locator('div.fixed', { has: page.locator('h2:text-
 const pickerRow = (page, title) => picker(page).locator('div.flex.items-center', { has: page.locator(`span.truncate:text-is("${title}")`) }).first();
 const deleteDialog = (page, heading) => page.locator('div.fixed', { has: page.locator(`h2:text-is("${heading}")`) });
 
+/** A locator's box once the panel has stopped moving (a new selection re-lays out Element Properties). */
+async function settledBox(locator) {
+    let prev = null;
+    for (let i = 0; i < 30; i++) {
+        const box = await locator.boundingBox();
+        if (box && prev && Math.abs(box.x - prev.x) < 0.5 && Math.abs(box.y - prev.y) < 0.5 && Math.abs(box.height - prev.height) < 0.5) return box;
+        prev = box;
+        await locator.page().waitForTimeout(80);
+    }
+    return prev;
+}
+
 /** One box around several locators (for a spotlight over a label and its control). */
 async function boxAround(...targets) {
-    const boxes = await Promise.all(targets.map(t => t.boundingBox()));
+    const boxes = [];
+    for (const t of targets) boxes.push(await settledBox(t));
     const x = Math.min(...boxes.map(b => b.x)), y = Math.min(...boxes.map(b => b.y));
     const r = Math.max(...boxes.map(b => b.x + b.width)), btm = Math.max(...boxes.map(b => b.y + b.height));
     return { x, y, width: r - x, height: btm - y };
+}
+
+/** Spotlights a properties-panel block once it has scrolled into view and settled. */
+async function spot(ctx, ...targets) {
+    await targets[0].scrollIntoViewIfNeeded();
+    await ctx.spotlight(await boxAround(...targets), '', 6);
 }
 
 /** A box on the canvas page, from page points. */
@@ -64,6 +83,25 @@ async function pdfBox(page, x0, y0, x1, y1) {
     });
     const sx = r.width / PAGE_W, sy = r.height / PAGE_H;
     return { x: r.x + x0 * sx, y: r.y + y0 * sy, width: (x1 - x0) * sx, height: (y1 - y0) * sy };
+}
+
+/**
+ * Clicks the smallest PDF link under a point (page points) and waits for the jump. A Quarter
+ * page's mini calendar is one link to its month laid over a link per day, and ctx.clickPdfLink
+ * takes the first of overlapping links, which is the month.
+ */
+async function clickPdfCell(ctx, x, y) {
+    const { page } = ctx;
+    const target = await pdfBox(page, x, y, x, y);
+    const rect = await page.evaluate(({ x: px, y: py }) => window.__viewer.links()
+        .filter(l => px >= l.x && px <= l.x + l.width && py >= l.y && py <= l.y + l.height)
+        .sort((a, b) => a.width * a.height - b.width * b.height)[0] ?? null, target);
+    if (!rect) throw new Error(`no PDF link at ${x}, ${y}`);
+    const before = await page.evaluate(() => window.__viewer.state.jumps);
+    await ctx.click(rect);
+    await page.waitForFunction(b => window.__viewer.state.jumps > b, before, { timeout: 10000 });
+    await page.waitForTimeout(500);
+    return page.evaluate(() => window.__viewer.state.page);
 }
 
 /** Brings Element Properties' Interaction section into view (expanding it if it was folded). */
@@ -125,7 +163,7 @@ export const beats = [
         do: async (page, ctx) => {
             await ctx.click(await at(page, 238, 20));
             await showInteraction(ctx);
-            await ctx.spotlight(await boxAround(fieldBlock(page, 'On Click'), targetButton(page)), '', 6);
+            await spot(ctx, fieldBlock(page, 'On Click'), targetButton(page));
             await ctx.atSentence(1);
             await ctx.move(targetButton(page));
             await ctx.atSentence(2);
@@ -191,7 +229,7 @@ export const beats = [
         do: async (page, ctx) => {
             await ctx.click(await at(page, 180, 20));
             await showInteraction(ctx);
-            await ctx.spotlight(fieldBlock(page, 'Offset (+1 Next, -1 Prev)'), '', 6);
+            await spot(ctx, fieldBlock(page, 'Offset (+1 Next, -1 Prev)'));
             await ctx.atSentence(1);
             await ctx.move(await at(page, 99, 20));
             await ctx.atSentence(2);
@@ -222,7 +260,7 @@ export const beats = [
         do: async (page, ctx) => {
             await ctx.click(await at(page, 306, 20));
             await showInteraction(ctx);
-            await ctx.spotlight(fieldBlock(page, 'Levels Up (1 = Parent, 2 = Grandparent)'), '', 6);
+            await spot(ctx, fieldBlock(page, 'Levels Up (1 = Parent, 2 = Grandparent)'));
             await ctx.atSentence(0, { offset: 3.4 });
             await ctx.move(await at(page, 356, 20));
             await ctx.wait(500);
@@ -238,7 +276,7 @@ export const beats = [
             await app.selectTemplate(ctx, 'Journal');
             await ctx.click(await at(page, 312, 20));
             await showInteraction(ctx);
-            await ctx.spotlight(fieldBlock(page, 'Levels Up (1 = Parent, 2 = Grandparent)'), '', 6);
+            await spot(ctx, fieldBlock(page, 'Levels Up (1 = Parent, 2 = Grandparent)'));
         },
     },
     {
@@ -252,7 +290,7 @@ export const beats = [
             await showInteraction(ctx);
             await ctx.move(await at(page, 250, 200));
             await ctx.atSentence(2);
-            await ctx.spotlight(fieldBlock(page, 'On Click'), '', 6);
+            await spot(ctx, fieldBlock(page, 'On Click'));
             await ctx.move(onClick(page));
         },
     },
@@ -261,10 +299,10 @@ export const beats = [
             + '[Count / Direction](=Count, direction), minus seven, walks back up to a week. The first day a week references wins.',
         do: async (page, ctx) => {
             await smartBlock(page, 'Start Index').scrollIntoViewIfNeeded();
-            await ctx.spotlight(smartBlock(page, 'Start Index'), '', 6);
+            await spot(ctx, smartBlock(page, 'Start Index'));
             await ctx.move(smartBlock(page, 'Start Index').locator('input'));
             await ctx.atSentence(1);
-            await ctx.spotlight(smartBlock(page, 'Count / Direction'), '', 6);
+            await spot(ctx, smartBlock(page, 'Count / Direction'));
             await ctx.move(smartBlock(page, 'Count / Direction').locator('input'));
         },
     },
@@ -272,10 +310,10 @@ export const beats = [
         say: 'The filter prefers references on one template, and falls back to any. '
             + "One trap: the count is ignored until Start Index holds a value, though that box shows zero when it's empty.",
         do: async (page, ctx) => {
-            await ctx.spotlight(fieldBlock(page, 'Filter by Parent Template (Optional)'), '', 6);
+            await spot(ctx, fieldBlock(page, 'Filter by Parent Template (Optional)'));
             await ctx.move(fieldBlock(page, 'Filter by Parent Template (Optional)').locator('select'));
             await ctx.atSentence(1);
-            await ctx.spotlight(smartBlock(page, 'Start Index'), '', 6);
+            await spot(ctx, smartBlock(page, 'Start Index'));
             await ctx.move(smartBlock(page, 'Start Index').locator('input'));
         },
     },
@@ -332,7 +370,7 @@ export const beats = [
         },
     },
     {
-        say: 'First, the reference to January 5. The dialog says only the reference goes; the page stays where it is. '
+        say: 'First, the reference to January 5. The dialog says only the reference goes, and the page stays where it is. '
             + 'The week loses its Monday, and January keeps its fifth.',
         do: async (page, ctx) => {
             await rowAction(ctx, app.nodeRow(page, 'January 5, 2026'), 'Delete');
@@ -378,7 +416,7 @@ export const beats = [
             await dialog.waitFor({ state: 'detached' });
             await ctx.click(await at(page, 427, 20));
             await showInteraction(ctx);
-            await ctx.spotlight(fieldBlock(page, 'On Click'), '', 6);
+            await spot(ctx, fieldBlock(page, 'On Click'));
             await ctx.atSentence(2);
             await ctx.move(await at(page, 427, 20));
         },
@@ -416,9 +454,9 @@ export const beats = [
         do: async (page, ctx) => {
             await ctx.unspotlight();
             await ctx.clickPdfLink({ text: 'Quarter 1' });
-            await ctx.clickPdfLink({ near: [143.5 / PAGE_W, 149.5 / PAGE_H] });
+            await clickPdfCell(ctx, 143.5, 149.5);
             await ctx.atSentence(1);
-            await ctx.clickPdfLink({ near: [179.5 / PAGE_W, 20 / PAGE_H] });
+            await clickPdfCell(ctx, 179.5, 20);
             await ctx.move(await pdfBox(page, 30, 0, 169, 40));
         },
     },
@@ -433,7 +471,7 @@ export const beats = [
     {
         say: "Now March 31. There's a left arrow, but no right one: the next day lives in another quarter.",
         do: async (page, ctx) => {
-            await ctx.clickPdfLink({ near: [353.5 / PAGE_W, 164.5 / PAGE_H] });
+            await clickPdfCell(ctx, 353.5, 164.5);
             await ctx.atSentence(1);
             await ctx.move(await pdfBox(page, 0, 0, 20, 40));
             await ctx.spotlight(await pdfBox(page, 168, 1, 191, 39), '', 4);
@@ -446,7 +484,7 @@ export const beats = [
             await ctx.unspotlight();
             await ctx.clickPdfLink({ text: 'Mar' });
             await ctx.atSentence(1);
-            await ctx.clickPdfLink({ near: [478.5 / PAGE_W, 434 / PAGE_H] });
+            await clickPdfCell(ctx, 478.5, 434);
             await ctx.atSentence(2);
             await ctx.clickPdfLink({ text: 'Notes' });
             await ctx.move({ x: 760, y: 500 });

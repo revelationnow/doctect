@@ -18,6 +18,7 @@
 //   export const teardown = (ctx) => app.saveFixture(ctx, '07-q4-2026');
 import { episodeMeta } from './series.js';
 import * as app from '../lib/app.js';
+import { ZOOM } from '../lib/browser.js';
 
 export const meta = episodeMeta(7, {
     description: 'Every calendar in a planner is a grid. On a small Q4 2026 project with an empty Month template, we build a '
@@ -172,7 +173,14 @@ async function scrollPanelTo(ctx, target, top = 140) {
     const box = await target.boundingBox();
     if (!box || Math.abs(box.y - top) < 30) return;
     const panel = await app.propertiesColumn(ctx.page).boundingBox();
-    await ctx.wheel(box.y - top, { at: { x: panel.x + panel.width * 0.55, y: panel.y + panel.height * 0.6 }, steps: 8 });
+    // wheel deltas are screen pixels; the page scrolls them divided by the page zoom
+    await ctx.wheel((box.y - top) * ZOOM, { at: { x: panel.x + panel.width * 0.55, y: panel.y + panel.height * 0.6 }, steps: 8 });
+}
+
+/** Fails the run (dry or real) when a box doesn't hold what the narration says it holds. */
+async function expectValue(locator, expected) {
+    const value = await locator.inputValue();
+    if (value !== String(expected)) throw new Error(`expected "${expected}" in the box, found "${value}"`);
 }
 
 export async function setup(ctx) {
@@ -208,7 +216,7 @@ export const beats = [
             }
             await ctx.atSentence(2);
             await app.toggleNode(ctx, 'October');
-            await ctx.move(app.nodeRow(page, 'October 8, 2026').locator('span.truncate'), { duration: 900 });
+            await ctx.move(app.nodeRow(page, 'October 8, 2026').locator('span.truncate'), { ax: 0.25, duration: 900 });
         },
     },
     {
@@ -356,6 +364,7 @@ export const beats = [
             await app.retype(ctx, ty.locator('input[type=number]').first(), 12);
             await ctx.click(ty.locator('button[title="Align Left"]'));
             await ctx.click(ty.locator('button[title="Align Top"]'));
+            await scrollPanelTo(ctx, grid(page).getByText('Display Template', { exact: true }));
             await ctx.move(await at(page, 160, 200));
         },
     },
@@ -363,7 +372,6 @@ export const beats = [
         chapter: 'Static offset',
         say: 'But look where the first is: under Monday. October the first, 2026, is a Thursday.',
         do: async (page, ctx) => {
-            await scrollPanelTo(ctx, grid(page).getByText('Display Template', { exact: true }));
             await closeUp(ctx, [30, 56, 476, 400]);
             await ctx.move(await num(page, 0, 0));
             await ctx.atSentence(1);
@@ -414,6 +422,7 @@ export const beats = [
             await ctx.type('weekday_nu', { wpm: 70 });
             await ctx.atSentence(2);
             await ctx.type('m');
+            await expectValue(offsetRow(page).locator('input[placeholder="Field Name"]'), 'weekday_num');
             await ctx.move(await num(page, 2, 0));
         },
     },
@@ -431,8 +440,10 @@ export const beats = [
     {
         say: "The plus-minus box adds to the field's value: minus one. Two minus one is one blank cell, and the first is under Tuesday.",
         do: async (page, ctx) => {
-            await ctx.click(offsetRow(page).locator('input[placeholder="+/-"]'));
+            const adjust = offsetRow(page).locator('input[placeholder="+/-"]');
+            await ctx.click(adjust, { ax: 0.3 }); // left of the number spinner, which a click would step
             await ctx.press('ArrowDown');
+            await expectValue(adjust, -1);
             await ctx.atSentence(1);
             await ctx.move(await num(page, 1, 0));
             await ctx.move(await num(page, 3, 4), { duration: 1000 });
@@ -607,7 +618,7 @@ export const beats = [
         say: "December, in the month row, opens December's page, starting on a Tuesday.",
         do: async (page, ctx) => {
             await ctx.clickPdfLink({ text: 'December' });
-            await ctx.move({ x: 760, y: 330 });
+            await ctx.move({ x: 1060, y: 330 });
         },
     },
     {

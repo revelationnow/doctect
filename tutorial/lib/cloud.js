@@ -188,3 +188,114 @@ export async function seedGallery(ctx) {
     }
     await freshVisitor(ctx);
 }
+
+// ---- More seeding: reviews, generated projects, variants (episodes 16 and 17) ----
+
+/**
+ * Like apiAs, with PUT, PATCH and DELETE as well (a review is a PUT), and `bytes(path)`
+ * for a response that isn't JSON, such as a listing's public preview image.
+ */
+export async function apiSession(ctx, { email, password }) {
+    const { servers, baseUrl } = ctx;
+    const signedIn = await fetch(`${servers.apiOrigin}/api/auth/sign-in/email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: baseUrl },
+        body: JSON.stringify({ email, password }),
+    });
+    if (!signedIn.ok) throw new Error(`sign-in failed for ${email}: ${signedIn.status} ${await signedIn.text()}`);
+    const cookie = signedIn.headers.getSetCookie().map(c => c.split(';')[0]).join('; ');
+    const headersWith = (extra = {}) => ({ 'Content-Type': 'application/json', Origin: baseUrl, Cookie: cookie, ...extra });
+    const call = async (method, path, body, headers) => {
+        const res = await fetch(`${servers.apiOrigin}${path}`, {
+            method, headers: headersWith(headers), body: body === undefined ? undefined : JSON.stringify(body),
+        });
+        const json = await res.json().catch(() => null);
+        if (!res.ok) throw new Error(`${method} ${path}: ${res.status} ${JSON.stringify(json)}`);
+        return json;
+    };
+    return {
+        get: (path) => call('GET', path),
+        post: (path, body, headers) => call('POST', path, body, headers),
+        put: (path, body, headers) => call('PUT', path, body, headers),
+        patch: (path, body, headers) => call('PATCH', path, body, headers),
+        del: (path, headers) => call('DELETE', path, undefined, headers),
+        /** The raw response: { type, data } (a Buffer). */
+        async bytes(path) {
+            const res = await fetch(`${servers.apiOrigin}${path}`, { headers: headersWith() });
+            if (!res.ok) throw new Error(`GET ${path}: ${res.status}`);
+            return { type: res.headers.get('content-type') ?? '', data: Buffer.from(await res.arrayBuffer()) };
+        },
+    };
+}
+
+/** The id of the published listing called `name` (by `author`, if given), from the public gallery API. */
+export async function listingId(ctx, name, author) {
+    const res = await fetch(`${ctx.servers.apiOrigin}/api/gallery?q=${encodeURIComponent(name)}`);
+    const { items } = await res.json();
+    const item = items.find(i => i.name === name && (!author || i.author === author));
+    if (!item) throw new Error(`no gallery listing called ${name}${author ? ` by ${author}` : ''}`);
+    return item.id;
+}
+
+/**
+ * Generate Hierarchy via Script with both scripts filled in (a gallery sample's
+ * templates.js and hierarchy.js, say), Preview, then Create As New Project named
+ * `name`. Ends on the new project's tab.
+ */
+export async function newGeneratedProject(ctx, { templates, hierarchy, name }) {
+    const { page } = ctx;
+    await app.toolbarButton(page, 'Generate Hierarchy via Script').click();
+    const generator = page.locator('div.fixed', { has: page.getByLabel('Template script') }).first();
+    await generator.waitFor();
+    await page.getByLabel('Template script').fill(templates);
+    await page.getByLabel('Hierarchy script').fill(hierarchy);
+    await generator.getByRole('button', { name: 'Preview', exact: true }).click();
+    const createNew = page.getByRole('button', { name: 'Create As New Project' });
+    await createNew.waitFor({ timeout: 60000 });
+    await createNew.click();
+    const field = page.locator('#generated-project-name');
+    await field.fill(name);
+    await page.getByRole('button', { name: 'Create Project' }).click();
+    await field.waitFor({ state: 'detached', timeout: 60000 });
+    await app.editorReady(page);
+    await savedLocally(page);
+}
+
+const variantMenu = (page) => app.sidebarColumn(page).locator('select:has(option)').first();
+
+/** In Templates: renames the active variant (Rename Variant, then Enter). */
+export async function renameVariant(ctx, name) {
+    const { page } = ctx;
+    await app.sidebarTab(page, 'Templates').click();
+    await app.sidebarColumn(page).locator('button[title="Rename Variant"]').click();
+    const field = app.sidebarColumn(page).locator('input.border-indigo-300').first();
+    await field.fill(name);
+    await field.press('Enter');
+    await variantMenu(page).locator('option', { hasText: name }).first().waitFor({ state: 'attached' });
+    await savedLocally(page);
+}
+
+/**
+ * In Templates: Add New Variant called `name`, at a Target Page Size option as the menu
+ * prints it (e.g. 'Kindle Scribe (432×576)'), with Auto-Reflow and Scale Typography left
+ * on. Create Variant makes it the active variant.
+ */
+export async function addVariant(ctx, name, size) {
+    const { page } = ctx;
+    await app.sidebarTab(page, 'Templates').click();
+    await app.sidebarColumn(page).locator('button[title="Add New Variant"]').click();
+    const dialog = page.locator('div.fixed', { has: page.locator('h2:has-text("New Variant")') }).first();
+    await dialog.getByPlaceholder('e.g. iPad Version').fill(name);
+    await dialog.locator('select').selectOption({ label: size });
+    await dialog.getByRole('button', { name: 'Create Variant' }).click();
+    await dialog.waitFor({ state: 'detached' });
+    await savedLocally(page);
+}
+
+/** In Templates: makes the variant called `name` the active one. */
+export async function selectVariant(ctx, name) {
+    const { page } = ctx;
+    await app.sidebarTab(page, 'Templates').click();
+    await variantMenu(page).selectOption({ label: name });
+    await savedLocally(page);
+}

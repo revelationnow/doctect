@@ -1,0 +1,1919 @@
+{
+  "selectedNodeIds": [
+    "root"
+  ],
+  "selectedTemplateIds": [],
+  "selectedElementIds": [],
+  "tool": "select",
+  "showJsonModal": false,
+  "showNodeSelector": false,
+  "nodeSelectorMode": "grid_source",
+  "editingElementId": null,
+  "clipboard": [],
+  "templatePreviewNodeId": "root",
+  "activeLayerId": "layer_tqnrlt5k2",
+  "nodes": {
+    "root": {
+      "id": "root",
+      "parentId": null,
+      "type": "cover",
+      "title": "Q4 2026",
+      "data": {
+        "year": "2026"
+      },
+      "children": [
+        "month_3441s1eba",
+        "month_4rvdm3hf7",
+        "month_du1xkrw5s",
+        "notes"
+      ]
+    },
+    "month_3441s1eba": {
+      "id": "month_3441s1eba",
+      "parentId": "root",
+      "type": "month",
+      "title": "October",
+      "data": {
+        "year": "2026",
+        "month_name": "October"
+      },
+      "children": [
+        "day_bf9rwbswl",
+        "day_0b0zdfdqc",
+        "day_el673ludo",
+        "day_5qq08d5h1",
+        "day_awzsnihee",
+        "day_7gk785aef",
+        "day_0b18832ym",
+        "day_o8tscvx4o",
+        "day_8xf9jqbtp",
+        "day_6839b4eme",
+        "day_zm7c0prx3",
+        "day_r3jvltjzx",
+        "day_3kejx5ci8",
+        "day_g6l4imdxg",
+        "day_nycra09ch",
+        "day_4tlsrda70",
+        "day_djhs5y6tg",
+        "day_nglkjx7a5",
+        "day_memo56arz",
+        "day_zoa1tjiqu",
+        "day_bdvr6ba8t",
+        "day_l1wkametr",
+        "day_fxt6p26uh",
+        "day_5w460khns",
+        "day_l7oeg88q2",
+        "day_9gxryfcun",
+        "day_rdg5vkeav",
+        "day_s8vj94q41",
+        "day_924n647cx",
+        "day_ty3cr1x1u",
+        "day_4binu0bgj"
+      ]
+    },
+    "day_bf9rwbswl": {
+      "id": "day_bf9rwbswl",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 1, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "01",
+        "day_name": "Thursday",
+        "day_short": "Thu",
+        "weekday_num": "4"
+      }
+    },
+    "day_0b0zdfdqc": {
+      "id": "day_0b0zdfdqc",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 2, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "02",
+        "day_name": "Friday",
+        "day_short": "Fri",
+        "weekday_num": "5"
+      }
+    },
+    "day_el673ludo": {
+      "id": "day_el673ludo",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 3, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "03",
+        "day_name": "Saturday",
+        "day_short": "Sat",
+        "weekday_num": "6"
+      }
+    },
+    "day_5qq08d5h1": {
+      "id": "day_5qq08d5h1",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 4, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "04",
+        "day_name": "Sunday",
+        "day_short": "Sun",
+        "weekday_num": "0"
+      }
+    },
+    "day_awzsnihee": {
+      "id": "day_awzsnihee",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 5, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "05",
+        "day_name": "Monday",
+        "day_short": "Mon",
+        "weekday_num": "1"
+      }
+    },
+    "day_7gk785aef": {
+      "id": "day_7gk785aef",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 6, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "06",
+        "day_name": "Tuesday",
+        "day_short": "Tue",
+        "weekday_num": "2"
+      }
+    },
+    "day_0b18832ym": {
+      "id": "day_0b18832ym",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 7, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "07",
+        "day_name": "Wednesday",
+        "day_short": "Wed",
+        "weekday_num": "3"
+      }
+    },
+    "day_o8tscvx4o": {
+      "id": "day_o8tscvx4o",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 8, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "08",
+        "day_name": "Thursday",
+        "day_short": "Thu",
+        "weekday_num": "4"
+      }
+    },
+    "day_8xf9jqbtp": {
+      "id": "day_8xf9jqbtp",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 9, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "09",
+        "day_name": "Friday",
+        "day_short": "Fri",
+        "weekday_num": "5"
+      }
+    },
+    "day_6839b4eme": {
+      "id": "day_6839b4eme",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 10, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "10",
+        "day_name": "Saturday",
+        "day_short": "Sat",
+        "weekday_num": "6"
+      }
+    },
+    "day_zm7c0prx3": {
+      "id": "day_zm7c0prx3",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 11, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "11",
+        "day_name": "Sunday",
+        "day_short": "Sun",
+        "weekday_num": "0"
+      }
+    },
+    "day_r3jvltjzx": {
+      "id": "day_r3jvltjzx",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 12, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "12",
+        "day_name": "Monday",
+        "day_short": "Mon",
+        "weekday_num": "1"
+      }
+    },
+    "day_3kejx5ci8": {
+      "id": "day_3kejx5ci8",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 13, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "13",
+        "day_name": "Tuesday",
+        "day_short": "Tue",
+        "weekday_num": "2"
+      }
+    },
+    "day_g6l4imdxg": {
+      "id": "day_g6l4imdxg",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 14, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "14",
+        "day_name": "Wednesday",
+        "day_short": "Wed",
+        "weekday_num": "3"
+      }
+    },
+    "day_nycra09ch": {
+      "id": "day_nycra09ch",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 15, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "15",
+        "day_name": "Thursday",
+        "day_short": "Thu",
+        "weekday_num": "4"
+      }
+    },
+    "day_4tlsrda70": {
+      "id": "day_4tlsrda70",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 16, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "16",
+        "day_name": "Friday",
+        "day_short": "Fri",
+        "weekday_num": "5"
+      }
+    },
+    "day_djhs5y6tg": {
+      "id": "day_djhs5y6tg",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 17, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "17",
+        "day_name": "Saturday",
+        "day_short": "Sat",
+        "weekday_num": "6"
+      }
+    },
+    "day_nglkjx7a5": {
+      "id": "day_nglkjx7a5",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 18, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "18",
+        "day_name": "Sunday",
+        "day_short": "Sun",
+        "weekday_num": "0"
+      }
+    },
+    "day_memo56arz": {
+      "id": "day_memo56arz",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 19, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "19",
+        "day_name": "Monday",
+        "day_short": "Mon",
+        "weekday_num": "1"
+      }
+    },
+    "day_zoa1tjiqu": {
+      "id": "day_zoa1tjiqu",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 20, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "20",
+        "day_name": "Tuesday",
+        "day_short": "Tue",
+        "weekday_num": "2"
+      }
+    },
+    "day_bdvr6ba8t": {
+      "id": "day_bdvr6ba8t",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 21, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "21",
+        "day_name": "Wednesday",
+        "day_short": "Wed",
+        "weekday_num": "3"
+      }
+    },
+    "day_l1wkametr": {
+      "id": "day_l1wkametr",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 22, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "22",
+        "day_name": "Thursday",
+        "day_short": "Thu",
+        "weekday_num": "4"
+      }
+    },
+    "day_fxt6p26uh": {
+      "id": "day_fxt6p26uh",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 23, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "23",
+        "day_name": "Friday",
+        "day_short": "Fri",
+        "weekday_num": "5"
+      }
+    },
+    "day_5w460khns": {
+      "id": "day_5w460khns",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 24, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "24",
+        "day_name": "Saturday",
+        "day_short": "Sat",
+        "weekday_num": "6"
+      }
+    },
+    "day_l7oeg88q2": {
+      "id": "day_l7oeg88q2",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 25, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "25",
+        "day_name": "Sunday",
+        "day_short": "Sun",
+        "weekday_num": "0"
+      }
+    },
+    "day_9gxryfcun": {
+      "id": "day_9gxryfcun",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 26, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "26",
+        "day_name": "Monday",
+        "day_short": "Mon",
+        "weekday_num": "1"
+      }
+    },
+    "day_rdg5vkeav": {
+      "id": "day_rdg5vkeav",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 27, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "27",
+        "day_name": "Tuesday",
+        "day_short": "Tue",
+        "weekday_num": "2"
+      }
+    },
+    "day_s8vj94q41": {
+      "id": "day_s8vj94q41",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 28, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "28",
+        "day_name": "Wednesday",
+        "day_short": "Wed",
+        "weekday_num": "3"
+      }
+    },
+    "day_924n647cx": {
+      "id": "day_924n647cx",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 29, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "29",
+        "day_name": "Thursday",
+        "day_short": "Thu",
+        "weekday_num": "4"
+      }
+    },
+    "day_ty3cr1x1u": {
+      "id": "day_ty3cr1x1u",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 30, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "30",
+        "day_name": "Friday",
+        "day_short": "Fri",
+        "weekday_num": "5"
+      }
+    },
+    "day_4binu0bgj": {
+      "id": "day_4binu0bgj",
+      "parentId": "month_3441s1eba",
+      "type": "day",
+      "title": "October 31, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "October",
+        "day_num": "31",
+        "day_name": "Saturday",
+        "day_short": "Sat",
+        "weekday_num": "6"
+      }
+    },
+    "month_4rvdm3hf7": {
+      "id": "month_4rvdm3hf7",
+      "parentId": "root",
+      "type": "month",
+      "title": "November",
+      "data": {
+        "year": "2026",
+        "month_name": "November"
+      },
+      "children": [
+        "day_mj5q0o6hd",
+        "day_1816o6dhd",
+        "day_4c5jspfvo",
+        "day_21xvatxy3",
+        "day_zdis4knqc",
+        "day_z9qc0je9h",
+        "day_0qcw4qxzd",
+        "day_g1kvrxseq",
+        "day_31kog0qhu",
+        "day_bw2t69d70",
+        "day_4b940g5v3",
+        "day_huqpr7baj",
+        "day_iq41cj6l8",
+        "day_2gs4dhtkc",
+        "day_20vbatsfo",
+        "day_e70voay9e",
+        "day_b3uew5bok",
+        "day_iqnnavg9k",
+        "day_0sig1dpu1",
+        "day_qucizisnt",
+        "day_ly5ktm6lc",
+        "day_l6ts6qnbc",
+        "day_ueukjbx32",
+        "day_6i760e7hx",
+        "day_crf9vziub",
+        "day_qclrkbu9f",
+        "day_avq5byvsk",
+        "day_c67q9y4sq",
+        "day_uqz81wfvp",
+        "day_g5ev2epd2"
+      ]
+    },
+    "day_mj5q0o6hd": {
+      "id": "day_mj5q0o6hd",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 1, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "01",
+        "day_name": "Sunday",
+        "day_short": "Sun",
+        "weekday_num": "0"
+      }
+    },
+    "day_1816o6dhd": {
+      "id": "day_1816o6dhd",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 2, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "02",
+        "day_name": "Monday",
+        "day_short": "Mon",
+        "weekday_num": "1"
+      }
+    },
+    "day_4c5jspfvo": {
+      "id": "day_4c5jspfvo",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 3, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "03",
+        "day_name": "Tuesday",
+        "day_short": "Tue",
+        "weekday_num": "2"
+      }
+    },
+    "day_21xvatxy3": {
+      "id": "day_21xvatxy3",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 4, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "04",
+        "day_name": "Wednesday",
+        "day_short": "Wed",
+        "weekday_num": "3"
+      }
+    },
+    "day_zdis4knqc": {
+      "id": "day_zdis4knqc",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 5, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "05",
+        "day_name": "Thursday",
+        "day_short": "Thu",
+        "weekday_num": "4"
+      }
+    },
+    "day_z9qc0je9h": {
+      "id": "day_z9qc0je9h",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 6, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "06",
+        "day_name": "Friday",
+        "day_short": "Fri",
+        "weekday_num": "5"
+      }
+    },
+    "day_0qcw4qxzd": {
+      "id": "day_0qcw4qxzd",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 7, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "07",
+        "day_name": "Saturday",
+        "day_short": "Sat",
+        "weekday_num": "6"
+      }
+    },
+    "day_g1kvrxseq": {
+      "id": "day_g1kvrxseq",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 8, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "08",
+        "day_name": "Sunday",
+        "day_short": "Sun",
+        "weekday_num": "0"
+      }
+    },
+    "day_31kog0qhu": {
+      "id": "day_31kog0qhu",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 9, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "09",
+        "day_name": "Monday",
+        "day_short": "Mon",
+        "weekday_num": "1"
+      }
+    },
+    "day_bw2t69d70": {
+      "id": "day_bw2t69d70",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 10, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "10",
+        "day_name": "Tuesday",
+        "day_short": "Tue",
+        "weekday_num": "2"
+      }
+    },
+    "day_4b940g5v3": {
+      "id": "day_4b940g5v3",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 11, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "11",
+        "day_name": "Wednesday",
+        "day_short": "Wed",
+        "weekday_num": "3"
+      }
+    },
+    "day_huqpr7baj": {
+      "id": "day_huqpr7baj",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 12, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "12",
+        "day_name": "Thursday",
+        "day_short": "Thu",
+        "weekday_num": "4"
+      }
+    },
+    "day_iq41cj6l8": {
+      "id": "day_iq41cj6l8",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 13, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "13",
+        "day_name": "Friday",
+        "day_short": "Fri",
+        "weekday_num": "5"
+      }
+    },
+    "day_2gs4dhtkc": {
+      "id": "day_2gs4dhtkc",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 14, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "14",
+        "day_name": "Saturday",
+        "day_short": "Sat",
+        "weekday_num": "6"
+      }
+    },
+    "day_20vbatsfo": {
+      "id": "day_20vbatsfo",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 15, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "15",
+        "day_name": "Sunday",
+        "day_short": "Sun",
+        "weekday_num": "0"
+      }
+    },
+    "day_e70voay9e": {
+      "id": "day_e70voay9e",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 16, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "16",
+        "day_name": "Monday",
+        "day_short": "Mon",
+        "weekday_num": "1"
+      }
+    },
+    "day_b3uew5bok": {
+      "id": "day_b3uew5bok",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 17, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "17",
+        "day_name": "Tuesday",
+        "day_short": "Tue",
+        "weekday_num": "2"
+      }
+    },
+    "day_iqnnavg9k": {
+      "id": "day_iqnnavg9k",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 18, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "18",
+        "day_name": "Wednesday",
+        "day_short": "Wed",
+        "weekday_num": "3"
+      }
+    },
+    "day_0sig1dpu1": {
+      "id": "day_0sig1dpu1",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 19, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "19",
+        "day_name": "Thursday",
+        "day_short": "Thu",
+        "weekday_num": "4"
+      }
+    },
+    "day_qucizisnt": {
+      "id": "day_qucizisnt",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 20, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "20",
+        "day_name": "Friday",
+        "day_short": "Fri",
+        "weekday_num": "5"
+      }
+    },
+    "day_ly5ktm6lc": {
+      "id": "day_ly5ktm6lc",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 21, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "21",
+        "day_name": "Saturday",
+        "day_short": "Sat",
+        "weekday_num": "6"
+      }
+    },
+    "day_l6ts6qnbc": {
+      "id": "day_l6ts6qnbc",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 22, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "22",
+        "day_name": "Sunday",
+        "day_short": "Sun",
+        "weekday_num": "0"
+      }
+    },
+    "day_ueukjbx32": {
+      "id": "day_ueukjbx32",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 23, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "23",
+        "day_name": "Monday",
+        "day_short": "Mon",
+        "weekday_num": "1"
+      }
+    },
+    "day_6i760e7hx": {
+      "id": "day_6i760e7hx",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 24, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "24",
+        "day_name": "Tuesday",
+        "day_short": "Tue",
+        "weekday_num": "2"
+      }
+    },
+    "day_crf9vziub": {
+      "id": "day_crf9vziub",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 25, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "25",
+        "day_name": "Wednesday",
+        "day_short": "Wed",
+        "weekday_num": "3"
+      }
+    },
+    "day_qclrkbu9f": {
+      "id": "day_qclrkbu9f",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 26, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "26",
+        "day_name": "Thursday",
+        "day_short": "Thu",
+        "weekday_num": "4"
+      }
+    },
+    "day_avq5byvsk": {
+      "id": "day_avq5byvsk",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 27, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "27",
+        "day_name": "Friday",
+        "day_short": "Fri",
+        "weekday_num": "5"
+      }
+    },
+    "day_c67q9y4sq": {
+      "id": "day_c67q9y4sq",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 28, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "28",
+        "day_name": "Saturday",
+        "day_short": "Sat",
+        "weekday_num": "6"
+      }
+    },
+    "day_uqz81wfvp": {
+      "id": "day_uqz81wfvp",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 29, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "29",
+        "day_name": "Sunday",
+        "day_short": "Sun",
+        "weekday_num": "0"
+      }
+    },
+    "day_g5ev2epd2": {
+      "id": "day_g5ev2epd2",
+      "parentId": "month_4rvdm3hf7",
+      "type": "day",
+      "title": "November 30, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "November",
+        "day_num": "30",
+        "day_name": "Monday",
+        "day_short": "Mon",
+        "weekday_num": "1"
+      }
+    },
+    "month_du1xkrw5s": {
+      "id": "month_du1xkrw5s",
+      "parentId": "root",
+      "type": "month",
+      "title": "December",
+      "data": {
+        "year": "2026",
+        "month_name": "December"
+      },
+      "children": [
+        "day_nmli345kd",
+        "day_fyyl6lmwp",
+        "day_ksg2heda1",
+        "day_l99xbesz3",
+        "day_qiln40s4a",
+        "day_e29evn9x1",
+        "day_a4czpyoi7",
+        "day_r92afb3u4",
+        "day_mn8dh976u",
+        "day_ahrj80l6a",
+        "day_0suoyl2og",
+        "day_by2ko3o9f",
+        "day_6ti9xw6un",
+        "day_w3h7w987w",
+        "day_owxryjan6",
+        "day_vmghgi3k4",
+        "day_9bkq4w0bb",
+        "day_risiy11op",
+        "day_qz6xv9rwm",
+        "day_n01myailp",
+        "day_39ed7q19w",
+        "day_pbyhmvgd3",
+        "day_w5ztbvml3",
+        "day_mpo1e9wgx",
+        "day_5waoekvht",
+        "day_qwd8c03pn",
+        "day_6taw3gg46",
+        "day_xczz7m2ob",
+        "day_qub9rjme4",
+        "day_yl0menf9w",
+        "day_hb2ut678q"
+      ]
+    },
+    "day_nmli345kd": {
+      "id": "day_nmli345kd",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 1, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "01",
+        "day_name": "Tuesday",
+        "day_short": "Tue",
+        "weekday_num": "2"
+      }
+    },
+    "day_fyyl6lmwp": {
+      "id": "day_fyyl6lmwp",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 2, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "02",
+        "day_name": "Wednesday",
+        "day_short": "Wed",
+        "weekday_num": "3"
+      }
+    },
+    "day_ksg2heda1": {
+      "id": "day_ksg2heda1",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 3, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "03",
+        "day_name": "Thursday",
+        "day_short": "Thu",
+        "weekday_num": "4"
+      }
+    },
+    "day_l99xbesz3": {
+      "id": "day_l99xbesz3",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 4, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "04",
+        "day_name": "Friday",
+        "day_short": "Fri",
+        "weekday_num": "5"
+      }
+    },
+    "day_qiln40s4a": {
+      "id": "day_qiln40s4a",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 5, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "05",
+        "day_name": "Saturday",
+        "day_short": "Sat",
+        "weekday_num": "6"
+      }
+    },
+    "day_e29evn9x1": {
+      "id": "day_e29evn9x1",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 6, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "06",
+        "day_name": "Sunday",
+        "day_short": "Sun",
+        "weekday_num": "0"
+      }
+    },
+    "day_a4czpyoi7": {
+      "id": "day_a4czpyoi7",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 7, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "07",
+        "day_name": "Monday",
+        "day_short": "Mon",
+        "weekday_num": "1"
+      }
+    },
+    "day_r92afb3u4": {
+      "id": "day_r92afb3u4",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 8, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "08",
+        "day_name": "Tuesday",
+        "day_short": "Tue",
+        "weekday_num": "2"
+      }
+    },
+    "day_mn8dh976u": {
+      "id": "day_mn8dh976u",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 9, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "09",
+        "day_name": "Wednesday",
+        "day_short": "Wed",
+        "weekday_num": "3"
+      }
+    },
+    "day_ahrj80l6a": {
+      "id": "day_ahrj80l6a",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 10, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "10",
+        "day_name": "Thursday",
+        "day_short": "Thu",
+        "weekday_num": "4"
+      }
+    },
+    "day_0suoyl2og": {
+      "id": "day_0suoyl2og",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 11, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "11",
+        "day_name": "Friday",
+        "day_short": "Fri",
+        "weekday_num": "5"
+      }
+    },
+    "day_by2ko3o9f": {
+      "id": "day_by2ko3o9f",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 12, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "12",
+        "day_name": "Saturday",
+        "day_short": "Sat",
+        "weekday_num": "6"
+      }
+    },
+    "day_6ti9xw6un": {
+      "id": "day_6ti9xw6un",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 13, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "13",
+        "day_name": "Sunday",
+        "day_short": "Sun",
+        "weekday_num": "0"
+      }
+    },
+    "day_w3h7w987w": {
+      "id": "day_w3h7w987w",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 14, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "14",
+        "day_name": "Monday",
+        "day_short": "Mon",
+        "weekday_num": "1"
+      }
+    },
+    "day_owxryjan6": {
+      "id": "day_owxryjan6",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 15, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "15",
+        "day_name": "Tuesday",
+        "day_short": "Tue",
+        "weekday_num": "2"
+      }
+    },
+    "day_vmghgi3k4": {
+      "id": "day_vmghgi3k4",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 16, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "16",
+        "day_name": "Wednesday",
+        "day_short": "Wed",
+        "weekday_num": "3"
+      }
+    },
+    "day_9bkq4w0bb": {
+      "id": "day_9bkq4w0bb",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 17, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "17",
+        "day_name": "Thursday",
+        "day_short": "Thu",
+        "weekday_num": "4"
+      }
+    },
+    "day_risiy11op": {
+      "id": "day_risiy11op",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 18, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "18",
+        "day_name": "Friday",
+        "day_short": "Fri",
+        "weekday_num": "5"
+      }
+    },
+    "day_qz6xv9rwm": {
+      "id": "day_qz6xv9rwm",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 19, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "19",
+        "day_name": "Saturday",
+        "day_short": "Sat",
+        "weekday_num": "6"
+      }
+    },
+    "day_n01myailp": {
+      "id": "day_n01myailp",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 20, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "20",
+        "day_name": "Sunday",
+        "day_short": "Sun",
+        "weekday_num": "0"
+      }
+    },
+    "day_39ed7q19w": {
+      "id": "day_39ed7q19w",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 21, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "21",
+        "day_name": "Monday",
+        "day_short": "Mon",
+        "weekday_num": "1"
+      }
+    },
+    "day_pbyhmvgd3": {
+      "id": "day_pbyhmvgd3",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 22, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "22",
+        "day_name": "Tuesday",
+        "day_short": "Tue",
+        "weekday_num": "2"
+      }
+    },
+    "day_w5ztbvml3": {
+      "id": "day_w5ztbvml3",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 23, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "23",
+        "day_name": "Wednesday",
+        "day_short": "Wed",
+        "weekday_num": "3"
+      }
+    },
+    "day_mpo1e9wgx": {
+      "id": "day_mpo1e9wgx",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 24, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "24",
+        "day_name": "Thursday",
+        "day_short": "Thu",
+        "weekday_num": "4"
+      }
+    },
+    "day_5waoekvht": {
+      "id": "day_5waoekvht",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 25, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "25",
+        "day_name": "Friday",
+        "day_short": "Fri",
+        "weekday_num": "5"
+      }
+    },
+    "day_qwd8c03pn": {
+      "id": "day_qwd8c03pn",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 26, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "26",
+        "day_name": "Saturday",
+        "day_short": "Sat",
+        "weekday_num": "6"
+      }
+    },
+    "day_6taw3gg46": {
+      "id": "day_6taw3gg46",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 27, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "27",
+        "day_name": "Sunday",
+        "day_short": "Sun",
+        "weekday_num": "0"
+      }
+    },
+    "day_xczz7m2ob": {
+      "id": "day_xczz7m2ob",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 28, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "28",
+        "day_name": "Monday",
+        "day_short": "Mon",
+        "weekday_num": "1"
+      }
+    },
+    "day_qub9rjme4": {
+      "id": "day_qub9rjme4",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 29, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "29",
+        "day_name": "Tuesday",
+        "day_short": "Tue",
+        "weekday_num": "2"
+      }
+    },
+    "day_yl0menf9w": {
+      "id": "day_yl0menf9w",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 30, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "30",
+        "day_name": "Wednesday",
+        "day_short": "Wed",
+        "weekday_num": "3"
+      }
+    },
+    "day_hb2ut678q": {
+      "id": "day_hb2ut678q",
+      "parentId": "month_du1xkrw5s",
+      "type": "day",
+      "title": "December 31, 2026",
+      "children": [],
+      "data": {
+        "year": "2026",
+        "month_name": "December",
+        "day_num": "31",
+        "day_name": "Thursday",
+        "day_short": "Thu",
+        "weekday_num": "4"
+      }
+    },
+    "notes": {
+      "id": "notes",
+      "parentId": "root",
+      "type": "notes",
+      "title": "Notes",
+      "data": {},
+      "children": []
+    }
+  },
+  "rootId": "root",
+  "variants": {
+    "default": {
+      "id": "default",
+      "name": "Default",
+      "templates": {
+        "cover": {
+          "id": "cover",
+          "name": "Cover",
+          "width": 509,
+          "height": 679,
+          "elements": [
+            {
+              "type": "text",
+              "x": 44,
+              "y": 40,
+              "w": 421,
+              "h": 60,
+              "text": "{{title}}",
+              "fontSize": 40,
+              "fontWeight": "bold",
+              "align": "left",
+              "id": "gen_cover_0_o5zbi",
+              "layerId": "layer_tqnrlt5k2",
+              "textOverflow": "clip",
+              "textWrap": true,
+              "textPadding": {
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            }
+          ],
+          "layers": [
+            {
+              "id": "layer_tqnrlt5k2",
+              "name": "Layer 1",
+              "order": 0,
+              "visible": true,
+              "locked": false
+            }
+          ]
+        },
+        "month": {
+          "id": "month",
+          "name": "Month",
+          "width": 509,
+          "height": 679,
+          "elements": [
+            {
+              "type": "text",
+              "x": 44,
+              "y": 20,
+              "w": 421,
+              "h": 36,
+              "text": "{{title}} {{year}}",
+              "fontSize": 26,
+              "fontWeight": "bold",
+              "align": "left",
+              "id": "gen_month_0_rfjuq",
+              "layerId": "layer_m29ikruxs",
+              "textOverflow": "clip",
+              "textWrap": true,
+              "textPadding": {
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            },
+            {
+              "type": "text",
+              "x": 44,
+              "y": 64,
+              "w": 58,
+              "h": 16,
+              "text": "M",
+              "fontSize": 12,
+              "textColor": "#64748b",
+              "align": "center",
+              "id": "gen_month_1_c7mp0",
+              "layerId": "layer_m29ikruxs",
+              "textOverflow": "clip",
+              "textWrap": true,
+              "textPadding": {
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            },
+            {
+              "type": "text",
+              "x": 104,
+              "y": 64,
+              "w": 58,
+              "h": 16,
+              "text": "T",
+              "fontSize": 12,
+              "textColor": "#64748b",
+              "align": "center",
+              "id": "gen_month_2_s2kv2",
+              "layerId": "layer_m29ikruxs",
+              "textOverflow": "clip",
+              "textWrap": true,
+              "textPadding": {
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            },
+            {
+              "type": "text",
+              "x": 164,
+              "y": 64,
+              "w": 58,
+              "h": 16,
+              "text": "W",
+              "fontSize": 12,
+              "textColor": "#64748b",
+              "align": "center",
+              "id": "gen_month_3_z2rui",
+              "layerId": "layer_m29ikruxs",
+              "textOverflow": "clip",
+              "textWrap": true,
+              "textPadding": {
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            },
+            {
+              "type": "text",
+              "x": 224,
+              "y": 64,
+              "w": 58,
+              "h": 16,
+              "text": "T",
+              "fontSize": 12,
+              "textColor": "#64748b",
+              "align": "center",
+              "id": "gen_month_4_mm3o4",
+              "layerId": "layer_m29ikruxs",
+              "textOverflow": "clip",
+              "textWrap": true,
+              "textPadding": {
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            },
+            {
+              "type": "text",
+              "x": 284,
+              "y": 64,
+              "w": 58,
+              "h": 16,
+              "text": "F",
+              "fontSize": 12,
+              "textColor": "#64748b",
+              "align": "center",
+              "id": "gen_month_5_ym57n",
+              "layerId": "layer_m29ikruxs",
+              "textOverflow": "clip",
+              "textWrap": true,
+              "textPadding": {
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            },
+            {
+              "type": "text",
+              "x": 344,
+              "y": 64,
+              "w": 58,
+              "h": 16,
+              "text": "S",
+              "fontSize": 12,
+              "textColor": "#64748b",
+              "align": "center",
+              "id": "gen_month_6_fw4dx",
+              "layerId": "layer_m29ikruxs",
+              "textOverflow": "clip",
+              "textWrap": true,
+              "textPadding": {
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            },
+            {
+              "type": "text",
+              "x": 404,
+              "y": 64,
+              "w": 58,
+              "h": 16,
+              "text": "S",
+              "fontSize": 12,
+              "textColor": "#64748b",
+              "align": "center",
+              "id": "gen_month_7_kl44x",
+              "layerId": "layer_m29ikruxs",
+              "textOverflow": "clip",
+              "textWrap": true,
+              "textPadding": {
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            }
+          ],
+          "layers": [
+            {
+              "id": "layer_m29ikruxs",
+              "name": "Layer 1",
+              "order": 0,
+              "visible": true,
+              "locked": false
+            }
+          ]
+        },
+        "day": {
+          "id": "day",
+          "name": "Day",
+          "width": 509,
+          "height": 679,
+          "elements": [
+            {
+              "type": "text",
+              "x": 44,
+              "y": 30,
+              "w": 421,
+              "h": 36,
+              "text": "{{title}}",
+              "fontSize": 24,
+              "fontWeight": "bold",
+              "align": "left",
+              "id": "gen_day_0_wedwh",
+              "layerId": "layer_pe7bzi4fc",
+              "textOverflow": "clip",
+              "textWrap": true,
+              "textPadding": {
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            },
+            {
+              "type": "text",
+              "x": 44,
+              "y": 66,
+              "w": 421,
+              "h": 20,
+              "text": "{{day_name}}",
+              "fontSize": 14,
+              "textColor": "#64748b",
+              "align": "left",
+              "id": "gen_day_1_8o69e",
+              "layerId": "layer_pe7bzi4fc",
+              "textOverflow": "clip",
+              "textWrap": true,
+              "textPadding": {
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            },
+            {
+              "type": "rect",
+              "x": 44,
+              "y": 100,
+              "w": 421,
+              "h": 540,
+              "fill": "#94a3b8",
+              "fillType": "pattern",
+              "patternType": "lines-h",
+              "patternSpacing": 24,
+              "id": "gen_day_2_i56xv",
+              "layerId": "layer_pe7bzi4fc"
+            }
+          ],
+          "layers": [
+            {
+              "id": "layer_pe7bzi4fc",
+              "name": "Layer 1",
+              "order": 0,
+              "visible": true,
+              "locked": false
+            }
+          ]
+        },
+        "notes": {
+          "id": "notes",
+          "name": "Notes",
+          "width": 509,
+          "height": 679,
+          "elements": [
+            {
+              "type": "text",
+              "x": 44,
+              "y": 30,
+              "w": 421,
+              "h": 36,
+              "text": "{{title}}",
+              "fontSize": 24,
+              "fontWeight": "bold",
+              "align": "left",
+              "id": "gen_notes_0_gsoo2",
+              "layerId": "layer_4d2bb9vzl",
+              "textOverflow": "clip",
+              "textWrap": true,
+              "textPadding": {
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            },
+            {
+              "type": "rect",
+              "x": 44,
+              "y": 80,
+              "w": 421,
+              "h": 560,
+              "fill": "#94a3b8",
+              "fillType": "pattern",
+              "patternType": "lines-h",
+              "patternSpacing": 24,
+              "id": "gen_notes_1_vjirq",
+              "layerId": "layer_4d2bb9vzl"
+            }
+          ],
+          "layers": [
+            {
+              "id": "layer_4d2bb9vzl",
+              "name": "Layer 1",
+              "order": 0,
+              "visible": true,
+              "locked": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "schemaVersion": 12,
+  "generator": {
+    "formatVersion": 1,
+    "templateScript": "// Four plain templates, the 2026 Planner's page size. No grids: those are built on camera.\nconst t = {};\nconst page = (id, name, elements) => ({ id, name, width: RM_PP_WIDTH, height: RM_PP_HEIGHT, elements });\nconst lines = (y) => ({ type: 'rect', x: 44, y, w: 421, h: 640 - y, fill: '#94a3b8',\n  fillType: 'pattern', patternType: 'lines-h', patternSpacing: 24 });\nt.cover = page('cover', 'Cover', [\n  { type: 'text', x: 44, y: 40, w: 421, h: 60, text: '{{title}}', fontSize: 40, fontWeight: 'bold', align: 'left' },\n]);\nt.month = page('month', 'Month', [\n  { type: 'text', x: 44, y: 20, w: 421, h: 36, text: '{{title}} {{year}}', fontSize: 26, fontWeight: 'bold', align: 'left' },\n  ...['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((letter, i) => ({ type: 'text', x: 44 + 60 * i, y: 64, w: 58, h: 16,\n    text: letter, fontSize: 12, textColor: '#64748b', align: 'center' })),\n]);\nt.day = page('day', 'Day', [\n  { type: 'text', x: 44, y: 30, w: 421, h: 36, text: '{{title}}', fontSize: 24, fontWeight: 'bold', align: 'left' },\n  { type: 'text', x: 44, y: 66, w: 421, h: 20, text: '{{day_name}}', fontSize: 14, textColor: '#64748b', align: 'left' },\n  lines(100),\n]);\nt.notes = page('notes', 'Notes', [\n  { type: 'text', x: 44, y: 30, w: 421, h: 36, text: '{{title}}', fontSize: 24, fontWeight: 'bold', align: 'left' },\n  lines(80),\n]);\nreturn t;",
+    "hierarchyScript": "// Q4 2026: a cover, three months with a page per day, and a notes page.\nconst nodes = {};\nnodes.root = { id: 'root', parentId: null, type: 'cover', title: 'Q4 2026', data: { year: '2026' }, children: [] };\nconst names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];\n[['October', 9], ['November', 10], ['December', 11]].forEach(([month, m]) => {\n  const id = createId('month');\n  nodes[id] = { id, parentId: 'root', type: 'month', title: month, data: { year: '2026', month_name: month }, children: [] };\n  nodes.root.children.push(id);\n  for (let d = 1; new Date(2026, m, d).getMonth() === m; d++) {\n    const wd = new Date(2026, m, d).getDay(); // 0 = Sunday, as in the 2026 Planner\n    const day = createId('day');\n    nodes[day] = { id: day, parentId: id, type: 'day', title: `${month} ${d}, 2026`, children: [], data: {\n      year: '2026', month_name: month, day_num: String(d).padStart(2, '0'),\n      day_name: names[wd], day_short: names[wd].slice(0, 3), weekday_num: String(wd) } };\n    nodes[id].children.push(day);\n  }\n});\nnodes.notes = { id: 'notes', parentId: 'root', type: 'notes', title: 'Notes', data: {}, children: [] };\nnodes.root.children.push('notes');\nreturn { nodes, rootId: 'root' };",
+    "generatedAt": "2026-10-22T02:47:13.680Z"
+  },
+  "activeVariantId": "default",
+  "selectedNodeId": "root",
+  "selectedTemplateId": "",
+  "scale": 0.9,
+  "viewMode": "hierarchy",
+  "sidebarWidth": 288,
+  "propertiesPanelWidth": 320,
+  "snapToGrid": false,
+  "showGrid": false
+}
