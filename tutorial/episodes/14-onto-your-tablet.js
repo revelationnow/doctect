@@ -83,6 +83,12 @@ async function scrollTo(ctx, target, frac = 0.35, steps = 8) {
     await page.waitForTimeout(250);
 }
 
+/** Moves to `target` only if it is still on screen (the export can finish, and close the dialog, before the pointer gets there). */
+async function moveIfThere(ctx, target, opts = {}) {
+    const box = await target.boundingBox({ timeout: 300 }).catch(() => null);
+    if (box) await ctx.move(box, opts);
+}
+
 // ---- files from the zip ---------------------------------------------------------------
 
 /** The zip's files as a short, folder-by-folder listing for the on-screen card. */
@@ -299,15 +305,19 @@ export const beats = [
     {
         say: 'One catch: a template is a picture of a page, so a dated page keeps its date. '
             + "Use December's, and every page you write on says December. "
-            + "So I'll keep the note and to-do pages, which suit any day, and none clears the rest.",
+            + "So I'll keep the note and to-do pages, which suit any day, and none clears the rest. "
+            + 'That includes the journal and daily notes pages: their top bar shows the month.',
         do: async (page, ctx) => {
             await ctx.move(pageRow(page, 'Day View', 'January 1, 2026'), { ax: 0.5 });
             await ctx.atSentence(1);
             await ctx.move(groupHead(page, 'Month View'), { ax: 0.1 });
-            await ctx.atSentence(2);
-            for (const name of ['Quarter View', 'Month View', 'Day View', 'Journal']) await ctx.click(noneOf(page, name));
-            await scrollTo(ctx, groupHead(page, 'List Index'), 0.3);
-            for (const name of ['Daily Notes', 'List Index', 'Week View']) await ctx.click(noneOf(page, name));
+            await ctx.atSentence(1, { offset: 1.6 });
+            await ctx.click(noneOf(page, 'Month View'));
+            await ctx.atSentence(2, { offset: 2.4 });
+            for (const name of ['Quarter View', 'Day View']) await ctx.click(noneOf(page, name));
+            await scrollTo(ctx, groupHead(page, 'Journal'), 0.12);
+            await ctx.atSentence(3);
+            for (const name of ['Journal', 'Daily Notes', 'List Index', 'Week View']) await ctx.click(noneOf(page, name));
             await scrollTo(ctx, groupHead(page, 'To-Do Page'), 0.45);
             await ctx.move(pageRow(page, 'Global Note', 'Note 1'), { ax: 0.3 });
             await ctx.move(pageRow(page, 'To-Do Page', 'To-Do List 1'), { ax: 0.3 });
@@ -402,8 +412,8 @@ export const beats = [
         do: async (page, ctx) => {
             ctx.state.zip = await ctx.download(async () => {
                 await ctx.click(exportButton(page));
-                await ctx.move(countLine(page), { ax: 0.3 });
-                await ctx.move(dialog(page).getByRole('button', { name: 'Cancel' }), { ax: 0.3 });
+                await moveIfThere(ctx, countLine(page), { ax: 0.3 });
+                await moveIfThere(ctx, dialog(page).getByRole('button', { name: 'Cancel' }), { ax: 0.3 });
             });
             await dialog(page).waitFor({ state: 'detached' });
             const zip = await JSZip.loadAsync(fs.readFileSync(ctx.state.zip));
