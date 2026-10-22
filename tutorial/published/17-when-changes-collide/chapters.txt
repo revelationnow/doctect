@@ -1,0 +1,5 @@
+00:00 Welcome
+00:11 A conflict
+01:09 Why it won't merge
+01:33 Starting again
+02:28 A clean request

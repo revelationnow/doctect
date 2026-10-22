@@ -1,0 +1,235 @@
+1
+00:00:00,000 --> 00:00:05,100
+In episode twelve, I asked Sam to merge
+orange day titles into the meal planner.
+
+2
+00:00:05,177 --> 00:00:07,927
+Sam hasn't yet, and has been busy too.
+
+3
+00:00:08,026 --> 00:00:11,646
+This time: what happens when two
+people change the same thing.
+
+4
+00:00:11,853 --> 00:00:16,303
+Here's what Sam did meanwhile: roomier
+writing lines on the Day pages,
+
+5
+00:00:16,303 --> 00:00:19,223
+saved and then published as a new version.
+
+6
+00:00:19,347 --> 00:00:21,377
+I'll reload my request's page.
+
+7
+00:00:21,594 --> 00:00:23,324
+It says conflicted now.
+
+8
+00:00:23,405 --> 00:00:25,745
+Sam's save didn't change my request.
+
+9
+00:00:25,795 --> 00:00:29,673
+A request is checked when it's
+made, every time its page opens,
+
+10
+00:00:29,673 --> 00:00:31,954
+and when the owner presses Merge.
+
+11
+00:00:32,012 --> 00:00:35,582
+So one that was fine last
+week can be conflicted today.
+
+12
+00:00:35,788 --> 00:00:39,101
+The line under the title says
+it can't be merged as-is.
+
+13
+00:00:39,237 --> 00:00:42,448
+The red Conflicts box says
+why: the Day template,
+
+14
+00:00:42,448 --> 00:00:45,974
+in the default variant,
+was changed on both sides.
+
+15
+00:00:46,179 --> 00:00:49,976
+We didn't touch the same thing on
+the page: I colored the title,
+
+16
+00:00:49,976 --> 00:00:51,710
+Sam spaced out the lines.
+
+17
+00:00:51,793 --> 00:00:54,671
+But changes are compared a
+whole template at a time,
+
+18
+00:00:54,671 --> 00:00:57,743
+so two different edits to
+the Day template collide.
+
+19
+00:00:57,888 --> 00:01:00,108
+An edit to the Week page wouldn't have.
+
+20
+00:01:00,313 --> 00:01:05,512
+The page hierarchy is a single unit too,
+including what's typed into the pages.
+
+21
+00:01:05,567 --> 00:01:09,037
+If we'd both added a page,
+that would collide as well.
+
+22
+00:01:09,246 --> 00:01:10,896
+Here's why it can't merge.
+
+23
+00:01:11,043 --> 00:01:14,333
+Merging doesn't copy my
+fork over Sam's project.
+
+24
+00:01:14,379 --> 00:01:17,887
+It takes what I changed since
+forking, the Day template,
+
+25
+00:01:17,887 --> 00:01:20,519
+and lays it over Sam's latest version.
+
+26
+00:01:20,549 --> 00:01:22,779
+That would quietly undo the new lines.
+
+27
+00:01:22,984 --> 00:01:25,184
+So nothing is merged by guesswork.
+
+28
+00:01:25,276 --> 00:01:30,198
+A conflicted request has no Merge
+button, not even for Sam, only Close.
+
+29
+00:01:30,332 --> 00:01:33,079
+And the server checks
+again before any merge.
+
+30
+00:01:33,284 --> 00:01:35,864
+There's no button that fixes a conflict.
+
+31
+00:01:35,976 --> 00:01:40,735
+As the page says, I fork the latest
+version and propose my changes again:
+
+32
+00:01:40,735 --> 00:01:42,876
+that's the fork author's job.
+
+33
+00:01:43,022 --> 00:01:47,072
+First, I'll close this request:
+it can't be merged as it stands.
+
+34
+00:01:48,279 --> 00:01:50,349
+Then I fork Sam's planner again.
+
+35
+00:01:50,463 --> 00:01:54,333
+Fork copies the published version,
+so the new lines come with it.
+
+36
+00:01:54,453 --> 00:01:59,365
+Had Sam only saved them, a new request
+would be conflicted the moment I made it.
+
+37
+00:01:59,570 --> 00:02:03,680
+In Templates, the Day template
+already has Sam's roomier lines.
+
+38
+00:02:03,748 --> 00:02:07,979
+Now I make my change again, on
+top of Sam's: the title, orange.
+
+39
+00:02:10,743 --> 00:02:15,326
+Save to cloud first, because a request
+always proposes the latest save,
+
+40
+00:02:15,326 --> 00:02:17,513
+never what's only in this tab.
+
+41
+00:02:17,560 --> 00:02:19,880
+Then Propose changes to upstream.
+
+42
+00:02:19,928 --> 00:02:23,911
+The note tells Sam it's the same
+change, redone on top of Sam's.
+
+43
+00:02:28,943 --> 00:02:33,418
+The new request is open: the same
+single change, and no conflicts.
+
+44
+00:02:33,456 --> 00:02:39,086
+Render before and after shows Sam's current
+page, then the same page with my title.
+
+45
+00:02:39,293 --> 00:02:43,883
+When Sam merges, my change set is
+laid over Sam's latest version.
+
+46
+00:02:43,986 --> 00:02:48,694
+I made it on top of that, so both
+survive: roomy lines, orange titles.
+
+47
+00:02:48,901 --> 00:02:50,971
+Sam merges it from the other side.
+
+48
+00:02:51,114 --> 00:02:53,794
+One reload, and my request says merged.
+
+49
+00:02:56,427 --> 00:03:01,093
+So: requests are checked every time they
+open, conflicts are never merged by
+
+50
+00:03:01,093 --> 00:03:05,027
+guesswork, and the fork author
+fixes them with a fresh fork.
+
+51
+00:03:05,166 --> 00:03:08,154
+Next time: reaching elements
+buried under others.
