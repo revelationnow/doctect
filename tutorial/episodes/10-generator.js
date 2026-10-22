@@ -244,6 +244,12 @@ async function closeUp(ctx, w) {
 /** Runs `fn` once sentence k (plus offset) starts, alongside whatever the beat does meanwhile. */
 const when = (ctx, k, offset, fn) => (async () => { await ctx.atSentence(k, { offset }); await fn(); })();
 
+/** Empty toolbar space left of Reset, where the red message sat. */
+async function messageSpot(page) {
+    const b = await previewButton(page).boundingBox();
+    return { x: b.x - 260, y: b.y + b.height / 2 };
+}
+
 /** Clicks Preview and waits for the Generated Project Preview and its counts. */
 async function runPreview(ctx, counts) {
     const { page } = ctx;
@@ -882,7 +888,7 @@ export const beats = [
             await expectScript(page, 'H', H.final);
             if (await alertText(page).count()) throw new Error('the red message should go on typing');
             ctx.unzoom();
-            await ctx.move(previewButton(page), { ax: -0.6 });
+            await ctx.move(await messageSpot(page));
         },
     },
     // 42
@@ -934,7 +940,7 @@ export const beats = [
             await park(ctx, 'T');
             await ctx.atSentence(1, { offset: 0.9 });
             ctx.unzoom();
-            await ctx.move(previewButton(page), { ax: -0.6 });
+            await ctx.move(await messageSpot(page));
         },
     },
     // 45
