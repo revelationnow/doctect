@@ -136,7 +136,7 @@ export async function recordEpisode(episode, { dry = false, until = Infinity, sh
             const name = path.basename(file);
             studio.serveFile(name, file);
             await ctx.goto(`/__tutorial/viewer/text.html?file=${encodeURIComponent(name)}&title=${encodeURIComponent(title ?? name)}`);
-            await page.waitForFunction(() => window.__fileView?.ready, null, { timeout: 30000 });
+            await page.waitForFunction(() => window.__viewer?.state.ready, null, { timeout: 30000 });
         },
         /** A plain on-screen card (a message, a file list): { title, lines: [string | { text, mono, dim }], mono }. */
         note: (card) => page.evaluate(c => window.__studio.note(c), card),

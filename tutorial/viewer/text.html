@@ -29,12 +29,12 @@
     document.getElementById('name').textContent = query.get('title') || file;
     const src = '/__tutorial/files/' + encodeURIComponent(file);
     const doc = document.getElementById('doc');
-    window.__fileView = { ready: false };
+    window.__viewer = { state: { ready: false } };
     if (/\.(png|jpe?g|webp|svg)$/i.test(file)) {
         const img = new Image();
         img.onload = () => {
             document.getElementById('meta').textContent = `${img.naturalWidth} × ${img.naturalHeight}`;
-            window.__fileView.ready = true;
+            window.__viewer.state.ready = true;
         };
         img.src = src;
         doc.appendChild(img);
@@ -43,7 +43,7 @@
             const pre = document.createElement('pre');
             pre.textContent = text;
             doc.appendChild(pre);
-            window.__fileView.ready = true;
+            window.__viewer.state.ready = true;
         });
     }
 </script>
