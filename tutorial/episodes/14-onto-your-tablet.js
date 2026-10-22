@@ -55,7 +55,6 @@ const legend = (page, text) => dialog(page).locator('legend', { hasText: text })
 
 /** The editor's split export button and its three segments. */
 const exportPdf = (page) => page.getByRole('button', { name: 'Export PDF' }).first();
-const exportAll = (page) => page.locator('button[title="Export All Variants (one PDF per variant)"]').first();
 const asTemplate = (page) => page.getByRole('button', { name: 'Export as template' }).first();
 const variantSelect = (page) => app.sidebarColumn(page).locator('select:has(option)').first();
 const settings = (page) => app.section(page, 'template-settings');
