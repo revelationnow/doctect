@@ -1,6 +1,6 @@
 # Layers, stacking & fine styling
 
-*Episode 6 · Building blocks · 03:51*
+*Episode 6 · Building blocks · 03:42*
 
 ## Welcome
 
