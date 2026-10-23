@@ -362,6 +362,9 @@ export const Canvas: React.FC<CanvasProps> = ({
     // Ctrl/Cmd-drag duplicates: the ids to copy, held until the press becomes a drag, so a
     // Ctrl-click (on a Mac, Control-click is a right-click) never leaves a hidden copy behind.
     const pendingCloneRef = useRef<string[] | null>(null);
+    // The copies a Ctrl/Cmd drag made and where they started. React renders mousemove updates
+    // later, so the next move can arrive before the canvas has the copies; it still drags them.
+    const cloneDragRef = useRef<{ clones: TemplateElement[], positions: Record<string, { x: number, y: number }> } | null>(null);
     const [persistentGroupRotation, setPersistentGroupRotation] = useState(0);
 
     // Reset persistent rotation and pivots when selection changes
@@ -581,7 +584,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         setIsDragging(false); setIsResizing(false); setIsRotating(false); setIsPanning(false); setIsDraggingPivot(false);
         hasSavedHistory.current = false; setInitialPositions({});
         initialGroupElements.current = []; initialResizeStateRef.current = null;
-        clickCycleStackRef.current = null; shiftCycleRef.current = null; pendingCloneRef.current = null;
+        clickCycleStackRef.current = null; shiftCycleRef.current = null; pendingCloneRef.current = null; cloneDragRef.current = null;
     };
     useLayoutEffect(() => {
         if (onEditElements && ownSelection.current !== selectionKey) {
@@ -944,6 +947,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                 });
                 // Ctrl/Cmd: the copies are made once the press turns into a drag (handleMouseMove).
                 pendingCloneRef.current = (e.ctrlKey || e.metaKey) ? newSelection : null;
+                cloneDragRef.current = null;
 
                 setInitialPositions(initialPos);
 
@@ -1193,8 +1197,13 @@ export const Canvas: React.FC<CanvasProps> = ({
                 });
                 appendElements(clonedElements, clonedElements.map(clone => clone.id), true);
                 setInitialPositions(clonePositions);
-                dragged = [...elements, ...clonedElements];
-                startPositions = clonePositions;
+                cloneDragRef.current = { clones: clonedElements, positions: clonePositions };
+            }
+            const cloneDrag = cloneDragRef.current;
+            if (cloneDrag) {
+                const rendered = new Set(elements.map(el => el.id));
+                dragged = [...elements, ...cloneDrag.clones.filter(clone => !rendered.has(clone.id))];
+                startPositions = cloneDrag.positions;
             }
 
             const dx = snapToGrid ? Math.round(rawDx / effectiveGridSize) * effectiveGridSize : rawDx;
@@ -1670,6 +1679,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         }
         clickCycleStackRef.current = null;
         pendingCloneRef.current = null;
+        cloneDragRef.current = null;
 
         finishInteraction?.();
         if (onEditElements) hasSavedHistory.current = false;

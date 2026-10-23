@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fireEvent } from '@testing-library/react';
+import { act, fireEvent } from '@testing-library/react';
 import { TemplateElement } from '../../types';
 import { renderCanvas, makeEl, makeLayer } from './canvasTestUtils';
 
@@ -59,6 +59,29 @@ describe('click versus drag on the canvas', () => {
         // ...and the same move drags it, leaving the original in place.
         const moved: TemplateElement[] = onUpdateElements.mock.calls.at(-1)![0];
         expect(moved.find(e => e.id === copy.id)).toMatchObject({ x: 40, y: 20 });
+        expect(moved.find(e => e.id === 'a')).toMatchObject({ x: 10, y: 20 });
+    });
+
+    // React renders updates from mousemove later, not synchronously, so a second move can arrive
+    // before the canvas has re-rendered with the copies. That move must still drag the copies.
+    it('a Ctrl-drag keeps dragging the copy when the next move comes before a re-render', async () => {
+        const els = [makeEl('a', { layerId: 'front', zIndex: 1, x: 10, y: 20 })];
+        const { container, outer, onUpdateElements } = renderCanvas(els, layers);
+        fireEvent.mouseDown(container.querySelector('[data-element-id="a"]')!, { clientX: 50, clientY: 50, button: 0, ctrlKey: true });
+
+        const actEnvironment = (globalThis as any).IS_REACT_ACT_ENVIRONMENT;
+        (globalThis as any).IS_REACT_ACT_ENVIRONMENT = false;
+        try {
+            outer.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 80, clientY: 50, ctrlKey: true }));
+            outer.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 90, clientY: 50, ctrlKey: true }));
+        } finally {
+            (globalThis as any).IS_REACT_ACT_ENVIRONMENT = actEnvironment;
+        }
+        await act(async () => {});
+
+        const moved: TemplateElement[] = onUpdateElements.mock.calls.at(-1)![0];
+        const copy = moved.find(e => e.id !== 'a')!;
+        expect(copy).toMatchObject({ x: 50, y: 20 });
         expect(moved.find(e => e.id === 'a')).toMatchObject({ x: 10, y: 20 });
     });
 });
