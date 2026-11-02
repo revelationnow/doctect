@@ -175,7 +175,7 @@ export function setLayerCollapsed(state: LayerFoldState, occurrence: LayerOccurr
 export function updateLayerFoldPreferences(state: LayerFoldState, patch: Partial<Omit<EditorPreferences, 'layerCollapsed'>>): LayerFoldState {
   if (Object.hasOwn(patch, 'layerCollapsed')) throw new Error('layerCollapsed must use occurrence-targeted fold actions.');
   const allowed = new Set(['activeVariantId', 'selectedNodeId', 'selectedTemplateId', 'scale', 'viewMode', 'sidebarWidth',
-    'propertiesPanelWidth', 'snapToGrid', 'showGrid', 'panelsExpanded']);
+    'propertiesPanelWidth', 'snapToGrid', 'showGrid', 'gridSize', 'smartGuides', 'panelsExpanded']);
   if (Object.keys(patch).some(key => !allowed.has(key))) throw new Error('Unknown editor preference.');
   if (Object.keys(patch).every(key => Object.hasOwn(state.parts.preferences, key)
     && Object.is(state.parts.preferences[key as keyof EditorPreferences], patch[key as keyof typeof patch]))) return state;

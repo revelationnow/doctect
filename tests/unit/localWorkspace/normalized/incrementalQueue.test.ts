@@ -577,6 +577,14 @@ describe('incremental queue', () => {
     expect(h.sent).toHaveLength(0); h.dispose();
   });
 
+  it('sends the snapping preferences on the preference lane', async () => {
+    vi.useFakeTimers(); const h = createIncrementalQueueHarness();
+    const pref = h.observe(h.queue.enqueuePreferences('p', 1, { gridSize: 20, smartGuides: false }));
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(h.requests[0]).toMatchObject({ type: 'preferences', batch: { patch: { gridSize: 20, smartGuides: false } } });
+    h.resolveNext(); await pref; h.dispose();
+  });
+
   it('keeps active batch immutable and dispatches overdue pending work immediately after ack', async () => {
     vi.useFakeTimers(); const h = createIncrementalQueueHarness();
     h.enqueueTitle(1, 'active'); await vi.advanceTimersByTimeAsync(500);

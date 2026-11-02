@@ -8,7 +8,7 @@ export type DocumentState = Pick<AppState,
 export type EditorPreferences = Pick<AppState,
   'activeVariantId' | 'selectedNodeId' | 'selectedTemplateId' | 'scale'
   | 'viewMode' | 'sidebarWidth' | 'propertiesPanelWidth'
-  | 'snapToGrid' | 'showGrid'> & {
+  | 'snapToGrid' | 'showGrid' | 'gridSize' | 'smartGuides'> & {
     layerCollapsed: Readonly<Record<string, boolean>>;
     panelsExpanded: Readonly<Record<string, boolean>>;
   };

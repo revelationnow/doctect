@@ -20,6 +20,8 @@ export const APP_STATE_FIELD_CLASSIFICATION = {
   propertiesPanelWidth: 'preference',
   snapToGrid: 'preference',
   showGrid: 'preference',
+  gridSize: 'preference',
+  smartGuides: 'preference',
   selectedNodeIds: 'transient',
   selectedTemplateIds: 'transient',
   selectedElementIds: 'transient',

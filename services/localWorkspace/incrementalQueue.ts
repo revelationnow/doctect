@@ -248,7 +248,7 @@ function checkAuthority(authority: InstalledQueueAuthority, transport: QueueTran
 }
 const tuple = (...parts: string[]) => parts.map(part => `${part.length}:${part}`).join('');
 const preferenceFields = ['activeVariantId', 'selectedNodeId', 'selectedTemplateId', 'scale', 'viewMode', 'sidebarWidth',
-  'propertiesPanelWidth', 'snapToGrid', 'showGrid', 'panelsExpanded'];
+  'propertiesPanelWidth', 'snapToGrid', 'showGrid', 'gridSize', 'smartGuides', 'panelsExpanded'];
 const failureCodes: Record<WorkspaceWorkerFailure['code'], true> = {
   'ingress-required': true, 'incarnation-changed': true, 'authority-changed': true, 'identity-mismatch': true,
   'proof-unavailable': true, 'verification-failed': true, 'cache-gap': true, 'stale-fold-generation': true,

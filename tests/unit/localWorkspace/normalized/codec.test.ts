@@ -681,11 +681,12 @@ it.each([-1, 0.5, Number.MAX_SAFE_INTEGER + 1, '1', null])('rejects malformed in
 });
 
 const externalPreferenceFields = ['activeVariantId', 'selectedNodeId', 'selectedTemplateId', 'scale',
-  'viewMode', 'sidebarWidth', 'propertiesPanelWidth', 'snapToGrid', 'showGrid'];
+  'viewMode', 'sidebarWidth', 'propertiesPanelWidth', 'snapToGrid', 'showGrid', 'gridSize', 'smartGuides'];
 const optionalPreferenceCases = [
   ['selectedTemplateId', 'page-1'], ['scale', 1.25], ['sidebarWidth', 320],
   ['scale', 0], ['sidebarWidth', 0], ['propertiesPanelWidth', 0],
   ['snapToGrid', false], ['showGrid', false], ['selectedNodeId', 'root'], ['viewMode', 'design'],
+  ['gridSize', 20], ['smartGuides', false],
 ] as const;
 
 for (const initiallyPresent of [false, true]) {

@@ -2764,7 +2764,7 @@ export function createNormalizedRepository(environment: NormalizedEnvironment): 
     if (lane === 'document') denseDataArray((batch as DocumentBatch).changes);
     if (lane === 'preferences') {
       const patch = exactFields((batch as PreferenceBatch).patch, [], ['activeVariantId', 'selectedNodeId', 'selectedTemplateId', 'scale', 'viewMode',
-        'sidebarWidth', 'propertiesPanelWidth', 'snapToGrid', 'showGrid', 'panelsExpanded']);
+        'sidebarWidth', 'propertiesPanelWidth', 'snapToGrid', 'showGrid', 'gridSize', 'smartGuides', 'panelsExpanded']);
       canonicalStringify(patch);
     }
     const structural = lane === 'document' ? (batch as DocumentBatch).structural : (batch as PreferenceBatch).folds;

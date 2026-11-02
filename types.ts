@@ -185,6 +185,8 @@ export interface AppState {
   propertiesPanelWidth: number;
   snapToGrid: boolean;
   showGrid: boolean;
+  gridSize?: number;   // Snap grid spacing in pt (1–200, default 10)
+  smartGuides?: boolean;  // Snap to other objects and the page (default on)
 
   // Node Selector
   showNodeSelector: boolean;

@@ -276,6 +276,12 @@ describe('indexed logical layer fold cells', () => {
       expect(preferenceWalks).toBe(1); expect(exceptionWalks).toBe(1);
     } finally { parse.mockRestore(); }
   });
+
+  it('accepts the snapping preferences', () => {
+    const state = initial();
+    const next = updateLayerFoldPreferences(state, { gridSize: 20, smartGuides: false });
+    expect(next.parts.preferences).toMatchObject({ gridSize: 20, smartGuides: false });
+  });
 });
 
 function layersOf(state: LayerFoldState) { return state.parts.document.variants.default.templates['page-0'].layers!; }

@@ -200,10 +200,10 @@ describe('lossless state partition', () => {
   it('explicitly classifies every AppState field', () => {
     const { APP_STATE_FIELD_CLASSIFICATION, partitionState } = api();
     const state = makeIncrementalProject().initialState;
-    Object.assign(state, { showLayersPanel: false, templatePreviewNodeId: 'root' });
+    Object.assign(state, { showLayersPanel: false, templatePreviewNodeId: 'root', gridSize: 10, smartGuides: true });
     const documentFields = ['nodes', 'rootId', 'variants', 'schemaVersion', 'generator'];
     const preferenceFields = ['activeVariantId', 'selectedNodeId', 'selectedTemplateId', 'scale', 'viewMode',
-      'sidebarWidth', 'propertiesPanelWidth', 'snapToGrid', 'showGrid'];
+      'sidebarWidth', 'propertiesPanelWidth', 'snapToGrid', 'showGrid', 'gridSize', 'smartGuides'];
     const transientFields = ['selectedNodeIds', 'selectedTemplateIds', 'selectedElementIds', 'tool', 'showJsonModal',
       'activeLayerId', 'showLayersPanel', 'showNodeSelector', 'nodeSelectorMode', 'editingElementId', 'clipboard', 'templatePreviewNodeId'];
     expect(Object.keys(APP_STATE_FIELD_CLASSIFICATION).sort()).toEqual([
