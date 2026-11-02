@@ -28,7 +28,8 @@ import { resolveActiveLayerId, nextZIndexInLayer, createDefaultLayer, moveElemen
 import { listPreviewNodes } from '../services/previewNodes';
 import type { TouchEditorActions } from './editor-layout/touchActions';
 import { useTouchMultiSelect } from './editor-layout/useTouchMultiSelect';
-import { alignSelectedElements, type AlignType } from '../services/alignElements';
+import { alignSelectedElements, alignmentOffsets, type AlignType } from '../services/alignElements';
+import { elementAabb } from '../services/geometry/elementBox';
 import { PLACEHOLDER_SVG, createPlacedSvgElement } from '../services/svgEditing';
 import { DocumentSnapshot, restoreDocument, snapshotDocument } from '../services/projectDocumentSnapshot';
 import type { GeneratedProject } from '../services/validateGeneratedProject';
@@ -1456,22 +1457,14 @@ function IncrementalProjectEditor(props: CommonProjectEditorProps & { incrementa
     };
     const align: ToolbarActions['onAlign'] = type => {
         const current = read(); const template = editor.getCurrent().document.variants[current.activeVariantId]?.templates[templateIdFor(current)];
-        const selected = template?.elements.filter(element => current.selectedElementIds.includes(element.id)) ?? [];
-        if (selected.length < 2) return;
-        const horizontal = ['left', 'center', 'right', 'dist-h'].includes(type);
-        const axis = horizontal ? 'x' : 'y', extent = horizontal ? 'w' : 'h';
-        const min = Math.min(...selected.map(element => element[axis]));
-        const max = Math.max(...selected.map(element => element[axis] + element[extent]));
-        const positions = new Map<string, number>();
-        if (type === 'dist-h' || type === 'dist-v') {
-            const sorted = [...selected].sort((a, b) => a[axis] - b[axis]);
-            const end = sorted[sorted.length - 1];
-            const gap = (end[axis] + end[extent] - min - sorted.reduce((sum, element) => sum + element[extent], 0)) / (sorted.length - 1);
-            let cursor = min;
-            sorted.forEach(element => { positions.set(element.id, element === end ? end[axis] : cursor); cursor += element[extent] + gap; });
-        } else selected.forEach(element => positions.set(element.id,
-            type === 'left' || type === 'top' ? min : type === 'right' || type === 'bottom' ? max - element[extent] : (min + max - element[extent]) / 2));
-        patchElements(current.selectedElementIds, element => ({ [axis]: positions.get(element.id) ?? element[axis] }), true);
+        const items = (template?.elements ?? []).filter(element => current.selectedElementIds.includes(element.id))
+            .map(element => ({ id: element.id, box: elementAabb(element, current.nodes, current.selectedNodeId) }));
+        if (items.length < 2) return;
+        const offsets = alignmentOffsets(items, type);
+        patchElements(current.selectedElementIds, element => {
+            const o = offsets.get(element.id);
+            return o ? { x: element.x + o.dx, y: element.y + o.dy } : {};
+        }, true);
         run(finishGroups);
     };
     const replace = (next: AppState) => run(() => { invalidateContext(); editor.replace(next); });

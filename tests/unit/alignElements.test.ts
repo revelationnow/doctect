@@ -67,6 +67,24 @@ describe('alignSelectedElements (legacy editor state update)', () => {
     });
 });
 
+describe('align uses each element\'s visible (rotated) box', () => {
+    const base = { type: 'rect', rotation: 0, fill: '', stroke: '', strokeWidth: 0, opacity: 1 } as const;
+    // A 100x20 bar rotated 90° stands 20 wide, centred at x=50: its visible left edge is x=40.
+    const bar = { ...base, id: 'bar', x: 0, y: 0, w: 100, h: 20, rotation: 90 } as any;
+    const box = { ...base, id: 'box', x: 100, y: 0, w: 30, h: 30 } as any;
+    it('aligns left edges by the rotated outline', () => {
+        const out = alignElements([bar, box], ['bar', 'box'], 'left');
+        expect(out.find(e => e.id === 'bar')!.x).toBeCloseTo(0);
+        expect(out.find(e => e.id === 'box')!.x).toBeCloseTo(40);
+    });
+    it('distributes by visible widths', () => {
+        const c = { ...base, id: 'c', x: 300, y: 0, w: 30, h: 30 } as any;
+        const out = alignElements([bar, box, c], ['bar', 'box', 'c'], 'dist-h');
+        // Visible span 40..330, widths 20+30+30=80, two gaps of (290-80)/2=105: box left = 60+105 = 165.
+        expect(out.find(e => e.id === 'box')!.x).toBeCloseTo(165);
+    });
+});
+
 describe('toggleSelection', () => {
     it('adds an absent id at the end and removes a present one', () => {
         expect(toggleSelection(['a'], 'b')).toEqual(['a', 'b']);

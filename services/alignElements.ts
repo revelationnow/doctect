@@ -1,4 +1,5 @@
-import type { AppState, TemplateElement } from '../types';
+import type { AppNode, AppState, TemplateElement } from '../types';
+import { elementAabb, type Box } from './geometry/elementBox';
 
 export type AlignType = 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom' | 'dist-h' | 'dist-v';
 
@@ -15,101 +16,53 @@ export const ALIGN_ACTIONS: ReadonlyArray<{ type: AlignType; label: string }> = 
 ];
 
 /**
- * The legacy editor's align/distribute, as EditorToolbar computed it before the touch Arrange menu
- * needed the same handler: the template's elements with the selected ones aligned. Returns the
- * input array when fewer than two selected elements exist in it.
+ * How far each selected element moves to align or distribute their visible boxes. The outermost
+ * two stay put when distributing. Shared by the legacy editor and the incremental editor.
  */
-export function alignElements(elements: TemplateElement[], selectedElementIds: string[], type: AlignType): TemplateElement[] {
-    const selectedElements = elements.filter(el => selectedElementIds.includes(el.id));
-    if (selectedElements.length < 2) return elements;
-
-    let finalElements = [...elements];
-
-    if (type === 'left') {
-        const minX = Math.min(...selectedElements.map(el => el.x));
-        finalElements = finalElements.map(el =>
-            selectedElementIds.includes(el.id) ? { ...el, x: minX } : el
-        );
-    } else if (type === 'right') {
-        const maxRight = Math.max(...selectedElements.map(el => el.x + el.w));
-        finalElements = finalElements.map(el =>
-            selectedElementIds.includes(el.id) ? { ...el, x: maxRight - el.w } : el
-        );
-    } else if (type === 'center') {
-        const minX = Math.min(...selectedElements.map(el => el.x));
-        const maxRight = Math.max(...selectedElements.map(el => el.x + el.w));
-        const centerX = (minX + maxRight) / 2;
-        finalElements = finalElements.map(el =>
-            selectedElementIds.includes(el.id) ? { ...el, x: centerX - (el.w / 2) } : el
-        );
-    } else if (type === 'top') {
-        const minY = Math.min(...selectedElements.map(el => el.y));
-        finalElements = finalElements.map(el =>
-            selectedElementIds.includes(el.id) ? { ...el, y: minY } : el
-        );
-    } else if (type === 'bottom') {
-        const maxBottom = Math.max(...selectedElements.map(el => el.y + el.h));
-        finalElements = finalElements.map(el =>
-            selectedElementIds.includes(el.id) ? { ...el, y: maxBottom - el.h } : el
-        );
-    } else if (type === 'middle') {
-        const minY = Math.min(...selectedElements.map(el => el.y));
-        const maxBottom = Math.max(...selectedElements.map(el => el.y + el.h));
-        const centerY = (minY + maxBottom) / 2;
-        finalElements = finalElements.map(el =>
-            selectedElementIds.includes(el.id) ? { ...el, y: centerY - (el.h / 2) } : el
-        );
-    } else if (type === 'dist-h') {
-        const sorted = [...selectedElements].sort((a, b) => a.x - b.x);
-        const minX = sorted[0].x;
-        const maxRight = sorted[sorted.length - 1].x + sorted[sorted.length - 1].w;
-        const totalWidth = sorted.reduce((sum, el) => sum + el.w, 0);
-        const totalGap = (maxRight - minX) - totalWidth;
-        const gap = totalGap / (sorted.length - 1);
-
-        // Id -> new x. The first and last elements define the range and stay where they are.
-        const newXById: Record<string, number> = {};
-        let currentX = minX;
-        sorted.forEach((el, i) => {
-            if (i === 0) {
-                newXById[el.id] = el.x;
-                currentX += el.w + gap;
-                return;
-            }
-            newXById[el.id] = currentX;
-            currentX += el.w + gap;
+export function alignmentOffsets(items: { id: string; box: Box }[], type: AlignType): Map<string, { dx: number; dy: number }> {
+    const out = new Map<string, { dx: number; dy: number }>();
+    if (items.length < 2) return out;
+    const horizontal = type === 'left' || type === 'center' || type === 'right' || type === 'dist-h';
+    const lo = (b: Box) => horizontal ? b.x : b.y;
+    const len = (b: Box) => horizontal ? b.w : b.h;
+    const set = (id: string, d: number) => out.set(id, horizontal ? { dx: d, dy: 0 } : { dx: 0, dy: d });
+    const min = Math.min(...items.map(i => lo(i.box)));
+    const max = Math.max(...items.map(i => lo(i.box) + len(i.box)));
+    if (type === 'dist-h' || type === 'dist-v') {
+        const sorted = [...items].sort((a, b) => lo(a.box) - lo(b.box));
+        const gap = (max - min - sorted.reduce((s, i) => s + len(i.box), 0)) / (sorted.length - 1);
+        let cursor = min;
+        sorted.forEach((item, index) => {
+            const last = index === sorted.length - 1;
+            set(item.id, last ? 0 : cursor - lo(item.box));
+            cursor += len(item.box) + gap;
         });
-        newXById[sorted[sorted.length - 1].id] = sorted[sorted.length - 1].x;
-
-        finalElements = finalElements.map(el =>
-            newXById[el.id] !== undefined ? { ...el, x: newXById[el.id] } : el
-        );
-    } else if (type === 'dist-v') {
-        const sorted = [...selectedElements].sort((a, b) => a.y - b.y);
-        const minY = sorted[0].y;
-        const maxBottom = sorted[sorted.length - 1].y + sorted[sorted.length - 1].h;
-        const totalHeight = sorted.reduce((sum, el) => sum + el.h, 0);
-        const totalGap = (maxBottom - minY) - totalHeight;
-        const gap = totalGap / (sorted.length - 1);
-
-        const newYById: Record<string, number> = {};
-        let currentY = minY;
-        sorted.forEach((el, i) => {
-            if (i === 0) {
-                currentY += el.h + gap;
-                return;
-            }
-            newYById[el.id] = currentY;
-            currentY += el.h + gap;
-        });
-        newYById[sorted[sorted.length - 1].id] = sorted[sorted.length - 1].y;
-
-        finalElements = finalElements.map(el =>
-            newYById[el.id] !== undefined ? { ...el, y: newYById[el.id] } : el
-        );
+        return out;
     }
+    for (const { id, box } of items) {
+        const target = type === 'left' || type === 'top' ? min
+            : type === 'right' || type === 'bottom' ? max - len(box)
+            : (min + max - len(box)) / 2;
+        set(id, target - lo(box));
+    }
+    return out;
+}
 
-    return finalElements;
+/**
+ * The legacy editor's align/distribute (desktop toolbar and touch Arrange alike): the template's
+ * elements with the selected ones aligned by their visible boxes. Returns the input array when
+ * fewer than two selected elements exist in it.
+ */
+export function alignElements(elements: TemplateElement[], selectedElementIds: string[], type: AlignType,
+    nodes: Record<string, AppNode> = {}, currentNodeId = ''): TemplateElement[] {
+    const items = elements.filter(el => selectedElementIds.includes(el.id))
+        .map(el => ({ id: el.id, box: elementAabb(el, nodes, currentNodeId) }));
+    if (items.length < 2) return elements;
+    const offsets = alignmentOffsets(items, type);
+    return elements.map(el => {
+        const o = offsets.get(el.id);
+        return o && (o.dx || o.dy) ? { ...el, x: el.x + o.dx, y: el.y + o.dy } : el;
+    });
 }
 
 /** The template the legacy editor shows: the selected node's in hierarchy view, else the selected template. */
@@ -128,7 +81,7 @@ export function alignSelectedElements(state: AppState, type: AlignType): AppStat
     if (!templateId || !variant) return state;
     const template = variant.templates?.[templateId];
     if (!template) return state;
-    const finalElements = alignElements(template.elements, selectedElementIds, type);
+    const finalElements = alignElements(template.elements, selectedElementIds, type, state.nodes, state.selectedNodeId);
     if (finalElements === template.elements) return state;
     return {
         ...state,
