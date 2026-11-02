@@ -28,6 +28,10 @@ const mobileProjects = [
 ];
 const mobileSpecFile = 'mobile_editor.spec.js'; // --list prints paths relative to testDir
 const mobileSpecMatch = '/mobile_editor\\.spec\\.js$/';
+// The opt-in snapping drag benchmark (SNAP_PERF=1): two more projects take only its spec, which
+// the desktop trio ignores like the touch spec; unset, they are absent.
+const snapSpecMatch = '/snap_drag_performance\\.spec\\.js$/';
+const snapPerfProjects = ['snap-perf-desktop', 'snap-perf-tablet'];
 const requiredMigrationSteps = [
     'TypeScript check',
     'Browser migration matrix',
@@ -516,6 +520,7 @@ describe('incremental project discovery', () => {
     it('does not register the performance project when phase is absent', () => {
         const env = isolated('baseline');
         delete env.INCREMENTAL_PERFORMANCE_PHASE;
+        delete env.SNAP_PERF;
         const result = probe(env);
         expect(result.status, result.stderr).toBe(0);
         expect(JSON.parse(result.stdout).projects.map(project => project.name)).toEqual([...sourceProjects, ...mobileProjects]);
@@ -524,11 +529,12 @@ describe('incremental project discovery', () => {
     it('keeps the touch editor spec to the mobile projects and the desktop projects off it', () => {
         const env = isolated('baseline');
         delete env.INCREMENTAL_PERFORMANCE_PHASE;
+        delete env.SNAP_PERF;
         const result = probe(env);
         expect(result.status, result.stderr).toBe(0);
         const projects = new Map(JSON.parse(result.stdout).projects.map(project => [project.name, project]));
         for (const name of desktopBrowserProjects) {
-            expect(projects.get(name).testIgnore, name).toEqual(['/incremental_performance\\.spec\\.ts$/', mobileSpecMatch]);
+            expect(projects.get(name).testIgnore, name).toEqual(['/incremental_performance\\.spec\\.ts$/', mobileSpecMatch, snapSpecMatch]);
         }
         for (const name of mobileProjects) {
             const project = projects.get(name);
@@ -540,6 +546,42 @@ describe('incremental project discovery', () => {
         }
         expect(projects.get('mobile-phone-chromium').use.viewport.width).toBeLessThan(640);
         expect(projects.get('mobile-tablet-chromium').use.viewport.width).toBeGreaterThanOrEqual(640);
+    });
+
+    it('registers the snapping drag benchmark projects only when SNAP_PERF is set', () => {
+        const env = isolated('baseline');
+        delete env.INCREMENTAL_PERFORMANCE_PHASE;
+        delete env.SNAP_PERF;
+        const result = probe({ ...env, SNAP_PERF: '1' });
+        expect(result.status, result.stderr).toBe(0);
+        const config = JSON.parse(result.stdout);
+        expect(config.projects.map(project => project.name)).toEqual([...sourceProjects, ...mobileProjects, ...snapPerfProjects]);
+        const projects = new Map(config.projects.map(project => [project.name, project]));
+        // The trio ignores the benchmark whether or not it is registered; the mobile projects keep their own spec.
+        for (const name of desktopBrowserProjects) {
+            expect(projects.get(name).testIgnore, name).toEqual(['/incremental_performance\\.spec\\.ts$/', mobileSpecMatch, snapSpecMatch]);
+        }
+        for (const name of mobileProjects) expect(projects.get(name).testMatch, name).toBe(mobileSpecMatch);
+        for (const name of snapPerfProjects) {
+            const project = projects.get(name);
+            expect(project.testMatch, name).toBe(snapSpecMatch);
+            expect(project.retries, name).toBe(0); // a retry would overwrite the benchmark's numbers with a warmer run
+            expect(project.use.trace, name).toBe('off');
+        }
+        const desktop = projects.get('snap-perf-desktop');
+        expect(desktop.use.defaultBrowserType).toBe('chromium');
+        expect(desktop.use.isMobile).toBe(false);
+        expect(desktop.use.hasTouch).toBe(false);
+        const tablet = projects.get('snap-perf-tablet');
+        expect(tablet.use.browserName).toBe('chromium'); // CDP touch events and CPU throttling need Chromium
+        expect(tablet.use.defaultBrowserType).toBe('webkit');
+        expect(tablet.use.isMobile).toBe(true);
+        expect(tablet.use.hasTouch).toBe(true);
+        expect(tablet.use.viewport.width).toBeGreaterThanOrEqual(640);
+        // Unset, the two projects are absent and nothing else changes.
+        const unset = probe(env);
+        expect(unset.status, unset.stderr).toBe(0);
+        expect(JSON.parse(unset.stdout).projects.map(project => project.name)).toEqual([...sourceProjects, ...mobileProjects]);
     });
 
     it.each(['baseline', 'final'])('requires isolated mode for %s and preserves exact matching and ordinary quotas', phase => {
