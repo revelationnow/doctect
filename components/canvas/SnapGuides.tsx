@@ -10,24 +10,32 @@ export const formatGuideValue = (n: number) => {
 
 interface Props { guides: Guide[]; scale: number; touch: boolean; pointer: Point | null; width: number; height: number }
 
+const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(v, max));
+
 /**
  * Snap guides over the page, in page units inside the scaled layer. Stroke widths, label sizes and
  * offsets are divided by `scale` so they read the same at every zoom. On touch, a label that would
- * sit under the finger (44 screen px) moves to the other side of its segment.
+ * sit under the finger (44 screen px) moves to the other side of its segment, or to whichever side
+ * is farther from the finger when both are covered; the mouse never shifts a label. Labels are
+ * clamped into the page so the container's overflow clipping cannot hide them.
  */
 export const SnapGuides = React.memo(function SnapGuides({ guides, scale, touch, pointer, width, height }: Props) {
     if (guides.length === 0) return null;
     const sw = (touch ? 1.5 : 1) / scale;
     const font = 10 / scale, pad = 2 / scale, gapPx = 4 / scale, avoid = 44 / scale, tick = 3 / scale;
+    const labelH = font + pad * 2;
+    const finger = touch ? pointer : null;
 
     const label = (key: string, x: number, y: number, text: string, side: 'h' | 'v') => {
-        const w = text.length * font * 0.6 + pad * 2, h = font + pad * 2;
+        const w = text.length * font * 0.6 + pad * 2, h = labelH;
         // Candidate anchors: right of / below the point first, then left of / above it.
         const options = side === 'v'
             ? [{ x: x + gapPx, y: y - h / 2 }, { x: x - gapPx - w, y: y - h / 2 }]
             : [{ x: x - w / 2, y: y + gapPx }, { x: x - w / 2, y: y - gapPx - h }];
-        const clear = (o: { x: number; y: number }) => !pointer || Math.hypot(o.x + w / 2 - pointer.x, o.y + h / 2 - pointer.y) > avoid;
-        const at = options.find(clear) ?? options[options.length - 1];
+        const dist = (o: { x: number; y: number }) => finger ? Math.hypot(o.x + w / 2 - finger.x, o.y + h / 2 - finger.y) : Infinity;
+        // First candidate clear of the finger; when both are covered, the one farther from it.
+        const chosen = options.find(o => dist(o) > avoid) ?? options.reduce((best, o) => dist(o) > dist(best) ? o : best);
+        const at = { x: clamp(chosen.x, 0, width - w), y: clamp(chosen.y, 0, height - h) };
         return (
             <g key={key}>
                 <rect x={at.x} y={at.y} width={w} height={h} rx={pad} fill={GUIDE_COLOR} />
@@ -62,8 +70,10 @@ export const SnapGuides = React.memo(function SnapGuides({ guides, scale, touch,
                     case 'spacing':
                         return g.segments.flatMap((s, j) => measured(`${k}s${j}`, 'spacing', g.axis, s.at, s.from, s.to, formatGuideValue(g.gap)));
                     case 'size':
+                        // Width match: anchored so the preferred (below-the-anchor) label sits wholly above the box,
+                        // its bottom one gap clear of the top edge. Height match: beside the right edge, centred.
                         return g.boxes.map((b, j) => g.axis === 'x'
-                            ? label(`${k}b${j}`, b.x + b.w / 2, b.y - gapPx - font, `= ${formatGuideValue(g.size)}`, 'h')
+                            ? label(`${k}b${j}`, b.x + b.w / 2, b.y - 2 * gapPx - labelH, `= ${formatGuideValue(g.size)}`, 'h')
                             : label(`${k}b${j}`, b.x + b.w, b.y + b.h / 2, `= ${formatGuideValue(g.size)}`, 'v'));
                 }
             })}

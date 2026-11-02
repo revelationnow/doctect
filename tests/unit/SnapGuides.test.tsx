@@ -42,4 +42,35 @@ describe('SnapGuides', () => {
         const xOf = (c: HTMLElement) => Number(c.querySelector('[data-guide-label]')!.getAttribute('x'));
         expect(xOf(near.container)).toBeLessThan(xOf(free.container));
     });
+    it('prefers the first clear side on touch, else the side farther from the finger', () => {
+        const guide: Guide = { kind: 'distance', axis: 'y', at: 100, from: 150, to: 200 };
+        const xOf = (c: HTMLElement) => Number(c.querySelector('[data-guide-label]')!.getAttribute('x'));
+        const free = xOf(renderGuides([guide], { touch: true }).container);
+        expect(free).toBeGreaterThan(100); // preferred side is to the right of the segment
+        // Finger left of the segment covers both candidates (22 px and 2 px away): take the farther, right one.
+        expect(xOf(renderGuides([guide], { touch: true, pointer: { x: 90, y: 175 } }).container)).toBe(free);
+        // Finger to the right covers only the right candidate (38 px): the clear left one wins despite being second choice.
+        expect(xOf(renderGuides([guide], { touch: true, pointer: { x: 150, y: 175 } }).container)).toBeLessThan(100);
+        // Finger far right leaves both clear: keep the preferred right side rather than the farther left one.
+        expect(xOf(renderGuides([guide], { touch: true, pointer: { x: 200, y: 175 } }).container)).toBe(free);
+    });
+    it('never shifts a label for the mouse, even when a pointer is passed', () => {
+        const guide: Guide = { kind: 'distance', axis: 'y', at: 100, from: 150, to: 200 };
+        const xOf = (c: HTMLElement) => Number(c.querySelector('[data-guide-label]')!.getAttribute('x'));
+        const free = xOf(renderGuides([guide]).container);
+        expect(xOf(renderGuides([guide], { touch: false, pointer: { x: 106, y: 175 } }).container)).toBe(free);
+    });
+    it('sits an x-size label entirely above its box with a gap', () => {
+        const { container } = renderGuides([{ kind: 'size', axis: 'x', size: 120, boxes: [{ x: 0, y: 300, w: 120, h: 40 }] }]);
+        const rect = container.querySelector('rect')!;
+        expect(Number(rect.getAttribute('y')) + Number(rect.getAttribute('height'))).toBeLessThanOrEqual(300 - 4);
+    });
+    it('clamps labels inside the page', () => {
+        const rectOf = (c: HTMLElement) => c.querySelector('rect')!;
+        const right = rectOf(renderGuides([{ kind: 'distance', axis: 'y', at: 495, from: 150, to: 200 }]).container);
+        expect(Number(right.getAttribute('x'))).toBeGreaterThanOrEqual(0);
+        expect(Number(right.getAttribute('x')) + Number(right.getAttribute('width'))).toBeLessThanOrEqual(500);
+        const top = rectOf(renderGuides([{ kind: 'size', axis: 'x', size: 120, boxes: [{ x: 0, y: 5, w: 120, h: 40 }] }]).container);
+        expect(Number(top.getAttribute('y'))).toBeGreaterThanOrEqual(0);
+    });
 });
