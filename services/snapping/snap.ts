@@ -1,0 +1,97 @@
+import { RANK_CENTRE, RANK_EDGE, type SnapTargets } from './targets';
+import { type Axis, type Box, type EdgeSide, type Guide, type Point, type ResizeEdges, type SnapResult,
+    type SnapSettings, hi, len, lo, other, round2 } from './types';
+import { better, bracket, nearestIndex, type Win } from './core';
+import { sizeWin, spacingWin } from './extras';
+
+export type Mode = { kind: 'move' } | { kind: 'resize'; edge: EdgeSide } | { kind: 'point' };
+
+export const gridLine = (v: number, g: number) => round2(Math.round(v / g) * g);
+
+const features = (b: Box, a: Axis, mode: Mode) => {
+    if (mode.kind === 'resize') return [{ v: mode.edge === 'min' ? lo(b, a) : hi(b, a), rank: RANK_EDGE }];
+    if (mode.kind === 'point' || len(b, a) === 0) return [{ v: lo(b, a), rank: RANK_EDGE }];
+    return [{ v: lo(b, a), rank: RANK_EDGE }, { v: lo(b, a) + len(b, a) / 2, rank: RANK_CENTRE }, { v: hi(b, a), rank: RANK_EDGE }];
+};
+
+function alignWin(T: SnapTargets, b: Box, a: Axis, mode: Mode, threshold: number): Win | null {
+    const t = T[a];
+    let best: Win | null = null;
+    for (const f of features(b, a, mode)) {
+        for (const i of bracket(t.values, f.v)) {
+            const delta = t.values[i] - f.v;
+            if (Math.abs(delta) > threshold) continue;
+            const c: Win = { delta, rank: Math.max(t.ranks[i], f.rank), kind: 'align' };
+            if (better(c, best)) best = c;
+        }
+    }
+    return best;
+}
+
+const separation = (p: Box, q: Box, axis: Axis) => Math.max(0, lo(q, axis) - hi(p, axis), lo(p, axis) - hi(q, axis));
+
+function alignGuides(T: SnapTargets, fb: Box, a: Axis, mode: Mode): Guide[] {
+    const t = T[a], cross = other(a), out: Guide[] = [];
+    let aligned = 0;
+    for (const f of features(fb, a, mode)) {
+        if (aligned >= 2) break;
+        const i = nearestIndex(t.values, f.v);
+        if (i < 0 || Math.abs(t.values[i] - f.v) > 0.01) continue;
+        const at = t.values[i];
+        if (out.some(g => g.kind === 'align' && g.at === at)) continue;
+        let src = t.sources[i][0], gap = Infinity;
+        for (const s of t.sources[i]) { const d = separation(fb, s, cross); if (d < gap) { gap = d; src = s; } }
+        out.push({ kind: 'align', axis: a, at, from: Math.min(lo(fb, cross), lo(src, cross)), to: Math.max(hi(fb, cross), hi(src, cross)) });
+        aligned++;
+        if (src !== T.page && gap > 0 && !out.some(g => g.kind === 'distance')) {
+            const below = lo(src, cross) >= hi(fb, cross);
+            out.push({ kind: 'distance', axis: cross, at, from: below ? hi(fb, cross) : hi(src, cross), to: below ? lo(src, cross) : lo(fb, cross) });
+        }
+    }
+    return out;
+}
+
+function resolveAxis(T: SnapTargets, b: Box, a: Axis, mode: Mode, s: SnapSettings): Win | null {
+    let best: Win | null = null;
+    if (s.guides) {
+        const al = alignWin(T, b, a, mode, s.threshold);
+        if (al && better(al, best)) best = al;
+        if (mode.kind === 'move') { const sp = spacingWin(T, b, a, s.threshold); if (sp && better(sp, best)) best = sp; }
+        if (mode.kind === 'resize') { const sz = sizeWin(T, b, a, mode.edge, s.threshold); if (sz && better(sz, best)) best = sz; }
+    }
+    if (!best && s.grid) {
+        const f = features(b, a, mode)[0];
+        best = { delta: gridLine(f.v, s.grid) - f.v, rank: 9, kind: 'grid' };
+    }
+    return best;
+}
+
+function finish(T: SnapTargets, b: Box, wx: Win | null, wy: Win | null, mx: Mode | null, my: Mode | null): SnapResult {
+    const dx = wx?.delta ?? 0, dy = wy?.delta ?? 0;
+    const fb: Box = { ...b, x: b.x + dx, y: b.y + dy };
+    const guides: Guide[] = [];
+    for (const [a, w, mode] of [['x', wx, mx], ['y', wy, my]] as const) {
+        if (!w || !mode) continue;
+        if (w.kind === 'align') guides.push(...alignGuides(T, fb, a, mode));
+        else if (w.make) guides.push(w.make(fb));
+    }
+    return { dx, dy, snappedX: !!wx, snappedY: !!wy, guides };
+}
+
+const MOVE: Mode = { kind: 'move' };
+const POINT: Mode = { kind: 'point' };
+
+export function snapMove(T: SnapTargets, box: Box, s: SnapSettings): SnapResult {
+    return finish(T, box, resolveAxis(T, box, 'x', MOVE, s), resolveAxis(T, box, 'y', MOVE, s), MOVE, MOVE);
+}
+
+export function snapResize(T: SnapTargets, box: Box, edges: ResizeEdges, s: SnapSettings): SnapResult {
+    const mx: Mode | null = edges.x ? { kind: 'resize', edge: edges.x } : null;
+    const my: Mode | null = edges.y ? { kind: 'resize', edge: edges.y } : null;
+    return finish(T, box, mx && resolveAxis(T, box, 'x', mx, s), my && resolveAxis(T, box, 'y', my, s), mx, my);
+}
+
+export function snapPoint(T: SnapTargets, p: Point, s: SnapSettings, axes = { x: true, y: true }): SnapResult {
+    const b: Box = { x: p.x, y: p.y, w: 0, h: 0 };
+    return finish(T, b, axes.x ? resolveAxis(T, b, 'x', POINT, s) : null, axes.y ? resolveAxis(T, b, 'y', POINT, s) : null, POINT, POINT);
+}
