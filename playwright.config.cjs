@@ -61,7 +61,7 @@ module.exports = defineConfig({
     projects: [
         {
             name: 'chromium',
-            testIgnore: [/incremental_performance\.spec\.ts$/, /mobile_editor\.spec\.js$/],
+            testIgnore: [/incremental_performance\.spec\.ts$/, /mobile_editor\.spec\.js$/, /snap_drag_performance\.spec\.js$/],
             use: {
                 ...devices['Desktop Chrome'],
                 ...(builtBundle ? { launchOptions: { args: ['--unlimited-storage'] } } : {}),
@@ -70,13 +70,13 @@ module.exports = defineConfig({
 
         {
             name: 'firefox',
-            testIgnore: [/incremental_performance\.spec\.ts$/, /mobile_editor\.spec\.js$/],
+            testIgnore: [/incremental_performance\.spec\.ts$/, /mobile_editor\.spec\.js$/, /snap_drag_performance\.spec\.js$/],
             use: { ...devices['Desktop Firefox'] },
         },
 
         {
             name: 'webkit',
-            testIgnore: [/incremental_performance\.spec\.ts$/, /mobile_editor\.spec\.js$/],
+            testIgnore: [/incremental_performance\.spec\.ts$/, /mobile_editor\.spec\.js$/, /snap_drag_performance\.spec\.js$/],
             use: { ...devices['Desktop Safari'] },
         },
         {
@@ -130,6 +130,17 @@ module.exports = defineConfig({
             testMatch: /mobile_editor\.spec\.js$/,
             use: { ...devices['iPad (gen 7)'] },
         },
+        // Opt-in drag benchmark (SNAP_PERF=1): tests/e2e/snap_drag_performance.spec.js, which the
+        // desktop projects ignore. Chromium only: it drives CDP touch events and CPU throttling.
+        ...(process.env.SNAP_PERF ? [{
+            name: 'snap-perf-desktop',
+            testMatch: /snap_drag_performance\.spec\.js$/,
+            use: { ...devices['Desktop Chrome'], trace: 'off' },
+        }, {
+            name: 'snap-perf-tablet',
+            testMatch: /snap_drag_performance\.spec\.js$/,
+            use: { ...devices['iPad (gen 7)'], browserName: 'chromium', trace: 'off' },
+        }] : []),
     ],
 
     /* Run your local dev server before starting the tests.
