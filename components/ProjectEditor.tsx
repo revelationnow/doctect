@@ -30,6 +30,7 @@ import type { TouchEditorActions } from './editor-layout/touchActions';
 import { useTouchMultiSelect } from './editor-layout/useTouchMultiSelect';
 import { alignSelectedElements, alignmentOffsets, type AlignType } from '../services/alignElements';
 import { elementAabb } from '../services/geometry/elementBox';
+import { snapSettingsOf } from '../services/snapping/settings';
 import { PLACEHOLDER_SVG, createPlacedSvgElement } from '../services/svgEditing';
 import { DocumentSnapshot, restoreDocument, snapshotDocument } from '../services/projectDocumentSnapshot';
 import type { GeneratedProject } from '../services/validateGeneratedProject';
@@ -1732,6 +1733,8 @@ function ProjectEditorView({
             currentNodeId={effectivePreviewNodeId}
             snapToGrid={state.snapToGrid}
             showGrid={state.showGrid}
+            gridSize={snapSettingsOf(state).gridSize}
+            smartGuides={snapSettingsOf(state).smartGuides}
             activeLayerId={state.activeLayerId}
             greyscalePreview={exportGreyscale}
             onInteractionStart={saveToHistory}

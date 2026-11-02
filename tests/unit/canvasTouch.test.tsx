@@ -950,3 +950,18 @@ describe('Canvas touch group drag', () => {
         expect(find(editor.committed(), 'b')).toMatchObject({ x: 230, y: 220 });
     });
 });
+
+describe('touch snapping', () => {
+    it('a finger drag snaps with the wider touch pull and a pointercancel clears guides', () => {
+        const { container, surface, elementNode, props } = renderCanvas({ selectedElementIds: ['b'], smartGuides: true });
+        pointer(elementNode('b'), 'pointerdown', 1, 250, 230);
+        pointer(surface, 'pointermove', 1, 250 - 172, 230); // b.x 28: 8 pt from a's left edge (20), inside 10 px
+        const moved = (props.onUpdateElements as any).mock.calls.at(-1)[0].find((e: any) => e.id === 'b');
+        expect(moved.x).toBe(20);
+        expect(container.querySelector('[data-testid="snap-guides"]')).toBeTruthy();
+        // The gesture hook disarms its long press once the finger passes the tap slop, so a drag
+        // that has moved can only be interrupted by the OS: pointercancel reverts it.
+        pointer(surface, 'pointercancel', 1, 78, 230);
+        expect(container.querySelector('[data-testid="snap-guides"]')).toBeNull();
+    });
+});

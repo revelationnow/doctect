@@ -1136,7 +1136,10 @@ describe('real ProjectEditor incremental boundary', () => {
   });
 
   it('G5 net-zero pointer geometry restores retained records and pointercancel cannot mutate afterward', () => {
-    const h = renderIncrementalEditor(); h.setZoom(1);
+    // Snapping off: the title sits off the 10 pt grid with its right edge 2 pt from the page centre,
+    // so an absolute grid line or a guide would pull a pointer that returns to its origin onto x 10.
+    const project = makeIncrementalProject(); Object.assign(project.initialState, { snapToGrid: false, smartGuides: false });
+    const h = renderIncrementalEditor(project); h.setZoom(1);
     const canvas = h.container.querySelector('.canvas-scroll-container')!;
     const text = () => h.container.querySelector('[data-element-id="title"]')!;
     fireEvent.mouseDown(text(), { clientX: 40, clientY: 40, button: 0 });

@@ -21,6 +21,12 @@ import { useCanvasTouchGestures, TouchGestureHandlers } from '../hooks/useCanvas
 import { useTouchFit, TOUCH_CANVAS_GUTTER, MOUSE_CANVAS_GUTTER } from '../hooks/useTouchFit';
 import { QuickFormatBar } from './canvas/QuickFormatBar';
 import { useKeepEditedElementVisible, useQuickFormatAnchor, useTouchGestureActivity } from './canvas/useQuickFormatBar';
+import { buildSnapTargets, type SnapTargets } from '../services/snapping/targets';
+import { snapMove, snapPoint, snapResize } from '../services/snapping/snap';
+import { round2, type Box, type Guide, type Point, type SnapSettings } from '../services/snapping/types';
+import { gridDisplayStep, pullDistancePx } from '../services/snapping/settings';
+import { elementAabb, unionBox } from '../services/geometry/elementBox';
+import { SnapGuides } from './canvas/SnapGuides';
 
 export interface CanvasInteraction {
     isCurrent(): boolean;
@@ -42,6 +48,10 @@ interface CanvasProps {
     currentNodeId: string;
     snapToGrid: boolean;
     showGrid: boolean;
+    /** Snap grid spacing in pt (default 10). */
+    gridSize?: number;
+    /** Snap to other objects and the page while moving, resizing and drawing (default off here; the editor passes the preference). */
+    smartGuides?: boolean;
     onUpdateElements: (elements: TemplateElement[], saveHistory?: boolean) => void;
     onSelectElements: (ids: string[]) => void;
     onZoom: (newScale: number) => void;
@@ -228,6 +238,8 @@ export const Canvas: React.FC<CanvasProps> = ({
     currentNodeId,
     snapToGrid,
     showGrid,
+    gridSize = 10,
+    smartGuides = false,
     onUpdateElements,
     onSelectElements: reportSelection,
     onZoom,
@@ -365,6 +377,25 @@ export const Canvas: React.FC<CanvasProps> = ({
     // The copies a Ctrl/Cmd drag made and where they started. React renders mousemove updates
     // later, so the next move can arrive before the canvas has the copies; it still drags them.
     const cloneDragRef = useRef<{ clones: TemplateElement[], positions: Record<string, { x: number, y: number }> } | null>(null);
+    // Snapping for the current gesture: targets are built once, on the first move that snaps (a
+    // click never pays for them), and dropped when the gesture ends or is cancelled.
+    const snapSessionRef = useRef<{ targets: SnapTargets; startBox: Box | null } | null>(null);
+    const lastPointerRef = useRef<Point | null>(null);
+    const [guides, setGuides] = useState<Guide[]>([]);
+    const showGuides = (next: Guide[]) => setGuides(prev => (prev.length === 0 && next.length === 0 ? prev : next));
+    const endSnap = () => { snapSessionRef.current = null; showGuides([]); };
+    const snapSettingsFor = (e: { altKey?: boolean }): SnapSettings | null =>
+        (snapToGrid || smartGuides) && !e.altKey
+            ? { grid: snapToGrid ? gridSize : null, guides: smartGuides, threshold: pullDistancePx(inputMode) / scale }
+            : null;
+    const snapTargetsFor = (excludeIds: string[]) => {
+        if (!snapSessionRef.current) snapSessionRef.current = {
+            targets: buildSnapTargets({ elements, layers: template.layers, excludeIds,
+                page: { w: template.width, h: template.height }, nodes, currentNodeId }),
+            startBox: null,
+        };
+        return snapSessionRef.current;
+    };
     const [persistentGroupRotation, setPersistentGroupRotation] = useState(0);
 
     // Reset persistent rotation and pivots when selection changes
@@ -440,13 +471,6 @@ export const Canvas: React.FC<CanvasProps> = ({
         : true; // group / no single selection: unaffected by this guard
 
 
-    // Dynamic Grid Calculation
-    const effectiveGridSize = React.useMemo(() => {
-        if (scale >= 4) return 1;
-        if (scale >= 1.5) return 5;
-        return 10;
-    }, [scale]);
-
     // Zoom to `requested` (clamped) keeping the content under the client point in place; shared by
     // ctrl+wheel and touch pinch. The scroll correction happens in the layout effect below.
     const zoomAroundClientPoint = (clientX: number, clientY: number, requested: number) => {
@@ -514,7 +538,8 @@ export const Canvas: React.FC<CanvasProps> = ({
     };
     const getMouseCoords = (e: MouseEvent) => clientToCanvas(e.clientX, e.clientY);
 
-    const snapVal = (val: number) => snapToGrid ? Math.round(val / effectiveGridSize) * effectiveGridSize : val;
+    // Drawing still rounds to the absolute grid here; the next task routes it through snapPoint.
+    const snapVal = (val: number) => snapToGrid ? Math.round(val / gridSize) * gridSize : val;
 
     const getElementBounds = (el: TemplateElement) => {
         if (el.type === 'grid' && el.gridConfig) {
@@ -584,7 +609,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         setIsDragging(false); setIsResizing(false); setIsRotating(false); setIsPanning(false); setIsDraggingPivot(false);
         hasSavedHistory.current = false; setInitialPositions({});
         initialGroupElements.current = []; initialResizeStateRef.current = null;
-        clickCycleStackRef.current = null; shiftCycleRef.current = null; pendingCloneRef.current = null; cloneDragRef.current = null;
+        clickCycleStackRef.current = null; shiftCycleRef.current = null; pendingCloneRef.current = null; cloneDragRef.current = null; endSnap();
     };
     useLayoutEffect(() => {
         if (onEditElements && ownSelection.current !== selectionKey) {
@@ -609,6 +634,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                 setIsResizing(false);
                 setIsRotating(false);
                 setIsPanning(false);
+                endSnap();
             }
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -978,6 +1004,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         }
 
         const coords = getMouseCoords(e);
+        lastPointerRef.current = coords;
 
         if (newShapeStart) {
             setIsConstrained(e.ctrlKey || e.metaKey || e.shiftKey);
@@ -1206,14 +1233,23 @@ export const Canvas: React.FC<CanvasProps> = ({
                 startPositions = cloneDrag.positions;
             }
 
-            const dx = snapToGrid ? Math.round(rawDx / effectiveGridSize) * effectiveGridSize : rawDx;
-            const dy = snapToGrid ? Math.round(rawDy / effectiveGridSize) * effectiveGridSize : rawDy;
+            let dx = rawDx, dy = rawDy, snappedX = false, snappedY = false;
+            const settings = snapSettingsFor(e);
+            if (settings) {
+                const session = snapTargetsFor(Object.keys(startPositions));
+                session.startBox ??= unionBox(dragged.filter(el => startPositions[el.id])
+                    .map(el => elementAabb({ ...el, ...startPositions[el.id] }, nodes, currentNodeId)));
+                if (session.startBox) {
+                    const r = snapMove(session.targets, { ...session.startBox, x: session.startBox.x + rawDx, y: session.startBox.y + rawDy }, settings);
+                    dx += r.dx; dy += r.dy; snappedX = r.snappedX; snappedY = r.snappedY;
+                    showGuides(r.guides);
+                }
+            } else showGuides([]);
 
             const updatedElements = dragged.map(el => {
-                if (startPositions[el.id]) {
-                    return { ...el, x: startPositions[el.id].x + dx, y: startPositions[el.id].y + dy };
-                }
-                return el;
+                const start = startPositions[el.id];
+                if (!start) return el;
+                return { ...el, x: snappedX ? round2(start.x + dx) : start.x + dx, y: snappedY ? round2(start.y + dy) : start.y + dy };
             });
             updateGeometry(updatedElements, ['x', 'y']);
 
@@ -1251,8 +1287,8 @@ export const Canvas: React.FC<CanvasProps> = ({
 
             // 3. Apply Snap to local dimensions if enabled
             if (snapToGrid) {
-                localDx = Math.round(localDx / effectiveGridSize) * effectiveGridSize;
-                localDy = Math.round(localDy / effectiveGridSize) * effectiveGridSize;
+                localDx = Math.round(localDx / gridSize) * gridSize;
+                localDy = Math.round(localDy / gridSize) * gridSize;
             }
 
             // --- Single Line Resizing ---
@@ -1275,8 +1311,8 @@ export const Canvas: React.FC<CanvasProps> = ({
                 let pEnd = rotatePoint(cx + endLocal.x, cy + endLocal.y, cx, cy, angle);
 
                 // Use Snapped Screen Deltas for Line endpoints
-                const dx = snapToGrid ? Math.round(screenDx / effectiveGridSize) * effectiveGridSize : screenDx;
-                const dy = snapToGrid ? Math.round(screenDy / effectiveGridSize) * effectiveGridSize : screenDy;
+                const dx = snapToGrid ? Math.round(screenDx / gridSize) * gridSize : screenDx;
+                const dy = snapToGrid ? Math.round(screenDy / gridSize) * gridSize : screenDy;
 
                 // Apply Delta
                 if (resizeHandle === 'start') {
@@ -1440,6 +1476,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         if (captureInteraction && !owner?.isCurrent()) return;
         // Keep this event's owner across synchronous consumer reentrancy.
         const finishInteraction = captureInteraction ? () => owner?.end() : onInteractionEnd;
+        endSnap();
         if (isRotating && selectedElementIds.length > 1 && initialGroupBoundsRef.current) {
             // Initial relative rotation was 0 for group, so we add to the group's starting rotation
             // Use delta from initial interaction start
@@ -1938,7 +1975,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                             className="absolute inset-0 pointer-events-none opacity-20"
                             style={{
                                 backgroundImage: `radial-gradient(#94a3b8 ${Math.max(0.5, 1.5 / scale)}px, transparent ${Math.max(0.5, 1.5 / scale)}px)`,
-                                backgroundSize: `${effectiveGridSize}px ${effectiveGridSize}px`,
+                                backgroundSize: `${gridDisplayStep(gridSize, scale)}px ${gridDisplayStep(gridSize, scale)}px`,
                                 zIndex: 0,
                             }}
                         />
@@ -2218,6 +2255,8 @@ export const Canvas: React.FC<CanvasProps> = ({
                             );
                         })}
 
+                        <SnapGuides guides={guides} scale={scale} touch={isTouch}
+                            pointer={isTouch ? lastPointerRef.current : null} width={template.width} height={template.height} />
                         {renderCreationPreview()}
 
                         {isSelecting && selectionBox && (
