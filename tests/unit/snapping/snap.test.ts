@@ -62,6 +62,35 @@ describe('snapResize', () => {
         const r = snapResize(T(), { x: 0, y: 0, w: 47, h: 50 }, { x: 'max', y: null }, { grid: 10, guides: false, threshold: 6 });
         expect(r.dx).toBeCloseTo(3);
     });
+    it('snaps the min edge and draws its guide', () => {
+        // Left 103 -> a's right edge 100; the right edge (200) is not a feature and stays put.
+        const r = snapResize(T(el('a', 0, 300, 100, 50)), { x: 103, y: 0, w: 97, h: 50 }, { x: 'min', y: null }, guides);
+        expect(r.dx).toBeCloseTo(-3); expect(r.dy).toBe(0); expect(r.snappedY).toBe(false);
+        expect(r.guides).toEqual([
+            { kind: 'align', axis: 'x', at: 100, from: 0, to: 350 },
+            { kind: 'distance', axis: 'y', at: 100, from: 50, to: 300 },
+        ]);
+    });
+    it('measures a corner resize by the resized box, not a shifted one (max edges)', () => {
+        // Right 97 -> a's right edge 100, bottom 297 -> b's top 300: the box becomes (0,200,100,100).
+        const r = snapResize(T(el('a', 50, 100, 50, 50), el('b', 300, 300, 50, 50)),
+            { x: 0, y: 200, w: 97, h: 97 }, { x: 'max', y: 'max' }, guides);
+        expect(r.dx).toBeCloseTo(3); expect(r.dy).toBeCloseTo(3);
+        // The gap to a is measured from the box's real top (200), not a shifted 203: 50, not 53.
+        expect(r.guides).toContainEqual({ kind: 'distance', axis: 'y', at: 100, from: 150, to: 200 });
+        // The y guide starts at the box's real left edge (0), not a shifted 3.
+        expect(r.guides).toContainEqual({ kind: 'align', axis: 'y', at: 300, from: 0, to: 350 });
+    });
+    it('measures a corner resize by the resized box, not a shifted one (min edges)', () => {
+        // Left 103 -> a's right edge 100, top 203 -> b's bottom 200: the box becomes (100,200,100,100).
+        const r = snapResize(T(el('a', 50, 100, 50, 50), el('b', 300, 150, 50, 50)),
+            { x: 103, y: 203, w: 97, h: 97 }, { x: 'min', y: 'min' }, guides);
+        expect(r.dx).toBeCloseTo(-3); expect(r.dy).toBeCloseTo(-3);
+        // The x guide reaches the box's real bottom (300), not a shifted 297.
+        expect(r.guides).toContainEqual({ kind: 'align', axis: 'x', at: 100, from: 100, to: 300 });
+        // The gap to b is measured from the box's real right edge (200), not a shifted 197.
+        expect(r.guides).toContainEqual({ kind: 'distance', axis: 'x', at: 200, from: 200, to: 300 });
+    });
 });
 
 describe('snapPoint', () => {

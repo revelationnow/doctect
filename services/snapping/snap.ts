@@ -66,9 +66,16 @@ function resolveAxis(T: SnapTargets, b: Box, a: Axis, mode: Mode, s: SnapSetting
     return best;
 }
 
+/** One axis of the final box: a resize moves only its edge (the other stays), a move or point shifts. */
+const applied = (lo: number, len: number, delta: number, mode: Mode | null): [number, number] => {
+    if (mode?.kind === 'resize') return mode.edge === 'max' ? [lo, len + delta] : [lo + delta, len - delta];
+    return [lo + delta, len];
+};
+
 function finish(T: SnapTargets, b: Box, wx: Win | null, wy: Win | null, mx: Mode | null, my: Mode | null): SnapResult {
     const dx = wx?.delta ?? 0, dy = wy?.delta ?? 0;
-    const fb: Box = { ...b, x: b.x + dx, y: b.y + dy };
+    const [x, w] = applied(b.x, b.w, dx, mx), [y, h] = applied(b.y, b.h, dy, my);
+    const fb: Box = { x, y, w, h };
     const guides: Guide[] = [];
     for (const [a, w, mode] of [['x', wx, mx], ['y', wy, my]] as const) {
         if (!w || !mode) continue;
