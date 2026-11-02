@@ -24,21 +24,22 @@ export function spacingWin(T: SnapTargets, b: Box, a: Axis, threshold: number): 
         if (gap >= 0) consider(target - lo(b, a), fb => ({ kind: 'spacing', axis: a, gap,
             segments: [segment(prev, fb, a), segment(fb, next, a)] }));
     }
-    const gaps = T.gaps[a];
+    // Repeat a gap already in this row/column: the one between prev and its own previous neighbour, or
+    // between next and its own next neighbour. A box overlapping the neighbour (current < 0) is not spaced.
     if (prev) {
+        const pp = previousNeighbour(T, prev, a);
         const current = lo(b, a) - hi(prev, a);
-        const j = nearestIndex(gaps.values, current);
-        if (j >= 0) {
-            const g = gaps.values[j], [p0, p1] = gaps.pairs[j];
-            consider(g - current, fb => ({ kind: 'spacing', axis: a, gap: g, segments: [segment(prev, fb, a), segment(p0, p1, a)] }));
+        if (pp && current >= 0) {
+            const g = lo(prev, a) - hi(pp, a);
+            if (g > 0) consider(g - current, fb => ({ kind: 'spacing', axis: a, gap: g, segments: [segment(prev, fb, a), segment(pp, prev, a)] }));
         }
     }
     if (next) {
+        const nn = nextNeighbour(T, next, a);
         const current = lo(next, a) - hi(b, a);
-        const j = nearestIndex(gaps.values, current);
-        if (j >= 0) {
-            const g = gaps.values[j], [p0, p1] = gaps.pairs[j];
-            consider(current - g, fb => ({ kind: 'spacing', axis: a, gap: g, segments: [segment(fb, next, a), segment(p0, p1, a)] }));
+        if (nn && current >= 0) {
+            const g = lo(nn, a) - hi(next, a);
+            if (g > 0) consider(current - g, fb => ({ kind: 'spacing', axis: a, gap: g, segments: [segment(fb, next, a), segment(next, nn, a)] }));
         }
     }
     return best;

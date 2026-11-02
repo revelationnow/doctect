@@ -26,6 +26,28 @@ describe('equal spacing', () => {
         const r = snapMove(T(el('a', 0, 0, 100, 50), el('b', 300, 400, 100, 50)), { x: 173, y: 0, w: 50, h: 50 }, s);
         expect(r.guides.some(g => g.kind === 'spacing')).toBe(false);
     });
+    it('does not repeat a gap from a different row', () => {
+        // c-d have a 30 gap at y 400; n is the only thing in the box's row and has nothing before it.
+        // The box sits 32 after n: a page-wide gap index would pull it to 30, the row chain must not.
+        const r = snapMove(T(el('c', 300, 400, 100, 50), el('d', 430, 400, 100, 50), el('n', 0, 0, 100, 50)),
+            { x: 132, y: 0, w: 50, h: 50 }, s);
+        expect(r.dx).toBe(0);
+        expect(r.guides.some(g => g.kind === 'spacing')).toBe(false);
+    });
+    it('repeats the gap after the next neighbour when the box is before the row', () => {
+        // a-b have a 30 gap; the box is 32 before a and moves right by 2 to match.
+        const r = snapMove(T(el('a', 200, 0, 100, 50), el('b', 330, 0, 100, 50)), { x: 118, y: 0, w: 50, h: 50 }, s);
+        expect(r.dx).toBeCloseTo(2);
+        expect(r.guides.find(g => g.kind === 'spacing')).toEqual({ kind: 'spacing', axis: 'x', gap: 30,
+            segments: [{ at: 25, from: 170, to: 200 }, { at: 25, from: 300, to: 330 }] });
+    });
+    it('repeats a gap in a column on the y axis', () => {
+        // a above b with a 30 gap; the box is 32 below b and moves up by 2.
+        const r = snapMove(T(el('a', 0, 0, 50, 100), el('b', 0, 130, 50, 100)), { x: 0, y: 262, w: 50, h: 50 }, s);
+        expect(r.dy).toBeCloseTo(-2);
+        expect(r.guides.find(g => g.kind === 'spacing')).toEqual({ kind: 'spacing', axis: 'y', gap: 30,
+            segments: [{ at: 25, from: 230, to: 260 }, { at: 25, from: 100, to: 130 }] });
+    });
 });
 
 describe('size matching', () => {
