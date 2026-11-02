@@ -100,30 +100,42 @@ async function zoomTouchTarget(page, cdp) {
     }
 }
 
-// Sets snapping through the UI. `guides` is ignored where the control does not exist (baseline).
+// Sets snapping through the UI and asserts the resulting state, so a measured config is what its
+// name says. The Smart guides control does not exist in the baseline phase and is skipped there;
+// in the final phase it must exist (a locator that silently misses would measure guides off).
 async function setSnapping(page, info, { grid, guides }) {
+    const guidesRequired = PHASE === 'final';
     if (isTouchProject(info)) {
         await page.getByRole('button', { name: 'More actions' }).click();
         const menu = page.getByRole('dialog', { name: 'More actions' });
-        const toggle = async (name, want) => {
+        const toggle = async (name, want, required) => {
             const item = menu.getByRole('button', { name, exact: true });
-            if (await item.count() === 0) return;
+            if (required) await expect(item).toHaveCount(1);
+            else if (await item.count() === 0) return;
             if ((await item.getAttribute('aria-pressed')) !== String(want)) await item.click();
+            await expect(item).toHaveAttribute('aria-pressed', String(want));
         };
-        await toggle('Snap to grid', grid);
-        await toggle('Smart guides', guides);
+        await toggle('Snap to grid', grid, true);
+        await toggle('Smart guides', guides, guidesRequired);
         await page.keyboard.press('Escape');
         await expect(menu).toHaveCount(0);
         return;
     }
     const magnet = page.getByTitle('Snap to Grid', { exact: true });
+    await expect(magnet).toHaveCount(1);
     if ((await magnet.getAttribute('class')).includes('bg-blue-600') !== grid) await magnet.click();
+    if (grid) await expect(magnet).toHaveClass(/bg-blue-600/);
+    else await expect(magnet).not.toHaveClass(/bg-blue-600/);
     const options = page.getByTitle('Snapping options', { exact: true });
+    if (guidesRequired) await expect(options).toHaveCount(1);
     if (await options.count()) {
         await options.click();
         const sw = page.getByRole('switch', { name: 'Smart guides' });
+        await expect(sw).toHaveCount(1);
         if ((await sw.isChecked()) !== guides) await sw.click();
+        await expect(sw).toBeChecked({ checked: guides });
         await page.keyboard.press('Escape');
+        await expect(sw).toBeHidden(); // the popover closed
     }
 }
 
@@ -235,6 +247,7 @@ test('drag frame times by page size and snapping', async ({ page }, info) => {
     test.setTimeout(1_800_000);
     expect(['baseline', 'final']).toContain(PHASE);
     expect(OUT).toBeTruthy();
+    mkdirSync(OUT, { recursive: true }); // fail here, not after a 10-minute run
     const configs = PHASE === 'baseline'
         ? [{ name: 'off', grid: false, guides: false }, { name: 'grid', grid: true, guides: false }]
         : [{ name: 'off', grid: false, guides: false }, { name: 'grid', grid: true, guides: false },
@@ -261,7 +274,6 @@ test('drag frame times by page size and snapping', async ({ page }, info) => {
             console.info(`[snap-perf] ${info.project.name} ${size} ${config.name}`, JSON.stringify(results[size][config.name]));
         }
     }
-    mkdirSync(OUT, { recursive: true });
     writeFileSync(`${OUT}/${PHASE}-${info.project.name}.json`, JSON.stringify(results, null, 2));
 });
 

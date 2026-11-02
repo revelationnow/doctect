@@ -135,10 +135,12 @@ module.exports = defineConfig({
         ...(process.env.SNAP_PERF ? [{
             name: 'snap-perf-desktop',
             testMatch: /snap_drag_performance\.spec\.js$/,
+            retries: 0, // a retried benchmark would overwrite its numbers with a second, warmer run
             use: { ...devices['Desktop Chrome'], trace: 'off' },
         }, {
             name: 'snap-perf-tablet',
             testMatch: /snap_drag_performance\.spec\.js$/,
+            retries: 0,
             use: { ...devices['iPad (gen 7)'], browserName: 'chromium', trace: 'off' },
         }] : []),
     ],
