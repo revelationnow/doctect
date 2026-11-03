@@ -1,10 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { openFreshEditor } from './localWorkspaceHelpers.js';
+import { openFreshEditor, readActiveProject } from './localWorkspaceHelpers.js';
 
 // Opt-in drag benchmark (SNAP_PERF=1). Phase "baseline" runs on the code before smart guides,
 // "final" after. Each page size is filled with rects laid out on a regular lattice so many edges
-// line up — the worst case for merged snap targets.
+// line up — the worst case for merged snap targets. Every measured drag starts from a quiet editor:
+// the local save a JSON apply or a snapping toggle queues is awaited (see settle) before throttling.
 const OUT = process.env.SNAP_PERF_OUTPUT;
 const PHASE = process.env.SNAP_PERF_PHASE;
 const SIZES = [40, 500, 2000];
@@ -27,6 +28,56 @@ const pane = page => page.locator('[data-testid="project-pane"][data-active="tru
 const benchTarget = page => pane(page).locator('[data-element-id="bench-0"]');
 
 const isTouchProject = info => info.project.name.endsWith('tablet');
+
+// Main-thread long tasks (>50 ms) since the last settle, so a toggle's save cost is read as blocking
+// time, not only as the debounced wall time to "Saved locally". Installed once per editor page.
+async function observeLongTasks(page) {
+    await page.evaluate(() => {
+        window.__snapLongTasks = [];
+        window.__snapLongTaskObserver = new PerformanceObserver(list => {
+            for (const entry of list.getEntries()) window.__snapLongTasks.push(entry.duration);
+        });
+        window.__snapLongTaskObserver.observe({ type: 'longtask' });
+    });
+}
+
+const clearLongTasks = page => page.evaluate(() => { window.__snapLongTasks = []; });
+
+// The editor persists edits and setting changes through a debounced local save (document lane 0.5 s
+// trailing / 2 s maximum, preferences lane 1 s / 5 s; services/localWorkspace/incrementalQueue.ts).
+// A save left running by the JSON apply or by a snapping toggle would otherwise land inside the
+// first throttled drag and widen that config's tail — in the final phase every config toggles a
+// setting, in the baseline only "grid" does. The header's save pill shows the document lane only
+// (EditorPage feeds it saveStates, not preferenceStates), and nothing the page exposes reports a
+// preference write's completion: readActiveProject sees the toggle as soon as the store admits it,
+// before the debounced write. So: the pill must read "Saved locally" (what
+// tests/e2e/incrementalBrowserHarness.ts waits on), the toggled settings must be in the store, and
+// after a toggle click the drag waits a further TOGGLE_SAVE_MS — the lane's 1 s trailing debounce
+// plus margin for the write (~0.2 s of main thread at 500 elements, unthrottled) — so the save's
+// task lands here, not in the first measured frame; the logged long tasks show that it did. A
+// config that changed nothing passes at once.
+const TOGGLE_SAVE_MS = 2500;
+async function settle(page, label, persisted = {}, changed = false) {
+    const t0 = Date.now();
+    const saving = await page.getByRole('status').filter({ hasText: 'Saving locally' }).count();
+    await expect(page.getByRole('status').filter({ hasText: 'Saved locally' }).first()).toBeVisible({ timeout: 120_000 });
+    const keys = Object.keys(persisted);
+    if (keys.length) {
+        await expect.poll(async () => {
+            const stored = (await readActiveProject(page)).initialState;
+            return Object.fromEntries(keys.map(key => [key, stored[key]]));
+        }, { timeout: 120_000, message: `${label}: toggled settings persisted` }).toEqual(persisted);
+    }
+    if (changed) await page.waitForTimeout(TOGGLE_SAVE_MS);
+    const wait = Date.now() - t0;
+    const tasks = await page.evaluate(() => {
+        const durations = window.__snapLongTasks ?? [];
+        window.__snapLongTasks = [];
+        return { count: durations.length, ms: Math.round(durations.reduce((sum, d) => sum + d, 0)) };
+    });
+    console.info(`[snap-perf] settle ${label} saving=${saving} wait=${wait}ms longTasks=${tasks.count}/${tasks.ms}ms`);
+    return wait;
+}
 
 test.beforeEach(async ({ page }, info) => {
     if (!isTouchProject(info)) return;
@@ -72,6 +123,7 @@ async function applyElements(page, info, count, cdp) {
     if (isTouchProject(info)) await zoomTouchTarget(page, cdp);
     const b = await benchTarget(page).boundingBox();
     expect(Math.min(b.width, b.height), 'the drag target is large enough to grab clear of its handles').toBeGreaterThanOrEqual(MIN_TARGET_PX - 1);
+    await settle(page, `${info.project.name} ${count} apply`);
 }
 
 // The touch layout fits the page to its canvas column on load, ignoring the JSON's scale, so a
@@ -103,8 +155,13 @@ async function zoomTouchTarget(page, cdp) {
 // Sets snapping through the UI and asserts the resulting state, so a measured config is what its
 // name says. The Smart guides control does not exist in the baseline phase and is skipped there;
 // in the final phase it must exist (a locator that silently misses would measure guides off).
-async function setSnapping(page, info, { grid, guides }) {
+async function setSnapping(page, info, { name, grid, guides }, size) {
     const guidesRequired = PHASE === 'final';
+    const label = `${info.project.name} ${size} ${name}`;
+    // What the store must hold before the drag; the Smart guides preference only exists in the final phase.
+    const persisted = { snapToGrid: grid, ...(guidesRequired ? { smartGuides: guides } : {}) };
+    await clearLongTasks(page); // so the logged long tasks are the toggles and their saves, not the previous drag
+    let changed = false;
     if (isTouchProject(info)) {
         await page.getByRole('button', { name: 'More actions' }).click();
         const menu = page.getByRole('dialog', { name: 'More actions' });
@@ -112,18 +169,19 @@ async function setSnapping(page, info, { grid, guides }) {
             const item = menu.getByRole('button', { name, exact: true });
             if (required) await expect(item).toHaveCount(1);
             else if (await item.count() === 0) return;
-            if ((await item.getAttribute('aria-pressed')) !== String(want)) await item.click();
+            if ((await item.getAttribute('aria-pressed')) !== String(want)) { await item.click(); changed = true; }
             await expect(item).toHaveAttribute('aria-pressed', String(want));
         };
         await toggle('Snap to grid', grid, true);
         await toggle('Smart guides', guides, guidesRequired);
         await page.keyboard.press('Escape');
         await expect(menu).toHaveCount(0);
+        await settle(page, label, persisted, changed);
         return;
     }
     const magnet = page.getByTitle('Snap to Grid', { exact: true });
     await expect(magnet).toHaveCount(1);
-    if ((await magnet.getAttribute('class')).includes('bg-blue-600') !== grid) await magnet.click();
+    if ((await magnet.getAttribute('class')).includes('bg-blue-600') !== grid) { await magnet.click(); changed = true; }
     if (grid) await expect(magnet).toHaveClass(/bg-blue-600/);
     else await expect(magnet).not.toHaveClass(/bg-blue-600/);
     const options = page.getByTitle('Snapping options', { exact: true });
@@ -132,11 +190,12 @@ async function setSnapping(page, info, { grid, guides }) {
         await options.click();
         const sw = page.getByRole('switch', { name: 'Smart guides' });
         await expect(sw).toHaveCount(1);
-        if ((await sw.isChecked()) !== guides) await sw.click();
+        if ((await sw.isChecked()) !== guides) { await sw.click(); changed = true; }
         await expect(sw).toBeChecked({ checked: guides });
         await page.keyboard.press('Escape');
         await expect(sw).toBeHidden(); // the popover closed
     }
+    await settle(page, label, persisted, changed);
 }
 
 // Desktop: a selected element carries its pivot handle at its centre (and corner handles), so a
@@ -257,10 +316,11 @@ test('drag frame times by page size and snapping', async ({ page }, info) => {
     for (const size of SIZES) {
         await openFreshEditor(page);
         await expect(page.getByTestId('project-tab').filter({ hasText: 'Blank Project' })).toBeVisible();
+        await observeLongTasks(page);
         await applyElements(page, info, size, cdp);
         results[size] = {};
         for (const config of configs) {
-            await setSnapping(page, info, config);
+            await setSnapping(page, info, config, size);
             await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
             const handler = [], frame = [];
             for (let r = 0; r < REPEATS; r++) {
