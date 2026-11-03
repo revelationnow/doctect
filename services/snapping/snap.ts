@@ -1,4 +1,4 @@
-import { RANK_CENTRE, RANK_EDGE, RANK_SQUARE, type SnapTargets } from './targets';
+import { RANK_CENTRE, RANK_EDGE, RANK_SIZE, type SnapTargets } from './targets';
 import { type Axis, type Box, type EdgeSide, type Guide, type Point, type ResizeEdges, type SnapResult,
     type SnapSettings, hi, len, lo, other, round2 } from './types';
 import { type Accept, better, bracket, nearestIndex, type Win } from './core';
@@ -91,7 +91,8 @@ function squareCandidate(b: Box, mx: Mode | null, my: Mode | null, wx: Win | nul
     if (!mx || !my) axis = mx ? 'x' : 'y';
     else if (kept(wx) !== kept(wy)) axis = kept(wx) ? 'y' : 'x';
     else axis = Math.abs(deltaFor('x')) < Math.abs(deltaFor('y')) ? 'x' : 'y';
-    return { axis, mode: modeOf(axis)!, win: { delta: deltaFor(axis), rank: RANK_SQUARE, kind: 'square' } };
+    // The rank is never compared: a square takes its axis by tier (resolveAxis), not through better().
+    return { axis, mode: modeOf(axis)!, win: { delta: deltaFor(axis), rank: RANK_SIZE, kind: 'square' } };
 }
 
 /** The "= N" label on one side of a box: the width above it (axis x), the height beside it (axis y). */
@@ -108,12 +109,14 @@ function finish(T: SnapTargets, b: Box, wx: Win | null, wy: Win | null, mx: Mode
     const [x, w] = applied(b.x, b.w, dx, mx), [y, h] = applied(b.y, b.h, dy, my);
     const fb: Box = { x, y, w, h };
     const guides: Guide[] = [];
+    const squared = wx?.kind === 'square' || wy?.kind === 'square';
     for (const [a, w, mode] of [['x', wx, mx], ['y', wy, my]] as const) {
         if (!w || !mode) continue;
         // A grid win whose box happens to line up with a target still earns the alignment guide.
         if (w.kind === 'align' || (w.kind === 'grid' && guidesOn)) guides.push(...alignGuides(T, fb, a, mode));
         else if (w.kind === 'square') guides.push(sizeGuide('x', fb), sizeGuide('y', fb));
-        else if (w.make) guides.push(w.make(fb));
+        // A square's two labels already cover a size match on the other axis: no duplicate.
+        else if (w.make && !(w.kind === 'size' && squared)) guides.push(w.make(fb));
     }
     return { dx, dy, snappedX: !!wx, snappedY: !!wy, guides };
 }

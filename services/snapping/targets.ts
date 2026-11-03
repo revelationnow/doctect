@@ -4,10 +4,10 @@ import { type Axis, type Box, hi, len, lo, other, round2 } from './types';
 
 export const MAX_SOURCES = 20;
 export const NEIGHBOUR_SCAN = 64;
-export const RANK_EDGE = 0, RANK_CENTRE = 1, RANK_PAGE = 2, RANK_SPACING = 3, RANK_SQUARE = 4, RANK_SIZE = 5;
+export const RANK_EDGE = 0, RANK_CENTRE = 1, RANK_PAGE = 2, RANK_SPACING = 3, RANK_SIZE = 4;
 
 export interface AxisTargets { values: number[]; ranks: number[]; sources: Box[][] }
-export interface SizeTargets { values: number[]; sources: Box[][] }
+export interface SizeTargets { values: number[] }
 export interface SnapTargets {
     page: Box;
     x: AxisTargets; y: AxisTargets;
@@ -47,10 +47,9 @@ const axisEntries = (boxes: Box[], page: Box, a: Axis): Entry[] => {
     return out;
 };
 
-const sizes = (boxes: Box[], a: Axis): SizeTargets => {
-    const m = merge(boxes.filter(b => len(b, a) > 0).map(b => ({ v: len(b, a), rank: 0, box: b })));
-    return { values: m.values, sources: m.sources };
-};
+/** Sorted distinct widths or heights: the size guide labels only the resized box, so no sources. */
+const sizes = (boxes: Box[], a: Axis): SizeTargets =>
+    ({ values: [...new Set(boxes.filter(b => len(b, a) > 0).map(b => round2(len(b, a))))].sort((p, q) => p - q) });
 
 export const overlaps = (a: Box, b: Box, axis: Axis) => lo(a, axis) <= hi(b, axis) && lo(b, axis) <= hi(a, axis);
 

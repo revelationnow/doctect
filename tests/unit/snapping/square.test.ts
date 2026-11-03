@@ -49,6 +49,8 @@ describe('square snap on resize', () => {
         // Width 97 -> a's width 100 (size match, 3 away); the height (103) then needs -3 to follow, not -6.
         const r = snapResize(T(el('a', 500, 500, 100, 30)), { x: 100, y: 100, w: 97, h: 103 }, { x: 'max', y: 'max' }, guides, square);
         expect(r.dx).toBeCloseTo(3); expect(r.dy).toBeCloseTo(-3);
+        // One label per side: the size match's own label would duplicate the square's width label.
+        expect(sizeGuides(r)).toHaveLength(2);
     });
     it('beats another object\'s size whenever it is in reach, even when the size match is closer', () => {
         // Height 97: a's height 94 and the square (100) are both 3 away -> square.
