@@ -13,4 +13,4 @@ keywords: smart guides, snap, align, alignment, guides, equal spacing, distance,
 
 Hold `kbd:Alt` (`kbd:Option` on a Mac) while dragging to move freely — press it once the drag is under way, since an Alt-click on its own selects through stacked shapes. Turn guides off in the toolbar's **Snapping options** (the small arrow just past the magnet and Show Grid icons), or on a tablet or phone under **More actions → Canvas**. The setting is saved with the project.
 
-When Snap to Grid is also on, a guide within reach wins; otherwise the object lands on the grid. See [Snap to Grid](/docs/reference/snap-to-grid).
+When Snap to Grid is also on, the grid always wins: the object's edge lands on a grid line, and guides only pull it to a line that also lines up with another object or the page. A guide that would leave it off the grid is ignored. See [Snap to Grid](/docs/reference/snap-to-grid).
