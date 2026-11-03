@@ -277,6 +277,18 @@ describe('Canvas touch creation and gestures', () => {
         expect(created).toMatchObject({ type: 'rect', x: 300, y: 400, w: 120, h: 80 });
     });
 
+    it('a tap beside two nearby targets still creates the default-size rect, not a sliver', () => {
+        // a's right edge at 100 and c's left at 110: a snapped press would land on 100 and a 3 px
+        // roll on 110, a 10 x 1 sliver if the tap were judged on the snapped corners.
+        const { props, surface, container } = renderCanvas({ tool: 'rect', elements: [rect('a', 0, 0), rect('c', 110, 0)], smartGuides: true });
+        pointer(surface, 'pointerdown', 1, 104, 300);
+        pointer(surface, 'pointermove', 1, 107, 301);
+        expect(container.querySelector('[data-testid="snap-guides"]')).toBeNull();
+        pointer(surface, 'pointerup', 1, 107, 301);
+        const created = vi.mocked(props.onUpdateElements).mock.calls.at(-1)![0].find(el => el.type === 'rect' && !['a', 'c'].includes(el.id));
+        expect(created).toMatchObject({ x: 104, y: 300, w: 120, h: 80 });
+    });
+
     it('draws a text box by dragging with the text tool', () => {
         const { props, surface } = renderCanvas({ tool: 'text', elements: [] });
         pointer(surface, 'pointerdown', 1, 100, 100);

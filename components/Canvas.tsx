@@ -23,7 +23,7 @@ import { QuickFormatBar } from './canvas/QuickFormatBar';
 import { useKeepEditedElementVisible, useQuickFormatAnchor, useTouchGestureActivity } from './canvas/useQuickFormatBar';
 import { buildSnapTargets, type SnapTargets } from '../services/snapping/targets';
 import { snapMove, snapPoint, snapResize } from '../services/snapping/snap';
-import { round2, type Box, type Guide, type Point, type SnapSettings } from '../services/snapping/types';
+import { round2, type Box, type Guide, type Point, type SnapResult, type SnapSettings } from '../services/snapping/types';
 import { gridDisplayStep, pullDistancePx } from '../services/snapping/settings';
 import { computeResizedBox, rightAngleAabb, worldEdgesForHandle } from '../services/snapping/resize';
 import { elementAabb, isRightAngle, rotateVector, unionBox } from '../services/geometry/elementBox';
@@ -87,6 +87,10 @@ export const TOUCH_DEFAULT_SIZE: Record<string, { w: number; h: number }> = {
 };
 
 type InlineEditingSession = { elementId: string; owner?: CanvasInteraction; hasSavedHistory: boolean; finished?: boolean };
+
+/** A point with a snap result applied: each snapped axis is rounded to 0.01 pt, the other left raw. */
+const snappedPoint = (p: Point, r: SnapResult): Point =>
+    ({ x: r.snappedX ? round2(p.x + r.dx) : p.x, y: r.snappedY ? round2(p.y + r.dy) : p.y });
 
 // Helper: Convert degrees to radians
 const toRad = (deg: number) => deg * Math.PI / 180;
@@ -387,6 +391,9 @@ export const Canvas: React.FC<CanvasProps> = ({
     // Snapping for the current gesture: targets are built once, on the first move that snaps (a
     // click never pays for them), and dropped when the gesture ends or is cancelled.
     const snapSessionRef = useRef<{ targets: SnapTargets; startBox: Box | null } | null>(null);
+    // The raw press point of a shape being drawn: newShapeStart may be snapped once the press is a
+    // drag, while tap-ness is judged on the raw distance the pointer travelled.
+    const newShapePressRef = useRef<Point | null>(null);
     const lastPointerRef = useRef<Point | null>(null);
     const [guides, setGuides] = useState<Guide[]>(NO_GUIDES);
     const showGuides = (next: Guide[]) => setGuides(prev => (prev.length === 0 && next.length === 0 ? prev : next));
@@ -755,16 +762,13 @@ export const Canvas: React.FC<CanvasProps> = ({
 
         // 2. Creation Mode
         if (CREATION_TOOLS.includes(tool)) {
-            // A press with a drawing tool always starts a shape, so its targets are built now.
-            const settings = snapSettingsFor(e);
-            let snappedCoords = coords;
-            if (settings) {
-                const r = snapPoint(snapTargetsFor([]).targets, coords, settings);
-                snappedCoords = { x: r.snappedX ? round2(coords.x + r.dx) : coords.x, y: r.snappedY ? round2(coords.y + r.dy) : coords.y };
-                showGuides(r.guides);
-            }
-            setNewShapeStart(snappedCoords);
-            setNewShapeCurrent(snappedCoords);
+            // The press is raw and builds no targets: a tap must not snap (beside two targets, a
+            // snapped press and a snapped wobble could be 10 pt apart, a sliver of a shape). The
+            // start corner snaps on the first move past the drag threshold instead.
+            movedSinceDownRef.current = false;
+            newShapePressRef.current = coords;
+            setNewShapeStart(coords);
+            setNewShapeCurrent(coords);
             return;
         }
 
@@ -1021,17 +1025,30 @@ export const Canvas: React.FC<CanvasProps> = ({
         lastPointerRef.current = coords;
 
         if (newShapeStart) {
-            setIsConstrained(e.ctrlKey || e.metaKey || e.shiftKey);
-            const settings = snapSettingsFor(e);
-            let current = coords;
+            const constrained = e.ctrlKey || e.metaKey || e.shiftKey;
+            setIsConstrained(constrained);
+            let start = newShapeStart, current = coords;
+            // A press is a tap until the pointer travels the drag threshold from the raw press; the
+            // shape snaps only from then on, its start corner first (unless Alt is held just then).
+            if (!movedSinceDownRef.current) {
+                const press = newShapePressRef.current ?? newShapeStart;
+                if (Math.abs(coords.x - press.x) > dragThreshold || Math.abs(coords.y - press.y) > dragThreshold) {
+                    movedSinceDownRef.current = true;
+                    const settings = snapSettingsFor(e);
+                    if (settings) {
+                        start = snappedPoint(press, snapPoint(snapTargetsFor([]).targets, press, settings));
+                        setNewShapeStart(start);
+                    }
+                }
+            }
+            const settings = movedSinceDownRef.current ? snapSettingsFor(e) : null;
             if (settings) {
-                const constrained = e.ctrlKey || e.metaKey || e.shiftKey;
                 // Square/45° constraint: snap the dominant axis only; the constraint derives the other.
                 const axes = constrained
-                    ? (Math.abs(coords.x - newShapeStart.x) >= Math.abs(coords.y - newShapeStart.y) ? { x: true, y: false } : { x: false, y: true })
+                    ? (Math.abs(coords.x - start.x) >= Math.abs(coords.y - start.y) ? { x: true, y: false } : { x: false, y: true })
                     : undefined;
                 const r = snapPoint(snapTargetsFor([]).targets, coords, settings, axes);
-                current = { x: r.snappedX ? round2(coords.x + r.dx) : coords.x, y: r.snappedY ? round2(coords.y + r.dy) : coords.y };
+                current = snappedPoint(coords, r);
                 showGuides(r.guides);
             } else showGuides(NO_GUIDES);
             setNewShapeCurrent(current);
@@ -1552,15 +1569,17 @@ export const Canvas: React.FC<CanvasProps> = ({
             const constrained = isConstrained || e.ctrlKey || e.metaKey || e.shiftKey;
             const bounds = getConstrainedCreationBounds(newShapeStart, newShapeCurrent, tool, constrained);
             let { x, y, w, h, start, current } = bounds;
+            // A tap is judged on the raw press and release, never on the snapped corners: beside two
+            // targets those can sit 10 pt apart after a wobble, which is not a shape anyone drew.
+            const press = newShapePressRef.current ?? newShapeStart, release = getMouseCoords(e);
+            const isTap = Math.abs(release.x - press.x) < dragThreshold && Math.abs(release.y - press.y) < dragThreshold;
 
             // Touch: a tap with a shape tool creates a default-size element at the tap point
             // (x/y already equal it); text keeps the click-to-type path below.
-            if (isTouch && tool !== 'text' && w < MIN_DRAG_THRESHOLD && h < MIN_DRAG_THRESHOLD && TOUCH_DEFAULT_SIZE[tool]) {
+            if (isTap && isTouch && tool !== 'text' && TOUCH_DEFAULT_SIZE[tool]) {
                 ({ w, h } = TOUCH_DEFAULT_SIZE[tool]);
                 current = { x: start.x + w, y: start.y + h };
-            }
-
-            if (w < MIN_DRAG_THRESHOLD && h < MIN_DRAG_THRESHOLD) {
+            } else if (isTap) {
                 if (tool === 'text') {
                     onInteractionStart();
                     const layerId = resolveActiveLayerId(template, activeLayerId);

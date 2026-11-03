@@ -232,4 +232,31 @@ describe('canvas resize, line and drawing snapping', () => {
         const created = (onUpdateElements.mock.calls.at(-1)![0] as TemplateElement[]).find(e => e.id !== 'a')!;
         expect(created).toMatchObject({ x: 100, w: 100 });
     });
+    it('a Shift-constrained drag snaps its start and the dominant axis of its end', () => {
+        const els = [makeEl('a', { layerId: 'back', x: 100, y: 100, w: 100, h: 100 })];
+        const { outer, onUpdateElements } = renderCanvas(els, layers, { tool: 'rect', smartGuides: true });
+        fireEvent.mouseDown(outer, { clientX: 103, clientY: 300, button: 0 });
+        fireEvent.mouseMove(outer, { clientX: 198, clientY: 380, shiftKey: true }); // start 103 -> 100; x 198 -> 200 leads
+        fireEvent.mouseUp(outer, { clientX: 198, clientY: 380, shiftKey: true });
+        const created = (onUpdateElements.mock.calls.at(-1)![0] as TemplateElement[]).find(e => e.id !== 'a')!;
+        expect(created).toMatchObject({ x: 100, y: 300, w: 100, h: 100 });
+    });
+    // Two targets 10 pt apart (a's right edge at 100, c's left at 110): a snapped press lands on 100
+    // and a 3 pt wobble on 110, a 10 x 1 sliver if the tap were judged on the snapped corners.
+    const twoTargets = () => [makeEl('a', { layerId: 'back', x: 0, y: 0 }), makeEl('c', { layerId: 'back', x: 110, y: 0 })];
+    it('a click with the rect tool beside two targets is a click: no sliver, no targets, no guides', () => {
+        const { container, outer, onUpdateElements } = renderCanvas(twoTargets(), layers, { tool: 'rect', smartGuides: true });
+        fireEvent.mouseDown(outer, { clientX: 104, clientY: 300, button: 0 });
+        fireEvent.mouseMove(outer, { clientX: 107, clientY: 301 });
+        expect(guidesIn(container)).toBeNull();
+        fireEvent.mouseUp(outer, { clientX: 107, clientY: 301 });
+        expect(onUpdateElements).not.toHaveBeenCalled();
+    });
+    it('a click with the text tool places the text box at the raw click point', () => {
+        const { outer, onUpdateElements } = renderCanvas(twoTargets(), layers, { tool: 'text', smartGuides: true });
+        fireEvent.mouseDown(outer, { clientX: 104, clientY: 300, button: 0 });
+        fireEvent.mouseUp(outer, { clientX: 104, clientY: 300 });
+        const created = (onUpdateElements.mock.calls.at(-1)![0] as TemplateElement[]).find(e => e.type === 'text')!;
+        expect(created).toMatchObject({ x: 104, y: 300 });
+    });
 });
