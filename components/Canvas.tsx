@@ -23,7 +23,7 @@ import { QuickFormatBar } from './canvas/QuickFormatBar';
 import { useKeepEditedElementVisible, useQuickFormatAnchor, useTouchGestureActivity } from './canvas/useQuickFormatBar';
 import { buildSnapTargets, type SnapTargets } from '../services/snapping/targets';
 import { snapMove, snapPoint, snapResize } from '../services/snapping/snap';
-import { round2, type Box, type Guide, type Point, type SnapResult, type SnapSettings } from '../services/snapping/types';
+import { round2, sameGuides, type Box, type Guide, type Point, type SnapResult, type SnapSettings } from '../services/snapping/types';
 import { gridDisplayStep, pullDistancePx } from '../services/snapping/settings';
 import { computeResizedBox, rightAngleAabb, worldEdgesForHandle } from '../services/snapping/resize';
 import { elementAabb, isRightAngle, rotateVector, unionBox } from '../services/geometry/elementBox';
@@ -396,7 +396,9 @@ export const Canvas: React.FC<CanvasProps> = ({
     const newShapePressRef = useRef<Point | null>(null);
     const lastPointerRef = useRef<Point | null>(null);
     const [guides, setGuides] = useState<Guide[]>(NO_GUIDES);
-    const showGuides = (next: Guide[]) => setGuides(prev => (prev.length === 0 && next.length === 0 ? prev : next));
+    // An unchanged guide set keeps the previous array, so a snapped move that draws the same
+    // guides (and the non-snapping path's NO_GUIDES) does not re-render the canvas.
+    const showGuides = (next: Guide[]) => setGuides(prev => (sameGuides(prev, next) ? prev : next));
     const endSnap = () => { snapSessionRef.current = null; showGuides(NO_GUIDES); };
     const snapSettingsFor = (e: { altKey?: boolean }): SnapSettings | null =>
         (snapToGrid || smartGuides) && !e.altKey
@@ -733,15 +735,16 @@ export const Canvas: React.FC<CanvasProps> = ({
     const handleMouseDown = (e: MouseEvent) => {
         // Native caret/selection input is not a new Canvas interaction.
         if (isEditablePointerEvent(e)) return;
+        // A release the browser swallowed (a native menu opened mid-drag) leaves the previous
+        // gesture's session and guides behind: every press starts snapping afresh, including one
+        // the editor refuses an interaction for.
+        endSnap();
         if (captureInteraction) {
             interaction.current = captureInteraction();
             if (!interaction.current) return;
         }
         // Reset history save flag for new interactions
         hasSavedHistory.current = false;
-        // A release the browser swallowed (a native menu opened mid-drag) leaves the previous
-        // gesture's session and guides behind: every press starts snapping afresh.
-        endSnap();
 
         // 1. Panning Logic (Hand Tool or Spacebar or Middle Click)
         if (tool === 'hand' || e.button === 1) {
@@ -1337,9 +1340,12 @@ export const Canvas: React.FC<CanvasProps> = ({
                 movedSinceDownRef.current = true;
             }
             const settings = movedSinceDownRef.current ? snapSettingsFor(e) : null;
-            const elementForResize = isGroup ? null : elements.find(item => item.id === selectedElementIds[0]);
-            const guidesFit = isRightAngle(angle) && (isGroup || !elementForResize?.transformOrigin
-                || (elementForResize.transformOrigin.x === 0.5 && elementForResize.transformOrigin.y === 0.5));
+            // The one element of a single selection, found once per move and shared by the branches below.
+            const singleEl = isGroup ? null : elements.find(item => item.id === selectedElementIds[0]);
+            // Guides fit a box whose edges stay horizontal/vertical: a right angle, resized about its
+            // centre (a group box always is). Only decided while snapping: the off path does no more.
+            const guidesFit = !!settings && isRightAngle(angle) && (isGroup || !singleEl?.transformOrigin
+                || (singleEl.transformOrigin.x === 0.5 && singleEl.transformOrigin.y === 0.5));
             // Off a right angle the edges are not horizontal/vertical: keep the local-axis grid rounding.
             if (settings && settings.grid && !guidesFit) {
                 localDx = Math.round(localDx / settings.grid) * settings.grid;
@@ -1347,11 +1353,10 @@ export const Canvas: React.FC<CanvasProps> = ({
             }
 
             // --- Single Line Resizing ---
-            if (!isGroup && elements.find(e => e.id === selectedElementIds[0])?.type === 'line' && (resizeHandle === 'start' || resizeHandle === 'end')) {
+            if (singleEl?.type === 'line' && (resizeHandle === 'start' || resizeHandle === 'end')) {
                 // (Existing line resize logic preserved below...)
                 const elId = selectedElementIds[0];
-                const el = elements.find(e => e.id === elId);
-                if (!el) return;
+                const el = singleEl;
 
                 const { flip, rotation } = initialResizeStateRef.current;
                 const angle = rotation || 0;
@@ -1434,7 +1439,7 @@ export const Canvas: React.FC<CanvasProps> = ({
             } else {
                 // Single Element Update
                 const elId = selectedElementIds[0];
-                const el = elements.find(e => e.id === elId);
+                const el = singleEl;
                 if (!el) return;
 
                 // Update Grid Config if applicable

@@ -1,3 +1,4 @@
+import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { fireEvent } from '@testing-library/react';
 import { renderCanvas, makeEl, makeLayer } from './canvasTestUtils';
@@ -158,6 +159,34 @@ describe('canvas move snapping', () => {
         fireEvent.mouseMove(outer, { clientX: 153, clientY: 350 }); // 310 - 207 = 103 -> 100 from b's own start box
         expect(lastMoved(onUpdateElements, 'b').x).toBe(100);
     });
+    it('a press the editor refuses still clears guides left by a swallowed release', () => {
+        const editor = makeOwnerStub();
+        let refuse = false;
+        const { container, outer } = renderCanvas(scene(), layers, { selectedElementIds: ['b'], smartGuides: true,
+            captureInteraction: () => (refuse ? undefined : editor.capture()), onEditElements: vi.fn() });
+        press(container, 'b', 350, 350);
+        fireEvent.mouseMove(outer, { clientX: 153, clientY: 350 });
+        expect(guidesIn(container)).toBeTruthy();
+        refuse = true;
+        press(container, 'b', 350, 350); // the release never arrived; this press gets no interaction
+        expect(guidesIn(container)).toBeNull();
+    });
+    it('moves that keep the same guides stop re-rendering the canvas', () => {
+        const commits = vi.fn();
+        const { container, outer } = renderCanvas(scene(), layers, { selectedElementIds: ['b'], smartGuides: true },
+            canvas => <React.Profiler id="canvas" onRender={commits}>{canvas}</React.Profiler>);
+        press(container, 'b', 350, 350);
+        fireEvent.mouseMove(outer, { clientX: 153, clientY: 350 }); // b.x 103 -> 100: guides appear
+        expect(guidesIn(container)).toBeTruthy();
+        // 104 -> 100 draws the same guides, so the state keeps its array. React may still call the
+        // component once after a real update before discarding an equal result, so the count is
+        // taken after this move; every later unchanged move must then commit nothing.
+        fireEvent.mouseMove(outer, { clientX: 154, clientY: 350 });
+        const settled = commits.mock.calls.length;
+        fireEvent.mouseMove(outer, { clientX: 155, clientY: 350 });
+        fireEvent.mouseMove(outer, { clientX: 156, clientY: 350 });
+        expect(commits.mock.calls.length).toBe(settled);
+    });
     it('draws the grid at the set size, thinned when zoomed out', () => {
         const near = renderCanvas([], layers, { showGrid: true, gridSize: 10, scale: 1 });
         expect(near.container.innerHTML).toContain('background-size: 10px 10px');
@@ -188,6 +217,25 @@ describe('canvas resize, line and drawing snapping', () => {
         expect(guidesIn(container)).toBeNull();
         fireEvent.mouseMove(outer, { clientX: 308, clientY: 350 }); // past it: 308 -> 305
         expect(lastMoved(onUpdateElements, 'b').w).toBe(105);
+    });
+    it('Alt held during a handle drag resizes raw and hides guides', () => {
+        const els = [makeEl('a', { layerId: 'back', x: 205, y: 0, w: 100, h: 50 }), makeEl('b', { layerId: 'front', x: 200, y: 300 })];
+        const { container, outer, onUpdateElements } = renderCanvas(els, layers, { selectedElementIds: ['b'], smartGuides: true, snapToGrid: true });
+        fireEvent.mouseDown(handle(container, 'e'), { clientX: 300, clientY: 350, button: 0 });
+        fireEvent.mouseMove(outer, { clientX: 308, clientY: 350, altKey: true });
+        expect(lastMoved(onUpdateElements, 'b').w).toBe(108);
+        expect(guidesIn(container)).toBeNull();
+    });
+    it('a group resize snaps the group box edge and scales its members', () => {
+        // Group b + c = 200..300 x 300..400; its right edge dragged to 308 lands on a's right edge (305).
+        const els = [makeEl('a', { layerId: 'back', x: 205, y: 0, w: 100, h: 50 }), makeEl('b', { layerId: 'front', x: 200, y: 300 }),
+            makeEl('c', { layerId: 'front', x: 220, y: 320, w: 40, h: 20 })];
+        const { container, outer, onUpdateElements } = renderCanvas(els, layers, { selectedElementIds: ['b', 'c'], smartGuides: true });
+        fireEvent.mouseDown(handle(container, 'e'), { clientX: 300, clientY: 350, button: 0 });
+        fireEvent.mouseMove(outer, { clientX: 308, clientY: 350 });
+        expect(lastMoved(onUpdateElements, 'b')).toMatchObject({ x: 200, w: 105 });
+        expect(lastMoved(onUpdateElements, 'c').w).toBeCloseTo(42);
+        expect(guidesIn(container)?.querySelector('line[data-guide-kind="align"]')).toBeTruthy();
     });
     it('matches another object\'s width', () => {
         const els = [makeEl('a', { layerId: 'back', x: 0, y: 500, w: 120, h: 40 }), makeEl('b', { layerId: 'front', x: 200, y: 300 })];

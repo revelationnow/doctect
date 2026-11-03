@@ -2,8 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { ChevronDown } from 'lucide-react';
 import type { EditorScalarPreferencePatch } from '../services/document/contracts';
-import { GRID_QUICK_PICKS, MAX_GRID_SIZE, MIN_GRID_SIZE, parseGridSize } from '../services/snapping/settings';
-import { formatGuideValue } from './canvas/SnapGuides';
+import { GRID_QUICK_PICKS, MAX_GRID_SIZE, MIN_GRID_SIZE, formatGuideValue, parseGridSize } from '../services/snapping/settings';
 
 interface Props { snapToGrid: boolean; smartGuides: boolean; showGrid: boolean; gridSize: number; onChange: (patch: EditorScalarPreferencePatch) => void }
 
@@ -25,6 +24,9 @@ export const SnappingPopover: React.FC<Props> = ({ snapToGrid, smartGuides, show
     const [draft, setDraft] = useState(String(gridSize));
     const ref = useRef<HTMLDivElement>(null);
     useEffect(() => { setDraft(String(gridSize)); }, [gridSize]);
+    // Opening starts from the stored value: a draft abandoned by Escape or an outside click is not
+    // shown again (both setState calls batch into the one render that shows the dialog).
+    const toggle = () => { if (!open) setDraft(String(gridSize)); setOpen(!open); };
     // Listeners exist only while open, so a closed popover never sees the editor's keys.
     useEffect(() => {
         if (!open) return;
@@ -41,7 +43,7 @@ export const SnappingPopover: React.FC<Props> = ({ snapToGrid, smartGuides, show
     };
     return (
         <div className="relative" ref={ref}>
-            <button type="button" title="Snapping options" aria-label="Snapping options" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(o => !o)}
+            <button type="button" title="Snapping options" aria-label="Snapping options" aria-haspopup="dialog" aria-expanded={open} onClick={toggle}
                 className={clsx('flex h-7 items-center rounded px-1.5 transition-all', open ? 'bg-slate-100 text-slate-700' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100')}>
                 <ChevronDown size={10} />
             </button>

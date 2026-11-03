@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clampGridSize, gridDisplayStep, parseGridSize, pullDistancePx, snapSettingsOf } from '../../../services/snapping/settings';
+import { clampGridSize, formatGuideValue, gridDisplayStep, parseGridSize, pullDistancePx, snapSettingsOf } from '../../../services/snapping/settings';
 
 describe('snapping settings', () => {
     it('defaults grid size to 10 and guides to on', () => {
@@ -13,6 +13,10 @@ describe('snapping settings', () => {
     it('parses typed sizes, rejecting non-numbers', () => {
         expect(parseGridSize('12')).toBe(12); expect(parseGridSize(' 0.5 ')).toBe(1); expect(parseGridSize('900')).toBe(200);
         expect(parseGridSize('')).toBeNull(); expect(parseGridSize('abc')).toBeNull();
+    });
+    it('formats guide labels and grid sizes: whole points without decimals, else one decimal', () => {
+        expect(formatGuideValue(12)).toBe('12'); expect(formatGuideValue(12.34)).toBe('12.3'); expect(formatGuideValue(11.96)).toBe('12');
+        expect(formatGuideValue(2.5)).toBe('2.5');
     });
     it('pulls 6 px with a mouse and 10 px with touch', () => {
         expect(pullDistancePx('mouse')).toBe(6); expect(pullDistancePx('touch')).toBe(10);

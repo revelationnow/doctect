@@ -26,6 +26,12 @@ export const snapSettingsOf = (state: Pick<AppState, 'snapToGrid' | 'showGrid' |
     smartGuides: state.smartGuides ?? true,
 });
 
+/** A guide label or grid size in pt: whole numbers plain, anything else to one decimal. */
+export const formatGuideValue = (n: number) => {
+    const r = Math.round(n * 10) / 10;
+    return Number.isInteger(r) ? String(r) : r.toFixed(1);
+};
+
 /** How far, in screen pixels, a guide pulls: wider for a finger. */
 export const pullDistancePx = (input: 'mouse' | 'touch') => input === 'touch' ? 10 : 6;
 

@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react';
 import { vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { Canvas } from '../../components/Canvas';
@@ -34,7 +35,9 @@ const nodes: Record<string, AppNode> = {
     root: { id: 'root', parentId: null, type: 'page', title: 'Root', data: {}, children: [] },
 };
 
-export const renderCanvas = (elements: TemplateElement[], layers: Layer[], extra: Record<string, any> = {}) => {
+/** `wrap` nests the Canvas in another element, e.g. a React.Profiler counting its commits. */
+export const renderCanvas = (elements: TemplateElement[], layers: Layer[], extra: Record<string, any> = {},
+    wrap: (canvas: ReactElement) => ReactElement = canvas => canvas) => {
     const template: PageTemplate = { id: 'page', name: 'Page', width: 500, height: 700, elements, layers };
     const onUpdateElements = vi.fn();
     const onSelectElements = vi.fn();
@@ -43,7 +46,7 @@ export const renderCanvas = (elements: TemplateElement[], layers: Layer[], extra
         snapToGrid: false, showGrid: false, onUpdateElements, onSelectElements, onZoom: vi.fn(), onInteractionStart: vi.fn(),
         textLayoutSession: createTestCanvasTextLayoutSession(), ...extra,
     };
-    const utils = render(<Canvas {...props} />);
+    const utils = render(wrap(<Canvas {...props} />));
     const outer = utils.container.querySelector('.canvas-scroll-container') as HTMLElement;
     /** Re-renders the same Canvas with new elements (the template carries them too). */
     const rerenderWith = (next: TemplateElement[]) =>

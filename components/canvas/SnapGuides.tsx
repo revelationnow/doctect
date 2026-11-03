@@ -1,12 +1,8 @@
 import React from 'react';
 import type { Guide, Point } from '../../services/snapping/types';
+import { formatGuideValue } from '../../services/snapping/settings';
 
 const GUIDE_COLOR = '#f43f5e'; // rose-500: distinct from selection blue and the slate grid
-
-export const formatGuideValue = (n: number) => {
-    const r = Math.round(n * 10) / 10;
-    return Number.isInteger(r) ? String(r) : r.toFixed(1);
-};
 
 interface Props { guides: Guide[]; scale: number; touch: boolean; pointer: Point | null; width: number; height: number }
 

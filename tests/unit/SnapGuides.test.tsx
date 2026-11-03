@@ -1,7 +1,7 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
-import { SnapGuides, formatGuideValue } from '../../components/canvas/SnapGuides';
+import { SnapGuides } from '../../components/canvas/SnapGuides';
 import type { Guide } from '../../services/snapping/types';
 
 const renderGuides = (guides: Guide[], extra: Partial<React.ComponentProps<typeof SnapGuides>> = {}) =>
@@ -31,9 +31,6 @@ describe('SnapGuides', () => {
         ]);
         const labels = [...container.querySelectorAll('[data-guide-label]')].map(n => n.textContent);
         expect(labels).toEqual(expect.arrayContaining(['50', '30', '= 120']));
-    });
-    it('formats whole points without decimals', () => {
-        expect(formatGuideValue(12)).toBe('12'); expect(formatGuideValue(12.34)).toBe('12.3'); expect(formatGuideValue(11.96)).toBe('12');
     });
     it('moves a touch label away from the finger', () => {
         const guide: Guide = { kind: 'distance', axis: 'y', at: 100, from: 150, to: 200 };

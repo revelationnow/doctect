@@ -8,8 +8,7 @@ import { useBackDismiss, useOverlayLinkReplace } from './useBackDismiss';
 import { trapTab } from './focusTrap';
 import { MENU_ROW_CLASS, MenuListContext, type MenuListHost } from './MenuListContext';
 import { ALIGN_ACTIONS } from '../../services/alignElements';
-import { GRID_QUICK_PICKS, MAX_GRID_SIZE, MIN_GRID_SIZE } from '../../services/snapping/settings';
-import { formatGuideValue } from '../canvas/SnapGuides';
+import { GRID_QUICK_PICKS, MAX_GRID_SIZE, MIN_GRID_SIZE, formatGuideValue } from '../../services/snapping/settings';
 
 /** Elements that use Escape themselves (the preview-node select closes its own dropdown). */
 const EDITABLE_SELECTOR = 'input, textarea, select, [contenteditable]:not([contenteditable="false"])';

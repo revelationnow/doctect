@@ -45,6 +45,14 @@ describe('Snapping popover', () => {
         expect(change).not.toHaveBeenCalled();
         expect(input).toHaveValue(10);
     });
+    it('a typed size abandoned by Escape is not shown on reopen', () => {
+        const change = renderToolbar();
+        fireEvent.change(screen.getByLabelText('Grid size (pt)'), { target: { value: '37' } });
+        fireEvent.keyDown(document, { key: 'Escape' });
+        expect(change).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByTitle('Snapping options'));
+        expect(screen.getByLabelText('Grid size (pt)')).toHaveValue(10);
+    });
     it('quick picks set the size', () => {
         const change = renderToolbar();
         fireEvent.click(screen.getByRole('button', { name: '20 pt' }));
