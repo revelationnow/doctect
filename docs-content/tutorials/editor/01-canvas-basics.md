@@ -51,10 +51,10 @@ Ordinary scrolling — mouse wheel or trackpad, no key held — just scrolls the
 
 The **−** / **+** buttons at the right of the toolbar do the same zoom, in fixed 10-percentage-point steps, with the current value shown between them. Every new project — blank page or preset — opens at 80%.
 
-The two icons just left of the zoom controls are [**Snap to Grid**](/docs/reference/snap-to-grid) (the magnet) and **Show Grid**. They're independent, with one exception: turning Snap on always turns Show Grid on with it, so you can actually see the grid you just started snapping to. Turning Snap back off doesn't hide the grid again — it stays exactly as visible as you left it.
+Just left of the zoom controls sit [**Snap to Grid**](/docs/reference/snap-to-grid) (the magnet), **Show Grid**, and a small arrow that opens **Snapping options**. The two toggles are independent, with one exception: turning Snap on always turns Show Grid on with it, so you can actually see the grid you just started snapping to. Turning Snap back off doesn't hide the grid again — it stays exactly as visible as you left it.
 
 > [!TIP]
-> The grid you're snapping to isn't a fixed size. It's 10pt normally, 5pt once you're zoomed past 150%, and 1pt past 400% — so snap keeps getting finer as you zoom in for detail work, instead of fighting you with the same coarse grid at every zoom level.
+> The grid is **10 pt** by default; pick any size from 1 to 200 pt in **Snapping options**, and it's saved with the project. The same popover turns off [**smart guides**](/docs/reference/smart-guides) — the pink lines that pull a dragged shape into line with other shapes and the page edges. Hold `kbd:Alt` (`kbd:Option` on a Mac) while dragging to skip both.
 
 ## Selecting, moving, resizing
 
@@ -84,8 +84,8 @@ Every shortcut below (and every tool key above) is suppressed while your cursor 
 | Cut | `kbd:Ctrl+X` | Copies, then deletes, the selected element(s). |
 | Paste | `kbd:Ctrl+V` or `kbd:Ctrl+P` | Pastes the in-app clipboard, offset 20pt down and right of the original so the copy is easy to spot, and selects it. Nothing copied yet? `kbd:Ctrl+P` falls through to your browser's own Print dialog instead. |
 | Duplicate | `kbd:Ctrl+D` | The same 20pt-offset copy as Paste, in one step, for the selected element(s) — or, with no element selected, the selected node(s) in Hierarchy mode or template(s) in Templates mode. |
-| Nudge | Any arrow key | Moves the selected element(s) 1pt per press — 10pt instead if Snap to Grid is on. |
-| Nudge further | `kbd:Shift+Arrow` | Always 10pt, Snap to Grid on or off. |
+| Nudge | Any arrow key | Moves the selected element(s) 1pt per press — or, with Snap to Grid on, to the next grid line. |
+| Nudge further | `kbd:Shift+Arrow` | 10pt per press — or ten grid lines with Snap to Grid on. |
 
 Deleting an element takes no confirmation, but it's never a real risk: `kbd:Ctrl+Z` brings it straight back like any other change.
 
