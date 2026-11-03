@@ -166,3 +166,70 @@ describe('canvas move snapping', () => {
         expect(far.container.innerHTML).toContain('background-size: 20px 20px');
     });
 });
+
+// Handle drags snap only once the handle has moved past the 5 pt drag threshold (the wobble rule
+// that move snapping follows), so each drag below moves 8 pt to land 3 pt from its target.
+describe('canvas resize, line and drawing snapping', () => {
+    const handle = (c: HTMLElement, h: string) => c.querySelector(`[data-resize-handle="${h}"]`)!;
+    it('snaps a dragged edge to a nearby edge', () => {
+        const els = [makeEl('a', { layerId: 'back', x: 205, y: 0, w: 100, h: 50 }), makeEl('b', { layerId: 'front', x: 200, y: 300 })];
+        const { container, outer, onUpdateElements } = renderCanvas(els, layers, { selectedElementIds: ['b'], smartGuides: true });
+        fireEvent.mouseDown(handle(container, 'e'), { clientX: 300, clientY: 350, button: 0 });
+        fireEvent.mouseMove(outer, { clientX: 308, clientY: 350 }); // right 308 -> 305
+        expect(lastMoved(onUpdateElements, 'b')).toMatchObject({ x: 200, w: 105 });
+        expect(guidesIn(container)?.querySelector('line[data-guide-kind="align"]')).toBeTruthy();
+    });
+    it('a handle wobble below the drag threshold resizes raw and shows no guides', () => {
+        const els = [makeEl('a', { layerId: 'back', x: 205, y: 0, w: 100, h: 50 }), makeEl('b', { layerId: 'front', x: 200, y: 300 })];
+        const { container, outer, onUpdateElements } = renderCanvas(els, layers, { selectedElementIds: ['b'], smartGuides: true });
+        fireEvent.mouseDown(handle(container, 'e'), { clientX: 300, clientY: 350, button: 0 });
+        fireEvent.mouseMove(outer, { clientX: 303, clientY: 350 }); // 3 pt: inside the threshold
+        expect(lastMoved(onUpdateElements, 'b').w).toBe(103);
+        expect(guidesIn(container)).toBeNull();
+        fireEvent.mouseMove(outer, { clientX: 308, clientY: 350 }); // past it: 308 -> 305
+        expect(lastMoved(onUpdateElements, 'b').w).toBe(105);
+    });
+    it('matches another object\'s width', () => {
+        const els = [makeEl('a', { layerId: 'back', x: 0, y: 500, w: 120, h: 40 }), makeEl('b', { layerId: 'front', x: 200, y: 300 })];
+        const { container, outer, onUpdateElements } = renderCanvas(els, layers, { selectedElementIds: ['b'], smartGuides: true });
+        fireEvent.mouseDown(handle(container, 'e'), { clientX: 300, clientY: 350, button: 0 });
+        fireEvent.mouseMove(outer, { clientX: 317, clientY: 350 });
+        expect(lastMoved(onUpdateElements, 'b').w).toBe(120);
+        expect(container.querySelector('[data-guide-label]')?.textContent).toBe('= 120');
+    });
+    it('snaps a quarter-turned element through its rotated edges', () => {
+        // b: 100x40 rotated 90 -> world box x 230..270, y 270..370. a's top edge at y=375.
+        const els = [makeEl('a', { layerId: 'back', x: 0, y: 375, w: 50, h: 50 }),
+            makeEl('b', { layerId: 'front', x: 200, y: 300, w: 100, h: 40, rotation: 90 })];
+        const { container, outer, onUpdateElements } = renderCanvas(els, layers, { selectedElementIds: ['b'], smartGuides: true });
+        fireEvent.mouseDown(handle(container, 'e'), { clientX: 250, clientY: 370, button: 0 });
+        fireEvent.mouseMove(outer, { clientX: 250, clientY: 378 }); // local width 108 -> 105 (world bottom 378 -> 375)
+        expect(lastMoved(onUpdateElements, 'b').w).toBeCloseTo(105);
+        expect(guidesIn(container)?.querySelector('line[data-guide-kind="align"]')).toBeTruthy();
+    });
+    it('leaves other rotations to the old grid behaviour, with no guides', () => {
+        const els = [makeEl('a', { layerId: 'back', x: 205, y: 0, w: 100, h: 50 }), makeEl('b', { layerId: 'front', x: 200, y: 300, rotation: 30 })];
+        const { container, outer, onUpdateElements } = renderCanvas(els, layers, { selectedElementIds: ['b'], smartGuides: true });
+        fireEvent.mouseDown(handle(container, 'e'), { clientX: 300, clientY: 350, button: 0 });
+        fireEvent.mouseMove(outer, { clientX: 303, clientY: 350 });
+        expect(container.querySelector('[data-testid="snap-guides"]')).toBeNull();
+    });
+    it('snaps a dragged line end as a point', () => {
+        const els = [makeEl('a', { layerId: 'back', x: 305, y: 0, w: 50, h: 50 }),
+            makeEl('l', { layerId: 'front', type: 'line', x: 100, y: 200, w: 100, h: 0 })];
+        const { container, outer, onUpdateElements } = renderCanvas(els, layers, { selectedElementIds: ['l'], smartGuides: true });
+        fireEvent.mouseDown(handle(container, 'end'), { clientX: 200, clientY: 200, button: 0 });
+        fireEvent.mouseMove(outer, { clientX: 302, clientY: 200 }); // end x 302 -> 305
+        const line = lastMoved(onUpdateElements, 'l');
+        expect(line.x + line.w).toBeCloseTo(305);
+    });
+    it('snaps a new shape\'s corners while drawing', () => {
+        const els = [makeEl('a', { layerId: 'back', x: 100, y: 100, w: 100, h: 100 })];
+        const { container, outer, onUpdateElements } = renderCanvas(els, layers, { tool: 'rect', smartGuides: true });
+        fireEvent.mouseDown(outer, { clientX: 103, clientY: 300, button: 0 });
+        fireEvent.mouseMove(outer, { clientX: 198, clientY: 400 });
+        fireEvent.mouseUp(outer, { clientX: 198, clientY: 400 });
+        const created = (onUpdateElements.mock.calls.at(-1)![0] as TemplateElement[]).find(e => e.id !== 'a')!;
+        expect(created).toMatchObject({ x: 100, w: 100 });
+    });
+});

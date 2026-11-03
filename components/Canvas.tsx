@@ -25,7 +25,8 @@ import { buildSnapTargets, type SnapTargets } from '../services/snapping/targets
 import { snapMove, snapPoint, snapResize } from '../services/snapping/snap';
 import { round2, type Box, type Guide, type Point, type SnapSettings } from '../services/snapping/types';
 import { gridDisplayStep, pullDistancePx } from '../services/snapping/settings';
-import { elementAabb, unionBox } from '../services/geometry/elementBox';
+import { computeResizedBox, rightAngleAabb, worldEdgesForHandle } from '../services/snapping/resize';
+import { elementAabb, isRightAngle, rotateVector, unionBox } from '../services/geometry/elementBox';
 import { SnapGuides } from './canvas/SnapGuides';
 
 export interface CanvasInteraction {
@@ -540,9 +541,6 @@ export const Canvas: React.FC<CanvasProps> = ({
     };
     const getMouseCoords = (e: MouseEvent) => clientToCanvas(e.clientX, e.clientY);
 
-    // Drawing still rounds to the absolute grid here; the next task routes it through snapPoint.
-    const snapVal = (val: number) => snapToGrid ? Math.round(val / gridSize) * gridSize : val;
-
     const getElementBounds = (el: TemplateElement) => {
         if (el.type === 'grid' && el.gridConfig) {
             const { cols, gapX, gapY, sourceType, sourceId, dataSliceStart, dataSliceCount, traversalPath } = el.gridConfig;
@@ -753,7 +751,14 @@ export const Canvas: React.FC<CanvasProps> = ({
 
         // 2. Creation Mode
         if (CREATION_TOOLS.includes(tool)) {
-            const snappedCoords = { x: snapVal(coords.x), y: snapVal(coords.y) };
+            // A press with a drawing tool always starts a shape, so its targets are built now.
+            const settings = snapSettingsFor(e);
+            let snappedCoords = coords;
+            if (settings) {
+                const r = snapPoint(snapTargetsFor([]).targets, coords, settings);
+                snappedCoords = { x: r.snappedX ? round2(coords.x + r.dx) : coords.x, y: r.snappedY ? round2(coords.y + r.dy) : coords.y };
+                showGuides(r.guides);
+            }
             setNewShapeStart(snappedCoords);
             setNewShapeCurrent(snappedCoords);
             return;
@@ -1013,7 +1018,19 @@ export const Canvas: React.FC<CanvasProps> = ({
 
         if (newShapeStart) {
             setIsConstrained(e.ctrlKey || e.metaKey || e.shiftKey);
-            setNewShapeCurrent({ x: snapVal(coords.x), y: snapVal(coords.y) });
+            const settings = snapSettingsFor(e);
+            let current = coords;
+            if (settings) {
+                const constrained = e.ctrlKey || e.metaKey || e.shiftKey;
+                // Square/45° constraint: snap the dominant axis only; the constraint derives the other.
+                const axes = constrained
+                    ? (Math.abs(coords.x - newShapeStart.x) >= Math.abs(coords.y - newShapeStart.y) ? { x: true, y: false } : { x: false, y: true })
+                    : undefined;
+                const r = snapPoint(snapTargetsFor([]).targets, coords, settings, axes);
+                current = { x: r.snappedX ? round2(coords.x + r.dx) : coords.x, y: r.snappedY ? round2(coords.y + r.dy) : coords.y };
+                showGuides(r.guides);
+            } else showGuides(NO_GUIDES);
+            setNewShapeCurrent(current);
             return;
         }
 
@@ -1292,10 +1309,19 @@ export const Canvas: React.FC<CanvasProps> = ({
             let localDx = screenDx * cos - screenDy * sin;
             let localDy = screenDx * sin + screenDy * cos;
 
-            // 3. Apply Snap to local dimensions if enabled
-            if (snapToGrid) {
-                localDx = Math.round(localDx / gridSize) * gridSize;
-                localDy = Math.round(localDy / gridSize) * gridSize;
+            // 3. Snapping. As for a move, a handle move below the drag threshold is still raw (a
+            // wobble must not snap): targets are built and snapping applied only once it is a drag.
+            if (!movedSinceDownRef.current && (Math.abs(screenDx) > MIN_DRAG_THRESHOLD || Math.abs(screenDy) > MIN_DRAG_THRESHOLD)) {
+                movedSinceDownRef.current = true;
+            }
+            const settings = movedSinceDownRef.current ? snapSettingsFor(e) : null;
+            const elementForResize = isGroup ? null : elements.find(item => item.id === selectedElementIds[0]);
+            const guidesFit = isRightAngle(angle) && (isGroup || !elementForResize?.transformOrigin
+                || (elementForResize.transformOrigin.x === 0.5 && elementForResize.transformOrigin.y === 0.5));
+            // Off a right angle the edges are not horizontal/vertical: keep the local-axis grid rounding.
+            if (settings && settings.grid && !guidesFit) {
+                localDx = Math.round(localDx / settings.grid) * settings.grid;
+                localDy = Math.round(localDy / settings.grid) * settings.grid;
             }
 
             // --- Single Line Resizing ---
@@ -1317,16 +1343,14 @@ export const Canvas: React.FC<CanvasProps> = ({
                 let pStart = rotatePoint(cx + startLocal.x, cy + startLocal.y, cx, cy, angle);
                 let pEnd = rotatePoint(cx + endLocal.x, cy + endLocal.y, cx, cy, angle);
 
-                // Use Snapped Screen Deltas for Line endpoints
-                const dx = snapToGrid ? Math.round(screenDx / gridSize) * gridSize : screenDx;
-                const dy = snapToGrid ? Math.round(screenDy / gridSize) * gridSize : screenDy;
-
-                // Apply Delta
-                if (resizeHandle === 'start') {
-                    pStart.x += dx; pStart.y += dy;
-                } else {
-                    pEnd.x += dx; pEnd.y += dy;
-                }
+                const moving = resizeHandle === 'start' ? pStart : pEnd;
+                moving.x += screenDx; moving.y += screenDy;
+                if (settings) {
+                    const r = snapPoint(snapTargetsFor(selectedElementIds).targets, moving, settings);
+                    if (r.snappedX) moving.x = round2(moving.x + r.dx);
+                    if (r.snappedY) moving.y = round2(moving.y + r.dy);
+                    showGuides(r.guides);
+                } else showGuides(NO_GUIDES);
 
                 const newX = Math.min(pStart.x, pEnd.x);
                 const newY = Math.min(pStart.y, pEnd.y);
@@ -1347,50 +1371,17 @@ export const Canvas: React.FC<CanvasProps> = ({
             }
 
             // --- Standard / Group Resizing Logic ---
-            let newW = startW;
-            let newH = startH;
-            let deltaX_local = 0; // Shift of top-left corner in local space
-            let deltaY_local = 0;
-
-            const minSize = 5;
-
-            // Calculate new Dimensions and Local Origin Shift
-            if (resizeHandle.includes('e')) {
-                newW = Math.max(minSize, startW + localDx);
-            }
-            if (resizeHandle.includes('w')) {
-                newW = Math.max(minSize, startW - localDx);
-                deltaX_local = startW - newW; // If we grew left, x moves left.
-            }
-            if (resizeHandle.includes('s')) {
-                newH = Math.max(minSize, startH + localDy);
-            }
-            if (resizeHandle.includes('n')) {
-                newH = Math.max(minSize, startH - localDy);
-                deltaY_local = startH - newH;
-            }
-
-            // Calculate New World Bounds (Target)
-            // Center shift in local space
-            const midShiftX = (deltaX_local + newW / 2) - (startW / 2);
-            const midShiftY = (deltaY_local + newH / 2) - (startH / 2);
-
-            // Rotate shift to World Space (if group is rotated, though group bounds usually 0 rot)
-            const radPos = toRad(angle);
-            const cosPos = Math.cos(radPos);
-            const sinPos = Math.sin(radPos);
-
-            const worldShiftX = midShiftX * cosPos - midShiftY * sinPos;
-            const worldShiftY = midShiftX * sinPos + midShiftY * cosPos;
-
-            const oldCenterWorldX = startX + startW / 2;
-            const oldCenterWorldY = startY + startH / 2;
-
-            const newCenterWorldX = oldCenterWorldX + worldShiftX;
-            const newCenterWorldY = oldCenterWorldY + worldShiftY;
-
-            const finalX = newCenterWorldX - newW / 2;
-            const finalY = newCenterWorldY - newH / 2;
+            const startBox = { x: startX, y: startY, w: startW, h: startH, rotation: angle };
+            let resized = computeResizedBox(startBox, resizeHandle, localDx, localDy);
+            if (settings && guidesFit) {
+                const r = snapResize(snapTargetsFor(selectedElementIds).targets, rightAngleAabb(resized, angle),
+                    worldEdgesForHandle(resizeHandle, angle), settings);
+                const local = rotateVector(r.dx, r.dy, -angle);
+                resized = computeResizedBox(startBox, resizeHandle, localDx + local.x, localDy + local.y);
+                if (r.snappedX || r.snappedY) resized = { x: round2(resized.x), y: round2(resized.y), w: round2(resized.w), h: round2(resized.h) };
+                showGuides(r.guides);
+            } else showGuides(NO_GUIDES);
+            const { x: finalX, y: finalY, w: newW, h: newH } = resized;
 
             if (isGroup) {
                 // Apply proportional scaling to all elements
