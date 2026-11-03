@@ -251,7 +251,29 @@ describe('canvas resize, line and drawing snapping', () => {
         fireEvent.mouseDown(handle(container, 'e'), { clientX: 300, clientY: 350, button: 0 });
         fireEvent.mouseMove(outer, { clientX: 317, clientY: 350 });
         expect(lastMoved(onUpdateElements, 'b').w).toBe(120);
-        expect(container.querySelector('[data-guide-label]')?.textContent).toBe('= 120');
+        // One label, on the resized shape: the matched object is not labelled.
+        expect([...container.querySelectorAll('[data-guide-label]')].map(n => n.textContent)).toEqual(['= 120']);
+    });
+    // Dragging b's east handle 8 pt takes its width from 100 to 108, 4 from its height of 112.
+    const squareDrag = (type: TemplateElement['type']) => {
+        const els = [makeEl('b', { layerId: 'front', type, x: 200, y: 300, w: 100, h: 112 })];
+        const { container, outer, onUpdateElements } = renderCanvas(els, layers, { selectedElementIds: ['b'], smartGuides: true });
+        fireEvent.mouseDown(handle(container, 'e'), { clientX: 300, clientY: 356, button: 0 });
+        fireEvent.mouseMove(outer, { clientX: 308, clientY: 356 });
+        return { moved: lastMoved(onUpdateElements, 'b'), labels: [...container.querySelectorAll('[data-guide-label]')].map(n => n.textContent) };
+    };
+    it('a rect resized to near-square snaps square, labelled on both sides', () => {
+        const { moved, labels } = squareDrag('rect');
+        expect(moved).toMatchObject({ w: 112, h: 112 });
+        expect(labels).toEqual(['= 112', '= 112']);
+    });
+    it('an ellipse resized to near-circle snaps round', () => {
+        expect(squareDrag('ellipse').moved).toMatchObject({ w: 112, h: 112 });
+    });
+    it('a text box does not snap square', () => {
+        const { moved, labels } = squareDrag('text');
+        expect(moved.w).toBe(108);
+        expect(labels).toEqual([]);
     });
     it('snaps a quarter-turned element through its rotated edges', () => {
         // b: 100x40 rotated 90 -> world box x 230..270, y 270..370. a's top edge at y=375.

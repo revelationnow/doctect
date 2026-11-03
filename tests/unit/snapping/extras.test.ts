@@ -62,10 +62,10 @@ describe('equal spacing', () => {
 });
 
 describe('size matching', () => {
-    it('snaps a resized width to another object\'s width', () => {
+    it('snaps a resized width to another object\'s width and labels only the resized box', () => {
         const r = snapResize(T(el('a', 0, 300, 120, 40)), { x: 400, y: 10, w: 117, h: 50 }, { x: 'max', y: null }, s);
         expect(r.dx).toBeCloseTo(3);
-        expect(r.guides.find(g => g.kind === 'size')).toMatchObject({ axis: 'x', size: 120 });
+        expect(r.guides.find(g => g.kind === 'size')).toEqual({ kind: 'size', axis: 'x', size: 120, boxes: [{ x: 400, y: 10, w: 120, h: 50 }] });
     });
     it('moves the left edge the other way when the left edge is being dragged', () => {
         const r = snapResize(T(el('a', 0, 300, 120, 40)), { x: 403, y: 10, w: 117, h: 50 }, { x: 'min', y: null }, s);

@@ -4,7 +4,7 @@ import { type Axis, type Box, hi, len, lo, other, round2 } from './types';
 
 export const MAX_SOURCES = 20;
 export const NEIGHBOUR_SCAN = 64;
-export const RANK_EDGE = 0, RANK_CENTRE = 1, RANK_PAGE = 2, RANK_SPACING = 3, RANK_SIZE = 4;
+export const RANK_EDGE = 0, RANK_CENTRE = 1, RANK_PAGE = 2, RANK_SPACING = 3, RANK_SQUARE = 4, RANK_SIZE = 5;
 
 export interface AxisTargets { values: number[]; ranks: number[]; sources: Box[][] }
 export interface SizeTargets { values: number[]; sources: Box[][] }

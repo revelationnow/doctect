@@ -52,16 +52,17 @@ export function spacingWin(T: SnapTargets, b: Box, a: Axis, threshold: number, a
 
 /**
  * Size matching for a resize: the dimension being dragged snaps to another object's width/height. A min
- * edge moves the opposite way to the size difference; `accept` judges that edge movement.
+ * edge moves the opposite way to the size difference; `accept` judges that edge movement. The guide
+ * labels the resized box only: a label on the matched object elsewhere on the page just confused.
  */
 export function sizeWin(T: SnapTargets, b: Box, a: Axis, edge: EdgeSide, threshold: number, accept: Accept | null = null): Win | null {
-    const sizes = a === 'x' ? T.w : T.h, sign = edge === 'max' ? 1 : -1;
+    const sizes = (a === 'x' ? T.w : T.h).values, sign = edge === 'max' ? 1 : -1;
     const fits: Accept | null = accept && (diff => accept(sign * diff));
     let best: Win | null = null;
-    for (const i of bracket(sizes.values, len(b, a), threshold, fits)) {
-        const size = sizes.values[i];
+    for (const i of bracket(sizes, len(b, a), threshold, fits)) {
+        const size = sizes[i];
         const c: Win = { delta: sign * (size - len(b, a)), rank: RANK_SIZE, kind: 'size',
-            make: fb => ({ kind: 'size', axis: a, size, boxes: [fb, ...sizes.sources[i].slice(0, 3)] }) };
+            make: fb => ({ kind: 'size', axis: a, size, boxes: [fb] }) };
         if (better(c, best)) best = c;
     }
     return best;

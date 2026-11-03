@@ -1,7 +1,7 @@
 import type { Box, Guide } from './types';
 
 /** One candidate correction on one axis. `make` draws its guide once the final box is known. */
-export interface Win { delta: number; rank: number; kind: 'align' | 'spacing' | 'size' | 'grid'; make?: (finalBox: Box) => Guide }
+export interface Win { delta: number; rank: number; kind: 'align' | 'spacing' | 'size' | 'square' | 'grid'; make?: (finalBox: Box) => Guide }
 
 /** Whether a correction of `delta` may win. With Snap to grid on: only one that keeps the grid's feature on a grid line. */
 export type Accept = (delta: number) => boolean;

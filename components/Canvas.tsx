@@ -1402,7 +1402,9 @@ export const Canvas: React.FC<CanvasProps> = ({
             let resized = computeResizedBox(startBox, resizeHandle, localDx, localDy);
             if (settings && guidesFit) {
                 const r = snapResize(snapTargetsFor(selectedElementIds).targets, rightAngleAabb(resized, angle),
-                    worldEdgesForHandle(resizeHandle, angle), settings);
+                    worldEdgesForHandle(resizeHandle, angle), settings,
+                    // Only a lone rect or ellipse snaps square; text, lines, grids, SVGs and groups keep their aspect free.
+                    { square: !isGroup && (singleEl?.type === 'rect' || singleEl?.type === 'ellipse') });
                 const local = rotateVector(r.dx, r.dy, -angle);
                 resized = computeResizedBox(startBox, resizeHandle, localDx + local.x, localDy + local.y);
                 if (r.snappedX || r.snappedY) resized = { x: round2(resized.x), y: round2(resized.y), w: round2(resized.w), h: round2(resized.h) };

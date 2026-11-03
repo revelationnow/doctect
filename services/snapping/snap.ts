@@ -1,4 +1,4 @@
-import { RANK_CENTRE, RANK_EDGE, type SnapTargets } from './targets';
+import { RANK_CENTRE, RANK_EDGE, RANK_SQUARE, type SnapTargets } from './targets';
 import { type Axis, type Box, type EdgeSide, type Guide, type Point, type ResizeEdges, type SnapResult,
     type SnapSettings, hi, len, lo, other, round2 } from './types';
 import { type Accept, better, bracket, nearestIndex, type Win } from './core';
@@ -53,7 +53,7 @@ function alignGuides(T: SnapTargets, fb: Box, a: Axis, mode: Mode): Guide[] {
     return out;
 }
 
-function resolveAxis(T: SnapTargets, b: Box, a: Axis, mode: Mode, s: SnapSettings): Win | null {
+function resolveAxis(T: SnapTargets, b: Box, a: Axis, mode: Mode, s: SnapSettings, extra: Win | null = null): Win | null {
     const fs = features(b, a, mode), anchor = fs[0].v, g = s.grid;
     // With Snap to grid on the grid always wins: a guide may only pull to where the grid's own feature
     // still lands on a grid line, and the best such candidate wins by the usual priority.
@@ -64,10 +64,37 @@ function resolveAxis(T: SnapTargets, b: Box, a: Axis, mode: Mode, s: SnapSetting
         if (al && better(al, best)) best = al;
         if (mode.kind === 'move') { const sp = spacingWin(T, b, a, s.threshold, accept); if (sp && better(sp, best)) best = sp; }
         if (mode.kind === 'resize') { const sz = sizeWin(T, b, a, mode.edge, s.threshold, accept); if (sz && better(sz, best)) best = sz; }
+        // A caller's candidate (the square snap) competes like the others, under the same predicate.
+        if (extra && Math.abs(extra.delta) <= s.threshold && (!accept || accept(extra.delta)) && better(extra, best)) best = extra;
     }
     if (!best && g) best = { delta: gridLine(anchor, g) - anchor, rank: 9, kind: 'grid' };
     return best;
 }
+
+const sign = (mode: Mode) => mode.kind === 'resize' && mode.edge === 'min' ? -1 : 1;
+/** A dragged axis's length once its win is applied (a min edge shortens as its delta grows). */
+const finalLen = (b: Box, a: Axis, mode: Mode | null, w: Win | null) => len(b, a) + (mode && w ? sign(mode) * w.delta : 0);
+
+/**
+ * The square candidate for a resize: the axis to adjust, its mode, and the edge delta that makes its
+ * length equal the other axis's final length. One dragged edge adjusts its own axis; a corner keeps an
+ * axis that aligned (or took the grid) and adjusts the other, else the one needing the smaller change
+ * (ties: the height follows the width). The candidate still has to win its axis.
+ */
+function squareCandidate(b: Box, mx: Mode | null, my: Mode | null, wx: Win | null, wy: Win | null): { axis: Axis; mode: Mode; win: Win } | null {
+    if (!mx && !my) return null;
+    const modeOf = (a: Axis) => (a === 'x' ? mx : my), winOf = (a: Axis) => (a === 'x' ? wx : wy);
+    const kept = (w: Win | null) => !!w && (w.kind === 'align' || w.kind === 'grid');
+    const deltaFor = (a: Axis) => { const o = other(a); return sign(modeOf(a)!) * (finalLen(b, o, modeOf(o), winOf(o)) - len(b, a)); };
+    let axis: Axis;
+    if (!mx || !my) axis = mx ? 'x' : 'y';
+    else if (kept(wx) !== kept(wy)) axis = kept(wx) ? 'y' : 'x';
+    else axis = Math.abs(deltaFor('x')) < Math.abs(deltaFor('y')) ? 'x' : 'y';
+    return { axis, mode: modeOf(axis)!, win: { delta: deltaFor(axis), rank: RANK_SQUARE, kind: 'square' } };
+}
+
+/** The "= N" label on one side of a box: the width above it (axis x), the height beside it (axis y). */
+const sizeGuide = (axis: Axis, fb: Box): Guide => ({ kind: 'size', axis, size: round2(len(fb, axis)), boxes: [fb] });
 
 /** One axis of the final box: a resize moves only its edge (the other stays), a move or point shifts. */
 const applied = (lo: number, len: number, delta: number, mode: Mode | null): [number, number] => {
@@ -84,6 +111,7 @@ function finish(T: SnapTargets, b: Box, wx: Win | null, wy: Win | null, mx: Mode
         if (!w || !mode) continue;
         // A grid win whose box happens to line up with a target still earns the alignment guide.
         if (w.kind === 'align' || (w.kind === 'grid' && guidesOn)) guides.push(...alignGuides(T, fb, a, mode));
+        else if (w.kind === 'square') guides.push(sizeGuide('x', fb), sizeGuide('y', fb));
         else if (w.make) guides.push(w.make(fb));
     }
     return { dx, dy, snappedX: !!wx, snappedY: !!wy, guides };
@@ -96,10 +124,23 @@ export function snapMove(T: SnapTargets, box: Box, s: SnapSettings): SnapResult 
     return finish(T, box, resolveAxis(T, box, 'x', MOVE, s), resolveAxis(T, box, 'y', MOVE, s), MOVE, MOVE, s.guides);
 }
 
-export function snapResize(T: SnapTargets, box: Box, edges: ResizeEdges, s: SnapSettings): SnapResult {
+export interface ResizeOptions {
+    /** Snap square once the width and height come within the pull distance: a lone rect or ellipse. */
+    square?: boolean;
+}
+
+export function snapResize(T: SnapTargets, box: Box, edges: ResizeEdges, s: SnapSettings, opts: ResizeOptions = {}): SnapResult {
     const mx: Mode | null = edges.x ? { kind: 'resize', edge: edges.x } : null;
     const my: Mode | null = edges.y ? { kind: 'resize', edge: edges.y } : null;
-    return finish(T, box, mx && resolveAxis(T, box, 'x', mx, s), my && resolveAxis(T, box, 'y', my, s), mx, my, s.guides);
+    let wx = mx && resolveAxis(T, box, 'x', mx, s), wy = my && resolveAxis(T, box, 'y', my, s);
+    if (opts.square && s.guides) {
+        // Decided after both axes, since a corner squares to the axis that won; the candidate then
+        // competes on its own axis (closest wins, then rank; the grid predicate still applies).
+        const sq = squareCandidate(box, mx, my, wx, wy);
+        if (sq?.axis === 'x') wx = resolveAxis(T, box, 'x', sq.mode, s, sq.win);
+        else if (sq) wy = resolveAxis(T, box, 'y', sq.mode, s, sq.win);
+    }
+    return finish(T, box, wx, wy, mx, my, s.guides);
 }
 
 export function snapPoint(T: SnapTargets, p: Point, s: SnapSettings, axes = { x: true, y: true }): SnapResult {
