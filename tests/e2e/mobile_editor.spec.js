@@ -1285,3 +1285,28 @@ test('the quick format bar colour opens the touch colour picker', async ({ page 
     await expect(picker).toBeHidden();
     await expect(page).toHaveURL(/\/app$/);
 });
+
+// Smart guides and the grid size on touch (the mouse flows live in editor_snapping.spec.js). The
+// fixture leaves smartGuides unset, so the app default (on) applies; a finger's pull is 10 screen px.
+test('a finger drag lines the badge up with the box', async ({ page, browserName }) => {
+    const fingers = new Fingers(page, browserName);
+    const pane = activePane(page);
+    const target = await box(pane.locator('[data-element-id="box"]'));
+    const badge = pane.locator('[data-element-id="badge"]');
+    const start = await box(badge);
+    await page.touchscreen.tap(start.x, start.y);
+    await expect(pane.locator('[data-resize-handle="se"]')).toBeVisible();
+    // Bring the badge's left edge to 6 screen px right of the box's left edge (inside the 10 px pull).
+    await fingers.drag(start, { x: start.x - (start.b.x - target.b.x) + 6, y: start.y + 120 });
+    await expect.poll(async () => Math.abs((await badge.boundingBox()).x - target.b.x)).toBeLessThan(1);
+});
+
+test('the sheet edits smart guides and the grid size', async ({ page }) => {
+    await page.getByRole('button', { name: 'More actions' }).click();
+    const menu = overflowMenu(page);
+    await expect(menu.getByRole('button', { name: 'Smart guides' })).toHaveAttribute('aria-pressed', 'true');
+    await menu.getByRole('button', { name: '5 pt' }).click();
+    await expect(menu.getByRole('status', { name: 'Grid size' })).toHaveText('5 pt');
+    const larger = await menu.getByRole('button', { name: 'Larger grid' }).boundingBox();
+    expect(larger.height).toBeGreaterThanOrEqual(44);
+});
