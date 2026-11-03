@@ -50,17 +50,21 @@ describe('square snap on resize', () => {
         const r = snapResize(T(el('a', 500, 500, 100, 30)), { x: 100, y: 100, w: 97, h: 103 }, { x: 'max', y: 'max' }, guides, square);
         expect(r.dx).toBeCloseTo(3); expect(r.dy).toBeCloseTo(-3);
     });
-    it('outranks another object\'s size at the same distance, and loses to a closer one', () => {
+    it('beats another object\'s size whenever it is in reach, even when the size match is closer', () => {
         // Height 97: a's height 94 and the square (100) are both 3 away -> square.
         expect(snapResize(T(el('a', 500, 500, 50, 94)), { x: 100, y: 100, w: 100, h: 97 }, { x: null, y: 'max' }, guides, square).dy).toBeCloseTo(3);
-        // a's height 95 is 2 away -> the closer size match wins.
-        expect(snapResize(T(el('a', 500, 500, 50, 95)), { x: 100, y: 100, w: 100, h: 97 }, { x: null, y: 'max' }, guides, square).dy).toBeCloseTo(-2);
+        // a's height 95 is only 2 away: the square still wins, a tier above size matching.
+        const r = snapResize(T(el('a', 500, 500, 50, 95)), { x: 100, y: 100, w: 100, h: 97 }, { x: null, y: 'max' }, guides, square);
+        expect(r.dy).toBeCloseTo(3);
+        expect(sizeGuides(r)).toHaveLength(2);
     });
-    it('loses to an edge alignment at the same distance', () => {
+    it('loses to an edge alignment in reach, even a farther one', () => {
         // Bottom 197 -> b's top 194 (align) and the square (200) are both 3 away -> align.
         const r = snapResize(T(el('b', 300, 194, 50, 50)), { x: 100, y: 100, w: 100, h: 97 }, { x: null, y: 'max' }, guides, square);
         expect(r.dy).toBeCloseTo(-3);
         expect(sizeGuides(r)).toEqual([]);
+        // b's top at 192 is 5 away and the square 3: alignment still wins.
+        expect(snapResize(T(el('b', 300, 192, 50, 50)), { x: 100, y: 100, w: 100, h: 97 }, { x: null, y: 'max' }, guides, square).dy).toBeCloseTo(-5);
     });
     it('with Snap to grid on, squares only when the dragged edge stays on the grid', () => {
         // Right edge 202 -> square would be 205 (off-grid): the grid takes it to 200.

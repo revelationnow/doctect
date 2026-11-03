@@ -64,8 +64,9 @@ function resolveAxis(T: SnapTargets, b: Box, a: Axis, mode: Mode, s: SnapSetting
         if (al && better(al, best)) best = al;
         if (mode.kind === 'move') { const sp = spacingWin(T, b, a, s.threshold, accept); if (sp && better(sp, best)) best = sp; }
         if (mode.kind === 'resize') { const sz = sizeWin(T, b, a, mode.edge, s.threshold, accept); if (sz && better(sz, best)) best = sz; }
-        // A caller's candidate (the square snap) competes like the others, under the same predicate.
-        if (extra && Math.abs(extra.delta) <= s.threshold && (!accept || accept(extra.delta)) && better(extra, best)) best = extra;
+        // A caller's candidate (the square snap) is a tier of its own: in reach and under the same
+        // predicate, it beats any size match whatever the distances, and never beats an alignment.
+        if (extra && Math.abs(extra.delta) <= s.threshold && (!accept || accept(extra.delta)) && (!best || best.kind === 'size')) best = extra;
     }
     if (!best && g) best = { delta: gridLine(anchor, g) - anchor, rank: 9, kind: 'grid' };
     return best;
@@ -135,7 +136,7 @@ export function snapResize(T: SnapTargets, box: Box, edges: ResizeEdges, s: Snap
     let wx = mx && resolveAxis(T, box, 'x', mx, s), wy = my && resolveAxis(T, box, 'y', my, s);
     if (opts.square && s.guides) {
         // Decided after both axes, since a corner squares to the axis that won; the candidate then
-        // competes on its own axis (closest wins, then rank; the grid predicate still applies).
+        // takes its own axis unless an alignment holds it (the grid predicate still applies).
         const sq = squareCandidate(box, mx, my, wx, wy);
         if (sq?.axis === 'x') wx = resolveAxis(T, box, 'x', sq.mode, s, sq.win);
         else if (sq) wy = resolveAxis(T, box, 'y', sq.mode, s, sq.win);
