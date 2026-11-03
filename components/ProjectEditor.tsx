@@ -242,14 +242,14 @@ function useLegacyEditor({ projectId, projectName, initialState, isActive, onNam
                     const template = getCurrentTemplate();
                     const selected = template?.elements.filter(el => state.selectedElementIds.includes(el.id)) ?? [];
                     const box = unionBox(selected.map(el => elementAabb(el, state.nodes, state.selectedNodeId)));
-                    const horizontal = e.key === 'ArrowLeft' || e.key === 'ArrowRight';
-                    const snapping = snapSettingsOf(state);
-                    const delta = box ? nudgeDelta(e.key, e.shiftKey, horizontal ? box.x : box.y, snapping.snapToGrid ? snapping.gridSize : null) : 0;
-                    const dx = horizontal ? delta : 0;
-                    const dy = horizontal ? 0 : delta;
 
-                    // No selected element resolves to the template (box null): nothing moves, so no history entry.
-                    if (template && delta !== 0) {
+                    // Without a box no selected element resolves to the template: nothing to move, so no history entry.
+                    if (template && box) {
+                        const horizontal = e.key === 'ArrowLeft' || e.key === 'ArrowRight';
+                        const snapping = snapSettingsOf(state);
+                        const delta = nudgeDelta(e.key, e.shiftKey, horizontal ? box.x : box.y, snapping.snapToGrid ? snapping.gridSize : null);
+                        const dx = horizontal ? delta : 0;
+                        const dy = horizontal ? 0 : delta;
                         saveToHistory();
                         const newElements = template.elements.map(el => {
                             if (state.selectedElementIds.includes(el.id)) {
@@ -1544,12 +1544,14 @@ function IncrementalProjectEditor(props: CommonProjectEditorProps & { incrementa
                 const template = editor.getCurrent().document.variants[current.activeVariantId]?.templates[templateIdFor(current)];
                 const box = unionBox((template?.elements ?? []).filter(element => current.selectedElementIds.includes(element.id))
                     .map(element => elementAabb(element, current.nodes, current.selectedNodeId)));
-                const horizontal = event.key === 'ArrowLeft' || event.key === 'ArrowRight';
-                const snapping = snapSettingsOf(current);
-                const delta = box ? nudgeDelta(event.key, event.shiftKey, horizontal ? box.x : box.y, snapping.snapToGrid ? snapping.gridSize : null) : 0;
-                const dx = horizontal ? delta : 0, dy = horizontal ? 0 : delta;
-                // No selected element resolves to the template (box null): nothing moves, so no edit or history group.
-                if (delta !== 0) { patchElements(current.selectedElementIds, element => ({ x: element.x + dx, y: element.y + dy }), true); run(finishGroups); }
+                // Without a box no selected element resolves to the template: nothing to move, so no edit or history group.
+                if (box) {
+                    const horizontal = event.key === 'ArrowLeft' || event.key === 'ArrowRight';
+                    const snapping = snapSettingsOf(current);
+                    const delta = nudgeDelta(event.key, event.shiftKey, horizontal ? box.x : box.y, snapping.snapToGrid ? snapping.gridSize : null);
+                    const dx = horizontal ? delta : 0, dy = horizontal ? 0 : delta;
+                    patchElements(current.selectedElementIds, element => ({ x: element.x + dx, y: element.y + dy }), true); run(finishGroups);
+                }
             }
         };
         window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key);
