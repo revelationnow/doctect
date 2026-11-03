@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildSnapTargets } from '../../../services/snapping/targets';
 import { snapMove, snapPoint, snapResize } from '../../../services/snapping/snap';
-import type { SnapSettings } from '../../../services/snapping/types';
+import { round2, type SnapSettings } from '../../../services/snapping/types';
 import type { TemplateElement } from '../../../types';
 
 const el = (id: string, x: number, y: number, w: number, h: number) =>
@@ -9,6 +9,7 @@ const el = (id: string, x: number, y: number, w: number, h: number) =>
 const T = (...elements: TemplateElement[]) =>
     buildSnapTargets({ elements, excludeIds: [], page: { w: 500, h: 700 }, nodes: {}, currentNodeId: 'root' });
 const guides: SnapSettings = { grid: null, guides: true, threshold: 6 };
+const both: SnapSettings = { grid: 10, guides: true, threshold: 6 };
 
 describe('snapMove', () => {
     it('pulls an edge onto a nearby edge and draws the guide', () => {
@@ -37,9 +38,11 @@ describe('snapMove', () => {
         const r = snapMove(T(), { x: 33, y: 47, w: 31, h: 31 }, { grid: 10, guides: false, threshold: 6 });
         expect(r.dx).toBeCloseTo(-3); expect(r.dy).toBeCloseTo(3); expect(r.guides).toEqual([]);
     });
-    it('lets a guide in range win over the grid', () => {
-        const r = snapMove(T(el('a', 34, 300, 50, 50)), { x: 32, y: 500, w: 20, h: 20 }, { grid: 10, guides: true, threshold: 6 });
-        expect(r.dx).toBeCloseTo(2);
+    it('lets a guide in range win over the grid only when it lands on the grid', () => {
+        // a's left edge (40) is 6 from the box's (34): it wins over the nearer grid line (30).
+        expect(snapMove(T(el('a', 40, 300, 30, 30)), { x: 34, y: 500, w: 30, h: 30 }, both).dx).toBeCloseTo(6);
+        // a's left edge at 34 is 2 from the box's (32) but off the grid: the grid takes the box to 30.
+        expect(snapMove(T(el('a', 34, 300, 50, 50)), { x: 32, y: 500, w: 20, h: 20 }, both).dx).toBeCloseTo(-2);
     });
     it('draws at most two align guides per axis and spans to the nearest source', () => {
         const r = snapMove(T(el('a', 100, 100, 50, 50)), { x: 101, y: 200, w: 50, h: 50 }, guides);
@@ -50,6 +53,58 @@ describe('snapMove', () => {
     it('labels the gap to the aligned neighbour', () => {
         const r = snapMove(T(el('a', 100, 100, 50, 50)), { x: 101, y: 200, w: 50, h: 50 }, guides);
         expect(r.guides).toContainEqual({ kind: 'distance', axis: 'y', at: 100, from: 150, to: 200 });
+    });
+});
+
+// With Snap to grid on, the feature the grid snaps (a move's left/top edge, a resize's dragged edge, a
+// point) always lands on the grid: guides only pull to results that keep it there.
+describe('grid wins with Snap to grid on', () => {
+    // The user's live repro: Letter page, 10 pt grid, a 55 pt wide rect (centre 227.5, right edge 255)
+    // and the page centre (306, 396) all pull a 60 x 30 box off the grid.
+    const letter = buildSnapTargets({ elements: [el('r', 200, 300, 55, 40)], excludeIds: [], page: { w: 612, h: 792 }, nodes: {}, currentNodeId: 'root' });
+    const drop = (x: number, y: number, s = both) => { const r = snapMove(letter, { x, y, w: 60, h: 30 }, s); return [round2(x + r.dx), round2(y + r.dy)]; };
+    it('ignores the page centre when it would leave the left edge off the grid', () => {
+        expect(drop(281, 152)).toEqual([280, 150]); // centre 311 -> 306 would put the left edge at 276
+    });
+    it('falls back to the grid on both axes when every guide in reach is off-grid', () => {
+        expect(drop(250, 381)).toEqual([250, 380]); // page centres 306 / 396, r's right edge 255
+    });
+    it('keeps the plain grid result where no on-grid guide is in reach', () => {
+        expect(drop(221, 152)).toEqual([220, 150]);
+    });
+    it('still aligns to anything with Snap off', () => {
+        expect(drop(281, 152, guides)).toEqual([276, 152]);
+    });
+    it('prefers an on-grid alignment over a closer off-grid one', () => {
+        // b's left edge (36) is 2 from the box's (34) but off-grid; a (40, same width) is 6 away and on it.
+        const r = snapMove(T(el('a', 40, 300, 30, 30), el('b', 36, 500, 30, 30)), { x: 34, y: 100, w: 30, h: 30 }, both);
+        expect(r.dx).toBeCloseTo(6);
+        expect(r.guides).toContainEqual(expect.objectContaining({ kind: 'align', axis: 'x', at: 40 }));
+    });
+    it('a resized edge lands on the grid when the size match and edge in reach are off-grid', () => {
+        // Right edge 117 -> a's right edge / width 123 would end off-grid: the edge takes the grid line 120.
+        const t = T(el('a', 0, 300, 123, 40)), box = { x: 0, y: 0, w: 117, h: 50 }, edges = { x: 'max', y: null } as const;
+        const r = snapResize(t, box, edges, both);
+        expect(r.dx).toBeCloseTo(3);
+        expect(r.guides.some(g => g.kind === 'size')).toBe(false);
+        expect(snapResize(t, box, edges, guides).dx).toBeCloseTo(6); // Snap off: the guide still pulls
+    });
+    it('a size match that ends on the grid still wins over the nearest grid line', () => {
+        const r = snapResize(T(el('a', 200, 300, 120, 40)), { x: 0, y: 0, w: 114, h: 50 }, { x: 'max', y: null }, both);
+        expect(r.dx).toBeCloseTo(6); // width 114 -> 120, not the grid's 110
+        expect(r.guides.find(g => g.kind === 'size')).toMatchObject({ size: 120 });
+    });
+    it('a line end lands on the grid when the edges in reach are off-grid', () => {
+        const r = snapPoint(T(el('a', 103, 205, 50, 50)), { x: 98, y: 203 }, both);
+        expect(r).toMatchObject({ dx: 2, dy: -3 }); // 103 and 205 are in reach but off-grid: 100, 200
+    });
+    it('draws the align guide when a grid line beyond the pull distance lines up with a target', () => {
+        // 20 pt grid: the left edge (287) is 7 from c's (280), out of a guide's reach, but the grid lands there.
+        const t = T(el('c', 280, 400, 50, 50)), box = { x: 287, y: 600, w: 20, h: 20 };
+        const r = snapMove(t, box, { grid: 20, guides: true, threshold: 6 });
+        expect(r.dx).toBeCloseTo(-7);
+        expect(r.guides).toContainEqual({ kind: 'align', axis: 'x', at: 280, from: 400, to: 620 });
+        expect(snapMove(t, box, { grid: 20, guides: false, threshold: 6 }).guides).toEqual([]);
     });
 });
 

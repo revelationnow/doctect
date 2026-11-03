@@ -1,6 +1,6 @@
 import { RANK_SIZE, RANK_SPACING, nextNeighbour, previousNeighbour, type SnapTargets } from './targets';
 import { type Axis, type Box, type EdgeSide, type Guide, hi, len, lo, other } from './types';
-import { better, nearestIndex, type Win } from './core';
+import { type Accept, better, bracket, type Win } from './core';
 
 const crossMid = (p: Box, q: Box, axis: Axis) => {
     const c = other(axis);
@@ -12,13 +12,14 @@ const segment = (first: Box, second: Box, axis: Axis) => ({ at: crossMid(first, 
  * Equal spacing for a moving box: centre it between its two neighbours, or repeat the gap of its own
  * row or column: after `prev`, the gap between prev and previousNeighbour(prev); before `next`, the
  * gap between next and nextNeighbour(next). Only the neighbour chain the box sits in is consulted.
+ * `accept` (the grid's on-grid test) can veto a candidate; the others still compete.
  */
-export function spacingWin(T: SnapTargets, b: Box, a: Axis, threshold: number): Win | null {
+export function spacingWin(T: SnapTargets, b: Box, a: Axis, threshold: number, accept: Accept | null = null): Win | null {
     const prev = previousNeighbour(T, b, a, lo(b, a) + threshold);
     const next = nextNeighbour(T, b, a, hi(b, a) - threshold);
     let best: Win | null = null;
     const consider = (delta: number, make: (fb: Box) => Guide) => {
-        if (Math.abs(delta) > threshold) return;
+        if (Math.abs(delta) > threshold || (accept && !accept(delta))) return;
         const c: Win = { delta, rank: RANK_SPACING, kind: 'spacing', make };
         if (better(c, best)) best = c;
     };
@@ -49,14 +50,19 @@ export function spacingWin(T: SnapTargets, b: Box, a: Axis, threshold: number): 
     return best;
 }
 
-/** Size matching for a resize: the dimension being dragged snaps to another object's width/height. */
-export function sizeWin(T: SnapTargets, b: Box, a: Axis, edge: EdgeSide, threshold: number): Win | null {
-    const sizes = a === 'x' ? T.w : T.h;
-    const i = nearestIndex(sizes.values, len(b, a));
-    if (i < 0) return null;
-    const diff = sizes.values[i] - len(b, a);
-    if (Math.abs(diff) > threshold) return null;
-    const size = sizes.values[i];
-    return { delta: edge === 'max' ? diff : -diff, rank: RANK_SIZE, kind: 'size',
-        make: fb => ({ kind: 'size', axis: a, size, boxes: [fb, ...sizes.sources[i].slice(0, 3)] }) };
+/**
+ * Size matching for a resize: the dimension being dragged snaps to another object's width/height. A min
+ * edge moves the opposite way to the size difference; `accept` judges that edge movement.
+ */
+export function sizeWin(T: SnapTargets, b: Box, a: Axis, edge: EdgeSide, threshold: number, accept: Accept | null = null): Win | null {
+    const sizes = a === 'x' ? T.w : T.h, sign = edge === 'max' ? 1 : -1;
+    const fits: Accept | null = accept && (diff => accept(sign * diff));
+    let best: Win | null = null;
+    for (const i of bracket(sizes.values, len(b, a), threshold, fits)) {
+        const size = sizes.values[i];
+        const c: Win = { delta: sign * (size - len(b, a)), rank: RANK_SIZE, kind: 'size',
+            make: fb => ({ kind: 'size', axis: a, size, boxes: [fb, ...sizes.sources[i].slice(0, 3)] }) };
+        if (better(c, best)) best = c;
+    }
+    return best;
 }

@@ -41,6 +41,17 @@ describe('equal spacing', () => {
         expect(r.guides.find(g => g.kind === 'spacing')).toEqual({ kind: 'spacing', axis: 'x', gap: 30,
             segments: [{ at: 25, from: 170, to: 200 }, { at: 25, from: 300, to: 330 }] });
     });
+    it('with Snap to grid on, only an equal-spacing result on the grid wins', () => {
+        const g = { grid: 10, guides: true, threshold: 6 };
+        // Centred between a and b the box would sit at 175, off the 10 pt grid: the grid takes it to 170.
+        const r = snapMove(T(el('a', 0, 0, 100, 50), el('b', 300, 0, 100, 50)), { x: 173, y: 0, w: 50, h: 50 }, g);
+        expect(r.dx).toBeCloseTo(-3);
+        expect(r.guides.some(g => g.kind === 'spacing')).toBe(false);
+        // With b at 310 the centred position is 180, on the grid: it wins over the nearer grid line (170).
+        const r2 = snapMove(T(el('a', 0, 0, 100, 50), el('b', 310, 0, 100, 50)), { x: 174, y: 0, w: 50, h: 50 }, g);
+        expect(r2.dx).toBeCloseTo(6);
+        expect(r2.guides.find(g => g.kind === 'spacing')).toMatchObject({ gap: 80 });
+    });
     it('repeats a gap in a column on the y axis', () => {
         // a above b with a 30 gap; the box is 32 below b and moves up by 2.
         const r = snapMove(T(el('a', 0, 0, 50, 100), el('b', 0, 130, 50, 100)), { x: 0, y: 262, w: 50, h: 50 }, s);

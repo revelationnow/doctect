@@ -65,6 +65,14 @@ describe('canvas move snapping', () => {
         fireEvent.mouseMove(outer, { clientX: 280, clientY: 350 }); // raw x 233 -> line 240 (rounding the delta gave 243)
         expect(lastMoved(onUpdateElements, 'b').x).toBe(240);
     });
+    it('with Snap and guides on, a drag near the page centre lands on a grid line, not the off-grid centre', () => {
+        // b (50 wide) centred on the page (250) would sit at x 225, off the 10 pt grid: the grid takes it to 220.
+        const els = [makeEl('b', { layerId: 'front', x: 300, y: 300, w: 50 })];
+        const { container, outer, onUpdateElements } = renderCanvas(els, layers, { selectedElementIds: ['b'], smartGuides: true, snapToGrid: true });
+        press(container, 'b', 325, 350);
+        fireEvent.mouseMove(outer, { clientX: 248, clientY: 350 }); // raw x 223, centre 248
+        expect(lastMoved(onUpdateElements, 'b').x).toBe(220);
+    });
     it('ignores objects on hidden layers but snaps to locked ones', () => {
         for (const [over, expected] of [[{ visible: false }, 103], [{ locked: true }, 100]] as const) {
             const ls = [makeLayer('back', 0, over), makeLayer('front', 1)];
