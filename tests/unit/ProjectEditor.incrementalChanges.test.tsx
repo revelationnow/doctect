@@ -999,7 +999,7 @@ describe('real ProjectEditor incremental boundary', () => {
     expect(pasted.textPadding.top).toBe(0);
     if (snap) fireEvent.click(screen.getByTitle('Snap to Grid'));
     fireEvent.keyDown(window, { key: 'ArrowDown', shiftKey: !snap });
-    const nudge = h.onDocumentEdit.mock.calls.at(-1)![0]; expect(nudge.edit.after.variants.default.templates['page-1'].elements.at(-1).y).toBe(54);
+    const nudge = h.onDocumentEdit.mock.calls.at(-1)![0]; expect(nudge.edit.after.variants.default.templates['page-1'].elements.at(-1).y).toBe(snap ? 50 : 54);
     expect(pasted.y).toBe(44); expect(paste.selection.after.selectedElementIds).toEqual([pasted.id]);
   });
 

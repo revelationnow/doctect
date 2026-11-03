@@ -29,8 +29,9 @@ import { listPreviewNodes } from '../services/previewNodes';
 import type { TouchEditorActions } from './editor-layout/touchActions';
 import { useTouchMultiSelect } from './editor-layout/useTouchMultiSelect';
 import { alignSelectedElements, alignmentOffsets, type AlignType } from '../services/alignElements';
-import { elementAabb } from '../services/geometry/elementBox';
+import { elementAabb, unionBox } from '../services/geometry/elementBox';
 import { snapSettingsOf } from '../services/snapping/settings';
+import { isArrowKey, nudgeDelta } from '../services/snapping/nudge';
 import { PLACEHOLDER_SVG, createPlacedSvgElement } from '../services/svgEditing';
 import { DocumentSnapshot, restoreDocument, snapshotDocument } from '../services/projectDocumentSnapshot';
 import type { GeneratedProject } from '../services/validateGeneratedProject';
@@ -234,17 +235,22 @@ function useLegacyEditor({ projectId, projectName, initialState, isActive, onNam
             }
 
             // --- Arrow Key Movement ---
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+            if (isArrowKey(e.key)) {
                 if (state.selectedElementIds.length > 0) {
                     e.preventDefault();
-                    saveToHistory();
-
-                    const delta = e.shiftKey ? 10 : (state.snapToGrid ? 10 : 1);
-                    const dx = e.key === 'ArrowLeft' ? -delta : e.key === 'ArrowRight' ? delta : 0;
-                    const dy = e.key === 'ArrowUp' ? -delta : e.key === 'ArrowDown' ? delta : 0;
 
                     const template = getCurrentTemplate();
-                    if (template) {
+                    const selected = template?.elements.filter(el => state.selectedElementIds.includes(el.id)) ?? [];
+                    const box = unionBox(selected.map(el => elementAabb(el, state.nodes, state.selectedNodeId)));
+                    const horizontal = e.key === 'ArrowLeft' || e.key === 'ArrowRight';
+                    const snapping = snapSettingsOf(state);
+                    const delta = box ? nudgeDelta(e.key, e.shiftKey, horizontal ? box.x : box.y, snapping.snapToGrid ? snapping.gridSize : null) : 0;
+                    const dx = horizontal ? delta : 0;
+                    const dy = horizontal ? 0 : delta;
+
+                    // No selected element resolves to the template (box null): nothing moves, so no history entry.
+                    if (template && delta !== 0) {
+                        saveToHistory();
                         const newElements = template.elements.map(el => {
                             if (state.selectedElementIds.includes(el.id)) {
                                 return { ...el, x: el.x + dx, y: el.y + dy };
@@ -1533,11 +1539,17 @@ function IncrementalProjectEditor(props: CommonProjectEditorProps & { incrementa
                 const tools: Record<string, AppState['tool']> = { v: 'select', h: 'hand', t: 'text', r: 'rect', e: 'ellipse', y: 'triangle', l: 'line', g: 'grid' };
                 if (tools[event.key.toLowerCase()]) setSession({ tool: tools[event.key.toLowerCase()] });
             }
-            if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key) && current.selectedElementIds.length) {
-                event.preventDefault(); const delta = event.shiftKey || current.snapToGrid ? 10 : 1;
-                const dx = event.key === 'ArrowLeft' ? -delta : event.key === 'ArrowRight' ? delta : 0;
-                const dy = event.key === 'ArrowUp' ? -delta : event.key === 'ArrowDown' ? delta : 0;
-                patchElements(current.selectedElementIds, element => ({ x: element.x + dx, y: element.y + dy }), true); run(finishGroups);
+            if (isArrowKey(event.key) && current.selectedElementIds.length) {
+                event.preventDefault();
+                const template = editor.getCurrent().document.variants[current.activeVariantId]?.templates[templateIdFor(current)];
+                const box = unionBox((template?.elements ?? []).filter(element => current.selectedElementIds.includes(element.id))
+                    .map(element => elementAabb(element, current.nodes, current.selectedNodeId)));
+                const horizontal = event.key === 'ArrowLeft' || event.key === 'ArrowRight';
+                const snapping = snapSettingsOf(current);
+                const delta = box ? nudgeDelta(event.key, event.shiftKey, horizontal ? box.x : box.y, snapping.snapToGrid ? snapping.gridSize : null) : 0;
+                const dx = horizontal ? delta : 0, dy = horizontal ? 0 : delta;
+                // No selected element resolves to the template (box null): nothing moves, so no edit or history group.
+                if (delta !== 0) { patchElements(current.selectedElementIds, element => ({ x: element.x + dx, y: element.y + dy }), true); run(finishGroups); }
             }
         };
         window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key);
