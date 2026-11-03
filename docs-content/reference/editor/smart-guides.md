@@ -11,6 +11,6 @@ keywords: smart guides, snap, align, alignment, guides, equal spacing, distance,
 - **Matching sizes** — while resizing, the side you're dragging snaps to another object's width or height, labelled `= 120`.
 - **Every visible layer counts**, locked ones included, so a locked background frame is a handy alignment reference. Hidden layers never pull.
 
-Hold `kbd:Alt` (`kbd:Option` on a Mac) while dragging to move freely. Turn guides off in the toolbar's **Snapping options** (the small arrow just past the magnet and Show Grid icons), or on a tablet or phone under **More actions → Canvas**. The setting is saved with the project.
+Hold `kbd:Alt` (`kbd:Option` on a Mac) while dragging to move freely — press it once the drag is under way, since an Alt-click on its own selects through stacked shapes. Turn guides off in the toolbar's **Snapping options** (the small arrow just past the magnet and Show Grid icons), or on a tablet or phone under **More actions → Canvas**. The setting is saved with the project.
 
 When Snap to Grid is also on, a guide within reach wins; otherwise the object lands on the grid. See [Snap to Grid](/docs/reference/snap-to-grid).

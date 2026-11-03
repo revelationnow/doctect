@@ -54,7 +54,7 @@ The **−** / **+** buttons at the right of the toolbar do the same zoom, in fix
 Just left of the zoom controls sit [**Snap to Grid**](/docs/reference/snap-to-grid) (the magnet), **Show Grid**, and a small arrow that opens **Snapping options**. The two toggles are independent, with one exception: turning Snap on always turns Show Grid on with it, so you can actually see the grid you just started snapping to. Turning Snap back off doesn't hide the grid again — it stays exactly as visible as you left it.
 
 > [!TIP]
-> The grid is **10 pt** by default; pick any size from 1 to 200 pt in **Snapping options**, and it's saved with the project. The same popover turns off [**smart guides**](/docs/reference/smart-guides) — the pink lines that pull a dragged shape into line with other shapes and the page edges. Hold `kbd:Alt` (`kbd:Option` on a Mac) while dragging to skip both.
+> The grid is **10 pt** by default; pick any size from 1 to 200 pt in **Snapping options**, and it's saved with the project. Dots that would sit closer than about 8 screen pixels are drawn at a multiple of your size (at 80% zoom, 2 pt and 5 pt both show 10 pt dots), but snapping always uses the size you chose. The same popover turns off [**smart guides**](/docs/reference/smart-guides) — the pink lines that pull a dragged shape into line with other shapes and the page edges. Hold `kbd:Alt` (`kbd:Option` on a Mac) to skip both — press it once the drag is under way, since an Alt-click on its own selects through stacked shapes.
 
 ## Selecting, moving, resizing
 
