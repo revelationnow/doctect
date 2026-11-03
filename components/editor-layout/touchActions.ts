@@ -8,6 +8,9 @@ export interface TouchEditorActions {
     openJson: () => void; openGenerator: () => void; savePreset: () => void;
     importSvg: (file: File) => void; insertSvgPlaceholder: () => void;
     snapToGrid: boolean; toggleSnap: () => void; showGrid: boolean; toggleGrid: () => void;
+    smartGuides: boolean; toggleGuides: () => void;
+    /** Snap grid spacing in pt; `setGridSize` clamps to 1–200 in steps of 0.5. */
+    gridSize: number; setGridSize: (size: number) => void;
     tool: string; setTool: (tool: string) => void;
     fitToWidth: () => void;
     hasSelection: boolean; duplicateSelection: () => void; deleteSelection: () => void; clearSelection: () => void;

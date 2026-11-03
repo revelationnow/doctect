@@ -30,7 +30,7 @@ import type { TouchEditorActions } from './editor-layout/touchActions';
 import { useTouchMultiSelect } from './editor-layout/useTouchMultiSelect';
 import { alignSelectedElements, alignmentOffsets, type AlignType } from '../services/alignElements';
 import { elementAabb, unionBox } from '../services/geometry/elementBox';
-import { snapSettingsOf } from '../services/snapping/settings';
+import { clampGridSize, snapSettingsOf } from '../services/snapping/settings';
 import { isArrowKey, nudgeDelta } from '../services/snapping/nudge';
 import { PLACEHOLDER_SVG, createPlacedSvgElement } from '../services/svgEditing';
 import { DocumentSnapshot, restoreDocument, snapshotDocument } from '../services/projectDocumentSnapshot';
@@ -1822,6 +1822,11 @@ function ProjectEditorView({
         toggleSnap: () => setPreferences({ snapToGrid: !state.snapToGrid, showGrid: !state.snapToGrid ? true : state.showGrid }),
         showGrid: state.showGrid,
         toggleGrid: () => setPreferences({ showGrid: !state.showGrid }),
+        // snapPrefs applies the defaults a stored project may lack (see the Canvas props above).
+        smartGuides: snapPrefs.smartGuides,
+        toggleGuides: () => setPreferences({ smartGuides: !snapPrefs.smartGuides }),
+        gridSize: snapPrefs.gridSize,
+        setGridSize: size => setPreferences({ gridSize: clampGridSize(size) }),
         tool: state.tool,
         setTool: tool => setSession({ tool: tool as AppState['tool'] }),
         fitToWidth: touchViewport.requestFit,

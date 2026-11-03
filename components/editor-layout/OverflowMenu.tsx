@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useMemo, useRef } from 'react';
+import React, { useId, useLayoutEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
@@ -8,6 +8,8 @@ import { useBackDismiss, useOverlayLinkReplace } from './useBackDismiss';
 import { trapTab } from './focusTrap';
 import { MENU_ROW_CLASS, MenuListContext, type MenuListHost } from './MenuListContext';
 import { ALIGN_ACTIONS } from '../../services/alignElements';
+import { GRID_QUICK_PICKS, MAX_GRID_SIZE, MIN_GRID_SIZE } from '../../services/snapping/settings';
+import { formatGuideValue } from '../canvas/SnapGuides';
 
 /** Elements that use Escape themselves (the preview-node select closes its own dropdown). */
 const EDITABLE_SELECTOR = 'input, textarea, select, [contenteditable]:not([contenteditable="false"])';
@@ -22,6 +24,39 @@ const Item = ({ label, onClick, checked, disabled }: { label: string; onClick: (
         {checked !== undefined && <span aria-hidden="true" className="text-xs text-slate-400">{checked ? 'On' : 'Off'}</span>}
     </button>
 );
+
+const STEPPER_CLASS = 'min-h-11 min-w-11 rounded border border-slate-200 disabled:opacity-40';
+
+/**
+ * Grid size: − / value / + (steps of 1 pt, 0.5 below 2 pt) and the desktop popover's quick picks.
+ * Like the toggles above it, the row keeps the sheet open: repeated taps are the point of a stepper.
+ * `onChange` receives the raw step; the editor clamps it to the 1–200 range.
+ */
+const GridSizeRow = ({ value, onChange }: { value: number; onChange: (size: number) => void }) => {
+    const labelId = useId();
+    const step = (dir: -1 | 1) => onChange(value + dir * ((dir < 0 ? value <= 2 : value < 2) ? 0.5 : 1));
+    const text = `${formatGuideValue(value)} pt`;
+    return (
+        <div role="group" aria-labelledby={labelId} className="px-4 pb-2">
+            <div className="flex min-h-11 items-center justify-between gap-3 text-sm text-slate-700">
+                <span id={labelId}>Grid size</span>
+                <span className="flex items-center gap-1">
+                    <button type="button" aria-label="Smaller grid" onClick={() => step(-1)} disabled={value <= MIN_GRID_SIZE} className={STEPPER_CLASS}>−</button>
+                    <output role="status" aria-label="Grid size" className="w-14 text-center">{text}</output>
+                    <button type="button" aria-label="Larger grid" onClick={() => step(1)} disabled={value >= MAX_GRID_SIZE} className={STEPPER_CLASS}>+</button>
+                </span>
+            </div>
+            <div className="flex gap-2">
+                {GRID_QUICK_PICKS.map(size => (
+                    <button key={size} type="button" aria-pressed={value === size} onClick={() => onChange(size)}
+                        className={clsx('min-h-11 flex-1 rounded border text-sm', value === size ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600')}>
+                        {size} pt
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+};
 
 /**
  * A page link of the Navigate group, like the desktop header's: the unsaved-work blocker applies.
@@ -120,7 +155,9 @@ export function OverflowMenu({ open, onClose, actions, chrome }: {
                 </Group>
                 <Group title="Canvas">
                     <Item label="Snap to grid" onClick={actions.toggleSnap} checked={actions.snapToGrid} />
+                    <Item label="Smart guides" onClick={actions.toggleGuides} checked={actions.smartGuides} />
                     <Item label="Show grid" onClick={actions.toggleGrid} checked={actions.showGrid} />
+                    <GridSizeRow value={actions.gridSize} onChange={actions.setGridSize} />
                     {actions.preview && (
                         <label className="flex min-h-11 items-center justify-between gap-3 px-4 text-sm text-slate-700">
                             <span>Preview node</span>

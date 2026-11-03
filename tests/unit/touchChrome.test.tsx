@@ -227,6 +227,45 @@ describe('OverflowMenu', () => {
         expect(screen.getByRole('button', { name: 'Snap to grid' }).getAttribute('aria-pressed')).toBe('false');
     });
 
+    it('toggles smart guides and steps or picks the grid size without closing', () => {
+        const onClose = vi.fn();
+        const actions = makeActions({ smartGuides: false, gridSize: 10 });
+        render(<OverflowMenu open onClose={onClose} actions={actions} chrome={null} />);
+        const guides = screen.getByRole('button', { name: 'Smart guides' });
+        expect(guides.getAttribute('aria-pressed')).toBe('false');
+        fireEvent.click(guides);
+        expect(actions.toggleGuides).toHaveBeenCalledTimes(1);
+        expect(screen.getByRole('status', { name: 'Grid size' })).toHaveTextContent('10 pt');
+        fireEvent.click(screen.getByRole('button', { name: 'Larger grid' }));
+        expect(actions.setGridSize).toHaveBeenLastCalledWith(11);
+        fireEvent.click(screen.getByRole('button', { name: 'Smaller grid' }));
+        expect(actions.setGridSize).toHaveBeenLastCalledWith(9);
+        fireEvent.click(screen.getByRole('button', { name: '20 pt' }));
+        expect(actions.setGridSize).toHaveBeenLastCalledWith(20);
+        expect(screen.getByRole('button', { name: '10 pt' }).getAttribute('aria-pressed')).toBe('true');
+        expect(screen.getByRole('button', { name: '20 pt' }).getAttribute('aria-pressed')).toBe('false');
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('steps the grid size by half a point below 2 pt and stops at 1 and 200', () => {
+        const stepsFrom = (gridSize: number) => {
+            const actions = makeActions({ gridSize });
+            const { unmount } = render(<OverflowMenu open onClose={vi.fn()} actions={actions} chrome={null} />);
+            const smaller = screen.getByRole('button', { name: 'Smaller grid' }) as HTMLButtonElement;
+            const larger = screen.getByRole('button', { name: 'Larger grid' }) as HTMLButtonElement;
+            const text = screen.getByRole('status', { name: 'Grid size' }).textContent;
+            fireEvent.click(smaller);
+            fireEvent.click(larger);
+            const sizes = (actions.setGridSize as ReturnType<typeof vi.fn>).mock.calls.map(([size]) => size);
+            unmount();
+            return { text, disabled: [smaller.disabled, larger.disabled], sizes };
+        };
+        expect(stepsFrom(2)).toEqual({ text: '2 pt', disabled: [false, false], sizes: [1.5, 3] });
+        expect(stepsFrom(1.5)).toEqual({ text: '1.5 pt', disabled: [false, false], sizes: [1, 2] });
+        expect(stepsFrom(1)).toEqual({ text: '1 pt', disabled: [true, false], sizes: [1.5] });
+        expect(stepsFrom(200)).toEqual({ text: '200 pt', disabled: [false, true], sizes: [199] });
+    });
+
     it('renders its overlay in a portal on document.body so bar stacking contexts cannot trap it', () => {
         render(<header><OverflowMenu open onClose={vi.fn()} actions={makeActions()} chrome={null} /></header>);
         const dialog = screen.getByRole('dialog', { name: 'More actions' });

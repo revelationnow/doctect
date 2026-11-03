@@ -224,6 +224,24 @@ describe('phone layout wired through the legacy editor', () => {
         expect(canvasProps.snapToGrid).toBe(true);
     });
 
+    it('mirrors the desktop snapping options: smart guides and the grid size', () => {
+        renderLegacy('phone');
+        expect(canvasProps.smartGuides).toBe(true);
+        expect(canvasProps.gridSize).toBe(10);
+        openOverflow();
+        fireEvent.click(screen.getByRole('button', { name: 'Smart guides' }));
+        expect(canvasProps.smartGuides).toBe(false);
+        expect(screen.getByRole('button', { name: 'Smart guides' })).toHaveAttribute('aria-pressed', 'false');
+        fireEvent.click(screen.getByRole('button', { name: 'Larger grid' }));
+        expect(canvasProps.gridSize).toBe(11);
+        expect(screen.getByRole('status', { name: 'Grid size' })).toHaveTextContent('11 pt');
+        fireEvent.click(screen.getByRole('button', { name: '5 pt' }));
+        expect(canvasProps.gridSize).toBe(5);
+        expect(screen.getByRole('button', { name: '5 pt' })).toHaveAttribute('aria-pressed', 'true');
+        // The sheet stays open through all of it, like the toggles above the row.
+        expect(screen.getByRole('dialog', { name: 'More actions' })).toBeTruthy();
+    });
+
     it('toggles greyscale preview and opens the JSON, generator and preset dialogs from the overflow menu', () => {
         renderLegacy('phone');
         openOverflow();
@@ -406,5 +424,21 @@ describe('phone layout wired through the incremental editor', () => {
         expect(canvasProps.snapToGrid).toBe(true);
         expect(canvasProps.showGrid).toBe(true);
         expect(onPreferencesChange).toHaveBeenLastCalledWith({ snapToGrid: true, showGrid: true }, expect.anything());
+    });
+
+    it('edits smart guides and the grid size from the sheet', () => {
+        const { onPreferencesChange } = renderIncremental('tablet');
+        openOverflow();
+        expect(screen.getByRole('button', { name: 'Smart guides' })).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByRole('status', { name: 'Grid size' })).toHaveTextContent('10 pt');
+        fireEvent.click(screen.getByRole('button', { name: 'Smart guides' }));
+        expect(onPreferencesChange).toHaveBeenLastCalledWith({ smartGuides: false }, expect.anything());
+        fireEvent.click(screen.getByRole('button', { name: 'Larger grid' }));
+        expect(onPreferencesChange).toHaveBeenLastCalledWith({ gridSize: 11 }, expect.anything());
+        fireEvent.click(screen.getByRole('button', { name: '2 pt' }));
+        expect(onPreferencesChange).toHaveBeenLastCalledWith({ gridSize: 2 }, expect.anything());
+        expect(canvasProps.gridSize).toBe(2);
+        fireEvent.click(screen.getByRole('button', { name: 'Smaller grid' }));
+        expect(onPreferencesChange).toHaveBeenLastCalledWith({ gridSize: 1.5 }, expect.anything());
     });
 });
