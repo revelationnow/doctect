@@ -4,6 +4,8 @@ import clsx from 'clsx';
 import { AppState, AppNode } from '../types';
 import type { EditorScalarPreferencePatch } from '../services/document/contracts';
 import { alignSelectedElements, type AlignType } from '../services/alignElements';
+import { snapSettingsOf } from '../services/snapping/settings';
+import { SnappingPopover } from './SnappingPopover';
 
 export interface ToolbarActions {
     onToolChange(tool: AppState['tool']): void;
@@ -153,6 +155,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({ state, setState, a
             <div className="flex bg-white border border-slate-200 p-0.5 rounded gap-0.5 shadow-sm">
                 <ToolButton active={state.snapToGrid} icon={Magnet} onClick={() => actions ? preferences({ snapToGrid: !state.snapToGrid, showGrid: !state.snapToGrid ? true : state.showGrid }) : setState(s => ({ ...s, snapToGrid: !s.snapToGrid, showGrid: !s.snapToGrid ? true : s.showGrid }))} title="Snap to Grid" />
                 <ToolButton active={state.showGrid} icon={GripVertical} onClick={() => actions ? preferences({ showGrid: !state.showGrid }) : setState(s => ({ ...s, showGrid: !s.showGrid }))} title="Show Grid" />
+                <SnappingPopover {...snapSettingsOf(state)} onChange={preferences} />
             </div>
             <div className="h-6 w-px bg-slate-300 mx-1"></div>
             <div className="flex items-center gap-1">

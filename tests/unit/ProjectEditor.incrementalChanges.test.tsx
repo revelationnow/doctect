@@ -503,6 +503,16 @@ describe('real ProjectEditor incremental boundary', () => {
     expect(h.onStateChange).not.toHaveBeenCalled();
   });
 
+  it('G2 routes the snapping options to the preferences lane', () => {
+    const h = renderIncrementalEditor();
+    fireEvent.click(screen.getByTitle('Snapping options'));
+    fireEvent.click(screen.getByRole('button', { name: '5 pt' }));
+    expect(h.onPreferencesChange).toHaveBeenLastCalledWith({ gridSize: 5 }, expect.any(Object));
+    fireEvent.click(screen.getByRole('switch', { name: 'Smart guides' }));
+    expect(h.onPreferencesChange).toHaveBeenLastCalledWith({ smartGuides: false }, expect.any(Object));
+    expect(h.onDocumentEdit).not.toHaveBeenCalled();
+  });
+
   it.each(['Select Tool (V)', 'Pan Tool (H)', 'Text Box (T)', 'Rectangle (R)', 'Circle/Ellipse (E)', 'Triangle (Y)', 'Line (L)', 'Data Grid (G)'])('G2 %s button and shortcut remain session-only', title => {
     const h = renderIncrementalEditor();
     fireEvent.click(screen.getByTitle(title));
