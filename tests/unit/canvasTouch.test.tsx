@@ -277,6 +277,13 @@ describe('Canvas touch creation and gestures', () => {
         expect(created).toMatchObject({ type: 'rect', x: 300, y: 400, w: 120, h: 80 });
     });
 
+    it('a tap with the rect tool lands on the grid with Snap on', () => {
+        const { props, surface } = renderCanvas({ tool: 'rect', elements: [], snapToGrid: true });
+        tap(surface, 1, 303, 407);
+        const created = vi.mocked(props.onUpdateElements).mock.calls.at(-1)![0][0];
+        expect(created).toMatchObject({ type: 'rect', x: 300, y: 410, w: 120, h: 80 });
+    });
+
     it('a tap beside two nearby targets still creates the default-size rect, not a sliver', () => {
         // a's right edge at 100 and c's left at 110: a snapped press would land on 100 and a 3 px
         // roll on 110, a 10 x 1 sliver if the tap were judged on the snapped corners.

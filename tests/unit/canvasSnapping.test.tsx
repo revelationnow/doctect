@@ -308,11 +308,27 @@ describe('canvas resize, line and drawing snapping', () => {
         fireEvent.mouseUp(outer, { clientX: 107, clientY: 301 });
         expect(onUpdateElements).not.toHaveBeenCalled();
     });
-    it('a click with the text tool places the text box at the raw click point', () => {
-        const { outer, onUpdateElements } = renderCanvas(twoTargets(), layers, { tool: 'text', smartGuides: true });
-        fireEvent.mouseDown(outer, { clientX: 104, clientY: 300, button: 0 });
-        fireEvent.mouseUp(outer, { clientX: 104, clientY: 300 });
-        const created = (onUpdateElements.mock.calls.at(-1)![0] as TemplateElement[]).find(e => e.type === 'text')!;
-        expect(created).toMatchObject({ x: 104, y: 300 });
+    // A click builds no targets, so guides never move it; only the grid does, when Snap is on.
+    const textClick = (extra: Record<string, unknown>, x: number, y: number, mods = {}) => {
+        const { outer, onUpdateElements } = renderCanvas(twoTargets(), layers, { tool: 'text', smartGuides: true, ...extra });
+        fireEvent.mouseDown(outer, { clientX: x, clientY: y, button: 0, ...mods });
+        fireEvent.mouseUp(outer, { clientX: x, clientY: y, ...mods });
+        return (onUpdateElements.mock.calls.at(-1)![0] as TemplateElement[]).find(e => e.type === 'text')!;
+    };
+    it('a click with the text tool places the text box at the raw click point with Snap off', () => {
+        expect(textClick({}, 104, 300)).toMatchObject({ x: 104, y: 300 });
+    });
+    it('a click with the text tool lands on the grid with Snap on', () => {
+        expect(textClick({ snapToGrid: true }, 103, 107)).toMatchObject({ x: 100, y: 110 });
+    });
+    it('an Alt-click with the text tool stays raw with Snap on', () => {
+        expect(textClick({ snapToGrid: true }, 103, 107, { altKey: true })).toMatchObject({ x: 103, y: 107 });
+    });
+    it('a release exactly at the drag threshold is still a click, not a sliver', () => {
+        const { outer, onUpdateElements } = renderCanvas(twoTargets(), layers, { tool: 'rect', smartGuides: true });
+        fireEvent.mouseDown(outer, { clientX: 100, clientY: 300, button: 0 });
+        fireEvent.mouseMove(outer, { clientX: 105, clientY: 300 }); // 5 pt: the threshold itself
+        fireEvent.mouseUp(outer, { clientX: 105, clientY: 300 });
+        expect(onUpdateElements).not.toHaveBeenCalled();
     });
 });

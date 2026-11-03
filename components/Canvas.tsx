@@ -22,7 +22,7 @@ import { useTouchFit, TOUCH_CANVAS_GUTTER, MOUSE_CANVAS_GUTTER } from '../hooks/
 import { QuickFormatBar } from './canvas/QuickFormatBar';
 import { useKeepEditedElementVisible, useQuickFormatAnchor, useTouchGestureActivity } from './canvas/useQuickFormatBar';
 import { buildSnapTargets, type SnapTargets } from '../services/snapping/targets';
-import { snapMove, snapPoint, snapResize } from '../services/snapping/snap';
+import { gridLine, snapMove, snapPoint, snapResize } from '../services/snapping/snap';
 import { round2, sameGuides, type Box, type Guide, type Point, type SnapResult, type SnapSettings } from '../services/snapping/types';
 import { gridDisplayStep, pullDistancePx } from '../services/snapping/settings';
 import { computeResizedBox, rightAngleAabb, worldEdgesForHandle } from '../services/snapping/resize';
@@ -1577,12 +1577,17 @@ export const Canvas: React.FC<CanvasProps> = ({
             // A tap is judged on the raw press and release, never on the snapped corners: beside two
             // targets those can sit 10 pt apart after a wobble, which is not a shape anyone drew.
             const press = newShapePressRef.current ?? newShapeStart, release = getMouseCoords(e);
-            const isTap = Math.abs(release.x - press.x) < dragThreshold && Math.abs(release.y - press.y) < dragThreshold;
+            // Up to and including the threshold is a tap, matching the move gate (which snaps only
+            // past it) and the gesture hook's tap slop, so no release leaves a raw sliver.
+            const isTap = Math.abs(release.x - press.x) <= dragThreshold && Math.abs(release.y - press.y) <= dragThreshold;
+            // A tap never builds targets, so guides cannot move it; with Snap on it lands on the grid.
+            const tapAt = isTap && snapToGrid && !e.altKey ? { x: gridLine(press.x, gridSize), y: gridLine(press.y, gridSize) } : press;
 
-            // Touch: a tap with a shape tool creates a default-size element at the tap point
-            // (x/y already equal it); text keeps the click-to-type path below.
+            // Touch: a tap with a shape tool creates a default-size element at the tap point;
+            // text keeps the click-to-type path below.
             if (isTap && isTouch && tool !== 'text' && TOUCH_DEFAULT_SIZE[tool]) {
                 ({ w, h } = TOUCH_DEFAULT_SIZE[tool]);
+                ({ x, y } = tapAt); start = tapAt;
                 current = { x: start.x + w, y: start.y + h };
             } else if (isTap) {
                 if (tool === 'text') {
@@ -1592,8 +1597,8 @@ export const Canvas: React.FC<CanvasProps> = ({
                     const newEl: TemplateElement = {
                         id: Math.random().toString(36).substr(2, 9),
                         type: 'text',
-                        x: newShapeStart.x,
-                        y: newShapeStart.y,
+                        x: tapAt.x,
+                        y: tapAt.y,
                         w: Math.max(10, fontSize * 1), // Width for ~1 char
                         h: Math.max(20, fontSize * 1.5), // Height based on line height
                         rotation: 0,
