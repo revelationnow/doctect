@@ -38,25 +38,15 @@ export const renderCanvas = (elements: TemplateElement[], layers: Layer[], extra
     const template: PageTemplate = { id: 'page', name: 'Page', width: 500, height: 700, elements, layers };
     const onUpdateElements = vi.fn();
     const onSelectElements = vi.fn();
-    const utils = render(
-        <Canvas
-            template={template}
-            elements={elements}
-            selectedElementIds={[]}
-            scale={1}
-            tool="select"
-            nodes={nodes}
-            currentNodeId="root"
-            snapToGrid={false}
-            showGrid={false}
-            onUpdateElements={onUpdateElements}
-            onSelectElements={onSelectElements}
-            onZoom={vi.fn()}
-            onInteractionStart={vi.fn()}
-            textLayoutSession={createTestCanvasTextLayoutSession()}
-            {...extra}
-        />
-    );
+    const props = {
+        template, elements, selectedElementIds: [] as string[], scale: 1, tool: 'select', nodes, currentNodeId: 'root',
+        snapToGrid: false, showGrid: false, onUpdateElements, onSelectElements, onZoom: vi.fn(), onInteractionStart: vi.fn(),
+        textLayoutSession: createTestCanvasTextLayoutSession(), ...extra,
+    };
+    const utils = render(<Canvas {...props} />);
     const outer = utils.container.querySelector('.canvas-scroll-container') as HTMLElement;
-    return { ...utils, outer, onUpdateElements, onSelectElements };
+    /** Re-renders the same Canvas with new elements (the template carries them too). */
+    const rerenderWith = (next: TemplateElement[]) =>
+        utils.rerender(<Canvas {...props} elements={next} template={{ ...template, elements: next }} />);
+    return { ...utils, outer, onUpdateElements, onSelectElements, rerenderWith };
 };

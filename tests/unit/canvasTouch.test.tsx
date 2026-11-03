@@ -965,3 +965,21 @@ describe('touch snapping', () => {
         expect(container.querySelector('[data-testid="snap-guides"]')).toBeNull();
     });
 });
+
+describe('touch snapping below the drag threshold', () => {
+    it('a finger wobble under the threshold moves raw with no guides; a real drag snaps', () => {
+        // b at 158: its right edge is 8 pt from the page centre (250). A 3 px wobble to 155 would be
+        // pulled to 150 if snapping ran; a 30 px drag to 128 pulls its left edge onto a's right (120).
+        const { container, surface, elementNode, props } = renderCanvas({
+            elements: [rect('a', 20, 20), rect('b', 158, 200)], selectedElementIds: ['b'], smartGuides: true,
+        });
+        const lastB = () => (props.onUpdateElements as any).mock.calls.at(-1)[0].find((e: any) => e.id === 'b');
+        pointer(elementNode('b'), 'pointerdown', 1, 208, 230);
+        pointer(surface, 'pointermove', 1, 205, 230);
+        expect(lastB().x).toBe(155);
+        expect(container.querySelector('[data-testid="snap-guides"]')).toBeNull();
+        pointer(surface, 'pointermove', 1, 178, 230);
+        expect(lastB().x).toBe(120);
+        expect(container.querySelector('[data-testid="snap-guides"]')).toBeTruthy();
+    });
+});

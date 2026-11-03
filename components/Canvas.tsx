@@ -74,6 +74,8 @@ interface CanvasProps {
 }
 
 const MIN_DRAG_THRESHOLD = 5;
+/** Shared empty guide list: the non-snapping move path and endSnap pass it so no move allocates. */
+const NO_GUIDES: Guide[] = [];
 const CREATION_TOOLS = ['rect', 'ellipse', 'triangle', 'text', 'grid', 'line'];
 export { TOUCH_CANVAS_GUTTER };
 /** Marks the page's content wrapper inside the scroll container; the phone touch CSS pads it for the tool pill. */
@@ -381,9 +383,9 @@ export const Canvas: React.FC<CanvasProps> = ({
     // click never pays for them), and dropped when the gesture ends or is cancelled.
     const snapSessionRef = useRef<{ targets: SnapTargets; startBox: Box | null } | null>(null);
     const lastPointerRef = useRef<Point | null>(null);
-    const [guides, setGuides] = useState<Guide[]>([]);
+    const [guides, setGuides] = useState<Guide[]>(NO_GUIDES);
     const showGuides = (next: Guide[]) => setGuides(prev => (prev.length === 0 && next.length === 0 ? prev : next));
-    const endSnap = () => { snapSessionRef.current = null; showGuides([]); };
+    const endSnap = () => { snapSessionRef.current = null; showGuides(NO_GUIDES); };
     const snapSettingsFor = (e: { altKey?: boolean }): SnapSettings | null =>
         (snapToGrid || smartGuides) && !e.altKey
             ? { grid: snapToGrid ? gridSize : null, guides: smartGuides, threshold: pullDistancePx(inputMode) / scale }
@@ -728,6 +730,9 @@ export const Canvas: React.FC<CanvasProps> = ({
         }
         // Reset history save flag for new interactions
         hasSavedHistory.current = false;
+        // A release the browser swallowed (a native menu opened mid-drag) leaves the previous
+        // gesture's session and guides behind: every press starts snapping afresh.
+        endSnap();
 
         // 1. Panning Logic (Hand Tool or Spacebar or Middle Click)
         if (tool === 'hand' || e.button === 1) {
@@ -1234,9 +1239,11 @@ export const Canvas: React.FC<CanvasProps> = ({
             }
 
             let dx = rawDx, dy = rawDy, snappedX = false, snappedY = false;
-            const settings = snapSettingsFor(e);
+            // Below the drag threshold a touch move is still raw (a wobble must not snap): targets
+            // are built and snapping applied only once the press has become a drag.
+            const settings = movedSinceDownRef.current ? snapSettingsFor(e) : null;
             if (settings) {
-                const session = snapTargetsFor(Object.keys(startPositions));
+                const session = snapSessionRef.current ?? snapTargetsFor(Object.keys(startPositions));
                 session.startBox ??= unionBox(dragged.filter(el => startPositions[el.id])
                     .map(el => elementAabb({ ...el, ...startPositions[el.id] }, nodes, currentNodeId)));
                 if (session.startBox) {
@@ -1244,7 +1251,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                     dx += r.dx; dy += r.dy; snappedX = r.snappedX; snappedY = r.snappedY;
                     showGuides(r.guides);
                 }
-            } else showGuides([]);
+            } else showGuides(NO_GUIDES);
 
             const updatedElements = dragged.map(el => {
                 const start = startPositions[el.id];
@@ -1473,10 +1480,11 @@ export const Canvas: React.FC<CanvasProps> = ({
 
     const handleMouseUp = (e: MouseEvent) => {
         const owner = interaction.current;
+        // The gesture's snapping ends with its release even when another owner has superseded it.
+        endSnap();
         if (captureInteraction && !owner?.isCurrent()) return;
         // Keep this event's owner across synchronous consumer reentrancy.
         const finishInteraction = captureInteraction ? () => owner?.end() : onInteractionEnd;
-        endSnap();
         if (isRotating && selectedElementIds.length > 1 && initialGroupBoundsRef.current) {
             // Initial relative rotation was 0 for group, so we add to the group's starting rotation
             // Use delta from initial interaction start

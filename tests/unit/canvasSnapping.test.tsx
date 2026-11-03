@@ -1,7 +1,27 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { fireEvent } from '@testing-library/react';
 import { renderCanvas, makeEl, makeLayer } from './canvasTestUtils';
+import type { CanvasInteraction } from '../../components/Canvas';
 import type { TemplateElement } from '../../types';
+
+// Minimal stand-in for the editor's CanvasInteraction: each capture supersedes the previous owner,
+// whose later edits are dropped. `patches` keeps the updates the current owner accepted.
+const makeOwnerStub = () => {
+    let active: object | null = null;
+    const patches: ReadonlyArray<{ readonly id: string; readonly patch: Partial<TemplateElement> }>[] = [];
+    const capture = (): CanvasInteraction => {
+        const token = {}; active = token;
+        const isCurrent = () => active === token;
+        return {
+            isCurrent, start() {}, select() {},
+            edit(intent) { if (isCurrent() && intent.type === 'patch') patches.push(intent.updates); },
+            handoffToInline() { return isCurrent() ? capture() : undefined; },
+            end() { if (isCurrent()) active = null; },
+            cancel() { if (isCurrent()) active = null; },
+        };
+    };
+    return { capture, patches };
+};
 
 // jsdom: client px == page units * scale (bounding rect at 0,0). Template is 500 x 700.
 const layers = [makeLayer('back', 0), makeLayer('front', 1)];
@@ -104,6 +124,39 @@ describe('canvas move snapping', () => {
         const moved: TemplateElement[] = onUpdateElements.mock.calls.at(-1)![0];
         expect(moved.find(e => e.id !== 'a')!.x).toBe(100);
         expect(moved.find(e => e.id === 'a')!.x).toBe(0);
+    });
+    it('a superseded owner mid-drag still clears guides on release, and the next drag snaps from its own start box', () => {
+        const editor = makeOwnerStub();
+        const { container, outer, rerenderWith } = renderCanvas(scene(), layers,
+            { selectedElementIds: ['b'], smartGuides: true, captureInteraction: editor.capture, onEditElements: vi.fn() });
+        press(container, 'b', 350, 350);
+        fireEvent.mouseMove(outer, { clientX: 153, clientY: 350 });
+        expect(guidesIn(container)).toBeTruthy();
+        // The editor captures a new owner mid-drag (a panel edit, a shortcut, a context-menu pick):
+        // the drag's owner is superseded, so its later moves and its release are ignored.
+        editor.capture();
+        fireEvent.mouseMove(outer, { clientX: 160, clientY: 350 });
+        fireEvent.mouseUp(outer, { clientX: 160, clientY: 350 });
+        expect(guidesIn(container)).toBeNull();
+        // b now rests at 310. Moving 207 left puts its edge at 103 -> 100; a start box kept from the
+        // first gesture (300) would put the box at 93, out of range, and leave x at 103.
+        rerenderWith([makeEl('a', { layerId: 'back', x: 100 }), makeEl('b', { layerId: 'front', x: 310, y: 300 })]);
+        press(container, 'b', 360, 350);
+        fireEvent.mouseMove(outer, { clientX: 153, clientY: 350 });
+        expect(editor.patches.at(-1)!.find(u => u.id === 'b')!.patch.x).toBe(100);
+    });
+    it('a drag whose release never arrived does not leak its start box or guides into the next press', () => {
+        // A right-click on empty canvas mid-drag opens the native menu, and the browser swallows the
+        // mouseup and mouseleave while it is open: the next press must start from its own geometry.
+        const { container, outer, onUpdateElements, rerenderWith } = renderCanvas(scene(), layers, { selectedElementIds: ['b'], smartGuides: true });
+        press(container, 'b', 350, 350);
+        fireEvent.mouseMove(outer, { clientX: 153, clientY: 350 });
+        expect(guidesIn(container)).toBeTruthy();
+        rerenderWith([makeEl('a', { layerId: 'back', x: 100 }), makeEl('b', { layerId: 'front', x: 310, y: 300 })]);
+        press(container, 'b', 360, 350);
+        expect(guidesIn(container)).toBeNull();
+        fireEvent.mouseMove(outer, { clientX: 153, clientY: 350 }); // 310 - 207 = 103 -> 100 from b's own start box
+        expect(lastMoved(onUpdateElements, 'b').x).toBe(100);
     });
     it('draws the grid at the set size, thinned when zoomed out', () => {
         const near = renderCanvas([], layers, { showGrid: true, gridSize: 10, scale: 1 });

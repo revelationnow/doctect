@@ -1721,6 +1721,7 @@ function ProjectEditorView({
             onInsertSvgPlaceholder={handleInsertSvgPlaceholder}
         />
     );
+    const snapPrefs = snapSettingsOf(state);
     const canvasElement = (
         currentTemplate && <EditorCanvas
             contextKey={contextKey}
@@ -1733,8 +1734,8 @@ function ProjectEditorView({
             currentNodeId={effectivePreviewNodeId}
             snapToGrid={state.snapToGrid}
             showGrid={state.showGrid}
-            gridSize={snapSettingsOf(state).gridSize}
-            smartGuides={snapSettingsOf(state).smartGuides}
+            gridSize={snapPrefs.gridSize}
+            smartGuides={snapPrefs.smartGuides}
             activeLayerId={state.activeLayerId}
             greyscalePreview={exportGreyscale}
             onInteractionStart={saveToHistory}
