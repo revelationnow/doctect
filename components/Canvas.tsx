@@ -17,7 +17,7 @@ import { useCanvasTextLayoutSession } from './canvas/useCanvasTextLayoutSession'
 import type { CanvasTextLayoutSession } from '../services/canvasTextLayout';
 import { readBrowserPreference } from '../services/browserPreferences';
 import type { EditorElementIntent } from '../services/document/contracts';
-import { useCanvasTouchGestures, TouchGestureHandlers } from '../hooks/useCanvasTouchGestures';
+import { useCanvasTouchGestures, TouchGestureHandlers, TAP_SLOP_PX } from '../hooks/useCanvasTouchGestures';
 import { useTouchFit, TOUCH_CANVAS_GUTTER, MOUSE_CANVAS_GUTTER } from '../hooks/useTouchFit';
 import { QuickFormatBar } from './canvas/QuickFormatBar';
 import { useKeepEditedElementVisible, useQuickFormatAnchor, useTouchGestureActivity } from './canvas/useQuickFormatBar';
@@ -260,6 +260,10 @@ export const Canvas: React.FC<CanvasProps> = ({
     multiSelect = false,
 }) => {
     const isTouch = inputMode === 'touch';
+    // Past this many page units a press is a drag, and snapping may run. A finger stays a tap until
+    // it leaves the gesture hook's tap slop (8 screen px), so on touch the gate is at least that far
+    // in page units: a sub-slop roll must never snap an element onto a neighbour.
+    const dragThreshold = isTouch ? Math.max(MIN_DRAG_THRESHOLD, TAP_SLOP_PX / scale) : MIN_DRAG_THRESHOLD;
     // Historical non-record layer cells remain in the owner/export. Rendering
     // and ID-based hit testing consume only usable records, never write them back.
     const interaction = useRef<CanvasInteraction | undefined>(undefined);
@@ -1215,9 +1219,10 @@ export const Canvas: React.FC<CanvasProps> = ({
             const rawDy = coords.y - dragStart.y;
             // With a mouse, a press is still a click until the pointer passes the threshold: a
             // wobble moves nothing, and mouseup can still cycle the selection. Touch keeps direct
-            // manipulation from the first move (a long press reverts it).
+            // manipulation from the first move (a long press reverts it), but snapping still waits
+            // for the (tap-slop-sized) threshold below.
             if (!movedSinceDownRef.current) {
-                const pastThreshold = Math.abs(rawDx) > MIN_DRAG_THRESHOLD || Math.abs(rawDy) > MIN_DRAG_THRESHOLD;
+                const pastThreshold = Math.abs(rawDx) > dragThreshold || Math.abs(rawDy) > dragThreshold;
                 if (!pastThreshold && !isTouch) return;
                 if (pastThreshold) movedSinceDownRef.current = true;
             }
@@ -1311,7 +1316,7 @@ export const Canvas: React.FC<CanvasProps> = ({
 
             // 3. Snapping. As for a move, a handle move below the drag threshold is still raw (a
             // wobble must not snap): targets are built and snapping applied only once it is a drag.
-            if (!movedSinceDownRef.current && (Math.abs(screenDx) > MIN_DRAG_THRESHOLD || Math.abs(screenDy) > MIN_DRAG_THRESHOLD)) {
+            if (!movedSinceDownRef.current && (Math.abs(screenDx) > dragThreshold || Math.abs(screenDy) > dragThreshold)) {
                 movedSinceDownRef.current = true;
             }
             const settings = movedSinceDownRef.current ? snapSettingsFor(e) : null;

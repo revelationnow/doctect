@@ -967,19 +967,37 @@ describe('touch snapping', () => {
 });
 
 describe('touch snapping below the drag threshold', () => {
-    it('a finger wobble under the threshold moves raw with no guides; a real drag snaps', () => {
-        // b at 158: its right edge is 8 pt from the page centre (250). A 3 px wobble to 155 would be
-        // pulled to 150 if snapping ran; a 30 px drag to 128 pulls its left edge onto a's right (120).
+    // A finger is a tap until it moves past the tap slop (8 screen px), so snapping waits for that
+    // distance in page units (or the 5 pt mouse threshold when that is larger): below it a roll must
+    // not pull the element onto a neighbour while the release still counts as a tap.
+    it('a 7 px roll moves raw with no guides; a 9 px drag snaps (scale 1)', () => {
+        // b at 158: its right edge is 8 pt from the page centre (250). A 7 px roll to 151 would be
+        // pulled to 150 if snapping ran; the 9 px drag to 149 is pulled there.
         const { container, surface, elementNode, props } = renderCanvas({
             elements: [rect('a', 20, 20), rect('b', 158, 200)], selectedElementIds: ['b'], smartGuides: true,
         });
         const lastB = () => (props.onUpdateElements as any).mock.calls.at(-1)[0].find((e: any) => e.id === 'b');
         pointer(elementNode('b'), 'pointerdown', 1, 208, 230);
-        pointer(surface, 'pointermove', 1, 205, 230);
-        expect(lastB().x).toBe(155);
+        pointer(surface, 'pointermove', 1, 201, 230);
+        expect(lastB().x).toBe(151);
         expect(container.querySelector('[data-testid="snap-guides"]')).toBeNull();
-        pointer(surface, 'pointermove', 1, 178, 230);
-        expect(lastB().x).toBe(120);
+        pointer(surface, 'pointermove', 1, 199, 230);
+        expect(lastB().x).toBe(150);
+        expect(container.querySelector('[data-testid="snap-guides"]')).toBeTruthy();
+    });
+    it('the gate is 8 screen px at a small zoom: a 7 px roll is 14 pt of raw movement at scale 0.5', () => {
+        // Client px are half the page units. b at 168: a 7 px roll puts its right edge 4 pt from the
+        // page centre (inside the 20 pt touch pull at this zoom) yet it stays raw; 10 px snaps it.
+        const { container, surface, elementNode, props } = renderCanvas({
+            elements: [rect('a', 20, 20), rect('b', 168, 200)], selectedElementIds: ['b'], smartGuides: true, scale: 0.5,
+        });
+        const lastB = () => (props.onUpdateElements as any).mock.calls.at(-1)[0].find((e: any) => e.id === 'b');
+        pointer(elementNode('b'), 'pointerdown', 1, 109, 115);
+        pointer(surface, 'pointermove', 1, 102, 115);
+        expect(lastB().x).toBe(154);
+        expect(container.querySelector('[data-testid="snap-guides"]')).toBeNull();
+        pointer(surface, 'pointermove', 1, 99, 115);
+        expect(lastB().x).toBe(150);
         expect(container.querySelector('[data-testid="snap-guides"]')).toBeTruthy();
     });
 });
