@@ -37,10 +37,6 @@ describe('buildSnapTargets', () => {
         const T = build([el('r', 0, 100, 100, 20, { rotation: 90 })]);
         expect(T.x.values).toContain(40); expect(T.x.values).toContain(60);
     });
-    it('records gaps between neighbours that face each other', () => {
-        const T = build([el('a', 0, 0, 100, 50), el('b', 130, 0, 100, 50), el('c', 300, 200, 50, 50)]);
-        expect(T.gaps.x.values).toEqual([30]);
-    });
     it('records sizes for matching', () => {
         const T = build([el('a', 0, 0, 120, 40), el('b', 200, 0, 120, 60)]);
         expect(T.w.values).toEqual([120]); expect(T.h.values).toEqual([40, 60]);

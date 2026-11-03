@@ -8,7 +8,11 @@ const crossMid = (p: Box, q: Box, axis: Axis) => {
 };
 const segment = (first: Box, second: Box, axis: Axis) => ({ at: crossMid(first, second, axis), from: hi(first, axis), to: lo(second, axis) });
 
-/** Equal spacing for a moving box: centre it between its neighbours, or repeat a gap already on the page. */
+/**
+ * Equal spacing for a moving box: centre it between its two neighbours, or repeat the gap of its own
+ * row or column: after `prev`, the gap between prev and previousNeighbour(prev); before `next`, the
+ * gap between next and nextNeighbour(next). Only the neighbour chain the box sits in is consulted.
+ */
 export function spacingWin(T: SnapTargets, b: Box, a: Axis, threshold: number): Win | null {
     const prev = previousNeighbour(T, b, a, lo(b, a) + threshold);
     const next = nextNeighbour(T, b, a, hi(b, a) - threshold);

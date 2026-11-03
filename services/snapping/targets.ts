@@ -8,14 +8,12 @@ export const RANK_EDGE = 0, RANK_CENTRE = 1, RANK_PAGE = 2, RANK_SPACING = 3, RA
 
 export interface AxisTargets { values: number[]; ranks: number[]; sources: Box[][] }
 export interface SizeTargets { values: number[]; sources: Box[][] }
-export interface GapTargets { values: number[]; pairs: [Box, Box][] }
 export interface SnapTargets {
     page: Box;
     x: AxisTargets; y: AxisTargets;
     w: SizeTargets; h: SizeTargets;
     byLo: Record<Axis, Box[]>;
     byHi: Record<Axis, Box[]>;
-    gaps: Record<Axis, GapTargets>;
 }
 export interface TargetInput {
     elements: TemplateElement[]; layers?: Layer[]; excludeIds: Iterable<string>;
@@ -78,20 +76,6 @@ export function previousNeighbour(T: Pick<SnapTargets, 'byHi'>, b: Box, axis: Ax
     return null;
 }
 
-const gapTargets = (T: Pick<SnapTargets, 'byLo'>, boxes: Box[], a: Axis): GapTargets => {
-    const found: { v: number; pair: [Box, Box] }[] = [];
-    for (const b of boxes) {
-        const n = nextNeighbour(T, b, a);
-        if (!n) continue;
-        const g = round2(lo(n, a) - hi(b, a));
-        if (g > 0) found.push({ v: g, pair: [b, n] });
-    }
-    found.sort((p, q) => p.v - q.v);
-    const values: number[] = [], pairs: [Box, Box][] = [];
-    for (const f of found) if (values[values.length - 1] !== f.v) { values.push(f.v); pairs.push(f.pair); }
-    return { values, pairs };
-};
-
 /** Everything a gesture can snap to, built once when the gesture starts snapping. */
 export function buildSnapTargets(input: TargetInput): SnapTargets {
     const hidden = new Set((input.layers ?? []).filter(l => l && l.visible === false).map(l => l.id));
@@ -101,15 +85,11 @@ export function buildSnapTargets(input: TargetInput): SnapTargets {
         .map(el => elementAabb(el, input.nodes, input.currentNodeId));
     const page: Box = { x: 0, y: 0, w: input.page.w, h: input.page.h };
     const sorted = (key: (b: Box) => number) => [...boxes].sort((p, q) => key(p) - key(q));
-    const T: SnapTargets = {
+    return {
         page,
         x: merge(axisEntries(boxes, page, 'x')), y: merge(axisEntries(boxes, page, 'y')),
         w: sizes(boxes, 'x'), h: sizes(boxes, 'y'),
         byLo: { x: sorted(b => b.x), y: sorted(b => b.y) },
         byHi: { x: sorted(b => b.x + b.w), y: sorted(b => b.y + b.h) },
-        gaps: { x: { values: [], pairs: [] }, y: { values: [], pairs: [] } },
     };
-    T.gaps.x = gapTargets(T, boxes, 'x');
-    T.gaps.y = gapTargets(T, boxes, 'y');
-    return T;
 }
